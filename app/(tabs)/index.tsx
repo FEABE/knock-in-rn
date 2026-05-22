@@ -1,98 +1,171 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { ProfileCard, RoomCard, RoommateCard } from '@/components/domain';
+import { Tabs } from '@/components/ui/headless';
+import {
+  MOCK_ROOMMATE_CARDS,
+  useModeration,
+  useRoomStore,
+  useSession,
+} from '@/lib/domain';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
+  const { session, signIn } = useSession();
+  const { posts } = useRoomStore();
+  const { isPostBlocked, isUserBlocked } = useModeration();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const visiblePosts = useMemo(
+    () =>
+      posts.filter(
+        (p) => !isPostBlocked(p.id) && !isUserBlocked(p.author.id),
+      ),
+    [posts, isPostBlocked, isUserBlocked],
+  );
+  const visibleRoommates = useMemo(
+    () => MOCK_ROOMMATE_CARDS.filter((c) => !isUserBlocked(c.user.id)),
+    [isUserBlocked],
+  );
+
+  return (
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <View className="flex-row items-center justify-between border-b border-neutral-100 px-5 py-3">
+        <Text className="text-xl font-bold text-blue-600">노크인</Text>
+        <View className="flex-row gap-2">
+          {!session ? (
+            <Pressable
+              onPress={() => signIn()}
+              className="rounded-full bg-yellow-300 px-4 py-2 active:opacity-80"
+            >
+              <Text className="text-xs font-medium text-neutral-900">
+                카카오 로그인
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => router.push('/onboarding' as never)}
+              className="rounded-full bg-blue-600 px-4 py-2 active:opacity-80"
+            >
+              <Text className="text-xs font-medium text-white">
+                내 방 등록
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      <Tabs.Root defaultValue="all" className="flex-1">
+        <Tabs.List className="flex-row gap-1 border-b border-neutral-100 px-5">
+          {[
+            { value: 'all', label: '전체' },
+            { value: 'rooms', label: '방 살피기' },
+            { value: 'roommates', label: '룸메이트 매칭' },
+          ].map((t) => (
+            <Tabs.Trigger key={t.value} value={t.value} className="py-3">
+              {({ selected }) => (
+                <View
+                  className={`border-b-2 pb-2 ${
+                    selected ? 'border-blue-600' : 'border-transparent'
+                  }`}
+                >
+                  <Text
+                    className={
+                      selected
+                        ? 'text-sm font-semibold text-blue-600'
+                        : 'text-sm text-neutral-500'
+                    }
+                  >
+                    {t.label}
+                  </Text>
+                </View>
+              )}
+            </Tabs.Trigger>
+          ))}
+        </Tabs.List>
+
+        <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5">
+          {session ? (
+            <ProfileCard
+              user={session.user}
+              visibility={session.visibility}
+              onEdit={() => router.push('/onboarding' as never)}
+            />
+          ) : (
+            <Pressable
+              onPress={() => signIn()}
+              className="gap-1 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 active:opacity-80"
+            >
+              <Text className="text-sm font-semibold text-blue-700">
+                로그인하고 매칭을 시작해보세요
+              </Text>
+              <Text className="text-xs text-blue-700/70">
+                생활패턴 기반 궁합 점수 확인 · 학교/회사 이메일 인증
+              </Text>
+            </Pressable>
+          )}
+
+          <Tabs.Content value="all" className="gap-4">
+            <Section title="추천 방">
+              {visiblePosts.slice(0, 3).map((post) => (
+                <RoomCard
+                  key={post.id}
+                  post={post}
+                  onPress={(p) => router.push(`/room/${p.id}` as never)}
+                />
+              ))}
+            </Section>
+            <Section title="추천 룸메이트">
+              {visibleRoommates.slice(0, 3).map((c) => (
+                <RoommateCard
+                  key={c.id}
+                  card={c}
+                  onPress={(card) =>
+                    router.push(`/roommate/${card.id}` as never)
+                  }
+                />
+              ))}
+            </Section>
+          </Tabs.Content>
+
+          <Tabs.Content value="rooms" className="gap-4">
+            {visiblePosts.map((post) => (
+              <RoomCard
+                key={post.id}
+                post={post}
+                onPress={(p) => router.push(`/room/${p.id}` as never)}
+              />
+            ))}
+          </Tabs.Content>
+
+          <Tabs.Content value="roommates" className="gap-4">
+            {visibleRoommates.map((c) => (
+              <RoommateCard
+                key={c.id}
+                card={c}
+                onPress={(card) => router.push(`/roommate/${card.id}` as never)}
+              />
+            ))}
+          </Tabs.Content>
+        </ScrollView>
+      </Tabs.Root>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View className="gap-3">
+      <Text className="text-base font-bold text-neutral-900">{title}</Text>
+      <View className="gap-3">{children}</View>
+    </View>
+  );
+}

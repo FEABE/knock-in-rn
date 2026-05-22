@@ -9,3 +9,8 @@ export {
   type UseRangeSliderReturn,
   type RangeValue,
 } from './use-range-slider';
+export { RangeSlider, type RangeSliderProps } from './range-slider';
+export {
+  RangeSliderView,
+  type RangeSliderViewProps,
+} from './range-slider.view';
