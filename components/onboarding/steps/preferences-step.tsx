@@ -1,10 +1,6 @@
 import { ScrollView, Text, View } from 'react-native';
 
-import {
-  BirthDateField,
-  ChipMultiSelect,
-  RangeSlider,
-} from '@/components/ui/headless';
+import { BirthDateField, ChipMultiSelect, RangeSlider } from '@/components/ui/headless';
 import {
   BUDGET_BOUNDS,
   ROOM_TYPES,
@@ -41,14 +37,8 @@ export function PreferencesStep() {
             min={BUDGET_BOUNDS.min}
             max={BUDGET_BOUNDS.max}
             step={BUDGET_BOUNDS.step}
-            value={
-              preferences.budget
-                ? [preferences.budget.min, preferences.budget.max]
-                : [30, 80]
-            }
-            onValueChange={([min, max]) =>
-              patch({ budget: { min, max } })
-            }
+            value={preferences.budget ? [preferences.budget.min, preferences.budget.max] : [30, 80]}
+            onValueChange={([min, max]) => patch({ budget: { min, max } })}
           >
             {({ percents, value, min, max }) => (
               <View className="gap-3">
@@ -58,7 +48,7 @@ export function PreferencesStep() {
                       left: `${percents[0]}%`,
                       width: `${percents[1] - percents[0]}%`,
                     }}
-                    className="absolute h-2 rounded-full bg-blue-600"
+                    className="absolute h-2 rounded-full bg-violet-600"
                   />
                 </View>
                 <View className="flex-row justify-between">
@@ -84,28 +74,20 @@ export function PreferencesStep() {
               <View className="gap-1">
                 <View className="flex-row gap-2">
                   <View className="flex-[2] rounded-xl border border-neutral-200 px-4 py-3">
-                    <Text className="text-base">
-                      {yearField.value || yearField.placeholder}
-                    </Text>
+                    <Text className="text-base">{yearField.value || yearField.placeholder}</Text>
                   </View>
                   <View className="flex-1 rounded-xl border border-neutral-200 px-4 py-3">
-                    <Text className="text-base">
-                      {monthField.value || monthField.placeholder}
-                    </Text>
+                    <Text className="text-base">{monthField.value || monthField.placeholder}</Text>
                   </View>
                   <View className="flex-1 rounded-xl border border-neutral-200 px-4 py-3">
-                    <Text className="text-base">
-                      {dayField.value || dayField.placeholder}
-                    </Text>
+                    <Text className="text-base">{dayField.value || dayField.placeholder}</Text>
                   </View>
                 </View>
                 <Text className="text-xs text-neutral-400">
                   날짜 입력 UI는 화면에 맞게 자유롭게 채워주세요.
                 </Text>
                 {isComplete && !isValid ? (
-                  <Text className="text-xs text-red-500">
-                    올바른 날짜를 입력해주세요
-                  </Text>
+                  <Text className="text-xs text-red-500">올바른 날짜를 입력해주세요</Text>
                 ) : null}
               </View>
             )}
@@ -124,16 +106,12 @@ export function PreferencesStep() {
             renderItem={({ option, selected }) => (
               <View
                 className={`rounded-full border px-4 py-2 ${
-                  selected
-                    ? 'border-blue-600 bg-blue-600'
-                    : 'border-neutral-200 bg-white'
+                  selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-200 bg-white'
                 }`}
               >
                 <Text
                   className={
-                    selected
-                      ? 'text-sm font-medium text-white'
-                      : 'text-sm text-neutral-700'
+                    selected ? 'text-sm font-medium text-white' : 'text-sm text-neutral-700'
                   }
                 >
                   {option.label}
@@ -161,9 +139,7 @@ function Field({
   return (
     <View className="gap-2">
       <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      {helper ? (
-        <Text className="text-xs text-neutral-500">{helper}</Text>
-      ) : null}
+      {helper ? <Text className="text-xs text-neutral-500">{helper}</Text> : null}
       {children}
     </View>
   );

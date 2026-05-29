@@ -1,9 +1,4 @@
-import type {
-  ImportantCondition,
-  Region,
-  RoomType,
-  Term,
-} from './types';
+import type { ImportantCondition, Region, RoomType, Term } from './types';
 
 export const TERMS: Term[] = [
   {
@@ -92,6 +87,8 @@ export const ROOM_TYPES: { value: RoomType; label: string }[] = [
   { value: 'three-room+', label: '쓰리룸 이상' },
   { value: 'officetel', label: '오피스텔' },
   { value: 'share-house', label: '쉐어하우스' },
+  { value: 'apt', label: '아파트' },
+  { value: 'villa', label: '빌라' },
 ];
 
 export const BUDGET_BOUNDS = {

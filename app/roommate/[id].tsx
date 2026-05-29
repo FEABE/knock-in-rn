@@ -1,33 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  MOCK_ROOMMATE_CARDS,
-  useModeration,
-  useSession,
-} from '@/lib/domain';
-import { IMPORTANT_CONDITIONS } from '@/lib/onboarding';
+import { type MatchDetailData, useRoommateMatchDetail } from '@/lib/api';
+import { useSession } from '@/lib/domain';
 
 export default function RoommateDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session, signIn } = useSession();
-  const { blockUser, report, isUserBlocked } = useModeration();
   const [liked, setLiked] = useState(false);
+  const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
 
-  const card = useMemo(
-    () =>
-      MOCK_ROOMMATE_CARDS.find((c) => c.id === id) ?? MOCK_ROOMMATE_CARDS[0],
-    [id],
-  );
-  const u = card.user;
-  const blocked = isUserBlocked(u.id);
-
-  const conditionLabels = u.importantConditions
-    .map((id) => IMPORTANT_CONDITIONS.find((c) => c.id === id)?.label)
-    .filter(Boolean) as string[];
+  const { data, loading, error } = useRoommateMatchDetail(id ?? '');
 
   const requireLogin = (then: () => void) => {
     if (!session) {
@@ -42,226 +28,242 @@ export default function RoommateDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
-        <Pressable
-          onPress={() => router.back()}
-          className="h-9 w-9 items-center justify-center"
-        >
-          <Text className="text-2xl text-neutral-700">‹</Text>
-        </Pressable>
-        <Pressable
-          onPress={() =>
-            Alert.alert('차단/신고', '', [
-              { text: '취소', style: 'cancel' },
-              {
-                text: '신고하기',
-                onPress: () => {
-                  report({ kind: 'user', id: u.id }, '부적절한 사용자');
-                  Alert.alert('신고 접수 완료');
-                },
-              },
-              {
-                text: '차단하기',
-                style: 'destructive',
-                onPress: () => {
-                  blockUser(u.id);
-                  Alert.alert('차단되었어요', '', [
-                    { text: '확인', onPress: () => router.back() },
-                  ]);
-                },
-              },
-            ])
-          }
-          className="h-9 w-9 items-center justify-center"
-        >
-          <Text className="text-xl text-neutral-700">⋯</Text>
-        </Pressable>
-      </View>
+      <Header onBack={() => router.back()} />
 
-      {blocked ? (
-        <View className="m-5 rounded-2xl border border-red-200 bg-red-50 p-4">
-          <Text className="text-sm font-semibold text-red-700">
-            차단한 사용자에요
-          </Text>
-          <Text className="mt-1 text-xs text-red-700/80">
-            상호 비노출 처리됩니다. 채팅도 불가합니다.
-          </Text>
+      {loading ? (
+        <View className="flex-1 items-center justify-center gap-3">
+          <ActivityIndicator color="#7c3aed" />
+          <Text className="text-sm text-neutral-400">불러오는 중...</Text>
         </View>
-      ) : null}
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 p-5 pb-24">
-        <View className="items-center gap-3">
-          <View className="h-24 w-24 items-center justify-center rounded-full bg-neutral-100">
-            <Text className="text-2xl font-semibold text-neutral-600">
-              {u.name.charAt(0)}
-            </Text>
-          </View>
-          <View className="items-center gap-1">
-            <View className="flex-row items-center gap-2">
-              <Text className="text-xl font-bold text-neutral-900">
-                {u.name}
-              </Text>
-              <Text className="text-sm text-neutral-500">
-                {u.age}세 · {labelGender(u.gender)}
-              </Text>
-            </View>
-            <Text className="text-xs text-neutral-500">
-              {u.region.city} {u.region.district}
-            </Text>
-          </View>
-          <View className="flex-row gap-2">
-            {u.badges.length === 0 ? (
-              <Text className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-400">
-                인증 없음
-              </Text>
-            ) : (
-              u.badges.map((b) => (
-                <Text
-                  key={b.kind}
-                  className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700"
-                >
-                  {b.kind === 'school' ? '🎓 학교 인증' : '🏢 회사 인증'}
-                </Text>
-              ))
-            )}
-          </View>
-          {typeof card.compatibilityScore === 'number' ? (
-            <View className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2">
-              <Text className="text-sm font-semibold text-blue-700">
-                궁합 점수 {card.compatibilityScore}점
-              </Text>
-            </View>
-          ) : null}
+      ) : error || !data ? (
+        <View className="flex-1 items-center justify-center gap-2 p-10">
+          <Text className="text-sm text-neutral-500">정보를 불러오지 못했어요</Text>
+          {error ? <Text className="text-xs text-neutral-400">{error}</Text> : null}
         </View>
+      ) : (
+        <>
+          <ScrollView className="flex-1" contentContainerClassName="gap-6 p-5 pb-28">
+            <ProfileHead data={data} />
+            <RoomStatus data={data} />
+            <LifestyleBlock
+              data={data}
+              expanded={lifestyleExpanded}
+              onToggle={() => setLifestyleExpanded((p) => !p)}
+            />
+            <PreferredLivingBlock data={data} />
+            <PreferredRoommateBlock data={data} />
+            <CompatibilityBlock data={data} />
+          </ScrollView>
 
-        <Section title="한 줄 소개">
-          <Text className="text-sm leading-6 text-neutral-700">{u.bio}</Text>
-        </Section>
-
-        <Section title="생활 패턴">
-          <View className="gap-2">
-            <Row
-              label="취침 / 기상"
-              value={`${u.lifestyle.sleepTime ?? '-'} / ${u.lifestyle.wakeTime ?? '-'}`}
-            />
-            <Row
-              label="청결 민감도"
-              value={`${u.lifestyle.cleanliness ?? '-'} / 5`}
-            />
-            <Row
-              label="소음 민감도"
-              value={`${u.lifestyle.noise ?? '-'} / 5`}
-            />
-            <Row
-              label="흡연"
-              value={
-                u.lifestyle.smoking === 'no'
-                  ? '비흡연'
-                  : u.lifestyle.smoking === 'outdoor'
-                    ? '실외 흡연'
-                    : '흡연'
-              }
-            />
-            <Row
-              label="반려동물"
-              value={
-                u.lifestyle.pet === 'no'
-                  ? '없음'
-                  : u.lifestyle.pet === 'small'
-                    ? '소형만'
-                    : '제한 없음'
-              }
-            />
-          </View>
-        </Section>
-
-        <Section title="중요 조건">
-          <View className="flex-row flex-wrap gap-2">
-            {conditionLabels.map((label) => (
-              <Text
-                key={label}
-                className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs text-neutral-700"
-              >
-                {label}
-              </Text>
-            ))}
-          </View>
-        </Section>
-
-        <Section title="희망 조건">
-          <View className="gap-2">
-            {card.budgetMin !== undefined &&
-            card.budgetMax !== undefined ? (
-              <Row
-                label="예산"
-                value={`${card.budgetMin}~${card.budgetMax}만원`}
-              />
-            ) : null}
-            {card.moveInBy ? (
-              <Row
-                label="입주 희망"
-                value={`${card.moveInBy.getFullYear()}.${String(card.moveInBy.getMonth() + 1).padStart(2, '0')}`}
-              />
-            ) : null}
-            <Row
-              label="희망 지역"
-              value={card.preferredRegions
-                .map((r) => `${r.city} ${r.district}`)
-                .join(', ')}
-            />
-          </View>
-        </Section>
-      </ScrollView>
-
-      <View className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 py-3">
-        <Pressable
-          onPress={() => requireLogin(() => setLiked((p) => !p))}
-          className="h-12 w-12 items-center justify-center rounded-xl border border-neutral-200"
-        >
-          <Text className={liked ? 'text-xl text-red-500' : 'text-xl'}>
-            {liked ? '♥' : '♡'}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() =>
-            requireLogin(() => router.push(`/chat/${u.id}` as never))
-          }
-          className="h-12 flex-1 items-center justify-center rounded-xl bg-blue-600 active:opacity-90"
-        >
-          <Text className="text-sm font-semibold text-white">
-            1:1 대화 요청
-          </Text>
-        </Pressable>
-      </View>
+          <BottomBar
+            liked={liked}
+            onLike={() => requireLogin(() => setLiked((p) => !p))}
+            onRequest={() =>
+              requireLogin(() =>
+                Alert.alert('매칭 요청', `${data.name}님께 매칭을 요청할까요?`, [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '요청',
+                    onPress: () => router.push(`/chat/${id}` as never),
+                  },
+                ]),
+              )
+            }
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 }
 
-function Section({
-  title,
-  children,
+function Header({ onBack }: { onBack: () => void }) {
+  return (
+    <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
+      <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
+        <Text className="text-2xl text-neutral-700">‹</Text>
+      </Pressable>
+      <Text className="text-base font-semibold text-neutral-900">룸메이트 찾기</Text>
+      <View className="h-9 w-9" />
+    </View>
+  );
+}
+
+function ProfileHead({ data }: { data: MatchDetailData }) {
+  return (
+    <View className="items-center gap-3">
+      <View className="h-24 w-24 items-center justify-center rounded-full bg-neutral-100">
+        <Text className="text-2xl font-semibold text-neutral-600">{data.name.charAt(0)}</Text>
+      </View>
+      <View className="items-center gap-1">
+        <Text className="text-xl font-bold text-neutral-900">{data.name}</Text>
+        <Text className="text-xs text-neutral-500">{data.region}</Text>
+      </View>
+      <View className="flex-row gap-2">
+        {data.isAuthStudent === 'true' ? <Badge label="✓ 학교 인증" tone="emerald" /> : null}
+        {data.isAuthEmployee === 'true' ? <Badge label="✓ 회사 인증" tone="emerald" /> : null}
+        <Badge label="신원 확인" tone="sky" />
+      </View>
+    </View>
+  );
+}
+
+function RoomStatus({ data }: { data: MatchDetailData }) {
+  const hasRoom = !!data.roomProfileType;
+  return (
+    <Section title="방 여부">
+      <View className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+        <Text className="text-sm text-neutral-600">
+          {hasRoom ? `${data.roomProfileType} · ${data.region}` : '아직 방이 없어요'}
+        </Text>
+      </View>
+    </Section>
+  );
+}
+
+function LifestyleBlock({
+  data,
+  expanded,
+  onToggle,
 }: {
-  title: string;
-  children: React.ReactNode;
+  data: MatchDetailData;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const items = expanded ? data.lifeStyles : data.lifeStyles.slice(0, 4);
+  return (
+    <Section title="생활 패턴">
+      <View className="flex-row flex-wrap gap-2">
+        {items.map((ls) => (
+          <View
+            key={ls.lifestyleId}
+            className="min-w-[47%] flex-1 gap-0.5 rounded-2xl bg-neutral-50 p-3"
+          >
+            <Text className="text-[11px] text-neutral-500">{ls.name}</Text>
+            <Text className="text-sm font-semibold text-neutral-800">{ls.value}</Text>
+          </View>
+        ))}
+      </View>
+      {data.lifeStyles.length > 4 ? (
+        <Pressable onPress={onToggle} className="items-center py-1">
+          <Text className="text-xs text-neutral-500">{expanded ? '접기 ⌃' : '더보기 ⌄'}</Text>
+        </Pressable>
+      ) : null}
+    </Section>
+  );
+}
+
+function PreferredLivingBlock({ data }: { data: MatchDetailData }) {
+  return (
+    <Section title="희망 거주 조건">
+      <View className="gap-2">
+        <KeyVal label="예산 보증금" value={`${data.maxDeposit}만원 이하`} />
+        <KeyVal label="예산 월세" value={`${data.maxMounthRent}만원 이하`} />
+        <KeyVal label="입주 희망 시기" value={data.comeableAt} />
+        <KeyVal label="희망 룸 형태" value={data.roomProfileType} />
+        <KeyVal label="희망 지역" value={data.region} />
+      </View>
+    </Section>
+  );
+}
+
+function PreferredRoommateBlock({ data }: { data: MatchDetailData }) {
+  const conditionText = data.conditions.map((c) => c.name).join(' · ');
+  return (
+    <Section title="희망 룸메이트 조건">
+      <View className="gap-2">
+        {data.preferences.map((p) => (
+          <KeyVal key={p.preferencesId} label={p.name} value={p.value} />
+        ))}
+        {conditionText ? <KeyVal label="중요 조건" value={conditionText} /> : null}
+      </View>
+    </Section>
+  );
+}
+
+function CompatibilityBlock({ data }: { data: MatchDetailData }) {
+  const score = Number(data.compatibility.score) || 0;
+  return (
+    <Section title="나와 궁합">
+      <View className="flex-row items-center gap-4 rounded-2xl border border-neutral-100 p-4">
+        <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-violet-600">
+          <Text className="text-xl font-bold text-violet-600">{score}점</Text>
+        </View>
+        <View className="flex-1 gap-2">
+          {data.compatibility.lifeStyleInfo.map((info, i) => {
+            const pct = Number(info.percent) || 0;
+            return (
+              <View key={i} className="gap-1">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-xs text-neutral-600">{info.title}</Text>
+                  <Text className="text-xs font-semibold text-violet-600">{info.percent}점</Text>
+                </View>
+                <View className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
+                  <View
+                    style={{ width: `${Math.min(100, pct)}%` }}
+                    className="h-full rounded-full bg-violet-600"
+                  />
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </Section>
+  );
+}
+
+function BottomBar({
+  liked,
+  onLike,
+  onRequest,
+}: {
+  liked: boolean;
+  onLike: () => void;
+  onRequest: () => void;
 }) {
   return (
+    <View className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 py-3">
+      <Pressable
+        onPress={onLike}
+        className="h-12 w-12 items-center justify-center rounded-xl border border-neutral-200"
+      >
+        <Text className={liked ? 'text-xl text-red-500' : 'text-xl text-neutral-400'}>
+          {liked ? '♥' : '♡'}
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={onRequest}
+        className="h-12 flex-1 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+      >
+        <Text className="text-sm font-semibold text-white">매칭 요청</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
     <View className="gap-3">
-      <Text className="text-sm font-semibold uppercase tracking-wider text-neutral-400">
-        {title}
-      </Text>
+      <Text className="text-sm font-semibold text-neutral-800">{title}</Text>
       {children}
     </View>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function KeyVal({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-row items-center justify-between rounded-xl bg-neutral-50 px-4 py-3">
+    <View className="flex-row items-center justify-between">
       <Text className="text-sm text-neutral-500">{label}</Text>
-      <Text className="text-sm font-medium text-neutral-800">{value}</Text>
+      <Text className="text-sm font-semibold text-neutral-800">{value}</Text>
     </View>
   );
 }
 
-function labelGender(g: string): string {
-  return g === 'female' ? '여성' : g === 'male' ? '남성' : '기타';
+function Badge({ label, tone }: { label: string; tone: 'emerald' | 'sky' }) {
+  const cls = tone === 'emerald' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700';
+  return (
+    <View className={`rounded px-2 py-1 ${cls.split(' ')[0]}`}>
+      <Text className={`text-[11px] ${cls.split(' ')[1]}`}>{label}</Text>
+    </View>
+  );
 }

@@ -6,7 +6,8 @@ import { HapticTab } from '@/components/haptic-tab';
 
 const TAB_ICONS: Record<string, string> = {
   index: '🏠',
-  roommate: '🔍',
+  explore: '🔍',
+  roommate: '👥',
   interests: '♥',
   chat: '💬',
   mypage: '👤',
@@ -30,7 +31,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2563eb',
+        tabBarActiveTintColor: '#7c3aed',
         tabBarInactiveTintColor: '#737373',
         headerShown: false,
         tabBarButton: HapticTab,
@@ -38,18 +39,11 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="explore"
         options={{
-          title: '홈',
-          tabBarIcon: ({ focused }) => <TabIcon name="index" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="roommate"
-        options={{
-          title: '룸메이트 구하기',
+          title: '탐색',
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="roommate" focused={focused} />
+            <TabIcon name="explore" focused={focused} />
           ),
         }}
       />
@@ -78,7 +72,8 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="explore" options={{ href: null }} />
+      <Tabs.Screen name="index" options={{ href: null }} />
+      <Tabs.Screen name="roommate" options={{ href: null }} />
     </Tabs>
   );
 }

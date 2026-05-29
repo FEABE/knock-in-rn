@@ -19,7 +19,14 @@ export type Lifestyle = {
 
 export type ProfileVisibility = 'public' | 'hidden' | 'matched';
 
-export type RoomType = 'one-room' | 'two-room' | 'three-room+' | 'officetel' | 'share-house';
+export type RoomType =
+  | 'one-room'
+  | 'two-room'
+  | 'three-room+'
+  | 'officetel'
+  | 'share-house'
+  | 'apt'
+  | 'villa';
 
 export type Region = {
   id: string;
@@ -32,11 +39,7 @@ export type ImportantCondition = {
   label: string;
 };
 
-export type TermKey =
-  | 'terms-of-service'
-  | 'privacy-policy'
-  | 'marketing-push'
-  | 'location';
+export type TermKey = 'terms-of-service' | 'privacy-policy' | 'marketing-push' | 'location';
 
 export type Term = {
   key: TermKey;
@@ -45,14 +48,30 @@ export type Term = {
   href?: string;
 };
 
+/**
+ * 와이어프레임 "생활 패턴" 스텝의 6개 척도(1~5).
+ * 기존 Lifestyle 타입과 별개로 온보딩 슬라이더 응답을 담는다.
+ */
+export type LifestyleScaleKey =
+  | 'sleep'
+  | 'cleanliness'
+  | 'noise'
+  | 'personality'
+  | 'privacy'
+  | 'visitor';
+
+export type LifestyleScales = Partial<Record<LifestyleScaleKey, number>>;
+
 export type BasicProfile = {
   name: string;
   birthDate: Date | null;
   gender: Gender | null;
+  email: string;
   preferredGender: PreferredGender | null;
   regions: Region[];
   bio: string;
   lifestyle: Partial<Lifestyle>;
+  scales: LifestyleScales;
   importantConditionIds: string[];
   dealbreaker: string;
   visibility: ProfileVisibility;
@@ -61,6 +80,20 @@ export type BasicProfile = {
 export type BudgetRange = {
   min: number;
   max: number;
+};
+
+/**
+ * 와이어프레임 "방 유무 여부 / 조건 입력" 스텝.
+ */
+export type RoomCondition = {
+  /** 방 있어요(true) / 방 없어요(false) */
+  hasRoom: boolean | null;
+  region: Region | null;
+  deposit: BudgetRange;
+  monthlyRent: BudgetRange;
+  managementCost: BudgetRange;
+  roomType: RoomType | null;
+  moveInDate: Date | null;
 };
 
 export type PreferenceConditions = {
@@ -74,6 +107,7 @@ export type TermsAgreement = Record<TermKey, boolean>;
 export type OnboardingValues = {
   terms: TermsAgreement;
   profile: BasicProfile;
+  room: RoomCondition;
   preferences: PreferenceConditions;
 };
 
@@ -82,13 +116,27 @@ export function emptyBasicProfile(): BasicProfile {
     name: '',
     birthDate: null,
     gender: null,
+    email: '',
     preferredGender: null,
     regions: [],
     bio: '',
     lifestyle: {},
+    scales: {},
     importantConditionIds: [],
     dealbreaker: '',
     visibility: 'public',
+  };
+}
+
+export function emptyRoomCondition(): RoomCondition {
+  return {
+    hasRoom: null,
+    region: null,
+    deposit: { min: 0, max: 1000 },
+    monthlyRent: { min: 0, max: 30 },
+    managementCost: { min: 0, max: 30 },
+    roomType: null,
+    moveInDate: null,
   };
 }
 
@@ -114,9 +162,7 @@ export function isBasicProfileComplete(profile: BasicProfile): boolean {
   );
 }
 
-export function isLifestyleComplete(
-  lifestyle: Partial<Lifestyle>,
-): lifestyle is Lifestyle {
+export function isLifestyleComplete(lifestyle: Partial<Lifestyle>): lifestyle is Lifestyle {
   return (
     !!lifestyle.sleepTime &&
     !!lifestyle.wakeTime &&

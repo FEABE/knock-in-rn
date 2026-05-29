@@ -8,6 +8,8 @@ export type OnboardingFooterProps = {
   primaryLabel?: string;
   onPress?: () => void;
   helper?: string;
+  /** "이전으로" 보조 버튼 표시 (2·3 스텝). */
+  showBack?: boolean;
 };
 
 export function OnboardingFooter({
@@ -15,31 +17,38 @@ export function OnboardingFooter({
   primaryLabel,
   onPress,
   helper,
+  showBack = false,
 }: OnboardingFooterProps) {
-  const { isLast, goNext } = useOnboarding();
+  const { isLast, goNext, goPrev } = useOnboarding();
   const handlePress = onPress ?? goNext;
-  const label = primaryLabel ?? (isLast ? '완료' : '다음');
+  const label = primaryLabel ?? (isLast ? '완료' : '다음으로');
 
   return (
     <View className="gap-2 border-t border-neutral-100 bg-white px-5 pb-6 pt-4">
-      {helper ? (
-        <Text className="text-xs text-neutral-500">{helper}</Text>
-      ) : null}
-      <Button
-        disabled={!canProceed}
-        onPress={handlePress}
-        className={`h-12 items-center justify-center rounded-xl ${
-          canProceed ? 'bg-blue-600 active:bg-blue-700' : 'bg-neutral-300'
-        }`}
-      >
-        <Text
-          className={`text-base font-semibold ${
-            canProceed ? 'text-white' : 'text-neutral-500'
-          }`}
+      {helper ? <Text className="text-xs text-neutral-500">{helper}</Text> : null}
+      <View className="flex-row gap-3">
+        {showBack ? (
+          <Button
+            onPress={goPrev}
+            className="h-12 flex-1 items-center justify-center rounded-xl border border-neutral-200 bg-white active:bg-neutral-50"
+          >
+            <Text className="text-base font-semibold text-neutral-500">이전으로</Text>
+          </Button>
+        ) : null}
+        <Button
+          disabled={!canProceed}
+          onPress={handlePress}
+          className={`h-12 items-center justify-center rounded-xl ${
+            showBack ? 'flex-1' : 'w-full'
+          } ${canProceed ? 'bg-violet-600 active:bg-violet-700' : 'bg-neutral-300'}`}
         >
-          {label}
-        </Text>
-      </Button>
+          <Text
+            className={`text-base font-semibold ${canProceed ? 'text-white' : 'text-neutral-500'}`}
+          >
+            {label}
+          </Text>
+        </Button>
+      </View>
     </View>
   );
 }

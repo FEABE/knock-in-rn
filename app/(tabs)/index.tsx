@@ -33,7 +33,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="flex-row items-center justify-between border-b border-neutral-100 px-5 py-3">
-        <Text className="text-xl font-bold text-blue-600">노크인</Text>
+        <Text className="text-xl font-bold text-violet-600">노크인</Text>
         <View className="flex-row gap-2">
           {!session ? (
             <Pressable
@@ -47,7 +47,7 @@ export default function HomeScreen() {
           ) : (
             <Pressable
               onPress={() => router.push('/onboarding' as never)}
-              className="rounded-full bg-blue-600 px-4 py-2 active:opacity-80"
+              className="rounded-full bg-violet-600 px-4 py-2 active:opacity-80"
             >
               <Text className="text-xs font-medium text-white">
                 내 방 등록
@@ -68,13 +68,13 @@ export default function HomeScreen() {
               {({ selected }) => (
                 <View
                   className={`border-b-2 pb-2 ${
-                    selected ? 'border-blue-600' : 'border-transparent'
+                    selected ? 'border-violet-600' : 'border-transparent'
                   }`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-sm font-semibold text-blue-600'
+                        ? 'text-sm font-semibold text-violet-600'
                         : 'text-sm text-neutral-500'
                     }
                   >
@@ -96,12 +96,12 @@ export default function HomeScreen() {
           ) : (
             <Pressable
               onPress={() => signIn()}
-              className="gap-1 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 active:opacity-80"
+              className="gap-1 rounded-2xl border border-violet-100 bg-violet-50/60 p-4 active:opacity-80"
             >
-              <Text className="text-sm font-semibold text-blue-700">
+              <Text className="text-sm font-semibold text-violet-700">
                 로그인하고 매칭을 시작해보세요
               </Text>
-              <Text className="text-xs text-blue-700/70">
+              <Text className="text-xs text-violet-700/70">
                 생활패턴 기반 궁합 점수 확인 · 학교/회사 이메일 인증
               </Text>
             </Pressable>

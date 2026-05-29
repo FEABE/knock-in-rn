@@ -1,10 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 
 import { SegmentedControl } from '@/components/ui/headless';
-import {
-  useOnboardingProfile,
-  type ProfileVisibility,
-} from '@/lib/onboarding';
+import { useOnboardingProfile, type ProfileVisibility } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 
@@ -36,9 +33,7 @@ export function VisibilityStep() {
           <Text className="text-2xl font-bold text-neutral-900">
             내 프로필 노출 상태를{'\n'}선택하세요
           </Text>
-          <Text className="text-sm text-neutral-500">
-            언제든 마이페이지에서 변경할 수 있어요.
-          </Text>
+          <Text className="text-sm text-neutral-500">언제든 마이페이지에서 변경할 수 있어요.</Text>
         </View>
 
         <SegmentedControl<ProfileVisibility>
@@ -51,37 +46,27 @@ export function VisibilityStep() {
             return (
               <View
                 className={`gap-1 rounded-2xl border p-4 ${
-                  selected
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-neutral-200 bg-white'
+                  selected ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
                 }`}
               >
                 <View className="flex-row items-center justify-between">
                   <Text
                     className={`text-base font-semibold ${
-                      selected ? 'text-blue-700' : 'text-neutral-900'
+                      selected ? 'text-violet-700' : 'text-neutral-900'
                     }`}
                   >
                     {opt.label}
                   </Text>
                   <View
                     className={`h-5 w-5 items-center justify-center rounded-full border ${
-                      selected
-                        ? 'border-blue-600 bg-blue-600'
-                        : 'border-neutral-300 bg-white'
+                      selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
                     }`}
                   >
-                    {selected ? (
-                      <Text className="text-xs font-bold text-white">✓</Text>
-                    ) : null}
+                    {selected ? <Text className="text-xs font-bold text-white">✓</Text> : null}
                   </View>
                 </View>
                 <Text
-                  className={
-                    selected
-                      ? 'text-xs text-blue-700/80'
-                      : 'text-xs text-neutral-500'
-                  }
+                  className={selected ? 'text-xs text-violet-700/80' : 'text-xs text-neutral-500'}
                 >
                   {opt.description}
                 </Text>

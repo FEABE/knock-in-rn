@@ -26,12 +26,21 @@ export default function RootLayout() {
         <ModerationProvider>
           <RoomStoreProvider>
             <AgreementProvider>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                <Stack.Screen name="kakao-login" options={{ title: 'Kakao Login' }} />
-                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                <Stack.Screen name="verification" options={{ headerShown: false }} />
+              {/* 모든 화면이 자체 커스텀 헤더를 가지므로 네이티브 헤더는 기본 숨김 */}
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="modal"
+                  options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
+                />
+                <Stack.Screen name="kakao-login" />
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen name="verification" />
+                <Stack.Screen name="room" />
+                <Stack.Screen name="roommate" />
+                <Stack.Screen name="chat" />
+                <Stack.Screen name="mypage" />
+                <Stack.Screen name="support" />
               </Stack>
               <StatusBar style="auto" />
             </AgreementProvider>

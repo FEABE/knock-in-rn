@@ -1,83 +1,143 @@
 import { useRouter } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { sendVerificationCode, type VerificationKind } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 
 export default function VerificationIndex() {
   const router = useRouter();
   const { session } = useSession();
-  const schoolVerified =
-    session?.user.badges.some((b) => b.kind === 'school') ?? false;
-  const companyVerified =
-    session?.user.badges.some((b) => b.kind === 'company') ?? false;
+  const schoolVerified = session?.user.badges.some((b) => b.kind === 'school') ?? false;
+  const companyVerified = session?.user.badges.some((b) => b.kind === 'company') ?? false;
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-5 py-3">
-        <Pressable
-          onPress={() => router.back()}
-          className="h-9 w-9 items-center justify-center"
-        >
+      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
+        <Pressable onPress={() => router.back()} className="h-9 w-9 items-center justify-center">
           <Text className="text-2xl text-neutral-700">‹</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">
-          신원 인증
-        </Text>
+        <Text className="text-base font-semibold text-neutral-900">신원 인증</Text>
       </View>
 
-      <View className="gap-4 p-5">
-        <View className="gap-1">
-          <Text className="text-2xl font-bold text-neutral-900">
-            신뢰도를 높여보세요
-          </Text>
-          <Text className="text-sm text-neutral-500">
-            인증 배지가 있는 프로필은 매칭 확률이 높아져요.
+      <ScrollView contentContainerClassName="gap-5 p-5">
+        <Text className="text-sm leading-5 text-neutral-500">
+          학교 또는 회사 이메일로 인증하면 프로필에 인증 배지가 표시돼요. 상대방에게 신뢰를 줄 수
+          있어요.
+        </Text>
+
+        <VerifyCard
+          kind="student"
+          icon="🎓"
+          title="학교 이메일 인증"
+          placeholder="학교 이메일을 입력해주세요"
+          verified={schoolVerified}
+          bullets={[
+            '학교 이메일(.ac.kr, .edu 등) 형식만 가능해요',
+            '인증 처리까지 최대 1일 소요될 수 있어요',
+          ]}
+          onConfirm={() => router.push('/verification/school' as never)}
+        />
+
+        <VerifyCard
+          kind="company"
+          icon="🏢"
+          title="회사 이메일 인증"
+          placeholder="회사 이메일을 입력해주세요"
+          verified={companyVerified}
+          bullets={[
+            '개인 이메일(gmail, naver 등)은 인증이 불가해요',
+            '인증 처리까지 최대 1일 소요될 수 있어요',
+          ]}
+          onConfirm={() => router.push('/verification/company' as never)}
+        />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function VerifyCard({
+  kind,
+  icon,
+  title,
+  placeholder,
+  verified,
+  bullets,
+  onConfirm,
+}: {
+  kind: VerificationKind;
+  icon: string;
+  title: string;
+  placeholder: string;
+  verified: boolean;
+  bullets: string[];
+  onConfirm: () => void;
+}) {
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    if (!email.includes('@')) {
+      Alert.alert('이메일을 확인해주세요');
+      return;
+    }
+    setSending(true);
+    const res = await sendVerificationCode(kind, { email });
+    setSending(false);
+    if (res.error) {
+      Alert.alert('발송 실패', '잠시 후 다시 시도해주세요.');
+      return;
+    }
+    Alert.alert('인증 메일 발송', '메일의 인증 절차를 진행해주세요.', [
+      { text: '확인', onPress: onConfirm },
+    ]);
+  };
+
+  return (
+    <View className="gap-3 rounded-2xl bg-neutral-50 p-4">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-base font-semibold text-neutral-900">
+          {icon} {title}
+        </Text>
+        <View
+          className={`rounded-full px-2 py-0.5 ${verified ? 'bg-emerald-50' : 'bg-violet-100'}`}
+        >
+          <Text className={`text-[10px] ${verified ? 'text-emerald-700' : 'text-violet-700'}`}>
+            {verified ? '인증완료' : '미인증'}
           </Text>
         </View>
-
-        <Pressable
-          onPress={() => router.push('/verification/school' as never)}
-          className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white p-5 active:bg-neutral-50"
-        >
-          <View className="flex-1 gap-1">
-            <Text className="text-base font-semibold text-neutral-900">
-              🎓 학교 이메일 인증
-            </Text>
-            <Text className="text-xs text-neutral-500">
-              .ac.kr 도메인 이메일로 학생 인증
-            </Text>
-          </View>
-          {schoolVerified ? (
-            <Text className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
-              인증완료
-            </Text>
-          ) : (
-            <Text className="text-neutral-300">›</Text>
-          )}
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push('/verification/company' as never)}
-          className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white p-5 active:bg-neutral-50"
-        >
-          <View className="flex-1 gap-1">
-            <Text className="text-base font-semibold text-neutral-900">
-              🏢 회사 이메일 인증
-            </Text>
-            <Text className="text-xs text-neutral-500">
-              회사 도메인 이메일로 직장인 인증
-            </Text>
-          </View>
-          {companyVerified ? (
-            <Text className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
-              인증완료
-            </Text>
-          ) : (
-            <Text className="text-neutral-300">›</Text>
-          )}
-        </Pressable>
       </View>
-    </SafeAreaView>
+
+      <TextInput
+        value={email}
+        onChangeText={setEmail}
+        placeholder={placeholder}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        editable={!verified}
+        className="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900"
+      />
+
+      <Pressable
+        onPress={send}
+        disabled={verified || sending}
+        className={`h-11 items-center justify-center rounded-xl ${
+          verified ? 'bg-neutral-200' : 'bg-violet-600 active:opacity-90'
+        }`}
+      >
+        <Text className={`text-sm font-semibold ${verified ? 'text-neutral-400' : 'text-white'}`}>
+          {verified ? '인증 완료됨' : sending ? '발송 중...' : '인증 메일 발송'}
+        </Text>
+      </Pressable>
+
+      <View className="gap-1">
+        {bullets.map((b, i) => (
+          <Text key={i} className="text-[11px] text-neutral-400">
+            • {b}
+          </Text>
+        ))}
+      </View>
+    </View>
   );
 }

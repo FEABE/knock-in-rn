@@ -1,305 +1,195 @@
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Linking, ScrollView, Text, View } from 'react-native';
 
-import {
-  BirthDateField,
-  RegionPicker,
-  SegmentedControl,
-  TextField,
-} from '@/components/ui/headless';
-import {
-  REGIONS,
-  useOnboardingProfile,
-  type Gender,
-  type PreferredGender,
-} from '@/lib/onboarding';
+import { SegmentedControl, TermsAgreement, TextField } from '@/components/ui/headless';
+import { TERMS, useOnboardingProfile, useOnboardingTerms, type Gender } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 
 const GENDER_OPTIONS = [
   { value: 'male', label: '남성' },
   { value: 'female', label: '여성' },
-  { value: 'other', label: '기타' },
 ] as const;
 
-const PREFERRED_GENDER_OPTIONS = [
-  { value: 'same', label: '동성만' },
-  { value: 'any', label: '성별 무관' },
-] as const;
+function formatBirth(date: Date | null): string {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}.${m}.${d}`;
+}
+
+/** "YYYY.MM.DD" / "YYYY-MM-DD" 문자열을 Date 로. 유효하지 않으면 null. */
+function parseBirth(text: string): Date | null {
+  const m = text.match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})$/);
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  const date = new Date(Number(y), Number(mo) - 1, Number(d));
+  if (
+    date.getFullYear() !== Number(y) ||
+    date.getMonth() !== Number(mo) - 1 ||
+    date.getDate() !== Number(d)
+  ) {
+    return null;
+  }
+  return date;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** 와이어프레임의 회색 채움 입력 박스 스타일 */
+const INPUT_CLS = 'rounded-xl bg-neutral-100 px-4 py-3.5 text-base text-neutral-900';
 
 export function ProfileBasicStep() {
   const { profile, patch } = useOnboardingProfile();
+  const { terms, setTerms, isTermsValid } = useOnboardingTerms();
+  const [birthText, setBirthText] = useState(() => formatBirth(profile.birthDate));
+
+  const onBirthChange = (text: string) => {
+    setBirthText(text);
+    patch({ birthDate: parseBirth(text) });
+  };
 
   const canProceed =
     profile.name.trim().length > 0 &&
-    profile.birthDate !== null &&
     profile.gender !== null &&
-    profile.preferredGender !== null &&
-    profile.regions.length > 0 &&
-    profile.bio.trim().length > 0;
+    profile.birthDate !== null &&
+    EMAIL_RE.test(profile.email) &&
+    isTermsValid;
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView contentContainerClassName="gap-7 px-5 py-6">
+      <ScrollView className="flex-1" contentContainerClassName="gap-7 px-5 py-6">
         <View className="gap-1">
-          <Text className="text-2xl font-bold text-neutral-900">
-            기본 정보를 알려주세요
-          </Text>
-          <Text className="text-sm text-neutral-500">
-            룸메이트 매칭에 필요한 기본 정보예요.
-          </Text>
+          <Text className="text-2xl font-bold text-neutral-900">안녕하세요! 👋</Text>
+          <Text className="text-2xl font-bold text-neutral-900">기본 정보를 알려주세요</Text>
+          <Text className="mt-1 text-sm text-neutral-500">정확한 매칭을 위해 필요한 정보예요</Text>
         </View>
 
         <Field label="이름">
           <TextField
             value={profile.name}
             onChangeValue={(v) => patch({ name: v })}
-            placeholder="실명 또는 별명"
-            className="rounded-xl border border-neutral-200 px-4 py-3 text-base"
+            placeholder="이름을 입력해주세요"
+            className={INPUT_CLS}
           />
         </Field>
 
-        <Field label="생년월일">
-          <BirthDateField
-            value={profile.birthDate}
-            onValueChange={(v) => patch({ birthDate: v })}
-          >
-            {({ yearField, monthField, dayField, isValid, isComplete }) => (
-              <View className="gap-1">
-                <View className="flex-row gap-2">
-                  <TextInput
-                    ref={yearField.ref}
-                    value={yearField.value}
-                    onChangeText={yearField.onChangeText}
-                    maxLength={yearField.maxLength}
-                    keyboardType={yearField.keyboardType}
-                    placeholder={yearField.placeholder}
-                    className="flex-[2] rounded-xl border border-neutral-200 px-4 py-3 text-center text-base"
-                  />
-                  <TextInput
-                    ref={monthField.ref}
-                    value={monthField.value}
-                    onChangeText={monthField.onChangeText}
-                    maxLength={monthField.maxLength}
-                    keyboardType={monthField.keyboardType}
-                    placeholder={monthField.placeholder}
-                    className="flex-1 rounded-xl border border-neutral-200 px-4 py-3 text-center text-base"
-                  />
-                  <TextInput
-                    ref={dayField.ref}
-                    value={dayField.value}
-                    onChangeText={dayField.onChangeText}
-                    maxLength={dayField.maxLength}
-                    keyboardType={dayField.keyboardType}
-                    placeholder={dayField.placeholder}
-                    className="flex-1 rounded-xl border border-neutral-200 px-4 py-3 text-center text-base"
-                  />
-                </View>
-                {isComplete && !isValid ? (
-                  <Text className="text-xs text-red-500">
-                    올바른 날짜를 입력해주세요
-                  </Text>
-                ) : null}
-              </View>
-            )}
-          </BirthDateField>
-        </Field>
-
-        <Field label="성별">
-          <SegmentedControl<Gender>
-            options={GENDER_OPTIONS as unknown as { value: Gender; label: string }[]}
-            value={profile.gender}
-            onValueChange={(v) => patch({ gender: v })}
-            className="flex-row gap-2"
-            renderItem={({ option, selected }) => (
-              <View
-                className={`flex-1 items-center rounded-xl border px-4 py-3 ${
-                  selected
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-neutral-200 bg-white'
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium ${
-                    selected ? 'text-blue-600' : 'text-neutral-700'
+        <View className="flex-row gap-3">
+          <View className="flex-1 gap-2">
+            <Text className="text-sm font-semibold text-neutral-800">생년월일</Text>
+            <TextField
+              value={birthText}
+              onChangeValue={onBirthChange}
+              placeholder="YYYY.MM.DD"
+              keyboardType="numbers-and-punctuation"
+              className={INPUT_CLS}
+            />
+          </View>
+          <View className="gap-2">
+            <Text className="text-sm font-semibold text-neutral-800">성별</Text>
+            <SegmentedControl<Gender>
+              options={GENDER_OPTIONS as unknown as { value: Gender; label: string }[]}
+              value={profile.gender}
+              onValueChange={(v) => patch({ gender: v })}
+              className="flex-row gap-2"
+              renderItem={({ option, selected }) => (
+                <View
+                  className={`rounded-full border px-4 py-2.5 ${
+                    selected ? 'border-violet-600 bg-violet-100' : 'border-neutral-300 bg-white'
                   }`}
                 >
-                  {option.label}
-                </Text>
-              </View>
-            )}
-          />
-        </Field>
-
-        <Field
-          label="선호 룸메이트 성별"
-          helper="동성만 선택 시 이성 카드는 노출되지 않아요."
-        >
-          <SegmentedControl<PreferredGender>
-            options={
-              PREFERRED_GENDER_OPTIONS as unknown as {
-                value: PreferredGender;
-                label: string;
-              }[]
-            }
-            value={profile.preferredGender}
-            onValueChange={(v) => patch({ preferredGender: v })}
-            className="flex-row gap-2"
-            renderItem={({ option, selected }) => (
-              <View
-                className={`flex-1 items-center rounded-xl border px-4 py-3 ${
-                  selected
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-neutral-200 bg-white'
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium ${
-                    selected ? 'text-blue-600' : 'text-neutral-700'
-                  }`}
-                >
-                  {option.label}
-                </Text>
-              </View>
-            )}
-          />
-        </Field>
-
-        <Field
-          label="희망 지역"
-          helper="검색하여 거주 희망 지역을 선택하세요. (최대 5개)"
-        >
-          <RegionPicker
-            regions={REGIONS}
-            value={profile.regions}
-            onValueChange={(v) => patch({ regions: v })}
-            max={5}
-          >
-            {({
-              query,
-              setQuery,
-              clearQuery,
-              items,
-              value,
-              remove,
-              remaining,
-            }) => (
-              <View className="gap-3">
-                <View className="flex-row items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2">
-                  <Text className="text-base text-neutral-400">⌕</Text>
-                  <TextField
-                    value={query}
-                    onChangeValue={setQuery}
-                    placeholder="구/동 이름으로 검색"
-                    className="flex-1 text-base"
-                  />
-                  {query.length > 0 ? (
-                    <Text
-                      className="text-xs text-neutral-400"
-                      onPress={clearQuery}
-                    >
-                      지우기
-                    </Text>
-                  ) : null}
-                </View>
-
-                {value.length > 0 ? (
-                  <View className="flex-row flex-wrap gap-2">
-                    {value.map((r) => (
-                      <View
-                        key={r.id}
-                        className="flex-row items-center gap-1 rounded-full bg-blue-50 px-3 py-1.5"
-                      >
-                        <Text className="text-sm text-blue-700">
-                          {r.city} {r.district}
-                        </Text>
-                        <Text
-                          className="text-base text-blue-400"
-                          onPress={() => remove(r.id)}
-                        >
-                          ×
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-
-                {remaining !== null ? (
-                  <Text className="text-xs text-neutral-400">
-                    남은 선택 가능 {remaining}개
+                  <Text
+                    className={
+                      selected ? 'text-sm font-medium text-violet-700' : 'text-sm text-neutral-600'
+                    }
+                  >
+                    {option.label}
                   </Text>
-                ) : null}
-
-                <View className="max-h-64 gap-1 rounded-xl border border-neutral-100">
-                  <ScrollView nestedScrollEnabled>
-                    {items.length === 0 ? (
-                      <View className="px-4 py-6">
-                        <Text className="text-sm text-neutral-400">
-                          일치하는 지역이 없어요
-                        </Text>
-                      </View>
-                    ) : (
-                      items.map((item) => (
-                        <View
-                          key={item.region.id}
-                          className="border-b border-neutral-50 last:border-b-0"
-                          onTouchEnd={item.disabled ? undefined : item.onPress}
-                        >
-                          <View className="flex-row items-center justify-between px-4 py-3">
-                            <Text
-                              className={
-                                item.disabled && !item.selected
-                                  ? 'text-sm text-neutral-300'
-                                  : 'text-sm text-neutral-800'
-                              }
-                            >
-                              {item.region.city} {item.region.district}
-                            </Text>
-                            {item.selected ? (
-                              <Text className="text-sm text-blue-600">✓</Text>
-                            ) : null}
-                          </View>
-                        </View>
-                      ))
-                    )}
-                  </ScrollView>
                 </View>
-              </View>
-            )}
-          </RegionPicker>
-        </Field>
+              )}
+            />
+          </View>
+        </View>
 
-        <Field label="한 줄 소개">
+        <Field label="이메일">
           <TextField
-            value={profile.bio}
-            onChangeValue={(v) => patch({ bio: v })}
-            placeholder="간단한 자기소개를 적어주세요"
-            multiline
-            numberOfLines={3}
-            className="min-h-[80px] rounded-xl border border-neutral-200 px-4 py-3 text-base"
+            value={profile.email}
+            onChangeValue={(v) => patch({ email: v })}
+            placeholder="이메일을 입력해주세요"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            className={INPUT_CLS}
           />
         </Field>
+
+        <View className="gap-3">
+          <Text className="text-sm font-semibold text-neutral-800">약관 동의</Text>
+          <TermsAgreement.Root
+            terms={TERMS}
+            value={terms}
+            onValueChange={setTerms}
+            className="gap-3"
+          >
+            <TermsAgreement.ToggleAll className="flex-row items-center gap-2">
+              {({ checked }) => (
+                <>
+                  <CheckBox checked={checked} circle />
+                  <Text className="text-sm font-medium text-neutral-700">전체 동의</Text>
+                </>
+              )}
+            </TermsAgreement.ToggleAll>
+
+            <View className="h-px bg-neutral-100" />
+
+            {TERMS.map((term) => (
+              <TermsAgreement.Item
+                key={term.key}
+                termKey={term.key}
+                className="flex-row items-center gap-2"
+              >
+                {({ checked, required, label, href }) => (
+                  <>
+                    <CheckBox checked={checked} />
+                    <Text className="flex-1 text-sm text-neutral-500">
+                      [{required ? '필수' : '선택'}] {label}
+                    </Text>
+                    <Text
+                      className="text-base text-neutral-300"
+                      onPress={href ? () => Linking.openURL(href) : undefined}
+                    >
+                      ›
+                    </Text>
+                  </>
+                )}
+              </TermsAgreement.Item>
+            ))}
+          </TermsAgreement.Root>
+        </View>
       </ScrollView>
 
-      <OnboardingFooter canProceed={canProceed} />
+      <OnboardingFooter canProceed={canProceed} primaryLabel="다음" />
     </View>
   );
 }
 
-function Field({
-  label,
-  helper,
-  children,
-}: {
-  label: string;
-  helper?: string;
-  children: React.ReactNode;
-}) {
+function CheckBox({ checked, circle = false }: { checked: boolean; circle?: boolean }) {
+  const shape = circle ? 'rounded-full' : 'rounded';
+  return (
+    <View
+      className={`h-5 w-5 items-center justify-center ${shape} ${
+        checked ? 'bg-violet-600' : 'border border-neutral-300 bg-white'
+      }`}
+    >
+      {checked ? <Text className="text-[11px] font-bold text-white">✓</Text> : null}
+    </View>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View className="gap-2">
       <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      {helper ? (
-        <Text className="text-xs text-neutral-500">{helper}</Text>
-      ) : null}
       {children}
     </View>
   );

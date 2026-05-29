@@ -1,21 +1,20 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MOCK_USERS, useModeration, useSession } from '@/lib/domain';
+import { type ChatRoomItem, useChatRooms } from '@/lib/api';
+import { useSession } from '@/lib/domain';
 
 export default function ChatScreen() {
   const router = useRouter();
   const { session } = useSession();
-  const { isUserBlocked } = useModeration();
+  const { data: rooms, loading, error } = useChatRooms();
 
   if (!session) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <View className="flex-1 items-center justify-center gap-4 p-10">
-          <Text className="text-base text-neutral-500">
-            채팅 기능은 로그인 후 이용 가능해요
-          </Text>
+          <Text className="text-base text-neutral-500">채팅 기능은 로그인 후 이용 가능해요</Text>
         </View>
       </SafeAreaView>
     );
@@ -23,47 +22,87 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="border-b border-neutral-100 px-5 pb-3 pt-2">
-        <Text className="text-xl font-bold text-neutral-900">채팅</Text>
-        <Text className="text-xs text-neutral-400">최대 15개 채팅방</Text>
+      <View className="px-5 pb-3 pt-2">
+        <Text className="text-2xl font-bold text-neutral-900">채팅</Text>
       </View>
 
-      <ScrollView contentContainerClassName="gap-1 p-2">
-        {MOCK_USERS.slice(1, 5)
-          .filter((u) => !isUserBlocked(u.id))
-          .map((u) => (
-          <View
-            key={u.id}
-            onTouchEnd={() => router.push(`/chat/${u.id}` as never)}
-            className="flex-row items-center gap-3 rounded-xl p-3 active:bg-neutral-50"
-          >
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
-              <Text className="font-semibold text-neutral-600">
-                {u.name.charAt(0)}
-              </Text>
-            </View>
-            <View className="flex-1">
-              <View className="flex-row items-center gap-2">
-                <Text className="text-sm font-semibold text-neutral-900">
-                  {u.name}
-                </Text>
-                {u.badges.length > 0 ? (
-                  <Text className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">
-                    인증
-                  </Text>
-                ) : null}
-              </View>
-              <Text
-                numberOfLines={1}
-                className="text-xs text-neutral-500"
-              >
-                채팅이 시작되었어요. 인사를 건네보세요.
-              </Text>
-            </View>
-            <Text className="text-[10px] text-neutral-400">방금</Text>
-          </View>
-        ))}
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center gap-3">
+          <ActivityIndicator color="#7c3aed" />
+          <Text className="text-sm text-neutral-400">채팅방을 불러오는 중...</Text>
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center gap-2 p-10">
+          <Text className="text-sm text-neutral-500">채팅방을 불러오지 못했어요</Text>
+          <Text className="text-xs text-neutral-400">{error}</Text>
+        </View>
+      ) : !rooms || rooms.length === 0 ? (
+        <View className="flex-1 items-center justify-center p-10">
+          <Text className="text-sm text-neutral-400">아직 채팅방이 없어요</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerClassName="p-2">
+          {rooms.map((room, i) => (
+            <ChatRoomRow
+              key={room.chatRoomId}
+              room={room}
+              // 데모: 첫 행은 매칭 제안, 일부는 안읽음 표시
+              proposal={room.isAgree !== 'true'}
+              unread={i === 1 ? 3 : 0}
+              onPress={() => router.push(`/chat/${room.chatRoomId}` as never)}
+            />
+          ))}
+        </ScrollView>
+      )}
     </SafeAreaView>
+  );
+}
+
+function ChatRoomRow({
+  room,
+  proposal,
+  unread,
+  onPress,
+}: {
+  room: ChatRoomItem;
+  proposal: boolean;
+  unread: number;
+  onPress: () => void;
+}) {
+  const preview = proposal
+    ? '룸메이트를 제안했어요 · 궁합 91점'
+    : '채팅이 시작되었어요. 인사를 건네보세요.';
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-row items-center gap-3 rounded-2xl p-3 active:opacity-80 ${
+        proposal ? 'bg-violet-50' : ''
+      }`}
+    >
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-violet-100">
+        <Text className="font-semibold text-violet-700">{room.name.charAt(0)}</Text>
+      </View>
+      <View className="flex-1 gap-0.5">
+        <View className="flex-row items-center gap-2">
+          {proposal ? (
+            <View className="rounded bg-violet-600 px-1.5 py-0.5">
+              <Text className="text-[10px] font-medium text-white">매칭 요청</Text>
+            </View>
+          ) : null}
+          <Text className="text-sm font-semibold text-neutral-900">{room.name}</Text>
+        </View>
+        <Text numberOfLines={1} className="text-xs text-neutral-500">
+          {preview}
+        </Text>
+      </View>
+      <View className="items-end gap-1">
+        <Text className="text-[10px] text-neutral-400">방금</Text>
+        {unread > 0 ? (
+          <View className="h-5 min-w-5 items-center justify-center rounded-full bg-violet-600 px-1">
+            <Text className="text-[10px] font-bold text-white">{unread}</Text>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }

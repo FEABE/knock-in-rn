@@ -1,11 +1,7 @@
 import { Linking, ScrollView, Text, View } from 'react-native';
 
 import { TermsAgreement } from '@/components/ui/headless';
-import {
-  TERMS,
-  useOnboarding,
-  useOnboardingTerms,
-} from '@/lib/onboarding';
+import { TERMS, useOnboarding, useOnboardingTerms } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 
@@ -36,18 +32,12 @@ export function TermsStep() {
               <>
                 <View
                   className={`h-6 w-6 items-center justify-center rounded-full border ${
-                    checked
-                      ? 'border-blue-600 bg-blue-600'
-                      : 'border-neutral-300 bg-white'
+                    checked ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
                   }`}
                 >
-                  {checked ? (
-                    <Text className="text-xs font-bold text-white">✓</Text>
-                  ) : null}
+                  {checked ? <Text className="text-xs font-bold text-white">✓</Text> : null}
                 </View>
-                <Text className="text-base font-semibold text-neutral-900">
-                  전체 동의
-                </Text>
+                <Text className="text-base font-semibold text-neutral-900">전체 동의</Text>
               </>
             )}
           </TermsAgreement.ToggleAll>
@@ -64,20 +54,14 @@ export function TermsStep() {
                 <>
                   <View
                     className={`h-5 w-5 items-center justify-center rounded ${
-                      checked ? 'bg-blue-600' : 'bg-neutral-200'
+                      checked ? 'bg-violet-600' : 'bg-neutral-200'
                     }`}
                   >
-                    {checked ? (
-                      <Text className="text-xs font-bold text-white">✓</Text>
-                    ) : null}
+                    {checked ? <Text className="text-xs font-bold text-white">✓</Text> : null}
                   </View>
                   <View className="flex-1">
                     <Text className="text-sm text-neutral-800">
-                      <Text
-                        className={
-                          required ? 'text-blue-600' : 'text-neutral-400'
-                        }
-                      >
+                      <Text className={required ? 'text-violet-600' : 'text-neutral-400'}>
                         [{required ? '필수' : '선택'}]
                       </Text>{' '}
                       {label}

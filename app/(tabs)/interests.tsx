@@ -3,40 +3,30 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { RoomCard, RoommateCard } from '@/components/domain';
+import { RoomCard, RoommateFindCard } from '@/components/domain';
 import { Tabs } from '@/components/ui/headless';
-import {
-  MOCK_ROOMMATE_CARDS,
-  useModeration,
-  useRoomStore,
-  useSession,
-} from '@/lib/domain';
+import { useRoommateMatchList } from '@/lib/api';
+import { useModeration, useRoomStore, useSession } from '@/lib/domain';
 
 export default function InterestsScreen() {
   const router = useRouter();
   const { session } = useSession();
   const { posts } = useRoomStore();
   const { isPostBlocked, isUserBlocked } = useModeration();
-  const [likedRooms, setLikedRooms] = useState<string[]>([
-    posts[0]?.id,
-    posts[2]?.id,
-  ].filter(Boolean) as string[]);
-  const [likedRoommates, setLikedRoommates] = useState<string[]>([
-    MOCK_ROOMMATE_CARDS[0]?.id,
-  ].filter(Boolean) as string[]);
+  const { data: matchList } = useRoommateMatchList();
+
+  const [likedRooms, setLikedRooms] = useState<string[]>(
+    [posts[0]?.id, posts[2]?.id].filter(Boolean) as string[],
+  );
 
   if (!session) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-        <ScrollView
-          contentContainerClassName="flex-1 items-center justify-center gap-4 p-10"
-        >
-          <Text className="text-base text-neutral-500">
-            관심한 카드를 보려면 로그인해주세요
-          </Text>
+        <ScrollView contentContainerClassName="flex-1 items-center justify-center gap-4 p-10">
+          <Text className="text-base text-neutral-500">관심한 카드를 보려면 로그인해주세요</Text>
           <Pressable
             onPress={() => router.push('/')}
-            className="rounded-full bg-blue-600 px-5 py-3"
+            className="rounded-full bg-violet-600 px-5 py-3"
           >
             <Text className="text-sm font-medium text-white">홈으로</Text>
           </Pressable>
@@ -46,39 +36,36 @@ export default function InterestsScreen() {
   }
 
   const rooms = posts.filter(
-    (p) =>
-      likedRooms.includes(p.id) &&
-      !isPostBlocked(p.id) &&
-      !isUserBlocked(p.author.id),
+    (p) => likedRooms.includes(p.id) && !isPostBlocked(p.id) && !isUserBlocked(p.author.id),
   );
-  const roommates = MOCK_ROOMMATE_CARDS.filter(
-    (c) => likedRoommates.includes(c.id) && !isUserBlocked(c.user.id),
+  const likedMatches = (matchList ?? []).filter(
+    (m) => m.isLike === 'true' && !isUserBlocked(m.userId),
   );
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="border-b border-neutral-100 px-5 pb-3 pt-2">
-        <Text className="text-xl font-bold text-neutral-900">관심</Text>
+      <View className="px-5 pb-3 pt-2">
+        <Text className="text-2xl font-bold text-neutral-900">관심(즐겨찾기)</Text>
       </View>
 
       <Tabs.Root defaultValue="rooms" className="flex-1">
         <Tabs.List className="flex-row gap-1 border-b border-neutral-100 px-5">
           {[
-            { value: 'rooms', label: `방 ${rooms.length}` },
-            { value: 'roommates', label: `룸메이트 ${roommates.length}` },
+            { value: 'rooms', label: '방 게시글' },
+            { value: 'roommates', label: '룸메이트 매칭' },
           ].map((t) => (
-            <Tabs.Trigger key={t.value} value={t.value} className="py-3">
+            <Tabs.Trigger key={t.value} value={t.value} className="flex-1 py-3">
               {({ selected }) => (
                 <View
-                  className={`border-b-2 pb-2 ${
-                    selected ? 'border-blue-600' : 'border-transparent'
+                  className={`items-center border-b-2 pb-2 ${
+                    selected ? 'border-violet-600' : 'border-transparent'
                   }`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-sm font-semibold text-blue-600'
-                        : 'text-sm text-neutral-500'
+                        ? 'text-sm font-semibold text-violet-700'
+                        : 'text-sm text-neutral-400'
                     }
                   >
                     {t.label}
@@ -90,11 +77,14 @@ export default function InterestsScreen() {
         </Tabs.List>
 
         <Tabs.Content value="rooms" className="flex-1">
-          <ScrollView contentContainerClassName="gap-4 p-5">
-            {rooms.length === 0 ? (
-              <Empty label="관심한 방이 없어요" />
-            ) : (
-              rooms.map((post) => (
+          {rooms.length === 0 ? (
+            <Empty
+              title="관심 표시한 방이 없어요"
+              onExplore={() => router.push('/explore' as never)}
+            />
+          ) : (
+            <ScrollView contentContainerClassName="gap-4 p-5">
+              {rooms.map((post) => (
                 <RoomCard
                   key={post.id}
                   post={{ ...post, liked: true }}
@@ -107,44 +97,48 @@ export default function InterestsScreen() {
                     )
                   }
                 />
-              ))
-            )}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          )}
         </Tabs.Content>
 
         <Tabs.Content value="roommates" className="flex-1">
-          <ScrollView contentContainerClassName="gap-4 p-5">
-            {roommates.length === 0 ? (
-              <Empty label="관심한 룸메이트가 없어요" />
-            ) : (
-              roommates.map((c) => (
-                <RoommateCard
-                  key={c.id}
-                  card={{ ...c, liked: true }}
-                  onPress={(card) =>
-                    router.push(`/roommate/${card.id}` as never)
-                  }
-                  onLikeChange={(card, liked) =>
-                    setLikedRoommates((prev) =>
-                      liked
-                        ? Array.from(new Set([...prev, card.id]))
-                        : prev.filter((id) => id !== card.id),
-                    )
-                  }
+          {likedMatches.length === 0 ? (
+            <Empty
+              title="관심 표시한 룸메이트가 없어요"
+              onExplore={() => router.push('/explore' as never)}
+            />
+          ) : (
+            <ScrollView contentContainerClassName="gap-4 p-5">
+              {likedMatches.map((m) => (
+                <RoommateFindCard
+                  key={m.userId}
+                  match={m}
+                  onPress={(match) => router.push(`/roommate/${match.userId}` as never)}
                 />
-              ))
-            )}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          )}
         </Tabs.Content>
       </Tabs.Root>
     </SafeAreaView>
   );
 }
 
-function Empty({ label }: { label: string }) {
+function Empty({ title, onExplore }: { title: string; onExplore: () => void }) {
   return (
-    <View className="rounded-2xl border border-dashed border-neutral-200 p-10">
-      <Text className="text-center text-sm text-neutral-400">{label}</Text>
+    <View className="flex-1 items-center justify-center gap-3 p-10">
+      <Text className="text-4xl text-neutral-300">♡</Text>
+      <Text className="text-base font-semibold text-neutral-800">{title}</Text>
+      <Text className="text-center text-sm text-neutral-400">
+        마음에 드는 방에 하트를 눌러{'\n'}관심 목록에 저장해 보세요
+      </Text>
+      <Pressable
+        onPress={onExplore}
+        className="mt-2 rounded-full border border-violet-600 px-5 py-2.5 active:opacity-80"
+      >
+        <Text className="text-sm font-medium text-violet-700">방 살펴보러 가기</Text>
+      </Pressable>
     </View>
   );
 }

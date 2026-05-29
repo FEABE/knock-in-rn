@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +17,7 @@ import {
   MOCK_SESSION_USER,
   MOCK_USERS,
   useModeration,
+  type UserSummary,
 } from '@/lib/domain';
 
 export default function ChatRoomScreen() {
@@ -29,8 +29,7 @@ export default function ChatRoomScreen() {
   const room = useMemo(() => {
     const existing = MOCK_CHAT_ROOMS.find((r) => r.id === id);
     if (existing) return existing;
-    const peer =
-      MOCK_USERS.find((u) => u.id === id) ?? MOCK_USERS[1];
+    const peer = MOCK_USERS.find((u) => u.id === id) ?? MOCK_USERS[1];
     return {
       id: peer.id,
       peer,
@@ -40,7 +39,7 @@ export default function ChatRoomScreen() {
         {
           id: 'sys',
           authorId: 'system',
-          body: '채팅이 시작되었어요. 인사를 건네보세요.',
+          body: '채팅이 시작되었어요 🎉',
           sentAt: new Date(),
           kind: 'system' as const,
         },
@@ -48,27 +47,14 @@ export default function ChatRoomScreen() {
     };
   }, [id]);
 
-  const peerBlocked = isUserBlocked(room.peer.id);
-  if (peerBlocked) {
+  if (isUserBlocked(room.peer.id)) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-        <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-          <Pressable
-            onPress={() => router.back()}
-            className="h-9 w-9 items-center justify-center"
-          >
-            <Text className="text-2xl text-neutral-700">‹</Text>
-          </Pressable>
-          <Text className="text-base font-semibold text-neutral-900">
-            {room.peer.name}
-          </Text>
-        </View>
+        <ChatHeader peer={room.peer} matched={false} onBack={() => router.back()} />
         <View className="flex-1 items-center justify-center gap-3 p-10">
-          <Text className="text-base text-neutral-500">
-            차단한 사용자에요
-          </Text>
+          <Text className="text-base text-neutral-500">차단한 사용자에요</Text>
           <Text className="text-xs text-neutral-400">
-            메시지 전송이 제한돼요. 차단을 해제하려면 마이페이지에서 가능해요.
+            메시지 전송이 제한돼요. 마이페이지에서 차단 해제할 수 있어요.
           </Text>
         </View>
       </SafeAreaView>
@@ -94,7 +80,7 @@ export default function ChatRoomScreen() {
             send={send}
             matched={matched}
             requestMatch={requestMatch}
-            router={router}
+            onBack={() => router.back()}
           />
         )}
       </ChatRoom>
@@ -102,23 +88,51 @@ export default function ChatRoomScreen() {
   );
 }
 
-type ChatBodyProps = {
-  peer: { id: string; name: string };
-  scrollRef: React.MutableRefObject<ScrollView | null>;
-  messages: {
-    id: string;
-    body: string;
-    mine: boolean;
-    kind?: 'text' | 'system';
-    sentAt: Date;
-  }[];
-  draft: string;
-  setDraft: (next: string) => void;
-  canSend: boolean;
-  send: () => void;
+function ChatHeader({
+  peer,
+  matched,
+  onBack,
+}: {
+  peer: UserSummary;
   matched: boolean;
-  requestMatch: () => void;
-  router: ReturnType<typeof useRouter>;
+  onBack: () => void;
+}) {
+  return (
+    <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
+      <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
+        <Text className="text-2xl text-neutral-700">‹</Text>
+      </Pressable>
+      <View className="h-8 w-8 items-center justify-center rounded-full bg-violet-100">
+        <Text className="text-xs font-semibold text-violet-700">{peer.name.charAt(0)}</Text>
+      </View>
+      <View className="flex-1 flex-row items-center gap-2">
+        <Text className="text-base font-semibold text-neutral-900">{peer.name}</Text>
+        <Text className="text-xs text-neutral-400">
+          {peer.age}세 · {peer.gender === 'female' ? '여성' : '남성'}
+        </Text>
+        {matched ? (
+          <View className="rounded bg-emerald-50 px-1.5 py-0.5">
+            <Text className="text-[10px] text-emerald-700">✓ 룸메이트 확정</Text>
+          </View>
+        ) : (
+          <View className="rounded bg-violet-50 px-1.5 py-0.5">
+            <Text className="text-[10px] text-violet-700">궁합 91점</Text>
+          </View>
+        )}
+      </View>
+      <Pressable className="h-9 w-9 items-center justify-center">
+        <Text className="text-xl text-neutral-400">⋯</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+type ChatMsg = {
+  id: string;
+  body: string;
+  mine: boolean;
+  kind?: 'text' | 'system';
+  sentAt: Date;
 };
 
 function ChatBody({
@@ -131,8 +145,19 @@ function ChatBody({
   send,
   matched,
   requestMatch,
-  router,
-}: ChatBodyProps) {
+  onBack,
+}: {
+  peer: UserSummary;
+  scrollRef: React.MutableRefObject<ScrollView | null>;
+  messages: ChatMsg[];
+  draft: string;
+  setDraft: (next: string) => void;
+  canSend: boolean;
+  send: () => void;
+  matched: boolean;
+  requestMatch: () => void;
+  onBack: () => void;
+}) {
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
   }, [messages.length, scrollRef]);
@@ -142,39 +167,28 @@ function ChatBody({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       className="flex-1"
     >
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-        <Pressable
-          onPress={() => router.back()}
-          className="h-9 w-9 items-center justify-center"
-        >
-          <Text className="text-2xl text-neutral-700">‹</Text>
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-base font-semibold text-neutral-900">
-            {peer.name}
-          </Text>
-          {matched ? (
-            <Text className="text-[10px] text-emerald-600">매칭 성사됨</Text>
-          ) : null}
+      <ChatHeader peer={peer} matched={matched} onBack={onBack} />
+
+      {/* 룸메이트 확정 배너 */}
+      {matched ? (
+        <View className="border-b border-emerald-100 bg-emerald-50 px-4 py-3">
+          <Text className="text-sm font-medium text-emerald-700">✓ 룸메이트가 확정되었어요 🎉</Text>
+          <Text className="mt-0.5 text-xs text-emerald-600">함께하는 새로운 시작을 응원해요.</Text>
         </View>
-        {!matched ? (
+      ) : (
+        <View className="flex-row items-center gap-3 border-b border-violet-100 bg-violet-50 px-4 py-3">
+          <View className="flex-1">
+            <Text className="text-sm font-medium text-violet-700">룸메이트로 확정할까요?</Text>
+            <Text className="text-xs text-violet-500">대화가 잘 됐다면 매칭을 완료해보세요</Text>
+          </View>
           <Pressable
-            onPress={() =>
-              Alert.alert(
-                '매칭 성사',
-                '이 사용자와 룸메이트 매칭을 성사할까요?',
-                [
-                  { text: '취소', style: 'cancel' },
-                  { text: '매칭하기', onPress: requestMatch },
-                ],
-              )
-            }
-            className="rounded-full bg-blue-600 px-4 py-2"
+            onPress={requestMatch}
+            className="rounded-full bg-violet-600 px-4 py-2 active:opacity-90"
           >
-            <Text className="text-xs font-medium text-white">매칭하기</Text>
+            <Text className="text-xs font-semibold text-white">룸메이트 확정하기</Text>
           </Pressable>
-        ) : null}
-      </View>
+        </View>
+      )}
 
       <ScrollView
         ref={scrollRef}
@@ -192,57 +206,58 @@ function ChatBody({
             );
           }
           return (
-            <View
-              key={m.id}
-              className={m.mine ? 'items-end' : 'items-start'}
-            >
-              <View
-                className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-                  m.mine ? 'bg-blue-600' : 'bg-white border border-neutral-200'
-                }`}
-              >
-                <Text
-                  className={
-                    m.mine
-                      ? 'text-sm text-white'
-                      : 'text-sm text-neutral-800'
-                  }
-                >
-                  {m.body}
-                </Text>
+            <View key={m.id} className={m.mine ? 'items-end' : 'items-start'}>
+              <View className="max-w-[80%] flex-row items-end gap-1">
+                {!m.mine ? (
+                  <View className="h-7 w-7 items-center justify-center self-start rounded-full bg-violet-100">
+                    <Text className="text-[10px] font-semibold text-violet-700">
+                      {peer.name.charAt(0)}
+                    </Text>
+                  </View>
+                ) : null}
+                <View className="gap-0.5">
+                  <View
+                    className={`rounded-2xl px-3 py-2 ${
+                      m.mine ? 'bg-violet-600' : 'border border-neutral-200 bg-white'
+                    }`}
+                  >
+                    <Text className={m.mine ? 'text-sm text-white' : 'text-sm text-neutral-800'}>
+                      {m.body}
+                    </Text>
+                  </View>
+                  <Text
+                    className={`text-[10px] text-neutral-400 ${
+                      m.mine ? 'text-right' : 'text-left'
+                    }`}
+                  >
+                    {fmtTime(m.sentAt)}
+                  </Text>
+                </View>
               </View>
-              <Text className="mt-0.5 text-[10px] text-neutral-400">
-                {fmtTime(m.sentAt)}
-              </Text>
             </View>
           );
         })}
       </ScrollView>
 
       <View className="flex-row items-center gap-2 border-t border-neutral-100 bg-white px-3 py-2">
+        <View className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
+          <Text className="text-lg text-neutral-500">＋</Text>
+        </View>
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="메시지를 입력하세요"
+          placeholder="메시지 보내기"
           multiline
           className="max-h-24 min-h-10 flex-1 rounded-2xl bg-neutral-100 px-4 py-2 text-sm"
         />
         <Pressable
           onPress={send}
           disabled={!canSend}
-          className={`h-10 items-center justify-center rounded-full px-4 ${
-            canSend ? 'bg-blue-600' : 'bg-neutral-200'
+          className={`h-10 w-10 items-center justify-center rounded-full ${
+            canSend ? 'bg-violet-600' : 'bg-neutral-200'
           }`}
         >
-          <Text
-            className={
-              canSend
-                ? 'text-sm font-semibold text-white'
-                : 'text-sm font-semibold text-neutral-400'
-            }
-          >
-            전송
-          </Text>
+          <Text className={canSend ? 'text-base text-white' : 'text-base text-neutral-400'}>➤</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -250,5 +265,8 @@ function ChatBody({
 }
 
 function fmtTime(d: Date): string {
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const h = d.getHours();
+  const ampm = h < 12 ? '오전' : '오후';
+  const hh = h % 12 || 12;
+  return `${ampm} ${hh}:${String(d.getMinutes()).padStart(2, '0')}`;
 }

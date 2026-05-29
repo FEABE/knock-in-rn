@@ -41,7 +41,7 @@ export function RoommateCardView({
               {user.age}세 · {genderLabel(user.gender)}
             </Text>
             {user.badges.length > 0 ? (
-              <Text className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-blue-600">
+              <Text className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] text-violet-600">
                 인증 {user.badges.length}
               </Text>
             ) : null}
@@ -67,7 +67,7 @@ export function RoommateCardView({
 
       <View className="flex-row flex-wrap gap-2">
         {scoreLabel ? (
-          <Text className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white">
+          <Text className="rounded-full bg-violet-600 px-3 py-1 text-xs font-medium text-white">
             {scoreLabel}
           </Text>
         ) : null}

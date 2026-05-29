@@ -30,20 +30,26 @@ export type UserSummary = {
 
 export type RoomPostStatus = 'open' | 'matched' | 'closed';
 
+export type RoomOption = 'parking' | 'full-option' | 'elevator' | 'pet';
+
 export type RoomPost = {
   id: string;
   title: string;
   thumbnailUrl?: string;
+  photoUrls?: string[];
   deposit: number;
   monthlyRent: number;
+  maintenanceFee?: number;
   roomType: RoomType;
   region: Region;
   views: number;
   likes: number;
   createdAt: Date;
+  moveInDate?: Date;
   status: RoomPostStatus;
   author: UserSummary;
   description: string;
+  options?: RoomOption[];
   liked?: boolean;
 };
 

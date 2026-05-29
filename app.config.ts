@@ -13,8 +13,10 @@ const config: ExpoConfig = {
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.anonymous.knockinrn',
   },
   android: {
+    package: 'com.anonymous.knockinrn',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
