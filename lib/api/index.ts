@@ -27,4 +27,3 @@ export * from './chat';
 export * from './verification';
 export * from './roommate';
 export * from './notification';
-export * from './bo';

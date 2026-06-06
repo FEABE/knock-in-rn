@@ -1,6 +1,6 @@
 import type { ExpoConfig } from 'expo/config';
 
-const kakaoNativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY ?? '';
+
 
 const config: ExpoConfig = {
   name: 'knock-in-rn',
@@ -13,10 +13,10 @@ const config: ExpoConfig = {
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.anonymous.knockinrn',
+    bundleIdentifier: 'com.knockin',
   },
   android: {
-    package: 'com.anonymous.knockinrn',
+    package: 'com.knockin',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -42,9 +42,24 @@ const config: ExpoConfig = {
         dark: { backgroundColor: '#000000' },
       },
     ],
+
     [
       '@react-native-seoul/kakao-login',
-      { kakaoAppKey: kakaoNativeAppKey },
+      {
+        kakaoAppKey: process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY,
+      },
+    ],
+    [
+      'expo-build-properties',
+      {
+        ios: {
+          useFrameworks: 'static',
+        },
+        android: {
+          kotlinVersion: '2.1.10',
+          extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'],
+        },
+      },
     ],
   ],
   experiments: {

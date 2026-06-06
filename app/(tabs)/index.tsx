@@ -4,7 +4,10 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileCard, RoomCard, RoommateCard } from '@/components/domain';
+import { Button } from '@/components/ui/button';
 import { Tabs } from '@/components/ui/headless';
+import { PageTabs } from '@/components/ui/page-tabs';
+import { Section } from '@/components/ui/section';
 import {
   MOCK_ROOMMATE_CARDS,
   useModeration,
@@ -36,56 +39,33 @@ export default function HomeScreen() {
         <Text className="text-xl font-bold text-violet-600">노크인</Text>
         <View className="flex-row gap-2">
           {!session ? (
-            <Pressable
-              onPress={() => signIn()}
-              className="rounded-full bg-yellow-300 px-4 py-2 active:opacity-80"
-            >
-              <Text className="text-xs font-medium text-neutral-900">
-                카카오 로그인
-              </Text>
-            </Pressable>
+            <Button 
+              label="카카오 로그인" 
+              variant="secondary" 
+              size="sm" 
+              onPress={() => signIn()} 
+              className="rounded-full" 
+            />
           ) : (
-            <Pressable
-              onPress={() => router.push('/onboarding' as never)}
-              className="rounded-full bg-violet-600 px-4 py-2 active:opacity-80"
-            >
-              <Text className="text-xs font-medium text-white">
-                내 방 등록
-              </Text>
-            </Pressable>
+            <Button 
+              label="내 방 등록" 
+              variant="primary" 
+              size="sm" 
+              onPress={() => router.push('/onboarding' as never)} 
+              className="rounded-full" 
+            />
           )}
         </View>
       </View>
 
-      <Tabs.Root defaultValue="all" className="flex-1">
-        <Tabs.List className="flex-row gap-1 border-b border-neutral-100 px-5">
-          {[
-            { value: 'all', label: '전체' },
-            { value: 'rooms', label: '방 살피기' },
-            { value: 'roommates', label: '룸메이트 매칭' },
-          ].map((t) => (
-            <Tabs.Trigger key={t.value} value={t.value} className="py-3">
-              {({ selected }) => (
-                <View
-                  className={`border-b-2 pb-2 ${
-                    selected ? 'border-violet-600' : 'border-transparent'
-                  }`}
-                >
-                  <Text
-                    className={
-                      selected
-                        ? 'text-sm font-semibold text-violet-600'
-                        : 'text-sm text-neutral-500'
-                    }
-                  >
-                    {t.label}
-                  </Text>
-                </View>
-              )}
-            </Tabs.Trigger>
-          ))}
-        </Tabs.List>
-
+      <PageTabs
+        defaultValue="all"
+        tabs={[
+          { value: 'all', label: '전체' },
+          { value: 'rooms', label: '방 살피기' },
+          { value: 'roommates', label: '룸메이트 매칭' },
+        ]}
+      >
         <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5">
           {session ? (
             <ProfileCard
@@ -150,22 +130,7 @@ export default function HomeScreen() {
             ))}
           </Tabs.Content>
         </ScrollView>
-      </Tabs.Root>
+      </PageTabs>
     </SafeAreaView>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View className="gap-3">
-      <Text className="text-base font-bold text-neutral-900">{title}</Text>
-      <View className="gap-3">{children}</View>
-    </View>
   );
 }

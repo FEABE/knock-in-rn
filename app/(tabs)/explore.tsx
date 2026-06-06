@@ -76,6 +76,8 @@ export default function ExploreScreen() {
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_FILTER);
   const [openSheet, setOpenSheet] = useState<FilterKey | null>(null);
 
+  const goOnboarding = () => router.push('/onboarding' as never);
+
   const visiblePosts = useMemo(() => {
     const safe = posts.filter((p) => !isPostBlocked(p.id) && !isUserBlocked(p.author.id));
     return sortPosts(applyFilter(safe, filter), sort);
@@ -89,7 +91,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <Header onSearch={() => router.push('/room/search' as never)} />
+      <Header onSearch={() => router.push('/room/search' as never)} onOnboarding={goOnboarding} />
 
       <Tabs.Root defaultValue="rooms" className="flex-1">
         <Tabs.List className="flex-row gap-1 border-b border-neutral-100 px-5">
@@ -201,11 +203,18 @@ export default function ExploreScreen() {
   );
 }
 
-function Header({ onSearch }: { onSearch: () => void }) {
+function Header({ onSearch, onOnboarding }: { onSearch: () => void; onOnboarding: () => void }) {
   return (
     <View className="flex-row items-center justify-between px-5 py-3">
       <Text className="text-2xl font-bold text-neutral-900">탐색</Text>
       <View className="flex-row items-center gap-3">
+        <Pressable
+          onPress={onOnboarding}
+          hitSlop={6}
+          className="items-center justify-center rounded-full bg-violet-600 px-3 py-1.5 active:opacity-90"
+        >
+          <Text className="text-xs font-semibold text-white">온보딩</Text>
+        </Pressable>
         <Pressable onPress={onSearch} hitSlop={6} className="h-9 w-9 items-center justify-center">
           <Text className="text-xl text-neutral-700">⌕</Text>
         </Pressable>

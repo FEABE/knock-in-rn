@@ -86,9 +86,24 @@ function buildUrl(path: string, query?: RequestOptions['query']) {
   return qs ? `${url}?${qs}` : url;
 }
 
+import axios, { type AxiosRequestConfig } from 'axios';
+
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+apiClient.interceptors.request.use((config) => {
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return config;
+});
+
 /**
  * 실제 네트워크 요청 (USE_MOCK=false 일 때 사용).
- * 서버가 이미 `{ status, data, error }` 엔벨로프를 내려준다고 가정한다.
  */
 export async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -96,19 +111,31 @@ export async function request<T>(
   options: RequestOptions = {},
 ): Promise<ApiResponse<T>> {
   const { query, body, auth = true } = options;
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+
+  const config: AxiosRequestConfig = {
+    method,
+    url: path,
+    params: query,
+    data: body,
   };
-  if (auth && accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
+
+  if (!auth) {
+    // Override interceptor if auth=false is explicitly set
+    config.headers = { Authorization: '' };
   }
 
-  const res = await fetch(buildUrl(path, query), {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  const json = (await res.json()) as ApiResponse<T>;
-  return json;
+  try {
+    const res = await apiClient.request<ApiResponse<T>>(config);
+    return res.data;
+  } catch (error: any) {
+    // Axios wraps errors in error.response
+    if (error.response?.data) {
+      return error.response.data as ApiResponse<T>;
+    }
+    return {
+      status: error.response?.status || 500,
+      data: null as any,
+      error: { code: 'NETWORK_ERROR', message: error.message },
+    };
+  }
 }
