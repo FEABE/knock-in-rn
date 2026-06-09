@@ -99,8 +99,32 @@ apiClient.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
+  if (__DEV__) {
+    const url = `${config.baseURL ?? ''}${config.url ?? ''}`;
+    console.log(`[API →] ${config.method?.toUpperCase()} ${url}`, config.data ?? '');
+  }
   return config;
 });
+
+// 개발 중 응답/에러를 터미널에서 바로 보기 위한 로깅.
+apiClient.interceptors.response.use(
+  (res) => {
+    if (__DEV__) {
+      console.log(`[API ←] ${res.status} ${res.config.url}`, res.data);
+    }
+    return res;
+  },
+  (error) => {
+    if (__DEV__) {
+      const status = error.response?.status ?? 'NETWORK';
+      console.log(
+        `[API ✗] ${status} ${error.config?.url ?? ''}`,
+        error.response?.data ?? error.message,
+      );
+    }
+    return Promise.reject(error);
+  },
+);
 
 /**
  * 실제 네트워크 요청 (USE_MOCK=false 일 때 사용).

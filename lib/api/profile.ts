@@ -17,11 +17,13 @@ import type { ConditionItem, LifestyleItem, ProfileRegionItem, RoomProfileItem }
 /** 기본정보1 (온보딩 1단계). */
 export type ProfileBasicRequest = {
   name: string;
+  /** "YYYY-MM-DD" (OpenAPI string($date)) */
   birth: string;
+  /** "MALE" | "FEMALE" (OpenAPI enum) */
   gender: string;
   email: string;
-  /** 약관 termId 목록. */
-  terms: string[];
+  /** 동의한 약관의 정수 ID 목록 (OpenAPI array<integer>). */
+  terms: number[];
 };
 
 /** 기본정보2 (온보딩 2단계) — 생활패턴. */

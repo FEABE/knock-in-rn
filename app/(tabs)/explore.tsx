@@ -13,7 +13,7 @@ import {
 } from '@/components/room/filters';
 import { SegmentedControl, Tabs } from '@/components/ui/headless';
 import { useRoommateMatchList } from '@/lib/api';
-import { useModeration, useRoomStore, type RoomPost } from '@/lib/domain';
+import { useModeration, useRoomStore, useSession, type RoomPost } from '@/lib/domain';
 import type { Region, RoomType } from '@/lib/onboarding';
 
 type ExploreSort = 'latest' | 'views';
@@ -71,6 +71,9 @@ export default function ExploreScreen() {
   const router = useRouter();
   const { posts } = useRoomStore();
   const { isPostBlocked, isUserBlocked } = useModeration();
+  const { session } = useSession();
+  // 로그인 완료(액세스토큰 발급 + 세션 생성) 시 온보딩 진입 버튼 숨김.
+  const isLoggedIn = session !== null;
 
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_FILTER);
@@ -91,7 +94,11 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <Header onSearch={() => router.push('/room/search' as never)} onOnboarding={goOnboarding} />
+      <Header
+        onSearch={() => router.push('/room/search' as never)}
+        onOnboarding={goOnboarding}
+        showOnboarding={!isLoggedIn}
+      />
 
       <Tabs.Root defaultValue="rooms" className="flex-1">
         <Tabs.List className="flex-row gap-1 border-b border-neutral-100 px-5">
@@ -203,18 +210,28 @@ export default function ExploreScreen() {
   );
 }
 
-function Header({ onSearch, onOnboarding }: { onSearch: () => void; onOnboarding: () => void }) {
+function Header({
+  onSearch,
+  onOnboarding,
+  showOnboarding,
+}: {
+  onSearch: () => void;
+  onOnboarding: () => void;
+  showOnboarding: boolean;
+}) {
   return (
     <View className="flex-row items-center justify-between px-5 py-3">
       <Text className="text-2xl font-bold text-neutral-900">탐색</Text>
       <View className="flex-row items-center gap-3">
-        <Pressable
-          onPress={onOnboarding}
-          hitSlop={6}
-          className="items-center justify-center rounded-full bg-violet-600 px-3 py-1.5 active:opacity-90"
-        >
-          <Text className="text-xs font-semibold text-white">온보딩</Text>
-        </Pressable>
+        {showOnboarding ? (
+          <Pressable
+            onPress={onOnboarding}
+            hitSlop={6}
+            className="items-center justify-center rounded-full bg-violet-600 px-3 py-1.5 active:opacity-90"
+          >
+            <Text className="text-xs font-semibold text-white">온보딩</Text>
+          </Pressable>
+        ) : null}
         <Pressable onPress={onSearch} hitSlop={6} className="h-9 w-9 items-center justify-center">
           <Text className="text-xl text-neutral-700">⌕</Text>
         </Pressable>

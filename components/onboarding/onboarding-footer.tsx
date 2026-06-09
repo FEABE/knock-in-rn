@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/headless';
 import { useOnboarding } from '@/lib/onboarding';
@@ -10,6 +10,8 @@ export type OnboardingFooterProps = {
   helper?: string;
   /** "이전으로" 보조 버튼 표시 (2·3 스텝). */
   showBack?: boolean;
+  /** 제출(API 호출) 진행 중. 버튼 비활성 + 스피너 표시. */
+  loading?: boolean;
 };
 
 export function OnboardingFooter({
@@ -18,10 +20,12 @@ export function OnboardingFooter({
   onPress,
   helper,
   showBack = false,
+  loading = false,
 }: OnboardingFooterProps) {
   const { isLast, goNext, goPrev } = useOnboarding();
   const handlePress = onPress ?? goNext;
   const label = primaryLabel ?? (isLast ? '완료' : '다음으로');
+  const disabled = !canProceed || loading;
 
   return (
     <View className="gap-2 border-t border-neutral-100 bg-white px-5 pb-6 pt-4">
@@ -36,17 +40,21 @@ export function OnboardingFooter({
           </Button>
         ) : null}
         <Button
-          disabled={!canProceed}
+          disabled={disabled}
           onPress={handlePress}
           className={`h-12 items-center justify-center rounded-xl ${
             showBack ? 'flex-1' : 'w-full'
           } ${canProceed ? 'bg-violet-600 active:bg-violet-700' : 'bg-neutral-300'}`}
         >
-          <Text
-            className={`text-base font-semibold ${canProceed ? 'text-white' : 'text-neutral-500'}`}
-          >
-            {label}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text
+              className={`text-base font-semibold ${canProceed ? 'text-white' : 'text-neutral-500'}`}
+            >
+              {label}
+            </Text>
+          )}
         </Button>
       </View>
     </View>

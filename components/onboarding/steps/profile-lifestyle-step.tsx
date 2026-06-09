@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
+import { saveProfileLifestyle, type ProfileLifestyleRequest } from '@/lib/api';
 import { SegmentedControl } from '@/components/ui/headless';
 import {
+  ONBOARDING_WRITE_ENABLED,
+  useOnboarding,
   useOnboardingProfile,
   type LifestyleScaleKey,
   type PetPolicy,
@@ -76,14 +80,59 @@ const PET_OPTIONS = [
 ] as const;
 
 export function ProfileLifestyleStep() {
+  const { goNext, isStepSaved, markStepSaved } = useOnboarding();
   const { profile, patch } = useOnboardingProfile();
   const scales = profile.scales;
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const setScale = (key: LifestyleScaleKey, value: number) =>
     patch({ scales: { ...scales, [key]: value } });
 
   const allScalesSet = SCALES.every((s) => scales[s.key] !== undefined);
   const canProceed = allScalesSet && !!profile.lifestyle.smoking && !!profile.lifestyle.pet;
+
+  /** "다음" → 생활패턴 저장(POST /users/me/profile/lifestyle) 후 다음 스텝으로. */
+  const handleNext = async () => {
+    // 외부 UT: 저장 비활성화 — API 없이 다음 스텝으로.
+    if (!ONBOARDING_WRITE_ENABLED) {
+      goNext();
+      return;
+    }
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const body: ProfileLifestyleRequest = {
+        // ⚠️ 매핑 미확정: 백엔드 lifestyles 원소 형식 확인 필요
+        //    (GET /meta/lifestyle-patterns 의 id/detail 과 맞춰야 함).
+        //    현재는 "key-값" 문자열로 임시 인코딩.
+        lifestyles: [
+          ...Object.entries(scales).map(([k, v]) => `${k}-${v}`),
+          `smoking-${profile.lifestyle.smoking}`,
+          `pet-${profile.lifestyle.pet}`,
+        ],
+      };
+
+      const signature = JSON.stringify(body);
+      if (isStepSaved('profile-lifestyle', signature)) {
+        goNext();
+        return;
+      }
+
+      const res = await saveProfileLifestyle(body);
+      if (res.status !== 200 || res.error) {
+        setSubmitError(res.error?.message ?? `저장에 실패했어요 (status ${res.status})`);
+        return;
+      }
+      markStepSaved('profile-lifestyle', signature);
+      goNext();
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : '네트워크 오류가 발생했어요.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -137,7 +186,19 @@ export function ProfileLifestyleStep() {
         </Pill>
       </ScrollView>
 
-      <OnboardingFooter canProceed={canProceed} primaryLabel="다음" showBack />
+      {submitError ? (
+        <View className="px-5 pb-1">
+          <Text className="text-sm text-red-500">{submitError}</Text>
+        </View>
+      ) : null}
+
+      <OnboardingFooter
+        canProceed={canProceed}
+        primaryLabel="다음"
+        showBack
+        loading={submitting}
+        onPress={handleNext}
+      />
     </View>
   );
 }

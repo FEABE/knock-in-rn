@@ -1,4 +1,18 @@
-import type { ImportantCondition, Region, RoomType, Term } from './types';
+import type { ImportantCondition, Region, RoomType, Term, TermKey } from './types';
+
+/**
+ * 로컬 약관 key → 백엔드 약관 정수 ID 매핑.
+ *
+ * ⚠️ 백엔드에 약관 목록 조회 API(GET /terms)가 없어, 와이어프레임 노출 순서 기준
+ *    1..N 으로 임시 매핑했다. 백엔드의 실제 termId 가 확인되면 이 값만 교체할 것.
+ *    saveBasicInfo / saveProfileAll 의 terms(array<integer>) 에 사용된다.
+ */
+export const TERM_BACKEND_IDS: Record<TermKey, number> = {
+  'terms-of-service': 1,
+  'privacy-policy': 2,
+  'marketing-push': 3,
+  location: 4,
+};
 
 export const TERMS: Term[] = [
   {

@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { Linking, ScrollView, Text, View } from 'react-native';
 
+import { saveProfileBasic, type ProfileBasicRequest } from '@/lib/api';
 import { SegmentedControl, TermsAgreement, TextField } from '@/components/ui/headless';
-import { TERMS, useOnboardingProfile, useOnboardingTerms, type Gender } from '@/lib/onboarding';
+import {
+  ONBOARDING_WRITE_ENABLED,
+  TERMS,
+  useOnboarding,
+  useOnboardingProfile,
+  useOnboardingTerms,
+  type Gender,
+} from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 
@@ -35,19 +43,41 @@ function parseBirth(text: string): Date | null {
   return date;
 }
 
+/** API 전송용 생년월일 포맷 "YYYY-MM-DD". */
+function toBirthApi(date: Date | null): string {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** 입력 중 숫자만 받아 "YYYY.MM.DD" 로 자동 포맷한다. (8자리까지) */
+function formatBirthInput(text: string): string {
+  const digits = text.replace(/\D/g, '').slice(0, 8);
+  let out = digits.slice(0, 4);
+  if (digits.length > 4) out += '.' + digits.slice(4, 6);
+  if (digits.length > 6) out += '.' + digits.slice(6, 8);
+  return out;
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** 와이어프레임의 회색 채움 입력 박스 스타일 */
 const INPUT_CLS = 'rounded-xl bg-neutral-100 px-4 py-3.5 text-base text-neutral-900';
 
 export function ProfileBasicStep() {
+  const { goNext, isStepSaved, markStepSaved } = useOnboarding();
   const { profile, patch } = useOnboardingProfile();
   const { terms, setTerms, isTermsValid } = useOnboardingTerms();
   const [birthText, setBirthText] = useState(() => formatBirth(profile.birthDate));
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const onBirthChange = (text: string) => {
-    setBirthText(text);
-    patch({ birthDate: parseBirth(text) });
+    const formatted = formatBirthInput(text);
+    setBirthText(formatted);
+    patch({ birthDate: parseBirth(formatted) });
   };
 
   const canProceed =
@@ -56,6 +86,50 @@ export function ProfileBasicStep() {
     profile.birthDate !== null &&
     EMAIL_RE.test(profile.email) &&
     isTermsValid;
+
+  /** "다음" → 기본정보1 저장(POST /users/me/profile/basic) 후 다음 스텝으로. */
+  const handleNext = async () => {
+    // 외부 UT: 저장 비활성화 — API 없이 다음 스텝으로.
+    if (!ONBOARDING_WRITE_ENABLED) {
+      goNext();
+      return;
+    }
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const body: ProfileBasicRequest = {
+        name: profile.name.trim(),
+        birth: toBirthApi(profile.birthDate),
+        // 'male' → 'MALE' (백엔드 enum: MALE/FEMALE)
+        gender: (profile.gender ?? '').toUpperCase(),
+        email: profile.email.trim(),
+        // ⚠️ 백엔드 약관 테이블이 비어있음(GET /terms → terms:null).
+        // 유효한 약관 ID가 없어 임시로 빈 배열 전송. 백엔드가 약관을 시드하면
+        // 동의한 약관 ID 배열로 복구할 것.
+        terms: [],
+      };
+
+      // 같은 데이터로 이미 저장했다면(뒤로 갔다 다시 옴) 재전송하지 않고 넘어간다.
+      const signature = JSON.stringify(body);
+      if (isStepSaved('profile-basic', signature)) {
+        goNext();
+        return;
+      }
+
+      const res = await saveProfileBasic(body);
+      if (res.status !== 200 || res.error) {
+        setSubmitError(res.error?.message ?? `저장에 실패했어요 (status ${res.status})`);
+        return;
+      }
+      markStepSaved('profile-basic', signature);
+      goNext();
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : '네트워크 오류가 발생했어요.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -168,7 +242,18 @@ export function ProfileBasicStep() {
         </View>
       </ScrollView>
 
-      <OnboardingFooter canProceed={canProceed} primaryLabel="다음" />
+      {submitError ? (
+        <View className="px-5 pb-1">
+          <Text className="text-sm text-red-500">{submitError}</Text>
+        </View>
+      ) : null}
+
+      <OnboardingFooter
+        canProceed={canProceed}
+        primaryLabel="다음"
+        loading={submitting}
+        onPress={handleNext}
+      />
     </View>
   );
 }

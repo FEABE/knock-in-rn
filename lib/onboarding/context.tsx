@@ -65,6 +65,11 @@ export type OnboardingContextValue = {
 
   isTermsValid: boolean;
   isProfileComplete: boolean;
+
+  /** 해당 스텝이 주어진 데이터 서명으로 이미 저장됐는지. (중복 API 호출 방지) */
+  isStepSaved: (step: OnboardingStep, signature: string) => boolean;
+  /** 스텝 저장 성공 시 데이터 서명을 기록한다. */
+  markStepSaved: (step: OnboardingStep, signature: string) => void;
 };
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
@@ -89,6 +94,19 @@ export function OnboardingProvider({
     preferences: initialValues?.preferences ?? emptyPreferenceConditions(),
   }));
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(initialStep);
+  /** 스텝별 마지막 저장 성공 시점의 데이터 서명. 동일하면 재전송하지 않는다. */
+  const [savedSignatures, setSavedSignatures] = useState<Partial<Record<OnboardingStep, string>>>(
+    {},
+  );
+
+  const isStepSaved = useCallback(
+    (step: OnboardingStep, signature: string) => savedSignatures[step] === signature,
+    [savedSignatures],
+  );
+
+  const markStepSaved = useCallback((step: OnboardingStep, signature: string) => {
+    setSavedSignatures((prev) => ({ ...prev, [step]: signature }));
+  }, []);
 
   const setTerms = useCallback((next: TermsAgreement) => {
     setValues((prev) => ({ ...prev, terms: next }));
@@ -135,6 +153,7 @@ export function OnboardingProvider({
       preferences: emptyPreferenceConditions(),
     });
     setCurrentStep('profile-basic');
+    setSavedSignatures({});
   }, []);
 
   const currentIndex = ONBOARDING_STEPS.indexOf(currentStep);
@@ -182,6 +201,8 @@ export function OnboardingProvider({
       isLast: currentIndex === ONBOARDING_STEPS.length - 1,
       isTermsValid,
       isProfileComplete,
+      isStepSaved,
+      markStepSaved,
     }),
     [
       values,
@@ -197,6 +218,8 @@ export function OnboardingProvider({
       goPrev,
       isTermsValid,
       isProfileComplete,
+      isStepSaved,
+      markStepSaved,
     ],
   );
 
