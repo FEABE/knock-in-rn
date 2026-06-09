@@ -2,12 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
-import {
-  REGIONS,
-  ROOM_TYPES,
-  type Region,
-  type RoomType,
-} from '@/lib/onboarding';
+import { REGIONS, ROOM_TYPES, type Region, type RoomType } from '@/lib/onboarding';
 import type { RoomOption, UserSummary } from '@/lib/domain';
 
 export type RoomFormValues = {
@@ -114,8 +109,7 @@ export function RoomPostForm({
     ...initial,
   });
 
-  const patch = (next: Partial<RoomFormDraft>) =>
-    setDraft((prev) => ({ ...prev, ...next }));
+  const patch = (next: Partial<RoomFormDraft>) => setDraft((prev) => ({ ...prev, ...next }));
 
   const canSubmit = isRoomFormDraftValid(draft);
   const photoCount = 3; // placeholder count for visual
@@ -155,10 +149,7 @@ export function RoomPostForm({
 
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <Field
-                label="보증금"
-                badge={mode === 'edit' ? '프로필 값' : undefined}
-              >
+              <Field label="보증금" badge={mode === 'edit' ? '프로필 값' : undefined}>
                 <NumberInput
                   value={draft.deposit}
                   onChange={(v) => patch({ deposit: v })}
@@ -168,10 +159,7 @@ export function RoomPostForm({
               </Field>
             </View>
             <View className="flex-1">
-              <Field
-                label="월세"
-                badge={mode === 'edit' ? '프로필 값' : undefined}
-              >
+              <Field label="월세" badge={mode === 'edit' ? '프로필 값' : undefined}>
                 <NumberInput
                   value={draft.rent}
                   onChange={(v) => patch({ rent: v })}
@@ -182,7 +170,7 @@ export function RoomPostForm({
             </View>
           </View>
 
-          <Field label="관리비 (만원)">
+          <Field label="관리비">
             <NumberInput
               value={draft.maintenance}
               onChange={(v) => patch({ maintenance: v })}
@@ -191,10 +179,7 @@ export function RoomPostForm({
           </Field>
         </Section>
 
-        <Section
-          title="룸 형태"
-          badge={mode === 'edit' ? '프로필 값' : undefined}
-        >
+        <Section title="룸 형태" badge={mode === 'edit' ? '프로필 값' : undefined}>
           <View className="flex-row flex-wrap gap-2">
             {ROOM_TYPES.map((rt) => {
               const selected = draft.roomType === rt.value;
@@ -203,16 +188,12 @@ export function RoomPostForm({
                   key={rt.value}
                   onPress={() => patch({ roomType: rt.value })}
                   className={`rounded-full border px-4 py-2 active:opacity-80 ${
-                    selected
-                      ? 'border-violet-600 bg-violet-50'
-                      : 'border-neutral-200 bg-white'
+                    selected ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
                   }`}
                 >
                   <Text
                     className={
-                      selected
-                        ? 'text-sm font-medium text-violet-700'
-                        : 'text-sm text-neutral-700'
+                      selected ? 'text-sm font-medium text-violet-700' : 'text-sm text-neutral-700'
                     }
                   >
                     {rt.label}
@@ -223,10 +204,7 @@ export function RoomPostForm({
           </View>
         </Section>
 
-        <Section
-          title="방 위치"
-          badge={mode === 'edit' ? '프로필 값' : undefined}
-        >
+        <Section title="방 위치" badge={mode === 'edit' ? '프로필 값' : undefined}>
           <RegionTable
             selected={draft.regions[0] ?? null}
             onSelect={(r) => patch({ regions: [r] })}
@@ -261,16 +239,12 @@ export function RoomPostForm({
                     });
                   }}
                   className={`rounded-full border px-3 py-1.5 active:opacity-80 ${
-                    selected
-                      ? 'border-violet-600 bg-violet-50'
-                      : 'border-neutral-200 bg-white'
+                    selected ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
                   }`}
                 >
                   <Text
                     className={
-                      selected
-                        ? 'text-xs font-medium text-violet-700'
-                        : 'text-xs text-neutral-700'
+                      selected ? 'text-xs font-medium text-violet-700' : 'text-xs text-neutral-700'
                     }
                   >
                     {o.label}
@@ -297,9 +271,7 @@ export function RoomPostForm({
 
         <Section title="생활패턴 · 선호 룸메이트 조건">
           <View className="flex-row items-center justify-between rounded-xl bg-violet-50/60 px-4 py-2.5">
-            <Text className="text-xs text-violet-700">
-              프로필에서 자동으로 불러왔어요
-            </Text>
+            <Text className="text-xs text-violet-700">프로필에서 자동으로 불러왔어요</Text>
             <Pressable hitSlop={4}>
               <Text className="text-xs text-violet-700">마이페이지에서 수정 →</Text>
             </Pressable>
@@ -374,18 +346,12 @@ export function RoomPostForm({
           >
             <View
               className={`h-5 w-5 items-center justify-center rounded ${
-                draft.showProfileInfo
-                  ? 'bg-violet-600'
-                  : 'border border-neutral-300 bg-white'
+                draft.showProfileInfo ? 'bg-violet-600' : 'border border-neutral-300 bg-white'
               }`}
             >
-              {draft.showProfileInfo ? (
-                <Text className="text-xs text-white">✓</Text>
-              ) : null}
+              {draft.showProfileInfo ? <Text className="text-xs text-white">✓</Text> : null}
             </View>
-            <Text className="text-xs text-neutral-700">
-              게시글에 함께 표시해요
-            </Text>
+            <Text className="text-xs text-neutral-700">게시글에 함께 표시해요</Text>
           </Pressable>
         </Section>
       </ScrollView>
@@ -556,11 +522,7 @@ function RegionTable({
           </View>
           <View className="flex-1 gap-1 py-2">
             {row.districts.map((r) => (
-              <Pressable
-                key={r.id}
-                onPress={() => onSelect(r)}
-                className="items-center py-0.5"
-              >
+              <Pressable key={r.id} onPress={() => onSelect(r)} className="items-center py-0.5">
                 <Text
                   className={
                     selected?.id === r.id

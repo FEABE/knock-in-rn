@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl } from '@/components/ui/headless';
 import { savePreferenceAll } from '@/lib/api';
+import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
 
 const PRIORITIES = [
   { id: 'sleep', name: '취침 시간', desc: '비슷한 수면 패턴', icon: '🌙' },
@@ -20,6 +21,13 @@ const PRIORITIES = [
 
 export default function PreferencesScreen() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  // 온보딩 완료 직후 진입이면 "나중에/완료" 시 탐색으로, 마이페이지 진입이면 그대로 복귀.
+  const fromOnboarding = from === 'onboarding';
+  const exit = () => {
+    if (fromOnboarding) router.replace('/explore' as never);
+    else router.back();
+  };
   const [step, setStep] = useState<0 | 1 | 2>(0);
 
   const [gender, setGender] = useState<string | null>('same');
@@ -36,24 +44,25 @@ export default function PreferencesScreen() {
     );
 
   const save = async () => {
-    const res = await savePreferenceAll({
-      lifestyles: [
-        `gender-${gender}`,
-        `personality-${personality}`,
-        `privacy-${privacy}`,
-        `visitor-${visitor}`,
-        `smoking-${smoking}`,
-        `pet-${pet}`,
-      ],
-      conditions: selected,
-    });
-    if (res.error) {
-      Alert.alert('저장 실패');
-      return;
+    // 외부 UT: 저장 비활성화 — API 없이 완료 처리. (온보딩 저장과 동일 플래그)
+    if (ONBOARDING_WRITE_ENABLED) {
+      const res = await savePreferenceAll({
+        lifestyles: [
+          `gender-${gender}`,
+          `personality-${personality}`,
+          `privacy-${privacy}`,
+          `visitor-${visitor}`,
+          `smoking-${smoking}`,
+          `pet-${pet}`,
+        ],
+        conditions: selected,
+      });
+      if (res.error) {
+        Alert.alert('저장 실패');
+        return;
+      }
     }
-    Alert.alert('저장 완료', '선호 조건이 저장되었어요.', [
-      { text: '확인', onPress: () => router.back() },
-    ]);
+    Alert.alert('저장 완료', '선호 조건이 저장되었어요.', [{ text: '확인', onPress: exit }]);
   };
 
   if (step === 0) {
@@ -88,7 +97,7 @@ export default function PreferencesScreen() {
             >
               <Text className="text-base font-semibold text-white">지금 설정할게요</Text>
             </Pressable>
-            <Pressable onPress={() => router.back()} className="py-2">
+            <Pressable onPress={exit} className="py-2">
               <Text className="text-sm text-neutral-500">나중에 할게요</Text>
             </Pressable>
             <Text className="text-xs text-neutral-400">마이페이지에서 언제든 설정할 수 있어요</Text>

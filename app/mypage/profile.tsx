@@ -178,7 +178,7 @@ export default function ProfileEditScreen() {
               onChange={(v) => setHasRoom(v === 'yes')}
             />
             <RangeField
-              label="예산 보증금 (만원)"
+              label="예산 보증금"
               min={0}
               max={6000}
               step={100}
@@ -189,7 +189,7 @@ export default function ProfileEditScreen() {
               formatBubble={(lo, hi) => `${lo}~${hi}만원`}
             />
             <RangeField
-              label="예산 월세 (만원)"
+              label="예산 월세"
               min={0}
               max={500}
               step={10}

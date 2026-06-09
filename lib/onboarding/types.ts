@@ -84,16 +84,35 @@ export type BudgetRange = {
 
 /**
  * 와이어프레임 "방 유무 여부 / 조건 입력" 스텝.
+ *
+ * 방있음/방없음은 입력 형태가 달라(단일 vs 복수·범위) 필드를 분리해 둔다.
+ * 전환해도 각 케이스 입력값이 보존되며, 저장 시 hasRoom 기준으로 해당 필드만 보낸다.
  */
 export type RoomCondition = {
   /** 방 있어요(true) / 방 없어요(false) */
   hasRoom: boolean | null;
+
+  // ── 방 있어요 (단일 입력) ──
   region: Region | null;
-  deposit: BudgetRange;
-  monthlyRent: BudgetRange;
-  managementCost: BudgetRange;
+  /** 보증금(만원). 0 허용, 미입력은 null. */
+  deposit: number | null;
+  /** 월세(만원). 0 허용, 미입력은 null. */
+  monthlyRent: number | null;
   roomType: RoomType | null;
   moveInDate: Date | null;
+
+  // ── 방 없어요 (범위·복수) ──
+  /** 선호 지역 복수 선택. 구까지만도 OK, 미선택(선택사항) 가능. */
+  regions: Region[];
+  /** 예산 보증금 범위 (0~6000만원). */
+  budgetDeposit: BudgetRange;
+  /** 예산 월세 범위 (0~500만원). */
+  budgetRent: BudgetRange;
+  /** 예산 관리비 범위 (0~150만원). */
+  budgetManagement: BudgetRange;
+  /** 선호 방 형태 복수 선택 (최대 3개). */
+  roomTypes: RoomType[];
+  moveInBy: Date | null;
 };
 
 export type PreferenceConditions = {
@@ -121,7 +140,8 @@ export function emptyBasicProfile(): BasicProfile {
     regions: [],
     bio: '',
     lifestyle: {},
-    scales: {},
+    // 슬라이더가 중앙(3)으로 표시되므로 저장값도 3으로 초기화해 표시·상태를 일치시킨다.
+    scales: { sleep: 3, cleanliness: 3, noise: 3, personality: 3, privacy: 3, visitor: 3 },
     importantConditionIds: [],
     dealbreaker: '',
     visibility: 'public',
@@ -132,11 +152,16 @@ export function emptyRoomCondition(): RoomCondition {
   return {
     hasRoom: null,
     region: null,
-    deposit: { min: 0, max: 1000 },
-    monthlyRent: { min: 0, max: 30 },
-    managementCost: { min: 0, max: 30 },
+    deposit: null,
+    monthlyRent: null,
     roomType: null,
     moveInDate: null,
+    regions: [],
+    budgetDeposit: { min: 0, max: 6000 },
+    budgetRent: { min: 0, max: 500 },
+    budgetManagement: { min: 0, max: 150 },
+    roomTypes: [],
+    moveInBy: null,
   };
 }
 

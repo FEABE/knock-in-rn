@@ -34,14 +34,8 @@ export function BudgetFilterSheet({
   depositRange = DEFAULTS.deposit,
   rentRange = DEFAULTS.rent,
 }: BudgetFilterSheetProps) {
-  const [deposit, setDeposit] = useState<[number, number]>([
-    value.depositMin,
-    value.depositMax,
-  ]);
-  const [rent, setRent] = useState<[number, number]>([
-    value.rentMin,
-    value.rentMax,
-  ]);
+  const [deposit, setDeposit] = useState<[number, number]>([value.depositMin, value.depositMax]);
+  const [rent, setRent] = useState<[number, number]>([value.rentMin, value.rentMax]);
 
   return (
     <FilterSheet
@@ -62,7 +56,7 @@ export function BudgetFilterSheet({
       }
     >
       <RangeRow
-        label="보증금 (만원)"
+        label="보증금"
         min={depositRange[0]}
         max={depositRange[1]}
         step={50}
@@ -75,7 +69,7 @@ export function BudgetFilterSheet({
         }
       />
       <RangeRow
-        label="월세 (만원)"
+        label="월세"
         min={rentRange[0]}
         max={rentRange[1]}
         step={5}
@@ -138,12 +132,8 @@ function RangeRow({
       </RangeSlider>
 
       <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-neutral-400">
-          {min === 0 ? '0' : min.toLocaleString()}
-        </Text>
-        <Text className="text-xs text-neutral-400">
-          {max.toLocaleString()}
-        </Text>
+        <Text className="text-xs text-neutral-400">{min === 0 ? '0' : min.toLocaleString()}</Text>
+        <Text className="text-xs text-neutral-400">{max.toLocaleString()}</Text>
       </View>
     </View>
   );

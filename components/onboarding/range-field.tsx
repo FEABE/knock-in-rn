@@ -74,8 +74,15 @@ export function RangeField({
           },
         });
 
-        const loPct = percents[0] * 100;
-        const hiPct = percents[1] * 100;
+        // 트랙은 글자와 동일한 전체폭. 썸은 [0, width-THUMB] 범위에서만 이동해
+        // 양 끝에서도 컨테이너를 벗어나지 않는다. (px 기반)
+        const THUMB = 16;
+        const usable = Math.max(0, width - THUMB);
+        // percents 는 0~100 스케일.
+        const loX = (percents[0] / 100) * usable;
+        const hiX = (percents[1] / 100) * usable;
+        const loCenter = loX + THUMB / 2;
+        const hiCenter = hiX + THUMB / 2;
 
         return (
           <View className="gap-3">
@@ -84,14 +91,13 @@ export function RangeField({
             {/* 값 버블 */}
             <View className="h-6">
               <View
-                style={{
-                  left: `${(loPct + hiPct) / 2}%`,
-                  transform: [{ translateX: -40 }],
-                }}
-                className="absolute w-20 items-center"
+                style={{ left: (loCenter + hiCenter) / 2, transform: [{ translateX: -56 }] }}
+                className="absolute w-28 items-center"
               >
                 <View className="rounded-md bg-neutral-700 px-2 py-0.5">
-                  <Text className="text-[10px] text-white">{formatBubble(v[0], v[1])}</Text>
+                  <Text numberOfLines={1} className="text-[10px] text-white">
+                    {formatBubble(v[0], v[1])}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -100,12 +106,12 @@ export function RangeField({
             <View className="py-2" onLayout={onLayout} {...responder.panHandlers}>
               <View className="h-1 rounded-full bg-neutral-200">
                 <View
-                  style={{ left: `${loPct}%`, width: `${hiPct - loPct}%` }}
+                  style={{ left: loCenter, width: Math.max(0, hiCenter - loCenter) }}
                   className="absolute h-1 rounded-full bg-violet-600"
                 />
               </View>
-              <Thumb pct={loPct} />
-              <Thumb pct={hiPct} />
+              <Thumb x={loX} />
+              <Thumb x={hiX} />
             </View>
 
             <View className="flex-row justify-between">
@@ -119,10 +125,10 @@ export function RangeField({
   );
 }
 
-function Thumb({ pct }: { pct: number }) {
+function Thumb({ x }: { x: number }) {
   return (
     <View
-      style={{ left: `${pct}%`, marginLeft: -9 }}
+      style={{ left: x }}
       className="absolute top-1 h-4 w-4 rounded-full border-2 border-violet-600 bg-white"
     />
   );
