@@ -26,7 +26,7 @@ export default function InterestsScreen() {
           <Text className="text-base text-neutral-500">관심한 카드를 보려면 로그인해주세요</Text>
           <Pressable
             onPress={() => router.push('/')}
-            className="rounded-full bg-violet-600 px-5 py-3"
+            className="rounded-full bg-[#256EF4] px-5 py-3"
           >
             <Text className="text-sm font-medium text-white">홈으로</Text>
           </Pressable>
@@ -49,7 +49,7 @@ export default function InterestsScreen() {
       </View>
 
       <Tabs.Root defaultValue="rooms" className="flex-1">
-        <Tabs.List className="flex-row gap-1 border-b border-neutral-100 px-5">
+        <Tabs.List className="flex-row">
           {[
             { value: 'rooms', label: '방 게시글' },
             { value: 'roommates', label: '룸메이트 매칭' },
@@ -58,14 +58,14 @@ export default function InterestsScreen() {
               {({ selected }) => (
                 <View
                   className={`items-center border-b-2 pb-2 ${
-                    selected ? 'border-violet-600' : 'border-transparent'
+                    selected ? 'border-[#256EF4]' : 'border-transparent'
                   }`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-sm font-semibold text-violet-700'
-                        : 'text-sm text-neutral-400'
+                        ? 'text-base font-semibold text-[#256EF4]'
+                        : 'text-base text-neutral-400'
                     }
                   >
                     {t.label}
@@ -135,9 +135,9 @@ function Empty({ title, onExplore }: { title: string; onExplore: () => void }) {
       </Text>
       <Pressable
         onPress={onExplore}
-        className="mt-2 rounded-full border border-violet-600 px-5 py-2.5 active:opacity-80"
+        className="mt-2 rounded-full border border-[#256EF4] px-5 py-2.5 active:opacity-80"
       >
-        <Text className="text-sm font-medium text-violet-700">방 살펴보러 가기</Text>
+        <Text className="text-sm font-medium text-[#256EF4]">방 살펴보러 가기</Text>
       </Pressable>
     </View>
   );

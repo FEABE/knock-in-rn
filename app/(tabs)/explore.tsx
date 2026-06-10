@@ -4,14 +4,8 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
-import {
-  BudgetFilterSheet,
-  GenderFilterSheet,
-  RegionFilterSheet,
-  RoomTypeFilterSheet,
-  type GenderFilterValue,
-} from '@/components/room/filters';
-import { SegmentedControl, Tabs } from '@/components/ui/headless';
+import { RoomFilterSheet, type GenderFilterValue } from '@/components/room/filters';
+import { Tabs } from '@/components/ui/headless';
 import { useRoommateMatchList } from '@/lib/api';
 import { useModeration, useRoomStore, useSession, type RoomPost } from '@/lib/domain';
 import type { Region, RoomType } from '@/lib/onboarding';
@@ -101,22 +95,22 @@ export default function ExploreScreen() {
       />
 
       <Tabs.Root defaultValue="rooms" className="flex-1">
-        <Tabs.List className="flex-row gap-1 border-b border-neutral-100 px-5">
+        <Tabs.List className="flex-row">
           {[
             { value: 'rooms', label: '방 찾기' },
             { value: 'roommates', label: '룸메이트 찾기' },
           ].map((t) => (
-            <Tabs.Trigger key={t.value} value={t.value} className="py-3">
+            <Tabs.Trigger key={t.value} value={t.value} className="flex-1 py-3">
               {({ selected }) => (
                 <View
-                  className={`border-b-2 pb-2 pr-6 ${
-                    selected ? 'border-violet-600' : 'border-transparent'
+                  className={`items-center border-b-2 pb-2 ${
+                    selected ? 'border-[#256EF4]' : 'border-transparent'
                   }`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-base font-semibold text-violet-700'
+                        ? 'text-base font-semibold text-[#256EF4]'
                         : 'text-base text-neutral-400'
                     }
                   >
@@ -155,7 +149,7 @@ export default function ExploreScreen() {
           <ScrollView className="flex-1" contentContainerClassName="gap-3 p-5 pb-24">
             {matchesLoading ? (
               <View className="items-center py-16">
-                <ActivityIndicator color="#7c3aed" />
+                <ActivityIndicator color="#256EF4" />
                 <Text className="mt-3 text-sm text-neutral-400">룸메이트를 불러오는 중...</Text>
               </View>
             ) : visibleMatches.length === 0 ? (
@@ -177,34 +171,13 @@ export default function ExploreScreen() {
         </Tabs.Content>
       </Tabs.Root>
 
-      <RegionFilterSheet
-        open={openSheet === 'region'}
-        onOpenChange={(o) => setOpenSheet(o ? 'region' : null)}
-        value={filter.regions}
-        onChange={(regions) => setFilter((p) => ({ ...p, regions }))}
-      />
-      <GenderFilterSheet
-        open={openSheet === 'gender'}
-        onOpenChange={(o) => setOpenSheet(o ? 'gender' : null)}
-        value={filter.gender}
-        onChange={(gender) => setFilter((p) => ({ ...p, gender }))}
-      />
-      <BudgetFilterSheet
-        open={openSheet === 'budget'}
-        onOpenChange={(o) => setOpenSheet(o ? 'budget' : null)}
-        value={{
-          depositMin: filter.depositMin,
-          depositMax: filter.depositMax,
-          rentMin: filter.rentMin,
-          rentMax: filter.rentMax,
-        }}
-        onChange={(v) => setFilter((p) => ({ ...p, ...v }))}
-      />
-      <RoomTypeFilterSheet
-        open={openSheet === 'roomType'}
-        onOpenChange={(o) => setOpenSheet(o ? 'roomType' : null)}
-        value={filter.roomTypes}
-        onChange={(roomTypes) => setFilter((p) => ({ ...p, roomTypes }))}
+      <RoomFilterSheet
+        open={openSheet !== null}
+        onOpenChange={(o) => setOpenSheet((prev) => (o ? prev : null))}
+        defaultTab={openSheet ?? 'region'}
+        value={filter}
+        onChange={setFilter}
+        initial={INITIAL_FILTER}
       />
     </SafeAreaView>
   );
@@ -227,7 +200,7 @@ function Header({
           <Pressable
             onPress={onOnboarding}
             hitSlop={6}
-            className="items-center justify-center rounded-full bg-violet-600 px-3 py-1.5 active:opacity-90"
+            className="items-center justify-center rounded-full bg-[#256EF4] px-3 py-1.5 active:opacity-90"
           >
             <Text className="text-xs font-semibold text-white">온보딩</Text>
           </Pressable>
@@ -261,7 +234,6 @@ function FilterRow({
       horizontal
       showsHorizontalScrollIndicator={false}
       style={{ flexGrow: 0 }}
-      className="border-b border-neutral-100"
       contentContainerClassName="items-center gap-2 px-5 py-3"
     >
       <FilterChip
@@ -297,13 +269,13 @@ function FilterChip({
     <Pressable
       onPress={onPress}
       className={`flex-row items-center gap-1 rounded-full border px-3 py-1.5 active:opacity-80 ${
-        active ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
+        active ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
       }`}
     >
-      <Text className={active ? 'text-xs font-medium text-violet-700' : 'text-xs text-neutral-700'}>
+      <Text className={active ? 'text-xs font-medium text-[#256EF4]' : 'text-xs text-neutral-700'}>
         {label}
       </Text>
-      <Text className={active ? 'text-[10px] text-violet-500' : 'text-[10px] text-neutral-400'}>
+      <Text className={active ? 'text-[10px] text-[#256EF4]' : 'text-[10px] text-neutral-400'}>
         ▾
       </Text>
     </Pressable>
@@ -319,29 +291,20 @@ function SortRow({
   onChange: (next: ExploreSort) => void;
   count: number;
 }) {
+  const current = SORT_OPTIONS.find((o) => o.value === sort) ?? SORT_OPTIONS[0];
+  const cycleSort = () => onChange(sort === 'latest' ? 'views' : 'latest');
+
   return (
-    <View className="flex-row items-center justify-between border-b border-neutral-100 px-5 pb-3">
-      <View className="flex-row items-center gap-3">
-        <Text className="text-xs text-neutral-500">정렬</Text>
-        <SegmentedControl<ExploreSort>
-          options={SORT_OPTIONS}
-          value={sort}
-          onValueChange={onChange}
-          className="flex-row gap-3"
-          renderItem={({ option, selected }) => (
-            <View>
-              <Text
-                className={
-                  selected ? 'text-xs font-semibold text-violet-700' : 'text-xs text-neutral-400'
-                }
-              >
-                {option.label}
-              </Text>
-            </View>
-          )}
-        />
-      </View>
-      <Text className="text-xs text-neutral-500">{count}건</Text>
+    <View className="flex-row items-center justify-between px-5 py-3">
+      <Text className="text-sm text-neutral-600">게시물 {count}개</Text>
+      <Pressable
+        onPress={cycleSort}
+        hitSlop={6}
+        className="flex-row items-center gap-1 active:opacity-70"
+      >
+        <Text className="text-sm text-neutral-700">{current.label}</Text>
+        <Text className="text-[10px] text-neutral-400">▾</Text>
+      </Pressable>
     </View>
   );
 }

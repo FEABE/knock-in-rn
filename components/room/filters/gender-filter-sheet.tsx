@@ -11,6 +11,39 @@ const OPTIONS: { value: GenderFilterValue; label: string }[] = [
   { value: 'female', label: '여성만' },
 ];
 
+export function GenderFilterBody({
+  value,
+  onChange,
+}: {
+  value: GenderFilterValue;
+  onChange: (next: GenderFilterValue) => void;
+}) {
+  return (
+    <View className="gap-2">
+      {OPTIONS.map((opt) => {
+        const selected = value === opt.value;
+        return (
+          <Pressable
+            key={opt.value}
+            onPress={() => onChange(opt.value)}
+            className={`items-center rounded-xl border py-3 active:opacity-80 ${
+              selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
+            }`}
+          >
+            <Text
+              className={
+                selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
+              }
+            >
+              {opt.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export type GenderFilterSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,32 +67,7 @@ export function GenderFilterSheet({
       onReset={() => setDraft('any')}
       onApply={() => onChange(draft)}
     >
-      <View className="gap-2">
-        {OPTIONS.map((opt) => {
-          const selected = draft === opt.value;
-          return (
-            <Pressable
-              key={opt.value}
-              onPress={() => setDraft(opt.value)}
-              className={`items-center rounded-xl border py-3 active:opacity-80 ${
-                selected
-                  ? 'border-violet-600 bg-violet-50'
-                  : 'border-neutral-200 bg-white'
-              }`}
-            >
-              <Text
-                className={
-                  selected
-                    ? 'text-sm font-medium text-violet-700'
-                    : 'text-sm text-neutral-700'
-                }
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <GenderFilterBody value={draft} onChange={setDraft} />
     </FilterSheet>
   );
 }

@@ -26,42 +26,29 @@ const DEFAULTS = {
   rent: [0, 500] as [number, number],
 };
 
-export function BudgetFilterSheet({
-  open,
-  onOpenChange,
+export function BudgetFilterBody({
   value,
   onChange,
   depositRange = DEFAULTS.deposit,
   rentRange = DEFAULTS.rent,
-}: BudgetFilterSheetProps) {
-  const [deposit, setDeposit] = useState<[number, number]>([value.depositMin, value.depositMax]);
-  const [rent, setRent] = useState<[number, number]>([value.rentMin, value.rentMax]);
+}: {
+  value: BudgetValues;
+  onChange: (next: BudgetValues) => void;
+  depositRange?: [number, number];
+  rentRange?: [number, number];
+}) {
+  const deposit: [number, number] = [value.depositMin, value.depositMax];
+  const rent: [number, number] = [value.rentMin, value.rentMax];
 
   return (
-    <FilterSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      title="예산"
-      onReset={() => {
-        setDeposit(depositRange);
-        setRent(rentRange);
-      }}
-      onApply={() =>
-        onChange({
-          depositMin: deposit[0],
-          depositMax: deposit[1],
-          rentMin: rent[0],
-          rentMax: rent[1],
-        })
-      }
-    >
+    <>
       <RangeRow
         label="보증금"
         min={depositRange[0]}
         max={depositRange[1]}
         step={50}
         value={deposit}
-        onChange={setDeposit}
+        onChange={([min, max]) => onChange({ ...value, depositMin: min, depositMax: max })}
         rangeLabel={
           deposit[0] === depositRange[0] && deposit[1] === depositRange[1]
             ? '전체 범위'
@@ -74,12 +61,47 @@ export function BudgetFilterSheet({
         max={rentRange[1]}
         step={5}
         value={rent}
-        onChange={setRent}
+        onChange={([min, max]) => onChange({ ...value, rentMin: min, rentMax: max })}
         rangeLabel={
           rent[0] === rentRange[0] && rent[1] === rentRange[1]
             ? '전체 범위'
             : `${rent[0]}~${rent[1]}만`
         }
+      />
+    </>
+  );
+}
+
+export function BudgetFilterSheet({
+  open,
+  onOpenChange,
+  value,
+  onChange,
+  depositRange = DEFAULTS.deposit,
+  rentRange = DEFAULTS.rent,
+}: BudgetFilterSheetProps) {
+  const [draft, setDraft] = useState<BudgetValues>(value);
+
+  return (
+    <FilterSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="예산"
+      onReset={() =>
+        setDraft({
+          depositMin: depositRange[0],
+          depositMax: depositRange[1],
+          rentMin: rentRange[0],
+          rentMax: rentRange[1],
+        })
+      }
+      onApply={() => onChange(draft)}
+    >
+      <BudgetFilterBody
+        value={draft}
+        onChange={setDraft}
+        depositRange={depositRange}
+        rentRange={rentRange}
       />
     </FilterSheet>
   );
@@ -106,7 +128,7 @@ function RangeRow({
     <View className="gap-3">
       <View className="flex-row items-center justify-between">
         <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-        <Text className="text-xs text-violet-700">{rangeLabel}</Text>
+        <Text className="text-xs text-[#256EF4]">{rangeLabel}</Text>
       </View>
 
       <RangeSlider
@@ -183,17 +205,17 @@ function SliderTrack({
     >
       <View className="h-1 rounded-full bg-neutral-200" />
       <View
-        className="absolute h-1 rounded-full bg-violet-600"
+        className="absolute h-1 rounded-full bg-[#256EF4]"
         style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
       />
       <View
         {...startResponder.panHandlers}
-        className="absolute h-5 w-5 -translate-x-2.5 rounded-full border-2 border-violet-600 bg-white shadow"
+        className="absolute h-5 w-5 -translate-x-2.5 rounded-full border-2 border-[#256EF4] bg-white shadow"
         style={{ left: `${startPct}%` }}
       />
       <View
         {...endResponder.panHandlers}
-        className="absolute h-5 w-5 -translate-x-2.5 rounded-full border-2 border-violet-600 bg-white shadow"
+        className="absolute h-5 w-5 -translate-x-2.5 rounded-full border-2 border-[#256EF4] bg-white shadow"
         style={{ left: `${endPct}%` }}
       />
     </View>

@@ -5,6 +5,57 @@ import { ROOM_TYPES, type RoomType } from '@/lib/onboarding';
 
 import { FilterSheet } from './filter-sheet';
 
+export function RoomTypeFilterBody({
+  value,
+  onChange,
+}: {
+  value: RoomType[];
+  onChange: (next: RoomType[]) => void;
+}) {
+  const isAll = value.length === 0;
+
+  const toggle = (rt: RoomType) => {
+    onChange(value.includes(rt) ? value.filter((p) => p !== rt) : [...value, rt]);
+  };
+
+  return (
+    <View className="gap-2">
+      <Pressable
+        onPress={() => onChange([])}
+        className={`items-center rounded-xl border py-3 active:opacity-80 ${
+          isAll ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
+        }`}
+      >
+        <Text
+          className={isAll ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'}
+        >
+          전체
+        </Text>
+      </Pressable>
+      {ROOM_TYPES.map((rt) => {
+        const selected = value.includes(rt.value);
+        return (
+          <Pressable
+            key={rt.value}
+            onPress={() => toggle(rt.value)}
+            className={`items-center rounded-xl border py-3 active:opacity-80 ${
+              selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
+            }`}
+          >
+            <Text
+              className={
+                selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
+              }
+            >
+              {rt.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export type RoomTypeFilterSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -19,13 +70,6 @@ export function RoomTypeFilterSheet({
   onChange,
 }: RoomTypeFilterSheetProps) {
   const [draft, setDraft] = useState<RoomType[]>(value);
-  const isAll = draft.length === 0;
-
-  const toggle = (rt: RoomType) => {
-    setDraft((prev) =>
-      prev.includes(rt) ? prev.filter((p) => p !== rt) : [...prev, rt],
-    );
-  };
 
   return (
     <FilterSheet
@@ -35,50 +79,7 @@ export function RoomTypeFilterSheet({
       onReset={() => setDraft([])}
       onApply={() => onChange(draft)}
     >
-      <View className="gap-2">
-        <Pressable
-          onPress={() => setDraft([])}
-          className={`items-center rounded-xl border py-3 active:opacity-80 ${
-            isAll
-              ? 'border-violet-600 bg-violet-50'
-              : 'border-neutral-200 bg-white'
-          }`}
-        >
-          <Text
-            className={
-              isAll
-                ? 'text-sm font-medium text-violet-700'
-                : 'text-sm text-neutral-700'
-            }
-          >
-            전체
-          </Text>
-        </Pressable>
-        {ROOM_TYPES.map((rt) => {
-          const selected = draft.includes(rt.value);
-          return (
-            <Pressable
-              key={rt.value}
-              onPress={() => toggle(rt.value)}
-              className={`items-center rounded-xl border py-3 active:opacity-80 ${
-                selected
-                  ? 'border-violet-600 bg-violet-50'
-                  : 'border-neutral-200 bg-white'
-              }`}
-            >
-              <Text
-                className={
-                  selected
-                    ? 'text-sm font-medium text-violet-700'
-                    : 'text-sm text-neutral-700'
-                }
-              >
-                {rt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <RoomTypeFilterBody value={draft} onChange={setDraft} />
     </FilterSheet>
   );
 }

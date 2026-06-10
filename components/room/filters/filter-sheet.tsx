@@ -43,7 +43,7 @@ export function FilterSheet({
             onApply();
             onOpenChange(false);
           }}
-          className="h-12 flex-[2] items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+          className="h-12 flex-[2] items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
         >
           <Text className="text-sm font-semibold text-white">적용하기</Text>
         </Pressable>

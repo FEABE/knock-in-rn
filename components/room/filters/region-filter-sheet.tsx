@@ -5,26 +5,19 @@ import { REGIONS, type Region } from '@/lib/onboarding';
 
 import { FilterSheet } from './filter-sheet';
 
-export type RegionFilterSheetProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  value: Region[];
-  onChange: (next: Region[]) => void;
-};
-
-export function RegionFilterSheet({
-  open,
-  onOpenChange,
+export function RegionFilterBody({
   value,
   onChange,
-}: RegionFilterSheetProps) {
+}: {
+  value: Region[];
+  onChange: (next: Region[]) => void;
+}) {
   const cities = useMemo(() => {
     const set = new Set<string>();
     REGIONS.forEach((r) => set.add(r.city));
     return Array.from(set);
   }, []);
 
-  const [draft, setDraft] = useState<Region[]>(value);
   const [activeCity, setActiveCity] = useState<string>(cities[0]);
 
   const districts = useMemo(
@@ -33,20 +26,12 @@ export function RegionFilterSheet({
   );
 
   const toggle = (region: Region) => {
-    setDraft((prev) => {
-      const exists = prev.some((r) => r.id === region.id);
-      return exists ? prev.filter((r) => r.id !== region.id) : [...prev, region];
-    });
+    const exists = value.some((r) => r.id === region.id);
+    onChange(exists ? value.filter((r) => r.id !== region.id) : [...value, region]);
   };
 
   return (
-    <FilterSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      title="지역"
-      onReset={() => setDraft([])}
-      onApply={() => onChange(draft)}
-    >
+    <>
       <View className="flex-row gap-3" style={{ height: 280 }}>
         <View className="w-24 rounded-xl bg-neutral-50">
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -56,14 +41,12 @@ export function RegionFilterSheet({
                 <Pressable
                   key={city}
                   onPress={() => setActiveCity(city)}
-                  className={`px-3 py-3 ${
-                    selected ? 'bg-white' : ''
-                  }`}
+                  className={`px-3 py-3 ${selected ? 'bg-white' : ''}`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-sm font-semibold text-violet-700'
+                        ? 'text-sm font-semibold text-[#256EF4]'
                         : 'text-sm text-neutral-500'
                     }
                   >
@@ -78,19 +61,15 @@ export function RegionFilterSheet({
         <View className="flex-1 rounded-xl border border-neutral-100">
           <ScrollView showsVerticalScrollIndicator={false}>
             {districts.map((r) => {
-              const selected = draft.some((d) => d.id === r.id);
+              const selected = value.some((d) => d.id === r.id);
               return (
                 <Pressable
                   key={r.id}
                   onPress={() => toggle(r)}
                   className="flex-row items-center justify-between border-b border-neutral-50 px-4 py-3"
                 >
-                  <Text className="text-sm text-neutral-800">
-                    {r.district}
-                  </Text>
-                  {selected ? (
-                    <Text className="text-sm text-violet-600">✓</Text>
-                  ) : null}
+                  <Text className="text-sm text-neutral-800">{r.district}</Text>
+                  {selected ? <Text className="text-sm text-[#256EF4]">✓</Text> : null}
                 </Pressable>
               );
             })}
@@ -99,32 +78,58 @@ export function RegionFilterSheet({
       </View>
 
       <View className="gap-2">
-        <Text className="text-xs font-semibold text-neutral-700">
-          선택된 지역
-        </Text>
-        {draft.length === 0 ? (
+        <Text className="text-xs font-semibold text-neutral-700">선택된 지역</Text>
+        {value.length === 0 ? (
           <View className="flex-row flex-wrap gap-2">
-            <View className="rounded-full bg-violet-50 px-3 py-1.5">
-              <Text className="text-xs text-violet-700">전체</Text>
+            <View className="rounded-full bg-[#256EF4]/10 px-3 py-1.5">
+              <Text className="text-xs text-[#256EF4]">전체</Text>
             </View>
           </View>
         ) : (
           <View className="flex-row flex-wrap gap-2">
-            {draft.map((r) => (
+            {value.map((r) => (
               <Pressable
                 key={r.id}
                 onPress={() => toggle(r)}
-                className="flex-row items-center gap-1 rounded-full bg-violet-50 px-3 py-1.5"
+                className="flex-row items-center gap-1 rounded-full bg-[#256EF4]/10 px-3 py-1.5"
               >
-                <Text className="text-xs text-violet-700">
+                <Text className="text-xs text-[#256EF4]">
                   {r.city} {r.district}
                 </Text>
-                <Text className="text-xs text-violet-400">×</Text>
+                <Text className="text-xs text-[#256EF4]/60">×</Text>
               </Pressable>
             ))}
           </View>
         )}
       </View>
+    </>
+  );
+}
+
+export type RegionFilterSheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  value: Region[];
+  onChange: (next: Region[]) => void;
+};
+
+export function RegionFilterSheet({
+  open,
+  onOpenChange,
+  value,
+  onChange,
+}: RegionFilterSheetProps) {
+  const [draft, setDraft] = useState<Region[]>(value);
+
+  return (
+    <FilterSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="지역"
+      onReset={() => setDraft([])}
+      onApply={() => onChange(draft)}
+    >
+      <RegionFilterBody value={draft} onChange={setDraft} />
     </FilterSheet>
   );
 }
