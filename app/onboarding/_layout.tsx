@@ -1,6 +1,8 @@
 import { Stack, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
+import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { saveProfileAll, type ProfileAllRequest } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import {
@@ -47,7 +49,27 @@ export default function OnboardingLayout() {
   const router = useRouter();
   const { signIn } = useSession();
 
+  // 온보딩 진입 시 1회: 퍼널의 분모가 되는 onboarding_start.
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    onboardingTiming.start();
+    logEvent(AnalyticsEvent.ONBOARDING_START);
+  }, []);
+
   const onComplete = async (values: OnboardingValues) => {
+    // 3/3(방 상태) "완료" 탭 = 마지막 스텝 완료 시점.
+    logEvent(AnalyticsEvent.ONBOARDING_STEP_NEXT, {
+      step_index: 3,
+      step_name: 'room_status',
+      time_on_step_ms: onboardingTiming.timeOnStepMs(),
+    });
+    logEvent(AnalyticsEvent.ONBOARDING_COMPLETE, {
+      duration_ms: onboardingTiming.durationMs(),
+      total_steps: 3,
+    });
+
     if (ONBOARDING_WRITE_ENABLED) {
       const res = await saveProfileAll(toRequest(values));
       if (res.error || res.status !== 200) {

@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { type ChatRoomItem, useChatRooms } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 
@@ -9,6 +11,13 @@ export default function ChatScreen() {
   const router = useRouter();
   const { session } = useSession();
   const { data: rooms, loading, error } = useChatRooms();
+
+  // 채팅방 목록 로드 실패 노출.
+  useEffect(() => {
+    if (error) {
+      logEvent(AnalyticsEvent.UI_ERROR_SHOWN, { screen_name: 'chat', error_code: error });
+    }
+  }, [error]);
 
   if (!session) {
     return (
@@ -49,7 +58,10 @@ export default function ChatScreen() {
               // 데모: 첫 행은 매칭 제안, 일부는 안읽음 표시
               proposal={room.isAgree !== 'true'}
               unread={i === 1 ? 3 : 0}
-              onPress={() => router.push(`/chat/${room.chatRoomId}` as never)}
+              onPress={() => {
+                logEvent(AnalyticsEvent.CHAT_ROOM_ENTER, { room_id: room.chatRoomId });
+                router.push(`/chat/${room.chatRoomId}` as never);
+              }}
             />
           ))}
         </ScrollView>

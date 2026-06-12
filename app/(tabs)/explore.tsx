@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RoomCard, RoommateFindCard } from '@/components/domain';
 import { RoomFilterSheet, type GenderFilterValue } from '@/components/room/filters';
 import { Tabs } from '@/components/ui/headless';
+import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useRoommateMatchList } from '@/lib/api';
 import { useModeration, useRoomStore, useSession, type RoomPost } from '@/lib/domain';
 import type { Region, RoomType } from '@/lib/onboarding';
@@ -80,6 +81,43 @@ export default function ExploreScreen() {
     return sortPosts(applyFilter(safe, filter), sort);
   }, [posts, isPostBlocked, isUserBlocked, filter, sort]);
 
+  // 필터 적용 — 어떤 필터(지역/성별/예산/방형태)를 자주 쓰는지. 바뀐 항목만 발화.
+  const handleFilterChange = (next: ExploreFilter) => {
+    if (
+      next.regions.length !== filter.regions.length ||
+      next.regions.some((r, i) => r.id !== filter.regions[i]?.id)
+    ) {
+      logEvent(AnalyticsEvent.FILTER_APPLY, {
+        filter_type: 'region',
+        filter_value: next.regions.map((r) => r.id).join(',') || 'none',
+      });
+    }
+    if (next.gender !== filter.gender) {
+      logEvent(AnalyticsEvent.FILTER_APPLY, { filter_type: 'gender', filter_value: next.gender });
+    }
+    if (
+      next.rentMin !== filter.rentMin ||
+      next.rentMax !== filter.rentMax ||
+      next.depositMin !== filter.depositMin ||
+      next.depositMax !== filter.depositMax
+    ) {
+      logEvent(AnalyticsEvent.FILTER_APPLY, {
+        filter_type: 'budget',
+        filter_value: `rent ${next.rentMin}-${next.rentMax} / deposit ${next.depositMin}-${next.depositMax}`,
+      });
+    }
+    if (
+      next.roomTypes.length !== filter.roomTypes.length ||
+      next.roomTypes.some((t) => !filter.roomTypes.includes(t))
+    ) {
+      logEvent(AnalyticsEvent.FILTER_APPLY, {
+        filter_type: 'roomType',
+        filter_value: next.roomTypes.join(',') || 'none',
+      });
+    }
+    setFilter(next);
+  };
+
   const { data: matchList, loading: matchesLoading } = useRoommateMatchList();
   const visibleMatches = useMemo(
     () => (matchList ?? []).filter((m) => !isUserBlocked(m.userId)),
@@ -138,7 +176,10 @@ export default function ExploreScreen() {
                 <RoomCard
                   key={post.id}
                   post={post}
-                  onPress={(p) => router.push(`/room/${p.id}` as never)}
+                  onPress={(p) => {
+                    logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: p.id });
+                    router.push(`/room/${p.id}` as never);
+                  }}
                 />
               ))
             )}
@@ -163,7 +204,10 @@ export default function ExploreScreen() {
                 <RoommateFindCard
                   key={m.userId}
                   match={m}
-                  onPress={(match) => router.push(`/roommate/${match.userId}` as never)}
+                  onPress={(match) => {
+                    logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.userId });
+                    router.push(`/roommate/${match.userId}` as never);
+                  }}
                 />
               ))
             )}
@@ -176,7 +220,7 @@ export default function ExploreScreen() {
         onOpenChange={(o) => setOpenSheet((prev) => (o ? prev : null))}
         defaultTab={openSheet ?? 'region'}
         value={filter}
-        onChange={setFilter}
+        onChange={handleFilterChange}
         initial={INITIAL_FILTER}
       />
     </SafeAreaView>

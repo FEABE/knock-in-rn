@@ -14,9 +14,11 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.knockin',
+    googleServicesFile: './GoogleService-Info.plist',
   },
   android: {
     package: 'com.knockin',
+    googleServicesFile: './google-services.json',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -32,6 +34,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    '@react-native-firebase/app',
     [
       'expo-splash-screen',
       {

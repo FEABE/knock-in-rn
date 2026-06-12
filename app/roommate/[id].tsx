@@ -1,8 +1,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { type MatchDetailData, useRoommateMatchDetail } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 
@@ -14,6 +24,23 @@ export default function RoommateDetailScreen() {
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
 
   const { data, loading, error } = useRoommateMatchDetail(id ?? '');
+
+  // 룸메이트 상세 진입.
+  useEffect(() => {
+    if (id) logEvent(AnalyticsEvent.ROOMMATE_DETAIL_VIEW, { target_user_id: id });
+  }, [id]);
+
+  // "나와의 궁합" 섹션까지 스크롤 도달 시 1회 발화. (스크롤 유도가 충분한지 파악)
+  const compatY = useRef(0);
+  const firedCompat = useRef(false);
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (firedCompat.current || !id) return;
+    const { contentOffset, layoutMeasurement } = e.nativeEvent;
+    if (contentOffset.y + layoutMeasurement.height >= compatY.current + 40) {
+      firedCompat.current = true;
+      logEvent(AnalyticsEvent.ROOMMATE_COMPATIBILITY_VIEW, { target_user_id: id });
+    }
+  };
 
   const requireLogin = (then: () => void) => {
     if (!session) {
@@ -42,7 +69,12 @@ export default function RoommateDetailScreen() {
         </View>
       ) : (
         <>
-          <ScrollView className="flex-1" contentContainerClassName="gap-6 p-5 pb-28">
+          <ScrollView
+            className="flex-1"
+            contentContainerClassName="gap-6 p-5 pb-28"
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+          >
             <ProfileHead data={data} />
             <RoomStatus data={data} />
             <LifestyleBlock
@@ -52,19 +84,32 @@ export default function RoommateDetailScreen() {
             />
             <PreferredLivingBlock data={data} />
             <PreferredRoommateBlock data={data} />
-            <CompatibilityBlock data={data} />
+            <View onLayout={(e) => (compatY.current = e.nativeEvent.layout.y)}>
+              <CompatibilityBlock data={data} />
+            </View>
           </ScrollView>
 
           <BottomBar
             liked={liked}
-            onLike={() => requireLogin(() => setLiked((p) => !p))}
+            onLike={() =>
+              requireLogin(() => {
+                const next = !liked;
+                // 관심 추가 시에만 발화 (프로필 열람 대비 관심 전환율).
+                if (next) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: id });
+                setLiked(next);
+              })
+            }
             onRequest={() =>
               requireLogin(() =>
                 Alert.alert('매칭 요청', `${data.name}님께 매칭을 요청할까요?`, [
                   { text: '취소', style: 'cancel' },
                   {
                     text: '요청',
-                    onPress: () => router.push(`/chat/${id}` as never),
+                    onPress: () => {
+                      // 관심 → 매칭 요청 전환율.
+                      logEvent(AnalyticsEvent.ROOMMATE_MATCH_REQUEST, { target_user_id: id });
+                      router.push(`/chat/${id}` as never);
+                    },
                   },
                 ]),
               )

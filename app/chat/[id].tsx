@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatRoom } from '@/components/ui/headless';
+import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   MOCK_CHAT_ROOMS,
   MOCK_SESSION_USER,
@@ -72,6 +73,7 @@ export default function ChatRoomScreen() {
         {({ messages, draft, setDraft, canSend, send, matched, requestMatch }) => (
           <ChatBody
             peer={room.peer}
+            roomId={room.id}
             scrollRef={scrollRef}
             messages={messages}
             draft={draft}
@@ -137,6 +139,7 @@ type ChatMsg = {
 
 function ChatBody({
   peer,
+  roomId,
   scrollRef,
   messages,
   draft,
@@ -148,6 +151,7 @@ function ChatBody({
   onBack,
 }: {
   peer: UserSummary;
+  roomId: string;
   scrollRef: React.MutableRefObject<ScrollView | null>;
   messages: ChatMsg[];
   draft: string;
@@ -161,6 +165,16 @@ function ChatBody({
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
   }, [messages.length, scrollRef]);
+
+  // 채팅방 첫 메시지 전송 (세션 내 1회).
+  const firstSent = useRef(false);
+  const handleSend = () => {
+    if (canSend && !firstSent.current) {
+      firstSent.current = true;
+      logEvent(AnalyticsEvent.CHAT_FIRST_MESSAGE_SENT, { room_id: roomId });
+    }
+    send();
+  };
 
   return (
     <KeyboardAvoidingView
@@ -251,7 +265,7 @@ function ChatBody({
           className="max-h-24 min-h-10 flex-1 rounded-2xl bg-neutral-100 px-4 py-2 text-sm"
         />
         <Pressable
-          onPress={send}
+          onPress={handleSend}
           disabled={!canSend}
           className={`h-10 w-10 items-center justify-center rounded-full ${
             canSend ? 'bg-[#256EF4]' : 'bg-neutral-200'

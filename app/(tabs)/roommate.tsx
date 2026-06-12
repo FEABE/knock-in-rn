@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { LoadMoreList, Tabs } from '@/components/ui/headless';
 import { PageTabs } from '@/components/ui/page-tabs';
+import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { type BoardListQuery, useRoommateBoards, useRoommateMatchList } from '@/lib/api';
 import { useModeration, type ListFilter, type RoomPost, type SortKey } from '@/lib/domain';
 
@@ -63,6 +64,16 @@ export default function RoommateScreen() {
     [matchList, isUserBlocked],
   );
 
+  // API 실패 / 에러 화면 노출 — UT 중 어느 화면에서 막히는지 파악.
+  useEffect(() => {
+    if (postsError) {
+      logEvent(AnalyticsEvent.UI_ERROR_SHOWN, {
+        screen_name: 'roommate',
+        error_code: postsError,
+      });
+    }
+  }, [postsError]);
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="border-b border-neutral-100 px-5 pb-3 pt-2">
@@ -109,7 +120,10 @@ export default function RoommateScreen() {
                       <RoomCard
                         key={post.id}
                         post={post}
-                        onPress={(p) => router.push(`/room/${p.id}` as never)}
+                        onPress={(p) => {
+                          logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: p.id });
+                          router.push(`/room/${p.id}` as never);
+                        }}
                       />
                     ))}
                     {hasMore ? (
@@ -148,7 +162,10 @@ export default function RoommateScreen() {
                 <RoommateFindCard
                   key={m.userId}
                   match={m}
-                  onPress={(match) => router.push(`/roommate/${match.userId}` as never)}
+                  onPress={(match) => {
+                    logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.userId });
+                    router.push(`/roommate/${match.userId}` as never);
+                  }}
                 />
               ))
             )}

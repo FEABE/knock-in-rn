@@ -1,5 +1,6 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 
+import { AnalyticsEvent, logEvent, ONBOARDING_STEP_META } from '@/lib/analytics';
 import { Button } from '@/components/ui/headless';
 import { useOnboarding } from '@/lib/onboarding';
 
@@ -22,10 +23,20 @@ export function OnboardingFooter({
   showBack = false,
   loading = false,
 }: OnboardingFooterProps) {
-  const { isLast, goNext, goPrev } = useOnboarding();
+  const { isLast, goNext, goPrev, currentStep } = useOnboarding();
   const handlePress = onPress ?? goNext;
   const label = primaryLabel ?? (isLast ? '완료' : '다음으로');
   const disabled = !canProceed || loading;
+
+  // 뒤로가기 탭: 어느 질문에서 망설임이 많은지 파악.
+  const handleBack = () => {
+    const meta = ONBOARDING_STEP_META[currentStep];
+    logEvent(AnalyticsEvent.ONBOARDING_BACK_TAP, {
+      step_index: meta?.index,
+      step_name: meta?.name,
+    });
+    goPrev();
+  };
 
   return (
     <View className="gap-2 border-t border-neutral-100 bg-white px-5 pb-6 pt-4">
@@ -33,7 +44,7 @@ export function OnboardingFooter({
       <View className="flex-row gap-3">
         {showBack ? (
           <Button
-            onPress={goPrev}
+            onPress={handleBack}
             className="h-12 flex-1 items-center justify-center rounded-xl border border-neutral-200 bg-white active:bg-neutral-50"
           >
             <Text className="text-base font-semibold text-neutral-500">이전으로</Text>

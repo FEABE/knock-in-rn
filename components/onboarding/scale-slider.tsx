@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
@@ -20,6 +20,8 @@ export type ScaleSliderProps = {
   value: number | null;
   steps?: number;
   onChange: (value: number) => void;
+  /** 슬라이더 조작 완료(손 뗄 때) 콜백. 최종 선택값을 전달. */
+  onSlidingComplete?: (value: number) => void;
 };
 
 /**
@@ -34,10 +36,13 @@ export function ScaleSlider({
   value,
   steps = 5,
   onChange,
+  onSlidingComplete,
 }: ScaleSliderProps) {
   const [width, setWidth] = useState(0);
   const current = value ?? Math.ceil(steps / 2);
   const ratio = (current - 1) / (steps - 1);
+  // 손 뗄 때 onSlidingComplete 로 전달할 마지막 선택값.
+  const lastPicked = useRef<number | null>(value);
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
@@ -45,6 +50,7 @@ export function ScaleSlider({
     if (width <= 0) return;
     const r = Math.max(0, Math.min(1, locationX / width));
     const next = Math.round(r * (steps - 1)) + 1;
+    lastPicked.current = next;
     if (next !== value) onChange(next);
   };
 
@@ -53,6 +59,9 @@ export function ScaleSlider({
     onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > Math.abs(g.dy),
     onPanResponderGrant: (e: GestureResponderEvent) => pick(e.nativeEvent.locationX),
     onPanResponderMove: (e: GestureResponderEvent) => pick(e.nativeEvent.locationX),
+    onPanResponderRelease: () => {
+      if (lastPicked.current != null) onSlidingComplete?.(lastPicked.current);
+    },
   });
 
   return (

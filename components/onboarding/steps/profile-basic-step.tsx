@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, ScrollView, Text, View } from 'react-native';
 
+import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { saveProfileBasic, type ProfileBasicRequest } from '@/lib/api';
 import { SegmentedControl, TermsAgreement, TextField } from '@/components/ui/headless';
 import {
@@ -74,6 +75,22 @@ export function ProfileBasicStep() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // 1/3 기본 정보 화면 진입 (스텝 컴포넌트는 진입 시마다 마운트되므로 재진입도 정확히 집계).
+  useEffect(() => {
+    onboardingTiming.enterStep();
+    logEvent(AnalyticsEvent.ONBOARDING_STEP_VIEW, { step_index: 1, step_name: 'basic_info' });
+  }, []);
+
+  /** step_next(진입~탭 경과시간 포함) 발화 후 다음 스텝으로. */
+  const proceed = () => {
+    logEvent(AnalyticsEvent.ONBOARDING_STEP_NEXT, {
+      step_index: 1,
+      step_name: 'basic_info',
+      time_on_step_ms: onboardingTiming.timeOnStepMs(),
+    });
+    goNext();
+  };
+
   const onBirthChange = (text: string) => {
     const formatted = formatBirthInput(text);
     setBirthText(formatted);
@@ -91,7 +108,7 @@ export function ProfileBasicStep() {
   const handleNext = async () => {
     // 외부 UT: 저장 비활성화 — API 없이 다음 스텝으로.
     if (!ONBOARDING_WRITE_ENABLED) {
-      goNext();
+      proceed();
       return;
     }
     if (submitting) return;
@@ -113,7 +130,7 @@ export function ProfileBasicStep() {
       // 같은 데이터로 이미 저장했다면(뒤로 갔다 다시 옴) 재전송하지 않고 넘어간다.
       const signature = JSON.stringify(body);
       if (isStepSaved('profile-basic', signature)) {
-        goNext();
+        proceed();
         return;
       }
 
@@ -123,7 +140,7 @@ export function ProfileBasicStep() {
         return;
       }
       markStepSaved('profile-basic', signature);
-      goNext();
+      proceed();
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : '네트워크 오류가 발생했어요.');
     } finally {

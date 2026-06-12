@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const queryClient = new QueryClient();
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ScreenViewTracker } from '@/lib/analytics';
 import {
   AgreementProvider,
   ModerationProvider,
@@ -30,6 +31,8 @@ export default function RootLayout() {
         <ModerationProvider>
           <RoomStoreProvider>
             <AgreementProvider>
+              {/* 화면 체류 시간 자동 수집 (Firebase screen_view) */}
+              <ScreenViewTracker />
               {/* 모든 화면이 자체 커스텀 헤더를 가지므로 네이티브 헤더는 기본 숨김 */}
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(tabs)" />

@@ -1,10 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl } from '@/components/ui/headless';
+import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { savePreferenceAll } from '@/lib/api';
 import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
 
@@ -30,6 +31,19 @@ export default function PreferencesScreen() {
   };
   const [step, setStep] = useState<0 | 1 | 2>(0);
 
+  // 선호 조건 각 화면 진입 (step 0 은 유도 화면이므로 제외).
+  useEffect(() => {
+    if (step === 1) logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'lifestyle_preference' });
+    else if (step === 2)
+      logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'priority_selection' });
+  }, [step]);
+
+  // "나중에 할게요" — 설정을 미루는 비율.
+  const skip = () => {
+    logEvent(AnalyticsEvent.PREFERENCE_PROMPT_SKIP);
+    exit();
+  };
+
   const [gender, setGender] = useState<string | null>('same');
   const [personality, setPersonality] = useState<number | null>(3);
   const [privacy, setPrivacy] = useState<number | null>(3);
@@ -38,12 +52,25 @@ export default function PreferencesScreen() {
   const [pet, setPet] = useState<string | null>('any');
   const [selected, setSelected] = useState<string[]>([]);
 
-  const toggle = (id: string) =>
-    setSelected((p) =>
-      p.includes(id) ? p.filter((x) => x !== id) : p.length >= 3 ? p : [...p, id],
-    );
+  const toggle = (id: string) => {
+    const name = PRIORITIES.find((p) => p.id === id)?.name ?? id;
+    if (selected.includes(id)) {
+      // 선택 취소 — 결정하기 애매한 조건 파악.
+      logEvent(AnalyticsEvent.PREFERENCE_PRIORITY_DESELECT, { condition_name: name });
+      setSelected((p) => p.filter((x) => x !== id));
+      return;
+    }
+    if (selected.length >= 3) return;
+    // 1·2·3순위를 rank 로 기록 (어떤 조건이 1순위로 가장 많이 뽑히는지).
+    logEvent(AnalyticsEvent.PREFERENCE_PRIORITY_SELECT, {
+      condition_name: name,
+      rank: selected.length + 1,
+    });
+    setSelected((p) => [...p, id]);
+  };
 
   const save = async () => {
+    logEvent(AnalyticsEvent.PREFERENCE_COMPLETE);
     // 외부 UT: 저장 비활성화 — API 없이 완료 처리. (온보딩 저장과 동일 플래그)
     if (ONBOARDING_WRITE_ENABLED) {
       const res = await savePreferenceAll({
@@ -92,12 +119,15 @@ export default function PreferencesScreen() {
               </View>
             </View>
             <Pressable
-              onPress={() => setStep(1)}
+              onPress={() => {
+                logEvent(AnalyticsEvent.PREFERENCE_PROMPT_START);
+                setStep(1);
+              }}
               className="h-12 w-full items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
             >
               <Text className="text-base font-semibold text-white">지금 설정할게요</Text>
             </Pressable>
-            <Pressable onPress={exit} className="py-2">
+            <Pressable onPress={skip} className="py-2">
               <Text className="text-sm text-neutral-500">나중에 할게요</Text>
             </Pressable>
             <Text className="text-xs text-neutral-400">마이페이지에서 언제든 설정할 수 있어요</Text>
@@ -190,7 +220,13 @@ export default function PreferencesScreen() {
               onChange={setPet}
             />
           </ScrollView>
-          <BottomBtn label="다음" onPress={() => setStep(2)} />
+          <BottomBtn
+            label="다음"
+            onPress={() => {
+              logEvent(AnalyticsEvent.PREFERENCE_STEP_NEXT, { step: 'lifestyle_preference' });
+              setStep(2);
+            }}
+          />
         </>
       ) : (
         <>

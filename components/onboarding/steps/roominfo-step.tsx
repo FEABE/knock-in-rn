@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { useOnboardingRoom, type Region, type RoomType } from '@/lib/onboarding';
 
 import { CalendarField } from '../calendar-field';
@@ -55,6 +56,12 @@ export type RoomInfoStepProps = {
 
 export function RoomInfoStep({ onComplete }: RoomInfoStepProps) {
   const { room, patch } = useOnboardingRoom();
+
+  // 3/3 방 상태 화면 진입. (step_next/complete 는 onComplete 시점에 _layout 에서 발화)
+  useEffect(() => {
+    onboardingTiming.enterStep();
+    logEvent(AnalyticsEvent.ONBOARDING_STEP_VIEW, { step_index: 3, step_name: 'room_status' });
+  }, []);
 
   const hasRoom = room.hasRoom === true;
   const noRoom = room.hasRoom === false;

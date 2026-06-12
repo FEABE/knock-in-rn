@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
+import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { saveProfileLifestyle, type ProfileLifestyleRequest } from '@/lib/api';
 import { SegmentedControl } from '@/components/ui/headless';
 import {
@@ -86,8 +87,24 @@ export function ProfileLifestyleStep() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // 2/3 생활패턴 화면 진입.
+  useEffect(() => {
+    onboardingTiming.enterStep();
+    logEvent(AnalyticsEvent.ONBOARDING_STEP_VIEW, { step_index: 2, step_name: 'lifestyle' });
+  }, []);
+
   const setScale = (key: LifestyleScaleKey, value: number) =>
     patch({ scales: { ...scales, [key]: value } });
+
+  /** step_next 발화 후 다음 스텝으로. */
+  const proceed = () => {
+    logEvent(AnalyticsEvent.ONBOARDING_STEP_NEXT, {
+      step_index: 2,
+      step_name: 'lifestyle',
+      time_on_step_ms: onboardingTiming.timeOnStepMs(),
+    });
+    goNext();
+  };
 
   const allScalesSet = SCALES.every((s) => scales[s.key] !== undefined);
   const canProceed = allScalesSet && !!profile.lifestyle.smoking && !!profile.lifestyle.pet;
@@ -96,7 +113,7 @@ export function ProfileLifestyleStep() {
   const handleNext = async () => {
     // 외부 UT: 저장 비활성화 — API 없이 다음 스텝으로.
     if (!ONBOARDING_WRITE_ENABLED) {
-      goNext();
+      proceed();
       return;
     }
     if (submitting) return;
@@ -116,7 +133,7 @@ export function ProfileLifestyleStep() {
 
       const signature = JSON.stringify(body);
       if (isStepSaved('profile-lifestyle', signature)) {
-        goNext();
+        proceed();
         return;
       }
 
@@ -126,7 +143,7 @@ export function ProfileLifestyleStep() {
         return;
       }
       markStepSaved('profile-lifestyle', signature);
-      goNext();
+      proceed();
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : '네트워크 오류가 발생했어요.');
     } finally {
@@ -155,6 +172,12 @@ export function ProfileLifestyleStep() {
                   maxLabel={s.maxLabel}
                   value={scales[s.key] ?? null}
                   onChange={(next) => setScale(s.key, next)}
+                  onSlidingComplete={(next) =>
+                    logEvent(AnalyticsEvent.ONBOARDING_SLIDER_SET, {
+                      scale_name: s.key,
+                      value: next,
+                    })
+                  }
                 />
               </View>
             );

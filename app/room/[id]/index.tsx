@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/ui/headless';
+import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   useModeration,
   useRoomStore,
@@ -92,6 +93,21 @@ export default function RoomDetailScreen() {
 
   const isOwner = session?.user.id === post.author.id;
   const blocked = isPostBlocked(post.id);
+
+  // 방 상세 화면 진입 — 카드 탭 수와 비교해 상세 진입 여부 확인.
+  useEffect(() => {
+    if (post?.id) logEvent(AnalyticsEvent.ROOM_DETAIL_VIEW, { room_id: post.id });
+  }, [post?.id]);
+
+  // 관심(하트) 추가/취소 — 상세 열람 수 대비 관심 전환율.
+  const toggleLike = () =>
+    requireLogin(() => {
+      const next = !liked;
+      logEvent(next ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
+        room_id: post.id,
+      });
+      setLiked(next);
+    });
 
   const photos = post.photoUrls?.length
     ? post.photoUrls
@@ -187,11 +203,7 @@ export default function RoomDetailScreen() {
         </View>
       </ScrollView>
 
-      <BottomBar
-        liked={liked}
-        onLike={() => requireLogin(() => setLiked((p) => !p))}
-        onRequest={onRequestChat}
-      />
+      <BottomBar liked={liked} onLike={toggleLike} onRequest={onRequestChat} />
 
       <BottomSheet
         open={menuOpen}
