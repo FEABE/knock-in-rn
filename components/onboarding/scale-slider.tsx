@@ -59,17 +59,17 @@ export function ScaleSlider({
     <View className="gap-3">
       <View className="flex-row items-center justify-between">
         <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-        <Text className="text-sm font-medium text-violet-600">{valueLabel}</Text>
+        <Text className="text-sm font-medium text-[#256EF4]">{valueLabel}</Text>
       </View>
 
       {/* 트랙 (탭/드래그 영역) */}
       <View className="py-2" onLayout={onLayout} {...responder.panHandlers}>
         <View className="h-1 rounded-full bg-neutral-200">
-          <View style={{ width: `${ratio * 100}%` }} className="h-1 rounded-full bg-violet-600" />
+          <View style={{ width: `${ratio * 100}%` }} className="h-1 rounded-full bg-[#256EF4]" />
         </View>
         <View
           style={{ left: `${ratio * 100}%`, marginLeft: -11 }}
-          className="absolute top-0.5 h-5 w-5 rounded-full border-2 border-violet-600 bg-white"
+          className="absolute top-0.5 h-5 w-5 rounded-full border-2 border-[#256EF4] bg-white"
         />
       </View>
 

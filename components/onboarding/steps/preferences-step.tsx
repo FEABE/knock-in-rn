@@ -48,7 +48,7 @@ export function PreferencesStep() {
                       left: `${percents[0]}%`,
                       width: `${percents[1] - percents[0]}%`,
                     }}
-                    className="absolute h-2 rounded-full bg-violet-600"
+                    className="absolute h-2 rounded-full bg-[#256EF4]"
                   />
                 </View>
                 <View className="flex-row justify-between">
@@ -106,7 +106,7 @@ export function PreferencesStep() {
             renderItem={({ option, selected }) => (
               <View
                 className={`rounded-full border px-4 py-2 ${
-                  selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-200 bg-white'
+                  selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-200 bg-white'
                 }`}
               >
                 <Text

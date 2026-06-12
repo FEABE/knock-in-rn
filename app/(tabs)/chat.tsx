@@ -28,7 +28,7 @@ export default function ChatScreen() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center gap-3">
-          <ActivityIndicator color="#7c3aed" />
+          <ActivityIndicator color="#256EF4" />
           <Text className="text-sm text-neutral-400">채팅방을 불러오는 중...</Text>
         </View>
       ) : error ? (
@@ -76,16 +76,16 @@ function ChatRoomRow({
     <Pressable
       onPress={onPress}
       className={`flex-row items-center gap-3 rounded-2xl p-3 active:opacity-80 ${
-        proposal ? 'bg-violet-50' : ''
+        proposal ? 'bg-[#256EF4]/10' : ''
       }`}
     >
-      <View className="h-12 w-12 items-center justify-center rounded-full bg-violet-100">
-        <Text className="font-semibold text-violet-700">{room.name.charAt(0)}</Text>
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-[#256EF4]/15">
+        <Text className="font-semibold text-[#256EF4]">{room.name.charAt(0)}</Text>
       </View>
       <View className="flex-1 gap-0.5">
         <View className="flex-row items-center gap-2">
           {proposal ? (
-            <View className="rounded bg-violet-600 px-1.5 py-0.5">
+            <View className="rounded bg-[#256EF4] px-1.5 py-0.5">
               <Text className="text-[10px] font-medium text-white">매칭 요청</Text>
             </View>
           ) : null}
@@ -98,7 +98,7 @@ function ChatRoomRow({
       <View className="items-end gap-1">
         <Text className="text-[10px] text-neutral-400">방금</Text>
         {unread > 0 ? (
-          <View className="h-5 min-w-5 items-center justify-center rounded-full bg-violet-600 px-1">
+          <View className="h-5 min-w-5 items-center justify-center rounded-full bg-[#256EF4] px-1">
             <Text className="text-[10px] font-bold text-white">{unread}</Text>
           </View>
         ) : null}

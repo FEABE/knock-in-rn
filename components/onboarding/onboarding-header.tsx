@@ -33,7 +33,7 @@ export function OnboardingHeader() {
           <View
             key={step}
             className={`h-1.5 flex-1 rounded-full ${
-              i <= currentIndex ? 'bg-violet-600' : 'bg-neutral-200'
+              i <= currentIndex ? 'bg-[#256EF4]' : 'bg-neutral-200'
             }`}
           />
         ))}

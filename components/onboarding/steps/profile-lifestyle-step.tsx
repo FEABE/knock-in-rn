@@ -207,7 +207,7 @@ function Choice({ label, selected }: { label: string; selected: boolean }) {
   return (
     <View
       className={`rounded-full border px-5 py-2 ${
-        selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
+        selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
       }`}
     >
       <Text className={selected ? 'text-sm font-medium text-white' : 'text-sm text-neutral-600'}>

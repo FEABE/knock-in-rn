@@ -44,7 +44,7 @@ export function OnboardingFooter({
           onPress={handlePress}
           className={`h-12 items-center justify-center rounded-xl ${
             showBack ? 'flex-1' : 'w-full'
-          } ${canProceed ? 'bg-violet-600 active:bg-violet-700' : 'bg-neutral-300'}`}
+          } ${canProceed ? 'bg-[#256EF4] active:bg-[#256EF4]' : 'bg-neutral-300'}`}
         >
           {loading ? (
             <ActivityIndicator color="#ffffff" />

@@ -18,13 +18,13 @@ export function PageTabs({ defaultValue, tabs, children, className = 'flex-1' }:
             {({ selected }) => (
               <View
                 className={`border-b-2 pb-2 ${
-                  selected ? 'border-violet-600' : 'border-transparent'
+                  selected ? 'border-[#256EF4]' : 'border-transparent'
                 }`}
               >
                 <Text
                   className={
                     selected
-                      ? 'text-sm font-semibold text-violet-600'
+                      ? 'text-sm font-semibold text-[#256EF4]'
                       : 'text-sm text-neutral-500'
                   }
                 >

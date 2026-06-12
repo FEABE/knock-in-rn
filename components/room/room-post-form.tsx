@@ -118,9 +118,9 @@ export function RoomPostForm({
     <>
       <ScrollView contentContainerClassName="gap-6 p-5 pb-28">
         {mode === 'edit' ? (
-          <View className="flex-row items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5">
+          <View className="flex-row items-center gap-2 rounded-xl border border-[#256EF4]/30 bg-[#256EF4]/10 px-3 py-2.5">
             <Text className="text-base">✎</Text>
-            <Text className="flex-1 text-xs text-violet-700">
+            <Text className="flex-1 text-xs text-[#256EF4]">
               기존 게시글을 수정하고 있어요. 수정 완료 후 저장해주세요
             </Text>
           </View>
@@ -188,12 +188,12 @@ export function RoomPostForm({
                   key={rt.value}
                   onPress={() => patch({ roomType: rt.value })}
                   className={`rounded-full border px-4 py-2 active:opacity-80 ${
-                    selected ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
+                    selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                   }`}
                 >
                   <Text
                     className={
-                      selected ? 'text-sm font-medium text-violet-700' : 'text-sm text-neutral-700'
+                      selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
                     }
                   >
                     {rt.label}
@@ -239,12 +239,12 @@ export function RoomPostForm({
                     });
                   }}
                   className={`rounded-full border px-3 py-1.5 active:opacity-80 ${
-                    selected ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
+                    selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                   }`}
                 >
                   <Text
                     className={
-                      selected ? 'text-xs font-medium text-violet-700' : 'text-xs text-neutral-700'
+                      selected ? 'text-xs font-medium text-[#256EF4]' : 'text-xs text-neutral-700'
                     }
                   >
                     {o.label}
@@ -270,10 +270,10 @@ export function RoomPostForm({
         </Section>
 
         <Section title="생활패턴 · 선호 룸메이트 조건">
-          <View className="flex-row items-center justify-between rounded-xl bg-violet-50/60 px-4 py-2.5">
-            <Text className="text-xs text-violet-700">프로필에서 자동으로 불러왔어요</Text>
+          <View className="flex-row items-center justify-between rounded-xl bg-[#256EF4]/10/60 px-4 py-2.5">
+            <Text className="text-xs text-[#256EF4]">프로필에서 자동으로 불러왔어요</Text>
             <Pressable hitSlop={4}>
-              <Text className="text-xs text-violet-700">마이페이지에서 수정 →</Text>
+              <Text className="text-xs text-[#256EF4]">마이페이지에서 수정 →</Text>
             </Pressable>
           </View>
 
@@ -346,7 +346,7 @@ export function RoomPostForm({
           >
             <View
               className={`h-5 w-5 items-center justify-center rounded ${
-                draft.showProfileInfo ? 'bg-violet-600' : 'border border-neutral-300 bg-white'
+                draft.showProfileInfo ? 'bg-[#256EF4]' : 'border border-neutral-300 bg-white'
               }`}
             >
               {draft.showProfileInfo ? <Text className="text-xs text-white">✓</Text> : null}
@@ -364,7 +364,7 @@ export function RoomPostForm({
           }}
           disabled={!canSubmit}
           className={`h-12 items-center justify-center rounded-xl ${
-            canSubmit ? 'bg-violet-600' : 'bg-neutral-300'
+            canSubmit ? 'bg-[#256EF4]' : 'bg-neutral-300'
           }`}
         >
           <Text
@@ -453,7 +453,7 @@ function NumberInput({
       />
       {rightLabel ? (
         <Pressable hitSlop={4}>
-          <Text className="text-xs text-violet-700">{rightLabel}</Text>
+          <Text className="text-xs text-[#256EF4]">{rightLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -473,7 +473,7 @@ function PhotoSlot({ index, isAdd }: { index: number; isAdd: boolean }) {
     <View className="h-20 flex-1 items-center justify-center rounded-xl bg-neutral-100">
       <Text className="text-xs text-neutral-400">📷</Text>
       {index === 0 ? (
-        <View className="absolute left-1 top-1 rounded bg-violet-600 px-1.5 py-0.5">
+        <View className="absolute left-1 top-1 rounded bg-[#256EF4] px-1.5 py-0.5">
           <Text className="text-[9px] font-medium text-white">대표</Text>
         </View>
       ) : null}
@@ -513,7 +513,7 @@ function RegionTable({
             <Text
               className={
                 selected?.city === row.city
-                  ? 'text-sm font-semibold text-violet-700'
+                  ? 'text-sm font-semibold text-[#256EF4]'
                   : 'text-sm text-neutral-700'
               }
             >
@@ -526,7 +526,7 @@ function RegionTable({
                 <Text
                   className={
                     selected?.id === r.id
-                      ? 'text-xs font-medium text-violet-700'
+                      ? 'text-xs font-medium text-[#256EF4]'
                       : 'text-xs text-neutral-600'
                   }
                 >

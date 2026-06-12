@@ -25,7 +25,7 @@ export function Button({
 
   switch (variant) {
     case 'primary':
-      variantClasses = 'bg-violet-600';
+      variantClasses = 'bg-[#256EF4]';
       textClasses += ' text-white';
       break;
     case 'secondary':

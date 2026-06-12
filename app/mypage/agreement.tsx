@@ -96,7 +96,7 @@ export default function AgreementScreen() {
                 <View className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
                   <View
                     style={{ width: `${progress * 100}%` }}
-                    className="h-full rounded-full bg-violet-600"
+                    className="h-full rounded-full bg-[#256EF4]"
                   />
                 </View>
                 <Text className="text-xs text-neutral-400">
@@ -123,9 +123,9 @@ export default function AgreementScreen() {
               <View className="flex-row gap-2 pb-4">
                 <Pressable
                   onPress={submit}
-                  className="flex-1 items-center justify-center rounded-xl border border-violet-600 py-3"
+                  className="flex-1 items-center justify-center rounded-xl border border-[#256EF4] py-3"
                 >
-                  <Text className="text-sm font-semibold text-violet-600">
+                  <Text className="text-sm font-semibold text-[#256EF4]">
                     초안 저장
                   </Text>
                 </Pressable>
@@ -151,7 +151,7 @@ export default function AgreementScreen() {
                   }}
                   disabled={!canFinalize}
                   className={`flex-1 items-center justify-center rounded-xl py-3 ${
-                    canFinalize ? 'bg-violet-600' : 'bg-neutral-300'
+                    canFinalize ? 'bg-[#256EF4]' : 'bg-neutral-300'
                   }`}
                 >
                   <Text
@@ -188,14 +188,14 @@ export default function AgreementScreen() {
         </View>
         <Pressable
           onPress={() => setMode({ kind: 'edit' })}
-          className="rounded-full bg-violet-600 px-3 py-1.5"
+          className="rounded-full bg-[#256EF4] px-3 py-1.5"
         >
           <Text className="text-xs font-semibold text-white">+ 새 작성</Text>
         </Pressable>
       </View>
 
       <ScrollView contentContainerClassName="gap-4 p-5">
-        <View className="gap-1 rounded-2xl bg-violet-50 p-4">
+        <View className="gap-1 rounded-2xl bg-[#256EF4]/10 p-4">
           <Text className="text-sm font-semibold text-blue-900">
             왜 합의서를 작성하나요?
           </Text>

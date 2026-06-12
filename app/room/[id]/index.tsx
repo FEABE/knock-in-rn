@@ -176,7 +176,7 @@ export default function RoomDetailScreen() {
             expanded={descExpanded}
             onToggle={() => setDescExpanded((p) => !p)}
           />
-          <CompatibilityBlock score={82} />
+          <CompatibilityBlock isLoggedIn={!!session} />
           <LocationBlock post={post} />
           <AuthorBlock
             author={post.author}
@@ -537,18 +537,60 @@ function DescriptionBlock({
   );
 }
 
-function CompatibilityBlock({ score }: { score: number }) {
+const RING_SIZE = 84;
+const RING_STROKE = 9;
+
+function CompatibilityBlock({ isLoggedIn }: { isLoggedIn: boolean }) {
+  // TODO: 로그인 시 실제 궁합 점수는 추후 API 응답으로 대체
+  const total = 82;
+  const subs = [
+    { label: '생활 패턴', value: 90 },
+    { label: '청결·소음', value: 74 },
+  ];
+
+  const scoreColor = isLoggedIn ? '#256EF4' : '#9CA3AF';
+
   return (
     <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">나의 궁합</Text>
-      <View className="flex-row items-center gap-4 rounded-2xl bg-violet-50 px-4 py-4">
-        <Text className="text-3xl font-bold text-violet-700">{score}점</Text>
-        <View className="flex-1 gap-0.5">
-          <Text className="text-xs text-violet-700">생활패턴</Text>
-          <Text className="text-xs text-violet-700">청결 · 소음</Text>
-          <Text className="mt-1 text-[10px] text-violet-500">
-            * 프로필 완성 후 실제 점수 반영
+      <Text className="text-sm font-semibold text-neutral-800">나와 궁합</Text>
+      <View className="flex-row items-center gap-5 rounded-2xl border border-neutral-100 bg-white px-5 py-5">
+        <View
+          style={{
+            width: RING_SIZE,
+            height: RING_SIZE,
+            borderRadius: RING_SIZE / 2,
+            borderWidth: RING_STROKE,
+            borderColor: isLoggedIn ? '#256EF4' : '#E5E7EB',
+            borderTopColor: isLoggedIn ? '#DBE6FD' : '#E5E7EB',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text className="text-xl font-bold" style={{ color: scoreColor }}>
+            {isLoggedIn ? `${total}점` : '??점'}
           </Text>
+        </View>
+
+        <View className="flex-1 gap-3">
+          {subs.map((s) => (
+            <View key={s.label} className="gap-1.5">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs text-neutral-500">{s.label}</Text>
+                <Text className="text-sm font-bold" style={{ color: scoreColor }}>
+                  {isLoggedIn ? `${s.value}점` : '??점'}
+                </Text>
+              </View>
+              <View className="h-1.5 overflow-hidden rounded-full bg-neutral-100">
+                <View
+                  className="h-full rounded-full"
+                  style={{ width: isLoggedIn ? `${s.value}%` : '0%', backgroundColor: '#256EF4' }}
+                />
+              </View>
+            </View>
+          ))}
+          {!isLoggedIn ? (
+            <Text className="text-[10px] text-neutral-400">* 프로필 완성 후 실제 점수 반영</Text>
+          ) : null}
         </View>
       </View>
     </View>
@@ -635,7 +677,7 @@ function BottomBar({
       </Pressable>
       <Pressable
         onPress={onRequest}
-        className="h-12 flex-1 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+        className="h-12 flex-1 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
       >
         <Text className="text-sm font-semibold text-white">매칭 요청</Text>
       </Pressable>

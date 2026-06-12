@@ -73,13 +73,13 @@ export default function SearchScreen() {
               {({ selected }) => (
                 <View
                   className={`border-b-2 pb-2 pr-6 ${
-                    selected ? 'border-violet-600' : 'border-transparent'
+                    selected ? 'border-[#256EF4]' : 'border-transparent'
                   }`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-base font-semibold text-violet-700'
+                        ? 'text-base font-semibold text-[#256EF4]'
                         : 'text-base text-neutral-400'
                     }
                   >

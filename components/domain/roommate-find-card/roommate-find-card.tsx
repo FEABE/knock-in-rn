@@ -62,8 +62,8 @@ export function RoommateFindCard({ match, onPress }: RoommateFindCardProps) {
       {lifestyleChips.length > 0 ? (
         <View className="flex-row flex-wrap gap-1.5">
           {lifestyleChips.map((c, i) => (
-            <View key={i} className="rounded bg-violet-50 px-2 py-1">
-              <Text className="text-[11px] text-violet-600">{c}</Text>
+            <View key={i} className="rounded bg-[#256EF4]/10 px-2 py-1">
+              <Text className="text-[11px] text-[#256EF4]">{c}</Text>
             </View>
           ))}
         </View>
@@ -86,10 +86,10 @@ export function RoommateFindCard({ match, onPress }: RoommateFindCardProps) {
         <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200">
           <View
             style={{ width: `${Math.min(100, score)}%` }}
-            className="h-full rounded-full bg-violet-600"
+            className="h-full rounded-full bg-[#256EF4]"
           />
         </View>
-        <Text className="text-sm font-bold text-violet-600">{score}점</Text>
+        <Text className="text-sm font-bold text-[#256EF4]">{score}점</Text>
       </View>
     </Pressable>
   );

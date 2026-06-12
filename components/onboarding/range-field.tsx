@@ -107,7 +107,7 @@ export function RangeField({
               <View className="h-1 rounded-full bg-neutral-200">
                 <View
                   style={{ left: loCenter, width: Math.max(0, hiCenter - loCenter) }}
-                  className="absolute h-1 rounded-full bg-violet-600"
+                  className="absolute h-1 rounded-full bg-[#256EF4]"
                 />
               </View>
               <Thumb x={loX} />
@@ -129,7 +129,7 @@ function Thumb({ x }: { x: number }) {
   return (
     <View
       style={{ left: x }}
-      className="absolute top-1 h-4 w-4 rounded-full border-2 border-violet-600 bg-white"
+      className="absolute top-1 h-4 w-4 rounded-full border-2 border-[#256EF4] bg-white"
     />
   );
 }

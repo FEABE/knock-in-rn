@@ -32,7 +32,7 @@ export default function RoommateDetailScreen() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center gap-3">
-          <ActivityIndicator color="#7c3aed" />
+          <ActivityIndicator color="#256EF4" />
           <Text className="text-sm text-neutral-400">불러오는 중...</Text>
         </View>
       ) : error || !data ? (
@@ -185,8 +185,8 @@ function CompatibilityBlock({ data }: { data: MatchDetailData }) {
   return (
     <Section title="나와 궁합">
       <View className="flex-row items-center gap-4 rounded-2xl border border-neutral-100 p-4">
-        <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-violet-600">
-          <Text className="text-xl font-bold text-violet-600">{score}점</Text>
+        <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-[#256EF4]">
+          <Text className="text-xl font-bold text-[#256EF4]">{score}점</Text>
         </View>
         <View className="flex-1 gap-2">
           {data.compatibility.lifeStyleInfo.map((info, i) => {
@@ -195,12 +195,12 @@ function CompatibilityBlock({ data }: { data: MatchDetailData }) {
               <View key={i} className="gap-1">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-xs text-neutral-600">{info.title}</Text>
-                  <Text className="text-xs font-semibold text-violet-600">{info.percent}점</Text>
+                  <Text className="text-xs font-semibold text-[#256EF4]">{info.percent}점</Text>
                 </View>
                 <View className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
                   <View
                     style={{ width: `${Math.min(100, pct)}%` }}
-                    className="h-full rounded-full bg-violet-600"
+                    className="h-full rounded-full bg-[#256EF4]"
                   />
                 </View>
               </View>
@@ -233,7 +233,7 @@ function BottomBar({
       </Pressable>
       <Pressable
         onPress={onRequest}
-        className="h-12 flex-1 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+        className="h-12 flex-1 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
       >
         <Text className="text-sm font-semibold text-white">매칭 요청</Text>
       </Pressable>

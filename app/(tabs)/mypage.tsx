@@ -16,11 +16,11 @@ export default function MyPageScreen() {
           <Text className="text-2xl font-bold text-neutral-900">마이</Text>
         </View>
         <View className="gap-3 p-5">
-          <View className="gap-3 rounded-2xl bg-violet-50 p-5">
-            <Text className="text-base font-bold text-violet-900">
+          <View className="gap-3 rounded-2xl bg-[#256EF4]/10 p-5">
+            <Text className="text-base font-bold text-[#256EF4]">
               로그인하고 노크인을 시작해보세요
             </Text>
-            <Text className="text-sm text-violet-900/70">
+            <Text className="text-sm text-[#256EF4]/70">
               생활패턴 기반 룸메이트 매칭 · 학교/회사 이메일 인증
             </Text>
             <Pressable
@@ -48,8 +48,8 @@ export default function MyPageScreen() {
         {/* 프로필 카드 */}
         <View className="gap-4 rounded-2xl border border-neutral-200 p-4">
           <View className="flex-row items-center gap-3">
-            <View className="h-14 w-14 items-center justify-center rounded-full bg-violet-100">
-              <Text className="text-lg font-semibold text-violet-700">{u.name.charAt(0)}</Text>
+            <View className="h-14 w-14 items-center justify-center rounded-full bg-[#256EF4]/15">
+              <Text className="text-lg font-semibold text-[#256EF4]">{u.name.charAt(0)}</Text>
             </View>
             <View className="flex-1 gap-1">
               <Text className="text-base font-bold text-neutral-900">{u.name}</Text>
@@ -73,7 +73,7 @@ export default function MyPageScreen() {
               {({ checked }) => (
                 <View
                   className={`h-7 w-12 justify-center rounded-full px-1 ${
-                    checked ? 'bg-violet-600' : 'bg-neutral-300'
+                    checked ? 'bg-[#256EF4]' : 'bg-neutral-300'
                   }`}
                 >
                   <View className={`h-5 w-5 rounded-full bg-white ${checked ? 'ml-5' : 'ml-0'}`} />
@@ -122,7 +122,7 @@ export default function MyPageScreen() {
               {({ checked }) => (
                 <View
                   className={`h-7 w-12 justify-center rounded-full px-1 ${
-                    checked ? 'bg-violet-600' : 'bg-neutral-300'
+                    checked ? 'bg-[#256EF4]' : 'bg-neutral-300'
                   }`}
                 >
                   <View className={`h-5 w-5 rounded-full bg-white ${checked ? 'ml-5' : 'ml-0'}`} />

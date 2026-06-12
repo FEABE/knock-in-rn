@@ -32,7 +32,7 @@ export function TermsStep() {
               <>
                 <View
                   className={`h-6 w-6 items-center justify-center rounded-full border ${
-                    checked ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
+                    checked ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
                   }`}
                 >
                   {checked ? <Text className="text-xs font-bold text-white">✓</Text> : null}
@@ -54,14 +54,14 @@ export function TermsStep() {
                 <>
                   <View
                     className={`h-5 w-5 items-center justify-center rounded ${
-                      checked ? 'bg-violet-600' : 'bg-neutral-200'
+                      checked ? 'bg-[#256EF4]' : 'bg-neutral-200'
                     }`}
                   >
                     {checked ? <Text className="text-xs font-bold text-white">✓</Text> : null}
                   </View>
                   <View className="flex-1">
                     <Text className="text-sm text-neutral-800">
-                      <Text className={required ? 'text-violet-600' : 'text-neutral-400'}>
+                      <Text className={required ? 'text-[#256EF4]' : 'text-neutral-400'}>
                         [{required ? '필수' : '선택'}]
                       </Text>{' '}
                       {label}

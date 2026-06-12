@@ -170,12 +170,12 @@ export function ProfileBasicStep() {
               renderItem={({ option, selected }) => (
                 <View
                   className={`rounded-full border px-4 py-2.5 ${
-                    selected ? 'border-violet-600 bg-violet-100' : 'border-neutral-300 bg-white'
+                    selected ? 'border-[#256EF4] bg-[#256EF4]/15' : 'border-neutral-300 bg-white'
                   }`}
                 >
                   <Text
                     className={
-                      selected ? 'text-sm font-medium text-violet-700' : 'text-sm text-neutral-600'
+                      selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-600'
                     }
                   >
                     {option.label}
@@ -263,7 +263,7 @@ function CheckBox({ checked, circle = false }: { checked: boolean; circle?: bool
   return (
     <View
       className={`h-5 w-5 items-center justify-center ${shape} ${
-        checked ? 'bg-violet-600' : 'border border-neutral-300 bg-white'
+        checked ? 'bg-[#256EF4]' : 'border border-neutral-300 bg-white'
       }`}
     >
       {checked ? <Text className="text-[11px] font-bold text-white">✓</Text> : null}

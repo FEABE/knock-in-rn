@@ -24,7 +24,7 @@ export default function FaqScreen() {
                 className="flex-row items-center justify-between px-4 py-4 active:bg-neutral-50"
               >
                 <View className="flex-1 flex-row items-start gap-2 pr-3">
-                  <Text className="text-violet-600">Q.</Text>
+                  <Text className="text-[#256EF4]">Q.</Text>
                   <Text className="flex-1 text-sm font-medium text-neutral-900">
                     {item.question}
                   </Text>

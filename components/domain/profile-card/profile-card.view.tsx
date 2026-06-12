@@ -35,7 +35,7 @@ export function ProfileCardView({
             <Text
               className={`rounded-full px-2 py-0.5 text-[10px] ${
                 visibility === 'public'
-                  ? 'bg-violet-50 text-violet-600'
+                  ? 'bg-[#256EF4]/10 text-[#256EF4]'
                   : visibility === 'hidden'
                     ? 'bg-neutral-100 text-neutral-500'
                     : 'bg-emerald-50 text-emerald-600'

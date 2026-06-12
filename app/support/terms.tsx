@@ -36,7 +36,7 @@ export default function TermsScreen() {
             onPress={() => setActiveId(s.id)}
             className={`rounded-full border px-3 py-1.5 ${
               activeId === s.id
-                ? 'border-violet-600 bg-violet-600'
+                ? 'border-[#256EF4] bg-[#256EF4]'
                 : 'border-neutral-200 bg-white'
             }`}
           >

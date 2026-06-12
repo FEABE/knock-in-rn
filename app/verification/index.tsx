@@ -101,9 +101,9 @@ function VerifyCard({
           {icon} {title}
         </Text>
         <View
-          className={`rounded-full px-2 py-0.5 ${verified ? 'bg-emerald-50' : 'bg-violet-100'}`}
+          className={`rounded-full px-2 py-0.5 ${verified ? 'bg-emerald-50' : 'bg-[#256EF4]/15'}`}
         >
-          <Text className={`text-[10px] ${verified ? 'text-emerald-700' : 'text-violet-700'}`}>
+          <Text className={`text-[10px] ${verified ? 'text-emerald-700' : 'text-[#256EF4]'}`}>
             {verified ? '인증완료' : '미인증'}
           </Text>
         </View>
@@ -123,7 +123,7 @@ function VerifyCard({
         onPress={send}
         disabled={verified || sending}
         className={`h-11 items-center justify-center rounded-xl ${
-          verified ? 'bg-neutral-200' : 'bg-violet-600 active:opacity-90'
+          verified ? 'bg-neutral-200' : 'bg-[#256EF4] active:opacity-90'
         }`}
       >
         <Text className={`text-sm font-semibold ${verified ? 'text-neutral-400' : 'text-white'}`}>

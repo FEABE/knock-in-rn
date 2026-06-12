@@ -217,12 +217,12 @@ export function RoomInfoStep({ onComplete }: RoomInfoStepProps) {
                     <Pressable
                       key={r.id}
                       onPress={() => removeRegion(r.id)}
-                      className="flex-row items-center gap-1 rounded-full bg-violet-50 px-3 py-1 active:opacity-80"
+                      className="flex-row items-center gap-1 rounded-full bg-[#256EF4]/10 px-3 py-1 active:opacity-80"
                     >
-                      <Text className="text-xs text-violet-700">
+                      <Text className="text-xs text-[#256EF4]">
                         {r.city} {r.district}
                       </Text>
-                      <Text className="text-xs text-violet-400">✕</Text>
+                      <Text className="text-xs text-[#256EF4]/70">✕</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -334,7 +334,7 @@ function Chip({
       disabled={disabled}
       className={`rounded-full border px-4 py-2 ${
         selected
-          ? 'border-violet-600 bg-violet-100'
+          ? 'border-[#256EF4] bg-[#256EF4]/15'
           : disabled
             ? 'border-neutral-200 bg-neutral-50'
             : 'border-neutral-300 bg-white active:opacity-80'
@@ -343,7 +343,7 @@ function Chip({
       <Text
         className={
           selected
-            ? 'text-sm font-medium text-violet-700'
+            ? 'text-sm font-medium text-[#256EF4]'
             : disabled
               ? 'text-sm text-neutral-300'
               : 'text-sm text-neutral-600'
@@ -372,12 +372,12 @@ function RoomChoice({
     <Pressable
       onPress={onPress}
       className={`flex-1 items-center gap-2 rounded-2xl border p-4 active:opacity-90 ${
-        selected ? 'border-violet-500 bg-violet-50' : 'border-neutral-200 bg-white'
+        selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
       }`}
     >
       <View
         className={`h-10 w-10 items-center justify-center rounded-full ${
-          selected ? 'bg-violet-200' : 'bg-neutral-100'
+          selected ? 'bg-[#256EF4]/30' : 'bg-neutral-100'
         }`}
       >
         <Text className="text-lg text-neutral-600">{icon}</Text>
@@ -438,10 +438,10 @@ function Column({
             <Pressable
               key={it}
               onPress={() => onPick(it)}
-              className={`py-3 ${on ? 'bg-violet-50' : ''}`}
+              className={`py-3 ${on ? 'bg-[#256EF4]/10' : ''}`}
             >
               <Text
-                className={`text-center text-sm ${on ? 'font-medium text-violet-700' : 'text-neutral-700'}`}
+                className={`text-center text-sm ${on ? 'font-medium text-[#256EF4]' : 'text-neutral-700'}`}
               >
                 {it}
               </Text>

@@ -77,7 +77,7 @@ export default function MyRoomsScreen() {
       <View className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pb-6 pt-3">
         <Pressable
           onPress={() => router.push('/room/new' as never)}
-          className="h-12 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+          className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
         >
           <Text className="text-base font-semibold text-white">+ 방 게시글 등록하기</Text>
         </Pressable>

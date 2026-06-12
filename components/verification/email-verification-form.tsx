@@ -89,7 +89,7 @@ export function EmailVerificationForm({
                   disabled={!isEmailValid || isSending}
                   className={`h-12 items-center justify-center rounded-xl ${
                     isEmailValid && !isSending
-                      ? 'bg-violet-600 active:opacity-90'
+                      ? 'bg-[#256EF4] active:opacity-90'
                       : 'bg-neutral-300'
                   }`}
                 >
@@ -155,7 +155,7 @@ export function EmailVerificationForm({
                       disabled={!isCodeFilled || isVerifying}
                       className={`flex-[2] items-center justify-center rounded-xl py-3 ${
                         isCodeFilled && !isVerifying
-                          ? 'bg-violet-600 active:opacity-90'
+                          ? 'bg-[#256EF4] active:opacity-90'
                           : 'bg-neutral-300'
                       }`}
                     >
@@ -167,7 +167,7 @@ export function EmailVerificationForm({
                 ) : (
                   <Pressable
                     onPress={() => onVerified?.()}
-                    className="h-12 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+                    className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
                   >
                     <Text className="text-sm font-semibold text-white">
                       완료

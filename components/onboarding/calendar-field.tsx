@@ -108,7 +108,7 @@ export function CalendarField({
                 >
                   <View
                     className={`h-9 w-9 items-center justify-center rounded-full ${
-                      selected ? 'bg-violet-600' : ''
+                      selected ? 'bg-[#256EF4]' : ''
                     }`}
                   >
                     <Text

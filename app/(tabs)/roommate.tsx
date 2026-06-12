@@ -86,7 +86,7 @@ export default function RoommateScreen() {
           <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5">
             {postsLoading ? (
               <View className="items-center py-16">
-                <ActivityIndicator color="#7c3aed" />
+                <ActivityIndicator color="#256EF4" />
                 <Text className="mt-3 text-sm text-neutral-400">방을 불러오는 중...</Text>
               </View>
             ) : postsError ? (
@@ -128,7 +128,7 @@ export default function RoommateScreen() {
 
           <Pressable
             onPress={() => router.push('/onboarding' as never)}
-            className="absolute bottom-6 right-5 h-14 w-14 items-center justify-center rounded-full bg-violet-600 active:opacity-90 shadow-sm"
+            className="absolute bottom-6 right-5 h-14 w-14 items-center justify-center rounded-full bg-[#256EF4] active:opacity-90 shadow-sm"
           >
             <Text className="text-2xl font-semibold text-white">+</Text>
           </Pressable>
@@ -138,7 +138,7 @@ export default function RoommateScreen() {
           <ScrollView contentContainerClassName="gap-4 p-5">
             {matchesLoading ? (
               <View className="items-center py-16">
-                <ActivityIndicator color="#7c3aed" />
+                <ActivityIndicator color="#256EF4" />
                 <Text className="mt-3 text-sm text-neutral-400">매칭을 불러오는 중...</Text>
               </View>
             ) : visibleMatches.length === 0 ? (

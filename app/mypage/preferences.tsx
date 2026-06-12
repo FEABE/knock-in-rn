@@ -74,18 +74,18 @@ export default function PreferencesScreen() {
             <Text className="text-xl font-bold text-neutral-900">매칭 정확도를 높여볼까요?</Text>
             <Text className="text-center text-sm text-neutral-500">
               원하는 룸메이트 조건을 설정하면{'\n'}
-              <Text className="font-semibold text-violet-700">궁합 점수가 더 정확</Text>
+              <Text className="font-semibold text-[#256EF4]">궁합 점수가 더 정확</Text>
               해져요
             </Text>
             <View className="my-2 flex-row gap-3">
               <View className="flex-1 items-center gap-1 rounded-xl bg-neutral-50 py-3">
-                <Text className="text-xs font-semibold text-violet-700">Step 1</Text>
+                <Text className="text-xs font-semibold text-[#256EF4]">Step 1</Text>
                 <Text className="text-center text-xs text-neutral-500">
                   원하는 생활패턴{'\n'}설정
                 </Text>
               </View>
               <View className="flex-1 items-center gap-1 rounded-xl bg-neutral-50 py-3">
-                <Text className="text-xs font-semibold text-violet-700">Step 2</Text>
+                <Text className="text-xs font-semibold text-[#256EF4]">Step 2</Text>
                 <Text className="text-center text-xs text-neutral-500">
                   중요 조건{'\n'}최대 3개 선택
                 </Text>
@@ -93,7 +93,7 @@ export default function PreferencesScreen() {
             </View>
             <Pressable
               onPress={() => setStep(1)}
-              className="h-12 w-full items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+              className="h-12 w-full items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
             >
               <Text className="text-base font-semibold text-white">지금 설정할게요</Text>
             </Pressable>
@@ -201,8 +201,8 @@ export default function PreferencesScreen() {
               <Text className="mt-1 text-sm text-neutral-500">최대 3개까지 선택할 수 있어요</Text>
             </View>
 
-            <View className="rounded-xl bg-violet-50 px-3 py-2">
-              <Text className="text-xs text-violet-700">
+            <View className="rounded-xl bg-[#256EF4]/10 px-3 py-2">
+              <Text className="text-xs text-[#256EF4]">
                 {selected.length} / 3 선택됨 · 선택한 항목에 궁합 가중치가 높아져요
               </Text>
             </View>
@@ -214,7 +214,7 @@ export default function PreferencesScreen() {
                   key={p.id}
                   onPress={() => toggle(p.id)}
                   className={`flex-row items-center gap-3 rounded-2xl border p-4 ${
-                    on ? 'border-violet-600 bg-violet-50' : 'border-neutral-200'
+                    on ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200'
                   }`}
                 >
                   <Text className="text-xl">{p.icon}</Text>
@@ -224,7 +224,7 @@ export default function PreferencesScreen() {
                   </View>
                   <View
                     className={`h-6 w-6 items-center justify-center rounded-full ${
-                      on ? 'bg-violet-600' : 'border border-neutral-300'
+                      on ? 'bg-[#256EF4]' : 'border border-neutral-300'
                     }`}
                   >
                     {on ? <Text className="text-xs font-bold text-white">✓</Text> : null}
@@ -262,7 +262,7 @@ function Pick({
         renderItem={({ option, selected }) => (
           <View
             className={`rounded-full border px-5 py-2 ${
-              selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
+              selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
             }`}
           >
             <Text
@@ -282,7 +282,7 @@ function BottomBtn({ label, onPress }: { label: string; onPress: () => void }) {
     <View className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pb-6 pt-3">
       <Pressable
         onPress={onPress}
-        className="h-12 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+        className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
       >
         <Text className="text-base font-semibold text-white">{label}</Text>
       </Pressable>

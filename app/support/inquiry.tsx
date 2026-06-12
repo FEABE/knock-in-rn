@@ -53,7 +53,7 @@ export default function InquiryScreen() {
               {({ checked }) => (
                 <View
                   className={`h-7 w-12 flex-row items-center rounded-full px-1 ${
-                    checked ? 'bg-violet-600' : 'bg-neutral-300'
+                    checked ? 'bg-[#256EF4]' : 'bg-neutral-300'
                   }`}
                 >
                   <View
@@ -73,7 +73,7 @@ export default function InquiryScreen() {
               setBody('');
             }}
             className={`h-12 items-center justify-center rounded-xl ${
-              canSubmit ? 'bg-violet-600' : 'bg-neutral-300'
+              canSubmit ? 'bg-[#256EF4]' : 'bg-neutral-300'
             }`}
           >
             <Text
@@ -117,7 +117,7 @@ export default function InquiryScreen() {
               <Text className="text-sm text-neutral-700">{q.body}</Text>
               {q.answer ? (
                 <View className="gap-1 rounded-xl bg-neutral-50 p-3">
-                  <Text className="text-[10px] font-semibold text-violet-600">
+                  <Text className="text-[10px] font-semibold text-[#256EF4]">
                     운영자 답변
                   </Text>
                   <Text className="text-sm leading-6 text-neutral-700">

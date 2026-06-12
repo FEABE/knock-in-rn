@@ -46,27 +46,27 @@ export function VisibilityStep() {
             return (
               <View
                 className={`gap-1 rounded-2xl border p-4 ${
-                  selected ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
+                  selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                 }`}
               >
                 <View className="flex-row items-center justify-between">
                   <Text
                     className={`text-base font-semibold ${
-                      selected ? 'text-violet-700' : 'text-neutral-900'
+                      selected ? 'text-[#256EF4]' : 'text-neutral-900'
                     }`}
                   >
                     {opt.label}
                   </Text>
                   <View
                     className={`h-5 w-5 items-center justify-center rounded-full border ${
-                      selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
+                      selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
                     }`}
                   >
                     {selected ? <Text className="text-xs font-bold text-white">✓</Text> : null}
                   </View>
                 </View>
                 <Text
-                  className={selected ? 'text-xs text-violet-700/80' : 'text-xs text-neutral-500'}
+                  className={selected ? 'text-xs text-[#256EF4]/80' : 'text-xs text-neutral-500'}
                 >
                   {opt.description}
                 </Text>

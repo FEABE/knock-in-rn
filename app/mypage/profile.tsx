@@ -110,13 +110,13 @@ export default function ProfileEditScreen() {
               {({ selected }) => (
                 <View
                   className={`items-center border-b-2 pb-2 ${
-                    selected ? 'border-violet-600' : 'border-transparent'
+                    selected ? 'border-[#256EF4]' : 'border-transparent'
                   }`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-sm font-semibold text-violet-700'
+                        ? 'text-sm font-semibold text-[#256EF4]'
                         : 'text-sm text-neutral-400'
                     }
                   >
@@ -213,7 +213,7 @@ export default function ProfileEditScreen() {
                         setRoomTypes((p) => (on ? p.filter((x) => x !== rt) : [...p, rt]))
                       }
                       className={`rounded-full border px-4 py-2 ${
-                        on ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
+                        on ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
                       }`}
                     >
                       <Text
@@ -258,7 +258,7 @@ function Choices({
         renderItem={({ option, selected }) => (
           <View
             className={`rounded-full border px-5 py-2 ${
-              selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-300 bg-white'
+              selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
             }`}
           >
             <Text
@@ -278,7 +278,7 @@ function SaveBar({ onSave }: { onSave: () => void }) {
     <View className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pb-6 pt-3">
       <Pressable
         onPress={onSave}
-        className="h-12 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+        className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
       >
         <Text className="text-base font-semibold text-white">저장하기</Text>
       </Pressable>

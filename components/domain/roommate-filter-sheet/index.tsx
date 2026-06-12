@@ -50,7 +50,7 @@ export function RoommateFilterSheet({
                     }))
                   }
                   className={`rounded-full border px-3 py-1.5 ${
-                    active ? 'border-violet-600 bg-violet-600' : 'border-neutral-200 bg-white'
+                    active ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-200 bg-white'
                   }`}
                 >
                   <Text
@@ -83,12 +83,12 @@ export function RoommateFilterSheet({
             renderItem={({ option, selected }) => (
               <View
                 className={`flex-1 items-center rounded-xl border py-3 ${
-                  selected ? 'border-violet-600 bg-violet-50' : 'border-neutral-200 bg-white'
+                  selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                 }`}
               >
                 <Text
                   className={
-                    selected ? 'text-sm font-medium text-violet-600' : 'text-sm text-neutral-700'
+                    selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
                   }
                 >
                   {option.label}
@@ -113,7 +113,7 @@ export function RoommateFilterSheet({
               renderItem={({ option, selected }) => (
                 <View
                   className={`rounded-full border px-3 py-1.5 ${
-                    selected ? 'border-violet-600 bg-violet-600' : 'border-neutral-200 bg-white'
+                    selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-200 bg-white'
                   }`}
                 >
                   <Text
@@ -131,7 +131,7 @@ export function RoommateFilterSheet({
 
         <Pressable
           onPress={() => onOpenChange(false)}
-          className="mt-2 h-12 items-center justify-center rounded-xl bg-violet-600 active:opacity-90"
+          className="mt-2 h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
         >
           <Text className="text-sm font-semibold text-white">적용하기</Text>
         </Pressable>
