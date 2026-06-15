@@ -13,7 +13,7 @@ export function SupportHomeScreenView({
   operatingHoursLabel,
 }: SupportHomeScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="고객센터" />
       <ScrollView contentContainerClassName="gap-8 p-5">
         <View className="gap-2">

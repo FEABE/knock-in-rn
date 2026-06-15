@@ -9,7 +9,7 @@ export type NoticeScreenViewProps = UseNoticeScreenReturn;
 
 export function NoticeScreenView({ notices }: NoticeScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="공지사항" />
       <ScrollView contentContainerClassName="gap-3 p-5">
         {notices.length === 0 ? (

@@ -1,6 +1,8 @@
 import { forwardRef, type ReactNode } from 'react';
 import { Pressable, View, type View as RNView } from 'react-native';
 
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
+
 import { Modal } from '../modal';
 
 export type BottomSheetProps = {
@@ -28,22 +30,15 @@ function Root({
   showHandle = true,
   children,
 }: BottomSheetProps) {
+  const bottomPadding = useSafeBottomPadding(16, 32);
+
   return (
-    <Modal.Root
-      open={open}
-      defaultOpen={defaultOpen}
-      onOpenChange={onOpenChange}
-    >
-      {trigger ? (
-        <Modal.Trigger className={triggerClassName}>{trigger}</Modal.Trigger>
-      ) : null}
+    <Modal.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+      {trigger ? <Modal.Trigger className={triggerClassName}>{trigger}</Modal.Trigger> : null}
       <Modal.Portal animationType="slide">
         <Modal.Backdrop className={backdropClassName}>
-          <Pressable
-            onPress={(e) => e.stopPropagation()}
-            accessibilityViewIsModal
-          >
-            <View className={contentClassName}>
+          <Pressable onPress={(e) => e.stopPropagation()} accessibilityViewIsModal>
+            <View className={contentClassName} style={{ paddingBottom: bottomPadding }}>
               {showHandle ? <View className={handleClassName} /> : null}
               {children}
             </View>
@@ -54,11 +49,10 @@ function Root({
   );
 }
 
-const Close = forwardRef<
-  RNView,
-  React.ComponentProps<typeof Modal.Close>
->(function Close(props, ref) {
-  return <Modal.Close ref={ref} {...props} />;
-});
+const Close = forwardRef<RNView, React.ComponentProps<typeof Modal.Close>>(
+  function Close(props, ref) {
+    return <Modal.Close ref={ref} {...props} />;
+  },
+);
 
 export const BottomSheet = Object.assign(Root, { Close });

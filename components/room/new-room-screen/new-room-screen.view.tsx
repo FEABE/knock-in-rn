@@ -10,7 +10,7 @@ export type NewRoomScreenViewProps = UseNewRoomScreenReturn;
 export function NewRoomScreenView({ session, onBack, onSignIn, onSubmit }: NewRoomScreenViewProps) {
   if (!session) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
         <View className="flex-1 items-center justify-center gap-4 p-10">
           <Text className="text-base text-neutral-500">방을 등록하려면 로그인이 필요해요</Text>
           <Pressable onPress={onSignIn} className="rounded-full bg-yellow-300 px-5 py-3">

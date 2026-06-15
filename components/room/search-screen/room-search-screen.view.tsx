@@ -20,7 +20,7 @@ export function RoomSearchScreenView({
   onCancel,
 }: RoomSearchScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-row items-center gap-3 px-4 py-3">
         <View className="flex-1 flex-row items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2">
           <Text className="text-base text-neutral-400">⌕</Text>

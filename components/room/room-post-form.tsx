@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { REGIONS, ROOM_TYPES, type Region, type RoomType } from '@/lib/onboarding';
 import type { RoomOption, UserSummary } from '@/lib/domain';
 
@@ -113,6 +114,7 @@ export function RoomPostForm({
 
   const canSubmit = isRoomFormDraftValid(draft);
   const photoCount = 3; // placeholder count for visual
+  const bottomPadding = useSafeBottomPadding(12, 12);
 
   return (
     <>
@@ -356,7 +358,10 @@ export function RoomPostForm({
         </Section>
       </ScrollView>
 
-      <View className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 py-3">
+      <View
+        className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"
+        style={{ paddingBottom: bottomPadding }}
+      >
         <Pressable
           onPress={() => {
             const values = draftToValues(draft);

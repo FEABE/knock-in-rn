@@ -17,7 +17,7 @@ export function AgreementScreenView(props: AgreementScreenViewProps) {
 
 function LoginRequiredState() {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-1 items-center justify-center p-10">
         <Text className="text-sm text-neutral-500">로그인 후 이용 가능해요</Text>
       </View>
@@ -32,7 +32,7 @@ function AgreementEditView({
   finalizeDraft,
 }: AgreementScreenViewProps & { record?: AgreementRecord }) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
         <Pressable onPress={closeEdit} className="h-9 w-9 items-center justify-center">
           <Text className="text-2xl text-neutral-700">‹</Text>
@@ -146,7 +146,7 @@ function AgreementListView({
   deleteAgreement,
 }: AgreementScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
         <View className="flex-row items-center gap-2">
           <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">

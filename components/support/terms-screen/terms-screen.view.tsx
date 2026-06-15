@@ -9,7 +9,7 @@ export type TermsScreenViewProps = UseTermsScreenReturn;
 
 export function TermsScreenView({ sections, activeId, active, setActiveId }: TermsScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="약관 및 정책" />
       <View className="flex-row gap-2 border-b border-neutral-100 px-5 py-3">
         {sections.map((section) => (

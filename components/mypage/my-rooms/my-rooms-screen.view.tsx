@@ -2,6 +2,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard } from '@/components/domain';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 
 import type { UseMyRoomsScreenReturn } from './use-my-rooms-screen';
 
@@ -16,9 +17,11 @@ export function MyRoomsScreenView({
   onEditPress,
   onDeletePress,
 }: MyRoomsScreenViewProps) {
+  const bottomPadding = useSafeBottomPadding(12, 24);
+
   if (!loggedIn) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
         <View className="flex-1 items-center justify-center p-10">
           <Text className="text-sm text-neutral-500">로그인 후 이용 가능해요</Text>
         </View>
@@ -65,7 +68,10 @@ export function MyRoomsScreenView({
         )}
       </ScrollView>
 
-      <View className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pb-6 pt-3">
+      <View
+        className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"
+        style={{ paddingBottom: bottomPadding }}
+      >
         <Pressable
           onPress={onCreatePress}
           className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"

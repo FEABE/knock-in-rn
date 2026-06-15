@@ -20,7 +20,7 @@ export function InquiryFormScreenView({
   submit,
 }: InquiryFormScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="문의하기" />
 
       <ScrollView contentContainerClassName="gap-6 p-5">

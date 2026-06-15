@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import type { UseChatRoomReturn } from '@/components/ui/headless/chat-room/use-chat-room';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import type { UserSummary } from '@/lib/domain';
 
 import type { UseChatRoomScreenReturn } from './use-chat-room-screen';
@@ -34,6 +35,9 @@ export function ChatRoomScreenView({
   handleSend,
   onMessagesChanged,
 }: ChatRoomScreenViewProps) {
+  const inputBottomPadding = useSafeBottomPadding(8, 8);
+  const modalBottomPadding = useSafeBottomPadding(16, 20);
+
   useEffect(() => {
     onMessagesChanged();
   }, [chat.messages.length, onMessagesChanged]);
@@ -103,6 +107,7 @@ export function ChatRoomScreenView({
         setDraft={chat.setDraft}
         canSend={chat.canSend}
         onSend={() => handleSend(chat.canSend, chat.send)}
+        bottomPadding={inputBottomPadding}
       />
 
       <RoommateRequestModal
@@ -110,6 +115,7 @@ export function ChatRoomScreenView({
         peerName={room.peer.name}
         onClose={closeRequestSheet}
         onConfirm={confirmRequest}
+        bottomPadding={modalBottomPadding}
       />
     </KeyboardAvoidingView>
   );
@@ -224,14 +230,19 @@ function MessageInput({
   setDraft,
   canSend,
   onSend,
+  bottomPadding,
 }: {
   draft: string;
   setDraft: (next: string) => void;
   canSend: boolean;
   onSend: () => void;
+  bottomPadding: number;
 }) {
   return (
-    <View className="flex-row items-center gap-2 border-t border-neutral-100 bg-white px-3 py-2">
+    <View
+      className="flex-row items-center gap-2 border-t border-neutral-100 bg-white px-3 py-2"
+      style={{ paddingBottom: bottomPadding }}
+    >
       <View className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
         <Ionicons name="add" size={20} color="#737373" />
       </View>
@@ -260,16 +271,18 @@ function RoommateRequestModal({
   peerName,
   onClose,
   onConfirm,
+  bottomPadding,
 }: {
   visible: boolean;
   peerName: string;
   onClose: () => void;
   onConfirm: () => void;
+  bottomPadding: number;
 }) {
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/30">
-        <View className="gap-5 rounded-t-2xl bg-white p-5">
+        <View className="gap-5 rounded-t-2xl bg-white p-5" style={{ paddingBottom: bottomPadding }}>
           <View className="gap-2">
             <Text className="text-lg font-bold text-neutral-900">룸메이트 제안 보내기</Text>
             <Text className="text-sm leading-5 text-neutral-500">

@@ -26,7 +26,7 @@ export function VerificationEmailFlowScreen({
   const router = useRouter();
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <Header title={title} onBack={() => router.back()} />
       <VerificationFlowScreen
         kind={kind}

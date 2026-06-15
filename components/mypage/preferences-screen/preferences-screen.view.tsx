@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl } from '@/components/ui/headless';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 
 import { PREFERENCE_PRIORITIES, type UsePreferencesScreenReturn } from './use-preferences-screen';
 
@@ -14,10 +15,15 @@ export function PreferencesScreenView(props: PreferencesScreenViewProps) {
 }
 
 function PromptStep({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
+  const bottomPadding = useSafeBottomPadding(24, 32);
+
   return (
     <SafeAreaView className="flex-1 bg-neutral-100" edges={['top']}>
       <View className="flex-1 justify-end">
-        <View className="items-center gap-3 rounded-t-3xl bg-white px-5 pb-8 pt-6">
+        <View
+          className="items-center gap-3 rounded-t-3xl bg-white px-5 pt-6"
+          style={{ paddingBottom: bottomPadding }}
+        >
           <Text className="text-4xl">🎯</Text>
           <Text className="text-xl font-bold text-neutral-900">매칭 정확도를 높여볼까요?</Text>
           <Text className="text-center text-sm text-neutral-500">
@@ -243,8 +249,13 @@ function Pick({
 }
 
 function BottomBtn({ label, onPress }: { label: string; onPress: () => void }) {
+  const bottomPadding = useSafeBottomPadding(12, 24);
+
   return (
-    <View className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pb-6 pt-3">
+    <View
+      className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"
+      style={{ paddingBottom: bottomPadding }}
+    >
       <Pressable
         onPress={onPress}
         className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"

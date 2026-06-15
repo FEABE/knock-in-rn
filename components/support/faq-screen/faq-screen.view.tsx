@@ -9,7 +9,7 @@ export type FaqScreenViewProps = UseFaqScreenReturn;
 
 export function FaqScreenView({ items, openId, toggle }: FaqScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="자주 묻는 질문" />
       <ScrollView contentContainerClassName="gap-2 p-5">
         {items.map((item) => {

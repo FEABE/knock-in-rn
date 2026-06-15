@@ -12,7 +12,7 @@ export type AccountSettingsScreenViewProps = UseAccountSettingsScreenReturn;
 
 export function AccountSettingsScreenView({ sections, onBack }: AccountSettingsScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <Header title="계정 설정" onBack={onBack} />
 
       <ScrollView contentContainerClassName="gap-8 p-5">

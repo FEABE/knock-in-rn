@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import type { MatchDetailData } from '@/lib/api';
 
 import type { UseRoommateDetailScreenReturn } from './use-roommate-detail-screen';
@@ -205,8 +206,13 @@ function BottomBar({
   onLike: () => void;
   onRequest: () => void;
 }) {
+  const bottomPadding = useSafeBottomPadding(12, 12);
+
   return (
-    <View className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 py-3">
+    <View
+      className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 pt-3"
+      style={{ paddingBottom: bottomPadding }}
+    >
       <Pressable
         onPress={onLike}
         className="h-12 w-12 items-center justify-center rounded-xl border border-neutral-200"

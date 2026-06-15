@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/ui/headless';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
 import { ROOM_REPORT_REASONS, type UseRoomDetailScreenReturn } from './use-room-detail-screen';
@@ -46,7 +47,7 @@ export type RoomDetailScreenViewProps = UseRoomDetailScreenReturn;
 export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
   if (props.blocked) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
         <Header onBack={props.onBack} onMenu={() => props.setMenuOpen(true)} />
         <View className="flex-1 items-center justify-center gap-3 p-10">
           <Text className="text-base text-neutral-500">차단한 게시글이에요</Text>
@@ -482,8 +483,13 @@ function BottomBar({
   onLike: () => void;
   onRequest: () => void;
 }) {
+  const bottomPadding = useSafeBottomPadding(12, 12);
+
   return (
-    <View className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 py-3">
+    <View
+      className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 pt-3"
+      style={{ paddingBottom: bottomPadding }}
+    >
       <Pressable
         onPress={onLike}
         className="h-12 w-12 items-center justify-center rounded-xl border border-neutral-200"

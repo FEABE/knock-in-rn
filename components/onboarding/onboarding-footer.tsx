@@ -2,6 +2,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 
 import { AnalyticsEvent, logEvent, ONBOARDING_STEP_META } from '@/lib/analytics';
 import { Button } from '@/components/ui/headless';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useOnboarding } from '@/lib/onboarding';
 
 export type OnboardingFooterProps = {
@@ -27,6 +28,7 @@ export function OnboardingFooter({
   const handlePress = onPress ?? goNext;
   const label = primaryLabel ?? (isLast ? '완료' : '다음으로');
   const disabled = !canProceed || loading;
+  const bottomPadding = useSafeBottomPadding(12, 24);
 
   // 뒤로가기 탭: 어느 질문에서 망설임이 많은지 파악.
   const handleBack = () => {
@@ -39,7 +41,10 @@ export function OnboardingFooter({
   };
 
   return (
-    <View className="gap-2 border-t border-neutral-100 bg-white px-5 pb-6 pt-4">
+    <View
+      className="gap-2 border-t border-neutral-100 bg-white px-5 pt-4"
+      style={{ paddingBottom: bottomPadding }}
+    >
       {helper ? <Text className="text-xs text-neutral-500">{helper}</Text> : null}
       <View className="flex-row gap-3">
         {showBack ? (

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RangeField } from '@/components/onboarding/range-field';
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl, Tabs } from '@/components/ui/headless';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 
 import {
   PROFILE_ROOM_TYPES,
@@ -215,8 +216,13 @@ function Choices({
 }
 
 function SaveBar({ onSave }: { onSave: () => void }) {
+  const bottomPadding = useSafeBottomPadding(12, 24);
+
   return (
-    <View className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pb-6 pt-3">
+    <View
+      className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"
+      style={{ paddingBottom: bottomPadding }}
+    >
       <Pressable
         onPress={onSave}
         className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"

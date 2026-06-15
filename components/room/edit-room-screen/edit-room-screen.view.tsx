@@ -50,7 +50,7 @@ export function EditRoomScreenView({
 
 function MessageState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-1 items-center justify-center gap-3">
         <Text className="text-sm text-neutral-500">{message}</Text>
         <Pressable onPress={onBack} className="rounded-full bg-neutral-100 px-4 py-2">

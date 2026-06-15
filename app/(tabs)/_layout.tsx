@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 
 const TAB_ICONS: Record<
   string,
@@ -20,6 +21,8 @@ function TabIcon({ name, focused, color }: { name: string; focused: boolean; col
 }
 
 export default function TabLayout() {
+  const tabBottomPadding = useSafeBottomPadding(0, 18);
+
   return (
     <Tabs
       screenOptions={{
@@ -29,9 +32,9 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
         tabBarStyle: {
-          height: 78,
+          height: 60 + tabBottomPadding,
           paddingTop: 8,
-          paddingBottom: 18,
+          paddingBottom: tabBottomPadding,
           borderTopColor: '#E5E7EB',
         },
       }}

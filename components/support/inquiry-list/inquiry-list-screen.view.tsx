@@ -14,7 +14,7 @@ export function InquiryListScreenView({
   onCreatePress,
 }: InquiryListScreenViewProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="문의내역" />
 
       <ScrollView contentContainerClassName="gap-5 p-5">
