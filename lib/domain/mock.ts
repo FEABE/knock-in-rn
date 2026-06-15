@@ -1,16 +1,8 @@
 import { REGIONS } from '@/lib/onboarding';
 
-import type {
-  FaqItem,
-  Inquiry,
-  Notice,
-  RoomPost,
-  RoommateCard,
-  UserSummary,
-} from './types';
+import type { FaqItem, Inquiry, Notice, RoomPost, RoommateCard, UserSummary } from './types';
 
-const region = (id: string) =>
-  REGIONS.find((r) => r.id === id) ?? REGIONS[0];
+const region = (id: string) => REGIONS.find((r) => r.id === id) ?? REGIONS[0];
 
 export const MOCK_USERS: UserSummary[] = [
   {
@@ -21,9 +13,7 @@ export const MOCK_USERS: UserSummary[] = [
     preferredGender: 'same',
     bio: '깔끔하고 조용한 룸메를 찾아요. 회사원이고 평일 늦게 퇴근해요.',
     region: region('seoul-mapo'),
-    badges: [
-      { kind: 'company', label: '회사 이메일 인증', verifiedAt: new Date() },
-    ],
+    badges: [{ kind: 'company', label: '회사 이메일 인증', verifiedAt: new Date() }],
     lifestyle: {
       sleepTime: '24:00',
       wakeTime: '07:30',
@@ -42,9 +32,7 @@ export const MOCK_USERS: UserSummary[] = [
     preferredGender: 'same',
     bio: '대학원생입니다. 청결 신경쓰고 약속 잘 지킵니다.',
     region: region('seoul-seongdong'),
-    badges: [
-      { kind: 'school', label: '학교 이메일 인증', verifiedAt: new Date() },
-    ],
+    badges: [{ kind: 'school', label: '학교 이메일 인증', verifiedAt: new Date() }],
     lifestyle: {
       sleepTime: '01:00',
       wakeTime: '08:30',
@@ -82,9 +70,7 @@ export const MOCK_USERS: UserSummary[] = [
     preferredGender: 'any',
     bio: '직장인. 운동 좋아하고 깔끔합니다.',
     region: region('seoul-gwangjin'),
-    badges: [
-      { kind: 'company', label: '회사 이메일 인증', verifiedAt: new Date() },
-    ],
+    badges: [{ kind: 'company', label: '회사 이메일 인증', verifiedAt: new Date() }],
     lifestyle: {
       sleepTime: '23:00',
       wakeTime: '06:30',
@@ -131,8 +117,7 @@ export const MOCK_ROOM_POSTS: RoomPost[] = [
     moveInDate: new Date('2026-06-01'),
     status: 'open',
     author: MOCK_USERS[0],
-    description:
-      '한강 도보 5분, 햇볕 잘 들어요. 깨끗이 쓰시는 분 환영합니다.',
+    description: '한강 도보 5분, 햇볕 잘 들어요. 깨끗이 쓰시는 분 환영합니다.',
     thumbnailUrl: 'https://picsum.photos/seed/p1/600/400',
     photoUrls: [
       'https://picsum.photos/seed/p1/600/400',
@@ -153,8 +138,7 @@ export const MOCK_ROOM_POSTS: RoomPost[] = [
     createdAt: new Date('2026-05-08'),
     status: 'open',
     author: MOCK_USERS[2],
-    description:
-      '2호선 도보 7분, 카드키. 야간 정숙 부탁드려요.',
+    description: '2호선 도보 7분, 카드키. 야간 정숙 부탁드려요.',
     thumbnailUrl: 'https://picsum.photos/seed/p2/600/400',
   },
   {
@@ -290,25 +274,198 @@ export const MOCK_SESSION_USER: UserSummary = MOCK_USERS[0];
 
 import type { ChatRoom } from './types';
 
-export const MOCK_CHAT_ROOMS: ChatRoom[] = MOCK_USERS.slice(1, 5).map((u) => ({
-  id: u.id,
-  peer: u,
-  matched: false,
-  acceptedRequest: false,
-  messages: [
-    {
-      id: `${u.id}-sys`,
-      authorId: 'system',
-      body: '채팅이 시작되었어요. 인사를 건네보세요.',
-      sentAt: new Date('2026-05-12T10:00:00'),
-      kind: 'system',
-    },
-    {
-      id: `${u.id}-m1`,
-      authorId: u.id,
-      body: `안녕하세요! ${u.name}입니다. 잘 부탁드려요 :)`,
-      sentAt: new Date('2026-05-12T10:05:00'),
-      kind: 'text',
-    },
-  ],
-}));
+export const MOCK_CHAT_ROOMS: ChatRoom[] = [
+  {
+    id: 'u-2',
+    peer: MOCK_USERS[1],
+    matched: true,
+    acceptedRequest: true,
+    messages: [
+      {
+        id: 'u-2-sys',
+        authorId: 'system',
+        body: '룸메이트 매칭이 성사되었어요. 공동생활 합의서를 작성해보세요.',
+        sentAt: new Date('2026-05-13T09:10:00'),
+        kind: 'system',
+      },
+      {
+        id: 'u-2-m1',
+        authorId: 'u-2',
+        body: '안녕하세요 지민님! 성수 쪽 방 보고 연락드렸어요.',
+        sentAt: new Date('2026-05-13T09:12:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-2-m2',
+        authorId: MOCK_SESSION_USER.id,
+        body: '안녕하세요. 생활패턴이 잘 맞는 것 같아서 저도 관심 있었어요.',
+        sentAt: new Date('2026-05-13T09:15:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-2-m3',
+        authorId: 'u-2',
+        body: '저는 평일에는 연구실에 늦게까지 있고 주말엔 조용히 쉬는 편이에요.',
+        sentAt: new Date('2026-05-13T09:17:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-2-m4',
+        authorId: MOCK_SESSION_USER.id,
+        body: '저도 평일 퇴근이 늦어서 밤 시간만 조용하면 좋을 것 같아요.',
+        sentAt: new Date('2026-05-13T09:21:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-2-m5',
+        authorId: 'u-2',
+        body: '좋아요. 청소 규칙이랑 공과금 기준만 미리 정하면 괜찮을 것 같아요.',
+        sentAt: new Date('2026-05-13T09:24:00'),
+        kind: 'text',
+      },
+    ],
+  },
+  {
+    id: 'u-3',
+    peer: MOCK_USERS[2],
+    matched: false,
+    acceptedRequest: false,
+    messages: [
+      {
+        id: 'u-3-sys',
+        authorId: 'system',
+        body: '채팅이 시작되었어요. 인사를 건네보세요.',
+        sentAt: new Date('2026-05-14T18:30:00'),
+        kind: 'system',
+      },
+      {
+        id: 'u-3-m1',
+        authorId: 'u-3',
+        body: '안녕하세요. 강남 오피스텔 룸셰어 글 보고 연락드려요.',
+        sentAt: new Date('2026-05-14T18:31:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-3-m2',
+        authorId: MOCK_SESSION_USER.id,
+        body: '안녕하세요! 혹시 재택근무는 주 몇 회 정도 하세요?',
+        sentAt: new Date('2026-05-14T18:35:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-3-m3',
+        authorId: 'u-3',
+        body: '보통 주 3회 정도예요. 낮에는 화상회의가 가끔 있고 밤에는 조용한 편입니다.',
+        sentAt: new Date('2026-05-14T18:37:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-3-m4',
+        authorId: MOCK_SESSION_USER.id,
+        body: '좋아요. 저는 밤에 소음만 적으면 괜찮아요. 방문객은 자주 있으신 편인가요?',
+        sentAt: new Date('2026-05-14T18:42:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-3-m5',
+        authorId: 'u-3',
+        body: '거의 없어요. 친구 방문은 미리 말하는 쪽을 선호해요.',
+        sentAt: new Date('2026-05-14T18:44:00'),
+        kind: 'text',
+      },
+    ],
+  },
+  {
+    id: 'u-4',
+    peer: MOCK_USERS[3],
+    matched: false,
+    acceptedRequest: false,
+    messages: [
+      {
+        id: 'u-4-sys',
+        authorId: 'system',
+        body: '도윤님에게 룸메이트 제안을 보냈어요.',
+        sentAt: new Date('2026-05-15T12:00:00'),
+        kind: 'system',
+      },
+      {
+        id: 'u-4-m1',
+        authorId: MOCK_SESSION_USER.id,
+        body: '안녕하세요. 운동 좋아하신다고 해서 생활패턴이 비슷할 것 같아 연락드렸어요.',
+        sentAt: new Date('2026-05-15T12:01:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-4-m2',
+        authorId: 'u-4',
+        body: '안녕하세요! 저는 아침 운동하고 출근하는 편이에요.',
+        sentAt: new Date('2026-05-15T12:09:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-4-m3',
+        authorId: MOCK_SESSION_USER.id,
+        body: '저도 아침형이라 괜찮을 것 같아요. 흡연은 안 하시는 거 맞죠?',
+        sentAt: new Date('2026-05-15T12:11:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-4-m4',
+        authorId: 'u-4',
+        body: '네 비흡연입니다. 청소는 주 1회 고정으로 정하면 좋겠어요.',
+        sentAt: new Date('2026-05-15T12:14:00'),
+        kind: 'text',
+      },
+    ],
+  },
+  {
+    id: 'u-5',
+    peer: MOCK_USERS[4],
+    matched: false,
+    acceptedRequest: false,
+    messages: [
+      {
+        id: 'u-5-sys',
+        authorId: 'system',
+        body: '채팅이 시작되었어요. 인사를 건네보세요.',
+        sentAt: new Date('2026-05-16T20:03:00'),
+        kind: 'system',
+      },
+      {
+        id: 'u-5-m1',
+        authorId: 'u-5',
+        body: '판교 셰어하우스 글 봤어요. 입주는 6월 초도 가능하신가요?',
+        sentAt: new Date('2026-05-16T20:04:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-5-m2',
+        authorId: MOCK_SESSION_USER.id,
+        body: '네 6월 첫째 주 가능해요. 혹시 주말에 집에 계신 시간이 많은 편인가요?',
+        sentAt: new Date('2026-05-16T20:08:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-5-m3',
+        authorId: 'u-5',
+        body: '주말엔 보통 정리하고 쉬는 편이에요. 파티나 늦은 방문은 거의 없어요.',
+        sentAt: new Date('2026-05-16T20:11:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-5-m4',
+        authorId: MOCK_SESSION_USER.id,
+        body: '좋네요. 여성 셰어하우스라 보안이나 공용공간 규칙도 궁금해요.',
+        sentAt: new Date('2026-05-16T20:15:00'),
+        kind: 'text',
+      },
+      {
+        id: 'u-5-m5',
+        authorId: 'u-5',
+        body: '공용공간은 사용 후 바로 정리, 외부인은 사전 공유 기준이에요.',
+        sentAt: new Date('2026-05-16T20:18:00'),
+        kind: 'text',
+      },
+    ],
+  },
+];

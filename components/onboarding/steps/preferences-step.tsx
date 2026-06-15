@@ -122,7 +122,7 @@ export function PreferencesStep() {
         </Field>
       </ScrollView>
 
-      <OnboardingFooter canProceed={true} primaryLabel="완료" />
+      <OnboardingFooter canProceed={true} primaryLabel="완료" showBack />
     </View>
   );
 }

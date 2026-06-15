@@ -7,6 +7,7 @@ import { saveProfileAll, type ProfileAllRequest } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import {
   ONBOARDING_WRITE_ENABLED,
+  ONBOARDING_STEPS,
   OnboardingProvider,
   TERM_BACKEND_IDS,
   type OnboardingValues,
@@ -59,15 +60,15 @@ export default function OnboardingLayout() {
   }, []);
 
   const onComplete = async (values: OnboardingValues) => {
-    // 3/3(방 상태) "완료" 탭 = 마지막 스텝 완료 시점.
+    // 마지막 스텝 "완료" 탭 = 온보딩 완료 시점.
     logEvent(AnalyticsEvent.ONBOARDING_STEP_NEXT, {
-      step_index: 3,
-      step_name: 'room_status',
+      step_index: ONBOARDING_STEPS.length,
+      step_name: 'preferences',
       time_on_step_ms: onboardingTiming.timeOnStepMs(),
     });
     logEvent(AnalyticsEvent.ONBOARDING_COMPLETE, {
       duration_ms: onboardingTiming.durationMs(),
-      total_steps: 3,
+      total_steps: ONBOARDING_STEPS.length,
     });
 
     if (ONBOARDING_WRITE_ENABLED) {
@@ -77,10 +78,9 @@ export default function OnboardingLayout() {
         return;
       }
     }
-    // 기본 프로필 완성 → 로그인 처리 후 Phase 2(선호조건) 제안 화면으로.
-    // from=onboarding 이면 "나중에/완료" 시 탐색으로 빠진다.
-    signIn();
-    router.replace({ pathname: '/mypage/preferences', params: { from: 'onboarding' } } as never);
+    // 기본 프로필 완성 → 로그인 처리 후 탐색으로 진입.
+    await signIn();
+    router.replace('/explore' as never);
   };
 
   return (

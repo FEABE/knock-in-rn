@@ -24,19 +24,19 @@ export function RoomCardView({
   return (
     <Pressable
       onPress={onPress}
-      className="overflow-hidden rounded-2xl border border-neutral-100 bg-white active:opacity-90"
+      className="overflow-hidden rounded-lg border border-neutral-200 bg-white active:opacity-90"
       accessibilityRole="button"
     >
       <View className="relative">
         {post.thumbnailUrl ? (
           <Image
             source={{ uri: post.thumbnailUrl }}
-            style={{ width: '100%', height: 200 }}
+            style={{ width: '100%', height: 132 }}
             contentFit="cover"
             transition={150}
           />
         ) : (
-          <View className="h-48 w-full items-center justify-center bg-neutral-100">
+          <View className="h-[132px] w-full items-center justify-center bg-neutral-100">
             <Text className="text-sm text-neutral-400">대표 썸네일</Text>
           </View>
         )}
@@ -50,22 +50,22 @@ export function RoomCardView({
         <Pressable
           onPress={toggleLike}
           hitSlop={8}
-          className="absolute right-3 top-3 h-9 w-9 items-center justify-center rounded-full bg-white/90"
+          className="absolute right-3 top-3 h-9 w-9 items-center justify-center rounded-full bg-black/10"
         >
-          <Text className={liked ? 'text-base text-red-500' : 'text-base text-neutral-500'}>
+          <Text className={liked ? 'text-base text-red-500' : 'text-xl text-white'}>
             {liked ? '♥' : '♡'}
           </Text>
         </Pressable>
       </View>
 
-      <View className="gap-1.5 p-4">
+      <View className="gap-1.5 p-3">
         <Text numberOfLines={1} className="text-base font-bold" style={{ color: BRAND }}>
           {post.title}
         </Text>
         <Text className="text-sm font-medium text-neutral-800">{priceLabel}</Text>
         <Text className="text-xs text-neutral-500">{regionLabel}</Text>
 
-        <View className="mt-2 flex-row items-center justify-between border-t border-neutral-100 pt-3">
+        <View className="mt-2 flex-row items-center justify-between pt-2">
           <View className="flex-row items-center gap-1.5">
             <View className="h-6 w-6 items-center justify-center rounded-full bg-neutral-100">
               <Text className="text-[10px] text-neutral-500">{post.author.name.charAt(0)}</Text>
@@ -81,7 +81,7 @@ export function RoomCardView({
             ) : null}
             <Text className="text-xs text-neutral-400">· {timeAgoLabel}</Text>
           </View>
-          <Text className="text-xs text-neutral-400">👁 {post.views.toLocaleString()}</Text>
+          <Text className="text-xs text-neutral-400">{post.views.toLocaleString()}</Text>
         </View>
       </View>
     </Pressable>

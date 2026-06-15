@@ -38,6 +38,17 @@ export type AlarmListData = {
   alarms: AlarmItem[];
 };
 
+export type BoNoticeItem = {
+  id: string;
+  title: string;
+  contents: string;
+  createAt: string;
+};
+
+export type BoNoticeListData = {
+  notices: BoNoticeItem[];
+};
+
 export type AlarmSetting = {
   id: string;
   name: string;
@@ -118,6 +129,15 @@ const MOCK_SETTINGS: AlarmSetting[] = [
   { id: 'set-marketing', name: '마케팅 알림', isEnable: 'false' },
 ];
 
+const MOCK_NOTICES: BoNoticeItem[] = [
+  {
+    id: 'notice-1',
+    title: '노크인 서비스 오픈 안내',
+    contents: '생활패턴 기반 룸메이트 매칭 서비스를 시작합니다.',
+    createAt: '2026-05-01T09:00:00Z',
+  },
+];
+
 const MOCK_INQUIRIES: InquiryItem[] = [
   {
     id: 'q-1',
@@ -189,6 +209,12 @@ export function updateNotificationSetting(
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PATCH', '/users/me/notification-settings', { body });
+}
+
+/** GET /bo/notices — 운영 공지 목록 조회 */
+export function getBoNotices(params: PageParams = {}): Promise<ApiResponse<BoNoticeListData>> {
+  if (USE_MOCK) return mockOk({ notices: MOCK_NOTICES });
+  return request('GET', '/bo/notices', { query: params });
 }
 
 // ─── Client: 고객센터 ───────────────────────────────────────────────────────────

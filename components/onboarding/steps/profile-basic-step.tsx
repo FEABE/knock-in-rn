@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { saveProfileBasic, type ProfileBasicRequest } from '@/lib/api';
-import { SegmentedControl, TermsAgreement, TextField } from '@/components/ui/headless';
+import { SegmentedControl, TextField } from '@/components/ui/headless';
 import {
   ONBOARDING_WRITE_ENABLED,
-  TERMS,
   useOnboarding,
   useOnboardingProfile,
-  useOnboardingTerms,
   type Gender,
 } from '@/lib/onboarding';
 
@@ -70,7 +68,6 @@ const INPUT_CLS = 'rounded-xl bg-neutral-100 px-4 py-3.5 text-base text-neutral-
 export function ProfileBasicStep() {
   const { goNext, isStepSaved, markStepSaved } = useOnboarding();
   const { profile, patch } = useOnboardingProfile();
-  const { terms, setTerms, isTermsValid } = useOnboardingTerms();
   const [birthText, setBirthText] = useState(() => formatBirth(profile.birthDate));
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -101,8 +98,7 @@ export function ProfileBasicStep() {
     profile.name.trim().length > 0 &&
     profile.gender !== null &&
     profile.birthDate !== null &&
-    EMAIL_RE.test(profile.email) &&
-    isTermsValid;
+    EMAIL_RE.test(profile.email);
 
   /** "다음" → 기본정보1 저장(POST /users/me/profile/basic) 후 다음 스텝으로. */
   const handleNext = async () => {
@@ -213,50 +209,6 @@ export function ProfileBasicStep() {
             className={INPUT_CLS}
           />
         </Field>
-
-        <View className="gap-3">
-          <Text className="text-sm font-semibold text-neutral-800">약관 동의</Text>
-          <TermsAgreement.Root
-            terms={TERMS}
-            value={terms}
-            onValueChange={setTerms}
-            className="gap-3"
-          >
-            <TermsAgreement.ToggleAll className="flex-row items-center gap-2">
-              {({ checked }) => (
-                <>
-                  <CheckBox checked={checked} circle />
-                  <Text className="text-sm font-medium text-neutral-700">전체 동의</Text>
-                </>
-              )}
-            </TermsAgreement.ToggleAll>
-
-            <View className="h-px bg-neutral-100" />
-
-            {TERMS.map((term) => (
-              <TermsAgreement.Item
-                key={term.key}
-                termKey={term.key}
-                className="flex-row items-center gap-2"
-              >
-                {({ checked, required, label, href }) => (
-                  <>
-                    <CheckBox checked={checked} />
-                    <Text className="flex-1 text-sm text-neutral-500">
-                      [{required ? '필수' : '선택'}] {label}
-                    </Text>
-                    <Text
-                      className="text-base text-neutral-300"
-                      onPress={href ? () => Linking.openURL(href) : undefined}
-                    >
-                      ›
-                    </Text>
-                  </>
-                )}
-              </TermsAgreement.Item>
-            ))}
-          </TermsAgreement.Root>
-        </View>
       </ScrollView>
 
       {submitError ? (
@@ -271,19 +223,6 @@ export function ProfileBasicStep() {
         loading={submitting}
         onPress={handleNext}
       />
-    </View>
-  );
-}
-
-function CheckBox({ checked, circle = false }: { checked: boolean; circle?: boolean }) {
-  const shape = circle ? 'rounded-full' : 'rounded';
-  return (
-    <View
-      className={`h-5 w-5 items-center justify-center ${shape} ${
-        checked ? 'bg-[#256EF4]' : 'border border-neutral-300 bg-white'
-      }`}
-    >
-      {checked ? <Text className="text-[11px] font-bold text-white">✓</Text> : null}
     </View>
   );
 }

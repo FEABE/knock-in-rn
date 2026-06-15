@@ -3,10 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { ONBOARDING_STEPS, STEP_LABELS, useOnboarding } from '@/lib/onboarding';
 
-/**
- * 와이어프레임 온보딩 헤더: 우상단 닫기(✕) + 3분할 진행 바 + "1 / 3 — 기본 정보" 라벨.
- * (뒤로가기는 푸터의 "이전"으로)
- */
+/** 와이어프레임 온보딩 헤더: 우상단 닫기 + 분할 진행 바 + 단계 라벨. */
 export function OnboardingHeader() {
   const { currentStep, currentIndex } = useOnboarding();
   const router = useRouter();

@@ -21,6 +21,8 @@ export type ChatRoomItem = {
   creatAt: string;
   chatRoomId: string;
   isAgree: string;
+  lastMessage?: string;
+  unreadCount?: number;
 };
 
 export type ChatRoomListData = {
@@ -68,15 +70,35 @@ export type ChatSendPayload = {
 const MOCK_CHAT_ROOMS: ChatRoomItem[] = [
   {
     name: '하준',
-    creatAt: '2026-05-20T10:00:00Z',
-    chatRoomId: 'chat-1',
+    creatAt: '2026-05-13T09:24:00Z',
+    chatRoomId: 'u-2',
     isAgree: 'true',
+    lastMessage: '좋아요. 청소 규칙이랑 공과금 기준만 미리 정하면 괜찮을 것 같아요.',
+    unreadCount: 0,
   },
   {
     name: '수아',
-    creatAt: '2026-05-22T15:30:00Z',
-    chatRoomId: 'chat-2',
+    creatAt: '2026-05-14T18:44:00Z',
+    chatRoomId: 'u-3',
     isAgree: 'false',
+    lastMessage: '거의 없어요. 친구 방문은 미리 말하는 쪽을 선호해요.',
+    unreadCount: 2,
+  },
+  {
+    name: '도윤',
+    creatAt: '2026-05-15T12:14:00Z',
+    chatRoomId: 'u-4',
+    isAgree: 'false',
+    lastMessage: '네 비흡연입니다. 청소는 주 1회 고정으로 정하면 좋겠어요.',
+    unreadCount: 1,
+  },
+  {
+    name: '서윤',
+    creatAt: '2026-05-16T20:18:00Z',
+    chatRoomId: 'u-5',
+    isAgree: 'false',
+    lastMessage: '공용공간은 사용 후 바로 정리, 외부인은 사전 공유 기준이에요.',
+    unreadCount: 0,
   },
 ];
 

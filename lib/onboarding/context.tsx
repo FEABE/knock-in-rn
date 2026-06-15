@@ -22,11 +22,14 @@ export type OnboardingStep =
   | 'visibility'
   | 'preferences';
 
-/** 가입 온보딩 흐름: 기본정보 → 생활패턴 → 방 조건 (와이어프레임 1~3). */
+/** 가입 온보딩 흐름: 약관 → 기본정보 → 생활패턴 → 방 조건 → 노출 상태 → 선호조건. */
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
+  'terms',
   'profile-basic',
   'profile-lifestyle',
   'roominfo',
+  'visibility',
+  'preferences',
 ];
 
 export const STEP_LABELS: Record<OnboardingStep, string> = {
@@ -83,7 +86,7 @@ export type OnboardingProviderProps = {
 
 export function OnboardingProvider({
   children,
-  initialStep = 'profile-basic',
+  initialStep = 'terms',
   initialValues,
   onComplete,
 }: OnboardingProviderProps) {
@@ -152,7 +155,7 @@ export function OnboardingProvider({
       room: emptyRoomCondition(),
       preferences: emptyPreferenceConditions(),
     });
-    setCurrentStep('profile-basic');
+    setCurrentStep('terms');
     setSavedSignatures({});
   }, []);
 

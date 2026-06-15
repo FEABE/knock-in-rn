@@ -26,7 +26,7 @@ export default function HeadlessDemo() {
 
         <Section title="Button">
           <Button
-            className="self-start rounded-lg bg-blue-600 px-4 py-2 active:bg-blue-700"
+            className="self-start rounded-lg bg-[#256EF4] px-4 py-2 active:bg-[#256EF4]"
             onPress={() => {}}
           >
             <Text className="font-medium text-white">Primary</Text>
@@ -38,11 +38,7 @@ export default function HeadlessDemo() {
           >
             {({ pressed }) => (
               <Text
-                className={
-                  pressed
-                    ? 'font-medium text-blue-600'
-                    : 'font-medium text-neutral-800'
-                }
+                className={pressed ? 'font-medium text-[#256EF4]' : 'font-medium text-neutral-800'}
               >
                 Render prop ({pressed ? 'pressed' : 'idle'})
               </Text>
@@ -71,14 +67,10 @@ export default function HeadlessDemo() {
             {({ checked }) => (
               <View
                 className={`h-7 w-12 flex-row items-center rounded-full px-1 ${
-                  checked ? 'bg-blue-600' : 'bg-neutral-300'
+                  checked ? 'bg-[#256EF4]' : 'bg-neutral-300'
                 }`}
               >
-                <View
-                  className={`h-5 w-5 rounded-full bg-white ${
-                    checked ? 'ml-5' : 'ml-0'
-                  }`}
-                />
+                <View className={`h-5 w-5 rounded-full bg-white ${checked ? 'ml-5' : 'ml-0'}`} />
               </View>
             )}
           </Toggle>
@@ -98,11 +90,7 @@ export default function HeadlessDemo() {
                 >
                   {({ selected }) => (
                     <Text
-                      className={
-                        selected
-                          ? 'font-semibold text-blue-600'
-                          : 'text-neutral-800'
-                      }
+                      className={selected ? 'font-semibold text-[#256EF4]' : 'text-neutral-800'}
                     >
                       {fruit}
                     </Text>
@@ -115,7 +103,7 @@ export default function HeadlessDemo() {
 
         <Section title="Modal">
           <Modal.Root>
-            <Modal.Trigger className="self-start rounded-lg bg-blue-600 px-4 py-2">
+            <Modal.Trigger className="self-start rounded-lg bg-[#256EF4] px-4 py-2">
               <Text className="font-medium text-white">Open modal</Text>
             </Modal.Trigger>
             <Modal.Portal>
@@ -222,10 +210,7 @@ function ControllerFormDemo() {
           name="fruit"
           render={({ field }) => (
             <FieldRow label="Favorite fruit">
-              <Dropdown.Root
-                value={field.value}
-                onValueChange={field.onChange}
-              >
+              <Dropdown.Root value={field.value} onValueChange={field.onChange}>
                 <Dropdown.Trigger className="self-start rounded-md border border-neutral-300 px-3 py-2">
                   <Text className="text-neutral-800">{field.value}</Text>
                 </Dropdown.Trigger>
@@ -238,11 +223,7 @@ function ControllerFormDemo() {
                     >
                       {({ selected }) => (
                         <Text
-                          className={
-                            selected
-                              ? 'font-semibold text-blue-600'
-                              : 'text-neutral-800'
-                          }
+                          className={selected ? 'font-semibold text-[#256EF4]' : 'text-neutral-800'}
                         >
                           {fruit}
                         </Text>
@@ -264,13 +245,11 @@ function ControllerFormDemo() {
                 {({ checked }) => (
                   <View
                     className={`h-7 w-12 flex-row items-center rounded-full px-1 ${
-                      checked ? 'bg-blue-600' : 'bg-neutral-300'
+                      checked ? 'bg-[#256EF4]' : 'bg-neutral-300'
                     }`}
                   >
                     <View
-                      className={`h-5 w-5 rounded-full bg-white ${
-                        checked ? 'ml-5' : 'ml-0'
-                      }`}
+                      className={`h-5 w-5 rounded-full bg-white ${checked ? 'ml-5' : 'ml-0'}`}
                     />
                   </View>
                 )}
@@ -285,39 +264,28 @@ function ControllerFormDemo() {
           render={({ field, fieldState }) => (
             <View className="gap-1">
               <View className="flex-row items-center gap-3">
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                >
+                <Checkbox checked={field.value} onCheckedChange={field.onChange}>
                   {({ checked }) => (
                     <View
                       className={`h-5 w-5 items-center justify-center rounded border ${
-                        checked
-                          ? 'border-blue-600 bg-blue-600'
-                          : 'border-neutral-400 bg-white'
+                        checked ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-400 bg-white'
                       }`}
                     >
-                      {checked ? (
-                        <Text className="text-xs font-bold text-white">
-                          ✓
-                        </Text>
-                      ) : null}
+                      {checked ? <Text className="text-xs font-bold text-white">✓</Text> : null}
                     </View>
                   )}
                 </Checkbox>
                 <Text className="text-neutral-800">I accept the terms</Text>
               </View>
               {fieldState.error?.message ? (
-                <Text className="text-xs text-red-600">
-                  {fieldState.error.message}
-                </Text>
+                <Text className="text-xs text-red-600">{fieldState.error.message}</Text>
               ) : null}
             </View>
           )}
         />
 
         <Button
-          className="self-start rounded-lg bg-blue-600 px-4 py-2 active:bg-blue-700"
+          className="self-start rounded-lg bg-[#256EF4] px-4 py-2 active:bg-[#256EF4]"
           onPress={onSubmit}
         >
           <Text className="font-medium text-white">Submit</Text>
@@ -342,14 +310,10 @@ function PlanField() {
                 <View className="flex-row items-center gap-2">
                   <View
                     className={`h-5 w-5 items-center justify-center rounded-full border ${
-                      selected
-                        ? 'border-blue-600'
-                        : 'border-neutral-400'
+                      selected ? 'border-[#256EF4]' : 'border-neutral-400'
                     }`}
                   >
-                    {selected ? (
-                      <View className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-                    ) : null}
+                    {selected ? <View className="h-2.5 w-2.5 rounded-full bg-[#256EF4]" /> : null}
                   </View>
                   <Text className="capitalize text-neutral-800">{option}</Text>
                 </View>
@@ -392,7 +356,7 @@ function RegisterFormDemo() {
         className="rounded-md border border-neutral-300 px-3 py-2"
       />
       <Button
-        className="self-start rounded-lg bg-blue-600 px-4 py-2 active:bg-blue-700"
+        className="self-start rounded-lg bg-[#256EF4] px-4 py-2 active:bg-[#256EF4]"
         onPress={onSubmit}
       >
         <Text className="font-medium text-white">Sign in</Text>
@@ -419,13 +383,7 @@ function FieldRow({
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View className="gap-3">
       <Text className="text-sm font-semibold uppercase tracking-wide text-neutral-500">

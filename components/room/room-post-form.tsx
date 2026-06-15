@@ -270,7 +270,7 @@ export function RoomPostForm({
         </Section>
 
         <Section title="생활패턴 · 선호 룸메이트 조건">
-          <View className="flex-row items-center justify-between rounded-xl bg-[#256EF4]/10/60 px-4 py-2.5">
+          <View className="flex-row items-center justify-between rounded-xl bg-[#256EF4]/10 px-4 py-2.5">
             <Text className="text-xs text-[#256EF4]">프로필에서 자동으로 불러왔어요</Text>
             <Pressable hitSlop={4}>
               <Text className="text-xs text-[#256EF4]">마이페이지에서 수정 →</Text>
