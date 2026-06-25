@@ -255,5 +255,5 @@ export function updateVisibility(body: VisibilityRequest): Promise<ApiResponse<U
 /** GET /users/me/boards — 내 룸메이트 게시글 리스트 탐색 */
 export function getMyBoards(params: PageParams = {}): Promise<ApiResponse<MyBoardListData>> {
   if (USE_MOCK) return mockOk(MOCK_MY_BOARDS);
-  return request('GET', '/users/me/boards', { query: params });
+  return request('GET', '/users/me/boards', { query: { page: 0, size: 20, ...params } });
 }

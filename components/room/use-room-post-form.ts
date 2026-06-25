@@ -29,6 +29,7 @@ export type UseRoomPostFormReturn = {
   selectRoomType: (next: RoomType) => void;
   selectRegion: (next: Region) => void;
   setMoveInDate: (next: string) => void;
+  setImageUrlsText: (next: string) => void;
   toggleOption: (next: RoomOption) => void;
   setDescription: (next: string) => void;
   toggleProfileInfo: () => void;
@@ -51,7 +52,7 @@ export function useRoomPostForm({
   return {
     draft,
     canSubmit,
-    photoCount: 3,
+    photoCount: countImageUrls(draft.imageUrlsText),
     bottomPadding,
     setTitle: (next) => patch({ title: next }),
     setDeposit: (next) => patch({ deposit: next }),
@@ -60,6 +61,7 @@ export function useRoomPostForm({
     selectRoomType: (next) => patch({ roomType: next }),
     selectRegion: (next) => patch({ regions: [next] }),
     setMoveInDate: (next) => patch({ moveInDate: next }),
+    setImageUrlsText: (next) => patch({ imageUrlsText: next }),
     toggleOption: (next) => {
       patch({
         options: draft.options.includes(next)
@@ -74,4 +76,12 @@ export function useRoomPostForm({
       if (values) onSubmit(values);
     },
   };
+}
+
+function countImageUrls(text: string): number {
+  return text
+    .split(/[\n,]/)
+    .map((url) => url.trim())
+    .filter((url) => /^https?:\/\//.test(url))
+    .slice(0, 10).length;
 }

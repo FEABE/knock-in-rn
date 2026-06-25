@@ -38,6 +38,7 @@ export function RoomPostFormView({
   selectRoomType,
   selectRegion,
   setMoveInDate,
+  setImageUrlsText,
   toggleOption,
   setDescription,
   toggleProfileInfo,
@@ -64,6 +65,14 @@ export function RoomPostFormView({
           <Text className="self-end text-xs text-neutral-400">
             {photoCount} / {MAX_PHOTOS}
           </Text>
+          <TextField
+            value={draft.imageUrlsText}
+            onChangeValue={setImageUrlsText}
+            placeholder="이미지 URL을 줄바꿈으로 입력 (최대 10개)"
+            multiline
+            numberOfLines={3}
+            className="min-h-[84px] rounded-xl border border-neutral-200 px-4 py-3 text-sm"
+          />
         </Section>
 
         <Section title="기본 정보">

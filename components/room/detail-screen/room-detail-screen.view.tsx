@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/ui/headless';
@@ -45,6 +45,34 @@ const PREFERRED_GENDER_LABEL: Record<string, string> = {
 export type RoomDetailScreenViewProps = UseRoomDetailScreenReturn;
 
 export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
+  if (props.loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <Header onBack={props.onBack} onMenu={() => props.setMenuOpen(true)} />
+        <View className="flex-1 items-center justify-center gap-3">
+          <ActivityIndicator color="#256EF4" />
+          <Text className="text-sm text-neutral-400">게시글을 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (props.error || !props.post) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <Header onBack={props.onBack} onMenu={() => props.setMenuOpen(true)} />
+        <View className="flex-1 items-center justify-center gap-3 p-10">
+          <Text className="text-base text-neutral-500">
+            {props.error ?? '게시글을 찾을 수 없어요'}
+          </Text>
+          <Pressable onPress={props.onBack} className="rounded-full bg-neutral-100 px-5 py-3">
+            <Text className="text-sm text-neutral-700">돌아가기</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (props.blocked) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>

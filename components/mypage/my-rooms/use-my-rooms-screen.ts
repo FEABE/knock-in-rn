@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
-import { useRoomStore, useSession, type RoomPost } from '@/lib/domain';
+import { useMyRoommateBoards, useRoommateBoardWriteActions } from '@/lib/api';
+import { useSession, type RoomPost } from '@/lib/domain';
 import { goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
 
 export type UseMyRoomsScreenReturn = {
@@ -17,8 +18,9 @@ export type UseMyRoomsScreenReturn = {
 export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
   const router = useRouter();
   const { session } = useSession();
-  const { byAuthor, remove } = useRoomStore();
-  const rooms = session ? byAuthor(session.user.id) : [];
+  const { data: apiRooms } = useMyRoommateBoards(!!session);
+  const { deleteBoard } = useRoommateBoardWriteActions();
+  const rooms = session ? (apiRooms ?? []) : [];
 
   return {
     loggedIn: !!session,
@@ -30,7 +32,20 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
     onDeletePress: (post) =>
       Alert.alert('삭제', '게시글을 삭제할까요?', [
         { text: '취소', style: 'cancel' },
-        { text: '삭제', style: 'destructive', onPress: () => remove(post.id) },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteBoard(post.id);
+            } catch (error) {
+              Alert.alert(
+                '삭제 실패',
+                error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.',
+              );
+            }
+          },
+        },
       ]),
   };
 }

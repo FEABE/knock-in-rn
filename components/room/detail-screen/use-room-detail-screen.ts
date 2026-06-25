@@ -1,10 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
+import {
+  useRoommateBoardDetail,
+  useRoommateBoardLikeActions,
+  useRoommateBoardWriteActions,
+} from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
-import { useModeration, useRoomStore, useSession, type RoomPost } from '@/lib/domain';
+import { useModeration, useSession, type RoomPost } from '@/lib/domain';
 import { goChatRoom, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
 
 export const ROOM_REPORT_REASONS = [
@@ -16,8 +21,10 @@ export const ROOM_REPORT_REASONS = [
 ];
 
 export type UseRoomDetailScreenReturn = {
-  post: RoomPost;
+  post: RoomPost | null;
   photos: string[];
+  loading: boolean;
+  error: string | null;
   isLoggedIn: boolean;
   isOwner: boolean;
   blocked: boolean;
@@ -45,9 +52,12 @@ export type UseRoomDetailScreenReturn = {
 export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const boardId = typeof id === 'string' ? id : '';
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
-  const { getById, posts, remove, update } = useRoomStore();
+  const { data: post, loading, error } = useRoommateBoardDetail(boardId);
+  const setBoardLiked = useRoommateBoardLikeActions();
+  const { deleteBoard, reportBoard } = useRoommateBoardWriteActions();
   const { report, blockUser, isPostBlocked, blockPost } = useModeration();
 
   const [reportOpen, setReportOpen] = useState(false);
@@ -56,21 +66,14 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const [descExpanded, setDescExpanded] = useState(false);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
 
-  const post = useMemo(() => {
-    if (typeof id === 'string') {
-      const found = getById(id);
-      if (found) return found;
-    }
-    return posts[0];
-  }, [id, getById, posts]);
-
-  const photos = post.photoUrls?.length
+  const photos = post?.photoUrls?.length
     ? post.photoUrls
-    : post.thumbnailUrl
+    : post?.thumbnailUrl
       ? [post.thumbnailUrl]
       : [];
-  const isOwner = session?.user.id === post.author.id;
-  const blocked = isPostBlocked(post.id);
+  const isOwner =
+    !!post && (session?.user.id === post.author.id || session?.user.name === post.author.name);
+  const blocked = post ? isPostBlocked(post.id) : false;
 
   useEffect(() => {
     if (post?.id) logEvent(AnalyticsEvent.ROOM_DETAIL_VIEW, { room_id: post.id });
@@ -79,10 +82,12 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   return {
     post,
     photos,
+    loading,
+    error,
     isLoggedIn: !!session,
     isOwner,
     blocked,
-    liked: !!post.liked,
+    liked: !!post?.liked,
     reportOpen,
     menuOpen,
     photoIndex,
@@ -95,45 +100,73 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     toggleLifestyle: () => setLifestyleExpanded((prev) => !prev),
     onBack: () => router.back(),
     onEdit: () => {
+      if (!post) return;
       setMenuOpen(false);
       goRoomEdit(router, post.id);
     },
     onDelete: () => {
+      if (!post) return;
       setMenuOpen(false);
       Alert.alert('삭제', '게시글을 삭제할까요?', [
         { text: '취소', style: 'cancel' },
         {
           text: '삭제',
           style: 'destructive',
-          onPress: () => {
-            remove(post.id);
+          onPress: async () => {
+            try {
+              await deleteBoard(post.id);
+            } catch (deleteError) {
+              Alert.alert(
+                '삭제 실패',
+                deleteError instanceof Error ? deleteError.message : '잠시 후 다시 시도해주세요.',
+              );
+              return;
+            }
             router.back();
           },
         },
       ]);
     },
-    onAuthorPress: () => goRoommateDetail(router, `rc-${post.author.id}`),
+    onAuthorPress: () => {
+      if (!post) return;
+      goRoommateDetail(router, post.author.id);
+    },
     onLike: () =>
       requireLogin(() => {
+        if (!post) return;
         const next = !post.liked;
         logEvent(next ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
           room_id: post.id,
         });
-        update(post.id, { liked: next });
+        setBoardLiked(post.id, next);
       }),
     onRequestChat: () =>
       requireLogin(() => {
+        if (!post) return;
         Alert.alert('매칭 요청', `${post.author.name}님께 1:1 대화 요청을 보낼까요?`, [
           { text: '취소', style: 'cancel' },
           { text: '요청 보내기', onPress: () => goChatRoom(router, post.author.id) },
         ]);
       }),
     onReportReason: (reason) => {
-      report({ kind: 'post', id: post.id }, reason);
-      setReportOpen(false);
-      Alert.alert('신고 접수 완료', '검토 후 조치할게요.');
+      if (!post) return;
+      requireLogin(() => {
+        void reportBoard(post.id, reason)
+          .then(() => {
+            report({ kind: 'post', id: post.id }, reason);
+            setReportOpen(false);
+            Alert.alert('신고 접수 완료', '검토 후 조치할게요.');
+          })
+          .catch((reportError) => {
+            Alert.alert(
+              '신고 실패',
+              reportError instanceof Error ? reportError.message : '잠시 후 다시 시도해주세요.',
+            );
+          });
+      });
     },
     onBlockAuthor: () => {
+      if (!post) return;
       Alert.alert('차단', `${post.author.name}님을 차단할까요? 상호 비노출 처리돼요.`, [
         { text: '취소', style: 'cancel' },
         {

@@ -4,11 +4,16 @@ import { useMemo, useState } from 'react';
 import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
+  type BoardListQuery,
+  regionBackendId,
+  roomTypeBackendId,
+  useRoommateBoardLikeActions,
+  useRoommateBoards,
   useRoommateMatchCards,
   useRoommateMatchLikeActions,
   type RoommateMatchCardModel,
 } from '@/lib/api';
-import { useModeration, useRoomStore, type RoomPost } from '@/lib/domain';
+import { useModeration, type RoomPost } from '@/lib/domain';
 import {
   goOnboarding,
   goRoomDetail,
@@ -51,6 +56,7 @@ export type UseExploreScreenReturn = {
   openSheet: ExploreFilterKey | null;
   visiblePosts: RoomPost[];
   visibleMatches: RoommateMatchCardModel[];
+  roomsLoading: boolean;
   matchesLoading: boolean;
   setSort: (next: ExploreSort) => void;
   setOpenSheet: (next: ExploreFilterKey | null) => void;
@@ -65,17 +71,21 @@ export type UseExploreScreenReturn = {
 
 export function useExploreScreen(): UseExploreScreenReturn {
   const router = useRouter();
-  const { posts, update } = useRoomStore();
   const { isPostBlocked, isUserBlocked } = useModeration();
+  const setBoardLiked = useRoommateBoardLikeActions();
   const setMatchLiked = useRoommateMatchLikeActions();
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
+  const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
+  const { data: posts, loading: roomsLoading } = useRoommateBoards(boardQuery);
 
   const visiblePosts = useMemo(() => {
-    const safe = posts.filter((post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id));
-    return sortPosts(applyFilter(safe, filter), sort);
-  }, [posts, isPostBlocked, isUserBlocked, filter, sort]);
+    const safe = (posts ?? []).filter(
+      (post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
+    );
+    return sortPosts(safe, sort);
+  }, [posts, isPostBlocked, isUserBlocked, sort]);
 
   const { data: matchList, loading: matchesLoading } = useRoommateMatchCards();
   const visibleMatches = useMemo(
@@ -94,6 +104,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     openSheet,
     visiblePosts,
     visibleMatches,
+    roomsLoading,
     matchesLoading,
     setSort,
     setOpenSheet,
@@ -108,7 +119,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
       logEvent(liked ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
         room_id: post.id,
       });
-      update(post.id, { liked });
+      setBoardLiked(post.id, liked);
     },
     onRoommatePress: (match) => {
       logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.id });
@@ -121,20 +132,17 @@ export function useExploreScreen(): UseExploreScreenReturn {
   };
 }
 
-function applyFilter(posts: RoomPost[], filter: ExploreFilter): RoomPost[] {
-  return posts.filter((post) => {
-    if (post.monthlyRent < filter.rentMin || post.monthlyRent > filter.rentMax) return false;
-    if (post.deposit < filter.depositMin || post.deposit > filter.depositMax) return false;
-    if (filter.gender !== 'any' && post.author.gender !== filter.gender) return false;
-    if (
-      filter.regions.length > 0 &&
-      !filter.regions.some((region) => region.id === post.region.id)
-    ) {
-      return false;
-    }
-    if (filter.roomTypes.length > 0 && !filter.roomTypes.includes(post.roomType)) return false;
-    return true;
-  });
+function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
+  return {
+    region: filter.regions.length ? regionBackendId(filter.regions[0]) : undefined,
+    gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
+    minDeposit: filter.depositMin,
+    maxDeposit: filter.depositMax,
+    minMounthRent: filter.rentMin,
+    maxMounthRent: filter.rentMax,
+    type: filter.roomTypes.length ? roomTypeBackendId(filter.roomTypes[0]) : undefined,
+    sort: sort === 'latest' ? 'createAt,desc' : sort === 'views' ? 'viewer,desc' : undefined,
+  };
 }
 
 function sortPosts(posts: RoomPost[], sort: ExploreSort): RoomPost[] {

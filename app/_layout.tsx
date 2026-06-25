@@ -8,12 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ScreenViewTracker } from '@/lib/analytics';
-import {
-  AgreementProvider,
-  ModerationProvider,
-  RoomStoreProvider,
-  SessionProvider,
-} from '@/lib/domain';
+import { AgreementProvider, ModerationProvider, SessionProvider } from '@/lib/domain';
 
 const queryClient = new QueryClient();
 
@@ -29,29 +24,27 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <SessionProvider>
           <ModerationProvider>
-            <RoomStoreProvider>
-              <AgreementProvider>
-                {/* 화면 체류 시간 자동 수집 (Firebase screen_view) */}
-                <ScreenViewTracker />
-                {/* 모든 화면이 자체 커스텀 헤더를 가지므로 네이티브 헤더는 기본 숨김 */}
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen
-                    name="modal"
-                    options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
-                  />
-                  <Stack.Screen name="kakao-login" />
-                  <Stack.Screen name="onboarding" />
-                  <Stack.Screen name="verification" />
-                  <Stack.Screen name="room" />
-                  <Stack.Screen name="roommate" />
-                  <Stack.Screen name="chat" />
-                  <Stack.Screen name="mypage" />
-                  <Stack.Screen name="support" />
-                </Stack>
-                <StatusBar style="auto" />
-              </AgreementProvider>
-            </RoomStoreProvider>
+            <AgreementProvider>
+              {/* 화면 체류 시간 자동 수집 (Firebase screen_view) */}
+              <ScreenViewTracker />
+              {/* 모든 화면이 자체 커스텀 헤더를 가지므로 네이티브 헤더는 기본 숨김 */}
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="modal"
+                  options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
+                />
+                <Stack.Screen name="kakao-login" />
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen name="verification" />
+                <Stack.Screen name="room" />
+                <Stack.Screen name="roommate" />
+                <Stack.Screen name="chat" />
+                <Stack.Screen name="mypage" />
+                <Stack.Screen name="support" />
+              </Stack>
+              <StatusBar style="auto" />
+            </AgreementProvider>
           </ModerationProvider>
         </SessionProvider>
       </ThemeProvider>

@@ -255,9 +255,19 @@ const MOCK_MATCH_DETAIL: MatchDetailData = {
 // ─── Client ───────────────────────────────────────────────────────────────────
 
 /** GET /roommate/boards — 게시글 리스트 탐색 */
-export function getRoommateBoards(query: BoardListQuery = {}): Promise<ApiResponse<BoardListData>> {
+export async function getRoommateBoards(
+  query: BoardListQuery = {},
+): Promise<ApiResponse<BoardListData>> {
   if (USE_MOCK) return mockOk({ boards: MOCK_BOARDS });
-  return request('GET', '/roommate/boards', { query });
+  const res = await request<BoardListData>('GET', '/roommate/boards', {
+    query: {
+      page: 0,
+      size: 20,
+      ...query,
+    },
+  });
+  if (res.status !== 200 || res.error || !res.data?.boards?.length) return res;
+  return { ...res, data: await hydrateBoardListData(res.data) };
 }
 
 /** GET /roommate/boards/{boardId} — 게시글 상세 조회 */
@@ -312,4 +322,46 @@ export function reportRoommateBoard(
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('POST', `/roommate/boards/${boardId}/reports`, { body });
+}
+
+export async function hydrateBoardListData(data: BoardListData): Promise<BoardListData> {
+  const boards = (data.boards ?? []) as BoardListItem[];
+  if (!boards.length) return data;
+
+  const hydrated = await Promise.all(
+    boards.map(async (board) => {
+      if (!board.boardId) return board;
+      const detail = USE_MOCK
+        ? await mockOk({
+            ...MOCK_BOARD_DETAIL,
+            boardId: board.boardId,
+            images: board.image ? [board.image] : MOCK_BOARD_DETAIL.images,
+            title: board.title ?? MOCK_BOARD_DETAIL.title,
+          })
+        : await request<BoardDetailData>('GET', `/roommate/boards/${board.boardId}`);
+      if (detail.status !== 200 || detail.error || !detail.data) return board;
+      return detailToBoardListItem(detail.data, board);
+    }),
+  );
+
+  return { ...data, boards: hydrated };
+}
+
+function detailToBoardListItem(detail: BoardDetailData, base: BoardListItem): BoardListItem {
+  const liked =
+    'isLike' in detail && typeof detail.isLike === 'boolean' ? detail.isLike : base.isLike;
+  return {
+    ...base,
+    boardId: detail.boardId ?? base.boardId,
+    image: base.image ?? detail.images?.[0],
+    title: detail.title ?? base.title,
+    deposit: detail.deposit,
+    mounthRent: detail.mounthRent,
+    roomType: detail.roomType,
+    region: detail.region,
+    createAt: detail.createAt,
+    viewer: detail.viewer,
+    writer: detail.writer,
+    isLike: liked,
+  };
 }

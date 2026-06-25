@@ -122,6 +122,6 @@ function mapFilterToQuery(filter: ListFilter): BoardListQuery {
     maxMounthRent: filter.rentMax,
     gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
     region,
-    sort: filter.sort === 'latest' ? 'createdAt,desc' : undefined,
+    sort: filter.sort === 'latest' ? 'createAt,desc' : undefined,
   };
 }

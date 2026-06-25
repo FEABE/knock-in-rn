@@ -10,9 +10,12 @@ export type RoomFormValues = {
   region: Region;
   description: string;
   moveInDate?: Date;
+  imageUrls: string[];
   options: RoomOption[];
   showProfileInfo: boolean;
 };
+
+const MAX_IMAGE_URLS = 10;
 
 export type RoomFormDraft = {
   title: string;
@@ -23,6 +26,7 @@ export type RoomFormDraft = {
   regions: Region[];
   description: string;
   moveInDate: string;
+  imageUrlsText: string;
   options: RoomOption[];
   showProfileInfo: boolean;
 };
@@ -37,6 +41,7 @@ export function emptyRoomFormDraft(): RoomFormDraft {
     regions: [],
     description: '',
     moveInDate: '',
+    imageUrlsText: '',
     options: [],
     showProfileInfo: true,
   };
@@ -64,6 +69,7 @@ export function draftToValues(draft: RoomFormDraft): RoomFormValues | null {
     region: draft.regions[0],
     description: draft.description.trim(),
     moveInDate: parseDate(draft.moveInDate),
+    imageUrls: parseImageUrls(draft.imageUrlsText),
     options: draft.options,
     showProfileInfo: draft.showProfileInfo,
   };
@@ -73,4 +79,12 @@ function parseDate(text: string): Date | undefined {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return undefined;
   const d = new Date(text);
   return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
+function parseImageUrls(text: string): string[] {
+  return text
+    .split(/[\n,]/)
+    .map((url) => url.trim())
+    .filter((url) => /^https?:\/\//.test(url))
+    .slice(0, MAX_IMAGE_URLS);
 }

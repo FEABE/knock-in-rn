@@ -23,6 +23,7 @@ export function ExploreScreenView({
   openSheet,
   visiblePosts,
   visibleMatches,
+  roomsLoading,
   matchesLoading,
   setSort,
   setOpenSheet,
@@ -71,7 +72,12 @@ export function ExploreScreenView({
           <SortRow sort={sort} onChange={setSort} count={visiblePosts.length} />
 
           <ScrollView className="flex-1" contentContainerClassName="gap-3 p-5 pb-24">
-            {visiblePosts.length === 0 ? (
+            {roomsLoading ? (
+              <View className="items-center py-16">
+                <ActivityIndicator color="#256EF4" />
+                <Text className="mt-3 text-sm text-neutral-400">방을 불러오는 중...</Text>
+              </View>
+            ) : visiblePosts.length === 0 ? (
               <EmptyBox message="조건에 맞는 방이 없어요" />
             ) : (
               visiblePosts.map((post) => (

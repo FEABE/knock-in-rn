@@ -1,3 +1,4 @@
+import type { RoomOption } from '@/lib/domain';
 import type { LifestyleScaleKey, Region, RoomType } from '@/lib/onboarding';
 
 export const ROOM_TYPE_BACKEND_IDS: Record<RoomType, number> = {
@@ -18,6 +19,16 @@ export const ROOM_TYPE_BACKEND_LABELS: Record<number, string> = {
   5: '쉐어하우스',
   6: '아파트',
   7: '빌라',
+};
+
+export const ROOM_TYPE_BACKEND_VALUES: Record<number, RoomType> = {
+  1: 'one-room',
+  2: 'two-room',
+  3: 'three-room+',
+  4: 'officetel',
+  5: 'share-house',
+  6: 'apt',
+  7: 'villa',
 };
 
 export const LIFESTYLE_BACKEND_IDS: Record<LifestyleScaleKey, number> = {
@@ -57,6 +68,20 @@ export const CONDITION_BACKEND_IDS: Record<string, number> = {
   worker: 12,
   'long-term': 13,
   'short-term': 14,
+};
+
+export const ROOM_OPTION_BACKEND_IDS: Record<RoomOption, number> = {
+  'full-option': 1,
+  parking: 2,
+  elevator: 3,
+  pet: 4,
+};
+
+export const ROOM_OPTION_BACKEND_VALUES: Record<number, RoomOption> = {
+  1: 'full-option',
+  2: 'parking',
+  3: 'elevator',
+  4: 'pet',
 };
 
 export const REGION_BACKEND_IDS: Record<string, number> = {
@@ -123,11 +148,31 @@ export function roomTypeBackendId(value: RoomType | null | undefined): number | 
   return value ? ROOM_TYPE_BACKEND_IDS[value] : undefined;
 }
 
+export function roomTypeFromBackendId(value: number | string | null | undefined): RoomType {
+  const id = Number(value);
+  return Number.isFinite(id) ? (ROOM_TYPE_BACKEND_VALUES[id] ?? 'one-room') : 'one-room';
+}
+
 export function regionBackendId(region: Region | null | undefined): number | undefined {
   if (!region) return undefined;
   const direct = Number(region.id);
   if (Number.isFinite(direct)) return direct;
   return REGION_BACKEND_IDS[region.id] ?? REGION_BACKEND_IDS[`${region.city}-${region.district}`];
+}
+
+export function regionFromBackendId(value: number | string | null | undefined): Region {
+  if (value === undefined || value === null || value === '') {
+    return { id: '', city: '', district: '' };
+  }
+  const id = Number(value);
+  if (!Number.isFinite(id)) {
+    const label = String(value);
+    const [city = label, ...rest] = label.split(' ');
+    return { id: label, city, district: rest.join(' ') };
+  }
+  const label = REGION_BACKEND_LABELS[id] ?? String(value);
+  const [city = label, ...rest] = label.split(' ');
+  return { id: String(id), city, district: rest.join(' ') };
 }
 
 export function regionKeyBackendId(value: string | number | null | undefined): number | undefined {
@@ -157,4 +202,15 @@ export function labelForRoomProfileType(value: 'SEEKER' | 'OFFER' | null | undef
   if (value === 'OFFER') return '방 있음';
   if (value === 'SEEKER') return '방 찾는 중';
   return '-';
+}
+
+export function roomOptionBackendId(value: RoomOption | null | undefined): number | undefined {
+  return value ? ROOM_OPTION_BACKEND_IDS[value] : undefined;
+}
+
+export function roomOptionFromBackendId(
+  value: number | string | null | undefined,
+): RoomOption | null {
+  const id = Number(value);
+  return Number.isFinite(id) ? (ROOM_OPTION_BACKEND_VALUES[id] ?? null) : null;
 }

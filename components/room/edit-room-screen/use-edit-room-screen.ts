@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
-import { useMemo } from 'react';
 
+import { roomFormValuesToBoardWriteRequest } from '@/components/room/room-post-form.api';
 import type { RoomFormDraft, RoomFormValues } from '@/components/room/room-post-form';
-import { useRoomStore, useSession, type RoomPost } from '@/lib/domain';
+import { useRoommateBoardDetail, useRoommateBoardWriteActions } from '@/lib/api';
+import { useSession, type RoomPost } from '@/lib/domain';
 
-export type EditRoomState = 'missing' | 'forbidden' | 'editable';
+export type EditRoomState = 'loading' | 'missing' | 'forbidden' | 'editable';
 
 export type UseEditRoomScreenReturn = {
   state: EditRoomState;
@@ -14,43 +15,59 @@ export type UseEditRoomScreenReturn = {
   initial?: Partial<RoomFormDraft>;
   onBack: () => void;
   onDelete: () => void;
-  onSubmit: (values: RoomFormValues) => void;
+  onSubmit: (values: RoomFormValues) => Promise<void>;
 };
 
 export function useEditRoomScreen(): UseEditRoomScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const boardId = typeof id === 'string' ? id : '';
   const { session } = useSession();
-  const { getById, update } = useRoomStore();
+  const { data: post, loading, error } = useRoommateBoardDetail(boardId);
+  const { updateBoard, deleteBoard } = useRoommateBoardWriteActions();
 
-  const post = useMemo(() => (typeof id === 'string' ? getById(id) : undefined), [id, getById]);
-
-  const state: EditRoomState = !post
-    ? 'missing'
-    : session?.user.id !== post.author.id
-      ? 'forbidden'
-      : 'editable';
+  const state: EditRoomState = loading
+    ? 'loading'
+    : !post || error
+      ? 'missing'
+      : session?.user.id !== post.author.id && session?.user.name !== post.author.name
+        ? 'forbidden'
+        : 'editable';
 
   const onDelete = () => {
     Alert.alert('삭제', '게시글을 삭제할까요?', [
       { text: '취소', style: 'cancel' },
-      { text: '삭제', style: 'destructive', onPress: () => router.back() },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: async () => {
+          if (!post) return;
+          try {
+            await deleteBoard(post.id);
+          } catch (deleteError) {
+            Alert.alert(
+              '삭제 실패',
+              deleteError instanceof Error ? deleteError.message : '잠시 후 다시 시도해주세요.',
+            );
+            return;
+          }
+          router.back();
+        },
+      },
     ]);
   };
 
-  const onSubmit = (values: RoomFormValues) => {
+  const onSubmit = async (values: RoomFormValues) => {
     if (!post) return;
-    update(post.id, {
-      title: values.title,
-      deposit: values.deposit,
-      monthlyRent: values.monthlyRent,
-      maintenanceFee: values.maintenanceFee,
-      roomType: values.roomType,
-      region: values.region,
-      description: values.description,
-      moveInDate: values.moveInDate,
-      options: values.options,
-    });
+    try {
+      await updateBoard(post.id, roomFormValuesToBoardWriteRequest(values));
+    } catch (updateError) {
+      Alert.alert(
+        '수정 실패',
+        updateError instanceof Error ? updateError.message : '잠시 후 다시 시도해주세요.',
+      );
+      return;
+    }
     Alert.alert('수정 완료', '게시글이 수정되었어요.', [
       { text: '확인', onPress: () => router.back() },
     ]);
@@ -58,7 +75,7 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
 
   return {
     state,
-    post,
+    post: post ?? undefined,
     profile: session?.user,
     initial: post ? toInitialDraft(post) : undefined,
     onBack: () => router.back(),
@@ -77,6 +94,7 @@ function toInitialDraft(post: RoomPost): Partial<RoomFormDraft> {
     regions: [post.region],
     description: post.description,
     moveInDate: post.moveInDate ? fmtDate(post.moveInDate) : '',
+    imageUrlsText: (post.photoUrls ?? (post.thumbnailUrl ? [post.thumbnailUrl] : [])).join('\n'),
     options: post.options ?? [],
     showProfileInfo: true,
   };

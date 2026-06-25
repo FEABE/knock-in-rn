@@ -8,12 +8,19 @@
 import type { RoomPost, RoommateCard, UserSummary } from '@/lib/domain';
 import type { Gender, Region, RoomType } from '@/lib/onboarding';
 
+import {
+  labelForRegionId,
+  regionFromBackendId,
+  roomOptionFromBackendId,
+  roomTypeFromBackendId,
+} from './backend-ids';
 import type { LifestyleItem } from './entities';
-import type { BoardListItem, MatchListItem } from './roommate-boards';
+import type { BoardDetailData, BoardListItem, MatchListItem } from './roommate-boards';
 
 /** "서울 마포구" → { id, city, district }. 공백 기준 분리. */
 export function parseRegion(label: string): Region {
   const trimmed = (label ?? '').trim();
+  if (/^\d+$/.test(trimmed)) return regionFromBackendId(Number(trimmed));
   const spaceIdx = trimmed.indexOf(' ');
   if (spaceIdx === -1) {
     return { id: trimmed, city: trimmed, district: '' };
@@ -61,7 +68,10 @@ function minimalUser(
 
 /** 게시글 리스트 항목 → RoomPost (룸메 탐색 카드용). */
 export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
-  const region = parseRegion(String(item.region ?? ''));
+  const region =
+    item.region !== undefined
+      ? parseRegion(labelForRegionId(item.region))
+      : { id: '', city: '', district: '' };
   const id = String(item.boardId ?? '');
   return {
     id,
@@ -78,6 +88,48 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
     author: minimalUser(item.writer ?? '익명', region),
     description: '',
     liked: bool(item.isLike),
+  };
+}
+
+/** 게시글 상세 응답 → RoomPost. */
+export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
+  const liked = 'isLike' in data ? bool(data.isLike as boolean | string | undefined) : false;
+  const region = regionFromBackendId(data.region);
+  const id = String(data.boardId ?? '');
+  const writer = data.writer ?? '익명';
+  const photoUrls = data.images?.filter(Boolean) ?? [];
+  const options = (data.roomOption ?? [])
+    .map(roomOptionFromBackendId)
+    .filter((option): option is NonNullable<typeof option> => option !== null);
+
+  return {
+    id,
+    title: data.title ?? `방 게시글 #${id}`,
+    thumbnailUrl: photoUrls[0],
+    photoUrls,
+    deposit: num(data.deposit),
+    monthlyRent: num(data.mounthRent),
+    roomType: toRoomType(data.roomType),
+    region,
+    views: num(data.viewer),
+    likes: 0,
+    createdAt: data.createAt ? new Date(data.createAt) : new Date(),
+    status: 'open',
+    author: minimalUser(writer, region, {
+      id: writer,
+      badges: [
+        ...(data.isAuthStudent
+          ? [{ kind: 'school' as const, label: '학생 인증', verifiedAt: new Date() }]
+          : []),
+        ...(data.isAuthEmployee
+          ? [{ kind: 'company' as const, label: '직장 인증', verifiedAt: new Date() }]
+          : []),
+      ],
+      importantConditions: (data.conditions ?? []).map((item) => item.name ?? '').filter(Boolean),
+    }),
+    description: data.contents ?? '',
+    options,
+    liked,
   };
 }
 
@@ -125,5 +177,5 @@ function toRoomType(value: string | number | undefined): RoomType {
   ) {
     return value;
   }
-  return 'one-room';
+  return roomTypeFromBackendId(value);
 }

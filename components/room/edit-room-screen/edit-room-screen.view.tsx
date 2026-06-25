@@ -15,6 +15,10 @@ export function EditRoomScreenView({
   onDelete,
   onSubmit,
 }: EditRoomScreenViewProps) {
+  if (state === 'loading') {
+    return <MessageState message="게시글을 불러오는 중..." onBack={onBack} />;
+  }
+
   if (state === 'missing') {
     return <MessageState message="게시글을 찾을 수 없어요" onBack={onBack} />;
   }
