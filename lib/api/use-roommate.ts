@@ -22,7 +22,7 @@ export function useRoommateBoards(query: BoardListQuery = {}): AsyncState<RoomPo
   const key = JSON.stringify(query);
   const state = useApi(() => getRoommateBoards(query), [key]);
   const posts = useMemo(
-    () => state.data?.boards.map(boardListItemToRoomPost) ?? null,
+    () => state.data?.boards?.map(boardListItemToRoomPost) ?? null,
     [state.data],
   );
   return { ...state, data: posts };
@@ -32,7 +32,7 @@ export function useRoommateBoards(query: BoardListQuery = {}): AsyncState<RoomPo
 export function useRoommateMatches(): AsyncState<RoommateCard[]> {
   const state = useApi(() => getRoommateMatches(), []);
   const cards = useMemo(
-    () => state.data?.matches.map(matchListItemToRoommateCard) ?? null,
+    () => state.data?.matches?.map(matchListItemToRoommateCard) ?? null,
     [state.data],
   );
   return { ...state, data: cards };

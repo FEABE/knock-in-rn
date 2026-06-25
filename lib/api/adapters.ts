@@ -26,14 +26,14 @@ export function parseRegion(label: string): Region {
 }
 
 /** 문자열 숫자를 안전하게 number 로. 빈 값/NaN 은 fallback. */
-function num(value: string | undefined, fallback = 0): number {
+function num(value: string | number | undefined, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
 /** 명세 boolean 문자열("true"/"false") → boolean. */
-function bool(value: string | undefined): boolean {
-  return value === 'true';
+function bool(value: string | boolean | undefined): boolean {
+  return value === true || value === 'true';
 }
 
 /**
@@ -61,20 +61,21 @@ function minimalUser(
 
 /** 게시글 리스트 항목 → RoomPost (룸메 탐색 카드용). */
 export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
-  const region = parseRegion(item.region);
+  const region = parseRegion(String(item.region ?? ''));
+  const id = String(item.boardId ?? '');
   return {
-    id: item.boardId,
-    title: item.title,
+    id,
+    title: item.title ?? `방 게시글 #${id}`,
     thumbnailUrl: item.image || undefined,
     deposit: num(item.deposit),
     monthlyRent: num(item.mounthRent),
-    roomType: item.roomType as RoomType,
+    roomType: toRoomType(item.roomType),
     region,
     views: num(item.viewer),
     likes: 0,
-    createdAt: new Date(item.createAt),
+    createdAt: item.createAt ? new Date(item.createAt) : new Date(),
     status: 'open',
-    author: minimalUser(item.writer, region),
+    author: minimalUser(item.writer ?? '익명', region),
     description: '',
     liked: bool(item.isLike),
   };
@@ -82,12 +83,13 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
 
 /** 매칭 리스트 항목 → RoommateCard (매칭 탭 카드용). */
 export function matchListItemToRoommateCard(item: MatchListItem): RoommateCard {
-  const region = parseRegion(item.region);
-  const conditionLabels = item.conditions.map((c) => c.name);
+  const region = parseRegion(String(item.region ?? ''));
+  const conditionLabels = (item.conditions ?? []).map((c) => c.name ?? '').filter(Boolean);
+  const userId = String(item.userId ?? '');
   return {
-    id: item.userId,
-    user: minimalUser(item.name, region, {
-      id: item.userId,
+    id: userId,
+    user: minimalUser(item.name ?? '익명', region, {
+      id: userId,
       bio: conditionLabels.join(' · '),
       importantConditions: conditionLabels,
     }),
@@ -109,4 +111,19 @@ export function toGender(value: string): Gender {
 /** 생활패턴 항목 배열을 "이름: 값" 라벨 배열로. */
 export function lifestyleLabels(items: LifestyleItem[]): string[] {
   return items.map((it) => `${it.name}: ${it.value}`);
+}
+
+function toRoomType(value: string | number | undefined): RoomType {
+  if (
+    value === 'one-room' ||
+    value === 'two-room' ||
+    value === 'three-room+' ||
+    value === 'officetel' ||
+    value === 'share-house' ||
+    value === 'apt' ||
+    value === 'villa'
+  ) {
+    return value;
+  }
+  return 'one-room';
 }

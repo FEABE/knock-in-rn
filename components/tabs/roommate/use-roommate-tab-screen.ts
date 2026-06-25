@@ -53,7 +53,7 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
   );
 
   const visibleMatches = useMemo(
-    () => (matchList ?? []).filter((match) => !isUserBlocked(match.userId)),
+    () => (matchList ?? []).filter((match) => !isUserBlocked(String(match.userId))),
     [matchList, isUserBlocked],
   );
 
@@ -83,7 +83,7 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
     },
     onRoommatePress: (match) => {
       logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.userId });
-      router.push(`/roommate/${match.userId}` as never);
+      router.push(`/roommate/${String(match.userId)}` as never);
     },
     onCreatePress: () => router.push('/room/new' as never),
   };
@@ -98,11 +98,12 @@ function sortPosts(posts: RoomPost[], sort: SortKey): RoomPost[] {
 }
 
 function mapFilterToQuery(filter: ListFilter): BoardListQuery {
+  const region = filter.regionIds?.length ? Number(filter.regionIds[0]) : undefined;
   return {
     minMounthRent: filter.rentMin,
     maxMounthRent: filter.rentMax,
-    gender: filter.gender && filter.gender !== 'any' ? filter.gender : undefined,
-    region: filter.regionIds?.length ? filter.regionIds[0] : undefined,
+    gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
+    region: Number.isFinite(region) ? region : undefined,
     sort: filter.sort === 'latest' ? 'createdAt,desc' : undefined,
   };
 }

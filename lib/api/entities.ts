@@ -5,44 +5,43 @@
 
 /** 생활패턴 항목. profile / preferences / 게시글 상세 등에서 공통 사용. */
 export type LifestyleItem = {
-  lifestyleId: string;
+  lifestyleId: number;
   name: string;
   value: string;
   description: string;
-  /** 예: "range" | "single" 등 */
-  type: string;
+  type: 'SCALE' | 'BOOLEAN' | 'SINGLE_CHOICE';
 };
 
 /** 선호조건(preferences) 항목. */
 export type PreferenceItem = {
-  preferencesId: string;
+  preferencesId: number;
   name: string;
   value: string;
   description: string;
-  type: string;
+  type: 'SCALE' | 'BOOLEAN' | 'SINGLE_CHOICE';
 };
 
 /** 조건(conditions) 항목. */
 export type ConditionItem = {
-  conditionsId: string;
+  conditionsId: number;
   name: string;
 };
 
 /** 프로필 응답 내 지역 항목 (meta/regions 와 형태가 다름 — 명세 그대로). */
 export type ProfileRegionItem = {
-  regionId: string;
+  regionId: number;
   region: string;
 };
 
 /** 방 프로필(roomProfile) 항목. */
 export type RoomProfileItem = {
-  roomProfileId: string;
+  roomProfileId: number;
   roomProfileName: string;
 };
 
 /** 궁합 정보. 게시글/매칭 상세, 궁합 점수 조회 등에서 공통 사용. */
 export type Compatibility = {
-  score: string;
+  score: number;
   lifeStyleInfo: {
     title: string;
     percent: string;

@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
-import { saveProfileLifestyle, type ProfileLifestyleRequest } from '@/lib/api';
+import {
+  compactNumbers,
+  LIFESTYLE_BACKEND_IDS,
+  LIFESTYLE_CHOICE_BACKEND_IDS,
+  saveProfileLifestyle,
+  type ProfileLifestyleRequest,
+} from '@/lib/api';
 import { SegmentedControl } from '@/components/ui/headless';
 import {
   ONBOARDING_WRITE_ENABLED,
@@ -121,14 +127,17 @@ export function ProfileLifestyleStep() {
     setSubmitError(null);
     try {
       const body: ProfileLifestyleRequest = {
-        // ⚠️ 매핑 미확정: 백엔드 lifestyles 원소 형식 확인 필요
-        //    (GET /meta/lifestyle-patterns 의 id/detail 과 맞춰야 함).
-        //    현재는 "key-값" 문자열로 임시 인코딩.
-        lifestyles: [
-          ...Object.entries(scales).map(([k, v]) => `${k}-${v}`),
-          `smoking-${profile.lifestyle.smoking}`,
-          `pet-${profile.lifestyle.pet}`,
-        ],
+        lifestyles: compactNumbers([
+          ...Object.keys(scales).map(
+            (key) => LIFESTYLE_BACKEND_IDS[key as keyof typeof LIFESTYLE_BACKEND_IDS],
+          ),
+          profile.lifestyle.smoking
+            ? LIFESTYLE_CHOICE_BACKEND_IDS.smoking[profile.lifestyle.smoking]
+            : undefined,
+          profile.lifestyle.pet
+            ? LIFESTYLE_CHOICE_BACKEND_IDS.pet[profile.lifestyle.pet]
+            : undefined,
+        ]),
       };
 
       const signature = JSON.stringify(body);

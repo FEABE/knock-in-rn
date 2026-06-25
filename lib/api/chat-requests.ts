@@ -10,56 +10,39 @@ import {
   request,
   USE_MOCK,
 } from './client';
-import type { Compatibility, LifestyleItem } from './entities';
+import type { OpenApiSchema } from './openapi-types';
 
 // ─── Request Types ────────────────────────────────────────────────────────────
 
-export type ChatRequestCreate = {
-  requestee: string;
-  boardId: string;
-};
+export type ChatRequestCreate = OpenApiSchema<'org.example.knockin.dto.ChatRequestDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 /** 채팅 요청 목록 항목. (creatAt 오타 유지) */
-export type ChatRequestItem = {
-  name: string;
-  type: string;
-  score: string;
-  creatAt: string;
-  chatReqId: string;
-};
+export type ChatRequestItem =
+  OpenApiSchema<'org.example.knockin.dto.ChatRequestListDto$Response$ChatRequired'>;
 
-export type ChatRequestListData = {
-  chatRequireds: ChatRequestItem[];
-};
+export type ChatRequestListData =
+  OpenApiSchema<'org.example.knockin.dto.ChatRequestListDto$Response'>;
 
 /** 요청자/피요청자 공통 프로필. */
-export type ChatRequestParty = {
-  name: string;
-  lifeStyles: LifestyleItem[];
-  score: string;
-  createAt: string;
-};
+export type ChatRequestParty =
+  OpenApiSchema<'org.example.knockin.dto.ChatRequestDetailDto$Response$RequesterInfo'>;
 
-export type ChatRequestDetailData = {
-  requester: ChatRequestParty;
-  requestee: ChatRequestParty & { isAgree: string };
-};
+export type ChatRequestDetailData =
+  OpenApiSchema<'org.example.knockin.dto.ChatRequestDetailDto$Response'>;
 
-export type MatchScoreData = {
-  compatibility: Compatibility;
-};
+export type MatchScoreData = OpenApiSchema<'org.example.knockin.dto.MatchScoreDto$Response'>;
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
-const MOCK_LIFESTYLES: LifestyleItem[] = [
+const MOCK_LIFESTYLES: NonNullable<ChatRequestParty['lifeStyles']> = [
   {
-    lifestyleId: 'ls-sleep',
+    lifestyleId: 1,
     name: '취침 시간',
     value: '24:00',
     description: '자정쯤 취침',
-    type: 'range',
+    type: 'SCALE',
   },
 ];
 
@@ -67,16 +50,16 @@ const MOCK_REQUESTS: ChatRequestItem[] = [
   {
     name: '하준',
     type: 'received',
-    score: '75',
+    score: 75,
     creatAt: '2026-05-25T12:00:00Z',
-    chatReqId: 'req-1',
+    chatReqId: 1,
   },
   {
     name: '수아',
     type: 'sent',
-    score: '91',
+    score: 91,
     creatAt: '2026-05-24T18:30:00Z',
-    chatReqId: 'req-2',
+    chatReqId: 2,
   },
 ];
 
@@ -84,21 +67,21 @@ const MOCK_REQUEST_DETAIL: ChatRequestDetailData = {
   requester: {
     name: '하준',
     lifeStyles: MOCK_LIFESTYLES,
-    score: '75',
+    score: 75,
     createAt: '2026-05-25T12:00:00Z',
   },
   requestee: {
     name: '지민',
     lifeStyles: MOCK_LIFESTYLES,
-    score: '75',
+    score: 75,
     createAt: '2026-05-25T12:00:00Z',
-    isAgree: 'false',
+    isAgree: false,
   },
 };
 
 const MOCK_SCORE: MatchScoreData = {
   compatibility: {
-    score: '82',
+    score: 82,
     lifeStyleInfo: [
       { title: '생활 리듬', percent: '90' },
       { title: '청결', percent: '80' },

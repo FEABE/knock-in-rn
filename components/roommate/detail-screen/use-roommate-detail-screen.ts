@@ -23,7 +23,7 @@ export type UseRoommateDetailScreenReturn = {
 export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { session, signIn } = useSession();
+  const { session } = useSession();
   const [liked, setLiked] = useState(false);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const compatY = useRef(0);
@@ -38,7 +38,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
     if (!session) {
       Alert.alert('로그인이 필요해요', '로그인하시겠어요?', [
         { text: '취소', style: 'cancel' },
-        { text: '로그인', onPress: () => signIn() },
+        { text: '로그인', onPress: () => router.push('/kakao-login' as never) },
       ]);
       return;
     }
@@ -73,7 +73,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
     onRequest: () =>
       requireLogin(() => {
         if (!data) return;
-        Alert.alert('매칭 요청', `${data.name}님께 매칭을 요청할까요?`, [
+        Alert.alert('매칭 요청', `${data.name ?? '상대'}님께 매칭을 요청할까요?`, [
           { text: '취소', style: 'cancel' },
           {
             text: '요청',

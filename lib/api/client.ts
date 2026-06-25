@@ -9,6 +9,8 @@
  * createAt, mountlyRent, comeableAt 등)도 그대로 유지한다.
  */
 
+import { create, type AxiosRequestConfig } from 'axios';
+
 export type ApiError = {
   code?: string;
   message: string;
@@ -74,21 +76,11 @@ type RequestOptions = {
   auth?: boolean;
 };
 
-function buildUrl(path: string, query?: RequestOptions['query']) {
-  const url = `${API_BASE_URL}${path}`;
-  if (!query) return url;
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null) continue;
-    search.append(key, String(value));
-  }
-  const qs = search.toString();
-  return qs ? `${url}?${qs}` : url;
-}
+type KnockAxiosRequestConfig = AxiosRequestConfig & {
+  skipAuth?: boolean;
+};
 
-import axios, { type AxiosRequestConfig } from 'axios';
-
-export const apiClient = axios.create({
+export const apiClient = create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -96,7 +88,8 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  if (accessToken) {
+  const skipAuth = (config as KnockAxiosRequestConfig).skipAuth;
+  if (accessToken && !skipAuth) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   if (__DEV__) {
@@ -136,17 +129,13 @@ export async function request<T>(
 ): Promise<ApiResponse<T>> {
   const { query, body, auth = true } = options;
 
-  const config: AxiosRequestConfig = {
+  const config: KnockAxiosRequestConfig = {
     method,
     url: path,
     params: query,
     data: body,
+    skipAuth: !auth,
   };
-
-  if (!auth) {
-    // Override interceptor if auth=false is explicitly set
-    config.headers = { Authorization: '' };
-  }
 
   try {
     const res = await apiClient.request<ApiResponse<T>>(config);

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
 import type { RoomFormValues } from '@/components/room/room-post-form';
-import { createRoommateBoard } from '@/lib/api';
+import { createRoommateBoard, regionBackendId, roomTypeBackendId } from '@/lib/api';
 import { useRoomStore, useSession } from '@/lib/domain';
 
 export type UseNewRoomScreenReturn = {
@@ -14,7 +14,7 @@ export type UseNewRoomScreenReturn = {
 
 export function useNewRoomScreen(): UseNewRoomScreenReturn {
   const router = useRouter();
-  const { session, signIn } = useSession();
+  const { session } = useSession();
   const { add } = useRoomStore();
 
   const onSubmit = async (values: RoomFormValues) => {
@@ -22,14 +22,16 @@ export function useNewRoomScreen(): UseNewRoomScreenReturn {
 
     const now = Date.now();
     const thumbnailUrl = `https://picsum.photos/seed/${now}/600/400`;
+    const roomType = roomTypeBackendId(values.roomType);
+    const region = regionBackendId(values.region);
     const res = await createRoommateBoard({
       title: values.title,
       contents: values.description,
-      deposit: String(values.deposit),
-      mountlyRent: String(values.monthlyRent),
-      managementCost: String(values.maintenanceFee ?? 0),
-      roomType: values.roomType,
-      region: values.region.id,
+      deposit: values.deposit,
+      mountlyRent: values.monthlyRent,
+      managementCost: values.maintenanceFee ?? 0,
+      roomType,
+      region,
       comeableAt: values.moveInDate ? values.moveInDate.toISOString() : '',
       images: [{ image: thumbnailUrl, thumnail: true }],
     });
@@ -66,7 +68,7 @@ export function useNewRoomScreen(): UseNewRoomScreenReturn {
   return {
     session,
     onBack: () => router.back(),
-    onSignIn: signIn,
+    onSignIn: () => router.push('/kakao-login' as never),
     onSubmit,
   };
 }

@@ -10,176 +10,106 @@ import {
   USE_MOCK,
 } from './client';
 import type { Compatibility, ConditionItem, LifestyleItem, PreferenceItem } from './entities';
+import type { OpenApiSchema } from './openapi-types';
 
 // ─── Request Types ────────────────────────────────────────────────────────────
 
 /** 게시글 리스트 탐색 필터/쿼리. */
 export type BoardListQuery = {
-  region?: number | string;
-  gender?: number | string;
+  region?: number;
+  gender?: 'MALE' | 'FEMALE';
   minDeposit?: number;
   maxDeposit?: number;
   minMounthRent?: number;
   maxMounthRent?: number;
-  type?: number | string;
+  type?: number;
   page?: number;
   size?: number;
   sort?: string;
 };
 
 /** 게시글 등록/수정 이미지 항목. (thumnail 오타 유지) */
-export type BoardImageInput = {
-  image: string;
-  thumnail: boolean;
-};
+export type BoardImageInput = OpenApiSchema<'org.example.knockin.dto.BoardDto$Request$ImageDto'>;
 
 /** 게시글 등록/수정 본문. (mountlyRent 오타 유지) */
-export type BoardWriteRequest = {
-  title: string;
-  contents: string;
-  deposit: string;
-  mountlyRent: string;
-  managementCost: string;
-  roomType: string;
-  region: string;
-  comeableAt: string;
-  images: BoardImageInput[];
-};
+export type BoardWriteRequest = OpenApiSchema<'org.example.knockin.dto.BoardDto$Request'>;
 
-export type BoardLikeRequest = {
-  boardId: string;
-};
+export type BoardLikeRequest = Record<string, number>;
 
-export type BoardReportRequest = {
-  contents: string;
-};
+export type BoardReportRequest = OpenApiSchema<'org.example.knockin.dto.ReportDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 /** 게시글 리스트 항목. */
-export type BoardListItem = {
-  boardId: string;
-  image: string;
-  title: string;
-  deposit: string;
-  mounthRent: string;
-  roomType: string;
-  region: string;
-  writer: string;
-  createAt: string;
-  viewer: string;
-  isPopular: string;
-  isNew: string;
-  isLike: string;
-};
+type BoardListItemSwagger =
+  OpenApiSchema<'org.example.knockin.dto.BoardListDto$Response$BoardItem'>;
 
-export type BoardListData = {
-  boards: BoardListItem[];
+export type BoardListItem = BoardListItemSwagger &
+  Partial<{
+    title: string;
+    deposit: number;
+    mounthRent: number;
+    roomType: number | string;
+    region: number | string;
+    writer: string;
+    createAt: string;
+    viewer: number;
+    isPopular: boolean;
+    isNew: boolean;
+    isLike: boolean;
+  }>;
+
+export type BoardListData = OpenApiSchema<'org.example.knockin.dto.BoardListDto$Response'> & {
+  boards?: BoardListItem[];
 };
 
 /** 게시글 상세. */
-export type BoardDetailData = {
-  boardId: string;
-  images: string[];
-  title: string;
-  deposit: string;
-  mounthRent: string;
-  roomType: string;
-  region: string;
-  createAt: string;
-  viewer: string;
-  contents: string;
-  roomOption: string[];
-  lifeStyles: LifestyleItem[];
-  preferences: PreferenceItem[];
-  conditions: ConditionItem[];
-  writer: string;
-  isAuthStudent: string;
-  isAuthEmployee: string;
-  compatibility: Compatibility;
-};
+export type BoardDetailData = OpenApiSchema<'org.example.knockin.dto.BoardDetailDto$Response'>;
 
 /** 매칭 리스트 항목. */
-export type MatchListItem = {
-  userId: string;
-  name: string;
-  isLike: string;
-  roomProfileType: string;
-  deposit: string;
-  mounthRent: string;
-  minDeposit: string;
-  minMounthRent: string;
-  maxDeposit: string;
-  maxMounthRent: string;
-  comeableAt: string;
-  roomType: string[];
-  region: string;
-  score: string;
-  lifeStyles: LifestyleItem[];
-  conditions: ConditionItem[];
-};
+export type MatchListItem = OpenApiSchema<'org.example.knockin.dto.MatchListDto$Response$Match'>;
 
-export type MatchListData = {
-  matches: MatchListItem[];
-};
+export type MatchListData = OpenApiSchema<'org.example.knockin.dto.MatchListDto$Response'>;
 
 /** 매칭 상세. */
-export type MatchDetailData = {
-  minDeposit: string;
-  maxDeposit: string;
-  deposit: string;
-  minMounthRent: string;
-  maxMounthRent: string;
-  mounthRent: string;
-  roomProfileType: string;
-  region: string;
-  roomOption: string[];
-  comeableAt: string;
-  lifeStyles: LifestyleItem[];
-  preferences: PreferenceItem[];
-  conditions: ConditionItem[];
-  name: string;
-  isAuthStudent: string;
-  isAuthEmployee: string;
-  compatibility: Compatibility;
-};
+export type MatchDetailData = OpenApiSchema<'org.example.knockin.dto.MatchDetailDto$Response'>;
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
 const MOCK_LIFESTYLES: LifestyleItem[] = [
   {
-    lifestyleId: 'ls-sleep',
+    lifestyleId: 1,
     name: '취침 시간',
     value: '24:00',
     description: '자정쯤 취침',
-    type: 'range',
+    type: 'SCALE',
   },
   {
-    lifestyleId: 'ls-clean',
+    lifestyleId: 2,
     name: '청결',
     value: '4',
     description: '깔끔한 편',
-    type: 'range',
+    type: 'SCALE',
   },
 ];
 
 const MOCK_PREFERENCES: PreferenceItem[] = [
   {
-    preferencesId: 'pf-quiet',
+    preferencesId: 1,
     name: '조용함 선호',
     value: '5',
     description: '소음에 민감해요',
-    type: 'range',
+    type: 'SCALE',
   },
 ];
 
 const MOCK_CONDITIONS: ConditionItem[] = [
-  { conditionsId: 'cond-clean', name: '청결 중시' },
-  { conditionsId: 'cond-quiet', name: '조용한 환경' },
+  { conditionsId: 1, name: '청결 중시' },
+  { conditionsId: 2, name: '조용한 환경' },
 ];
 
 const MOCK_COMPATIBILITY: Compatibility = {
-  score: '82',
+  score: 82,
   lifeStyleInfo: [
     { title: '생활 리듬', percent: '90' },
     { title: '청결', percent: '80' },
@@ -189,136 +119,136 @@ const MOCK_COMPATIBILITY: Compatibility = {
 
 const MOCK_BOARDS: BoardListItem[] = [
   {
-    boardId: 'p-1',
+    boardId: 1,
     image: 'https://picsum.photos/seed/p1/600/400',
     title: '망원 한강뷰 투룸 함께 살 룸메 구해요',
-    deposit: '1500',
-    mounthRent: '80',
+    deposit: 1500,
+    mounthRent: 80,
     roomType: 'two-room',
     region: '서울 마포구',
     writer: '지민',
     createAt: '2026-05-10T09:00:00Z',
-    viewer: '312',
-    isPopular: 'true',
-    isNew: 'false',
-    isLike: 'false',
+    viewer: 312,
+    isPopular: true,
+    isNew: false,
+    isLike: false,
   },
   {
-    boardId: 'p-2',
+    boardId: 2,
     image: 'https://picsum.photos/seed/p2/600/400',
     title: '강남 직주근접 오피스텔 룸셰어',
-    deposit: '1000',
-    mounthRent: '95',
+    deposit: 1000,
+    mounthRent: 95,
     roomType: 'officetel',
     region: '서울 강남구',
     writer: '수아',
     createAt: '2026-05-08T09:00:00Z',
-    viewer: '187',
-    isPopular: 'false',
-    isNew: 'false',
-    isLike: 'true',
+    viewer: 187,
+    isPopular: false,
+    isNew: false,
+    isLike: true,
   },
 ];
 
 const MOCK_BOARD_DETAIL: BoardDetailData = {
-  boardId: 'p-1',
+  boardId: 1,
   images: [
     'https://picsum.photos/seed/p1/600/400',
     'https://picsum.photos/seed/p1b/600/400',
     'https://picsum.photos/seed/p1c/600/400',
   ],
   title: '망원 한강뷰 투룸 함께 살 룸메 구해요',
-  deposit: '1500',
-  mounthRent: '80',
-  roomType: 'two-room',
-  region: '서울 마포구',
+  deposit: 1500,
+  mounthRent: 80,
+  roomType: 2,
+  region: 3,
   createAt: '2026-05-10T09:00:00Z',
-  viewer: '312',
+  viewer: 312,
   contents: '한강 도보 5분, 햇볕 잘 들어요. 깨끗이 쓰시는 분 환영합니다.',
-  roomOption: ['풀옵션', '주차 가능', '엘리베이터'],
+  roomOption: [1, 2, 3],
   lifeStyles: MOCK_LIFESTYLES,
   preferences: MOCK_PREFERENCES,
   conditions: MOCK_CONDITIONS,
   writer: '지민',
-  isAuthStudent: 'false',
-  isAuthEmployee: 'true',
+  isAuthStudent: false,
+  isAuthEmployee: true,
   compatibility: MOCK_COMPATIBILITY,
 };
 
 const MOCK_MATCHES: MatchListItem[] = [
   {
-    userId: 'u-2',
+    userId: 2,
     name: '하준',
-    isLike: 'false',
-    roomProfileType: 'two-room',
-    deposit: '1200',
-    mounthRent: '70',
-    minDeposit: '1000',
-    minMounthRent: '60',
-    maxDeposit: '1500',
-    maxMounthRent: '90',
-    comeableAt: '즉시',
-    roomType: ['원룸'],
-    region: '마포구 합정동',
-    score: '90',
+    isLike: false,
+    roomProfileType: 'OFFER',
+    deposit: 1200,
+    mounthRent: 70,
+    minDeposit: 1000,
+    minMounthRent: 60,
+    maxDeposit: 1500,
+    maxMounthRent: 90,
+    comeableAt: '2026-06-01T00:00:00Z',
+    roomType: [1],
+    region: 3,
+    score: 90,
     lifeStyles: MOCK_LIFESTYLES,
     conditions: MOCK_CONDITIONS,
   },
   {
-    userId: 'u-3',
+    userId: 3,
     name: '수아',
-    isLike: 'true',
-    roomProfileType: 'officetel',
-    deposit: '1000',
-    mounthRent: '45',
-    minDeposit: '500',
-    minMounthRent: '30',
-    maxDeposit: '1500',
-    maxMounthRent: '60',
-    comeableAt: '1개월 후',
-    roomType: ['오피스텔'],
-    region: '서대문구 신촌동',
-    score: '88',
+    isLike: true,
+    roomProfileType: 'OFFER',
+    deposit: 1000,
+    mounthRent: 45,
+    minDeposit: 500,
+    minMounthRent: 30,
+    maxDeposit: 1500,
+    maxMounthRent: 60,
+    comeableAt: '2026-07-01T00:00:00Z',
+    roomType: [4],
+    region: 16,
+    score: 88,
     lifeStyles: MOCK_LIFESTYLES,
     conditions: MOCK_CONDITIONS,
   },
   {
-    userId: 'u-4',
+    userId: 4,
     name: '도윤',
-    isLike: 'false',
-    roomProfileType: 'two-room',
-    deposit: '2000',
-    mounthRent: '80',
-    minDeposit: '1500',
-    minMounthRent: '60',
-    maxDeposit: '2500',
-    maxMounthRent: '100',
-    comeableAt: '즉시',
-    roomType: ['투룸'],
-    region: '성동구 성수동',
-    score: '76',
+    isLike: false,
+    roomProfileType: 'OFFER',
+    deposit: 2000,
+    mounthRent: 80,
+    minDeposit: 1500,
+    minMounthRent: 60,
+    maxDeposit: 2500,
+    maxMounthRent: 100,
+    comeableAt: '2026-06-01T00:00:00Z',
+    roomType: [2],
+    region: 5,
+    score: 76,
     lifeStyles: MOCK_LIFESTYLES,
     conditions: MOCK_CONDITIONS,
   },
 ];
 
 const MOCK_MATCH_DETAIL: MatchDetailData = {
-  minDeposit: '1000',
-  maxDeposit: '1500',
-  deposit: '1200',
-  minMounthRent: '60',
-  maxMounthRent: '90',
-  mounthRent: '70',
-  roomProfileType: 'two-room',
-  region: '서울 성동구',
-  roomOption: ['풀옵션', '엘리베이터'],
-  comeableAt: '2026-06-01',
+  minDeposit: 1000,
+  maxDeposit: 1500,
+  deposit: 1200,
+  minMounthRent: 60,
+  maxMounthRent: 90,
+  mounthRent: 70,
+  roomProfileType: 'OFFER',
+  region: 5,
+  roomOption: [1, 3],
+  comeableAt: '2026-06-01T00:00:00Z',
   lifeStyles: MOCK_LIFESTYLES,
   preferences: MOCK_PREFERENCES,
   conditions: MOCK_CONDITIONS,
   name: '하준',
-  isAuthStudent: 'true',
-  isAuthEmployee: 'false',
+  isAuthStudent: true,
+  isAuthEmployee: false,
   compatibility: MOCK_COMPATIBILITY,
 };
 
@@ -332,7 +262,7 @@ export function getRoommateBoards(query: BoardListQuery = {}): Promise<ApiRespon
 
 /** GET /roommate/boards/{boardId} — 게시글 상세 조회 */
 export function getRoommateBoardDetail(boardId: string): Promise<ApiResponse<BoardDetailData>> {
-  if (USE_MOCK) return mockOk({ ...MOCK_BOARD_DETAIL, boardId });
+  if (USE_MOCK) return mockOk({ ...MOCK_BOARD_DETAIL, boardId: Number(boardId) || 1 });
   return request('GET', `/roommate/boards/${boardId}`);
 }
 

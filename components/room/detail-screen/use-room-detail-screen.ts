@@ -43,7 +43,7 @@ export type UseRoomDetailScreenReturn = {
 export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { session, signIn } = useSession();
+  const { session } = useSession();
   const { getById, posts, remove } = useRoomStore();
   const { report, blockUser, isPostBlocked, blockPost } = useModeration();
 
@@ -78,7 +78,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     if (!session) {
       Alert.alert('로그인이 필요해요', '로그인하시겠어요?', [
         { text: '취소', style: 'cancel' },
-        { text: '로그인', onPress: () => signIn() },
+        { text: '로그인', onPress: () => router.push('/kakao-login' as never) },
       ]);
       return;
     }

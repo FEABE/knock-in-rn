@@ -45,97 +45,102 @@ async function main() {
   );
 
   const profile = await getProfileAll();
+  const profileLifestyles = profile.data.lifestyles ?? [];
+  const profileRegions = profile.data.region ?? [];
   check(
     'getProfileAll',
-    profile.data.lifestyles.length > 0 && profile.data.region.length > 0,
-    `lifestyles=${profile.data.lifestyles.length} region=${profile.data.region.length} mounthRent=${profile.data.mounthRent}`,
+    profileLifestyles.length > 0 && profileRegions.length > 0,
+    `lifestyles=${profileLifestyles.length} region=${profileRegions.length} mounthRent=${profile.data.mounthRent}`,
   );
 
   const pref = await getPreferenceAll();
-  check(
-    'getPreferenceAll',
-    pref.data.conditions.length > 0,
-    `conditions=${pref.data.conditions.length}`,
-  );
+  const conditions = pref.data.conditions ?? [];
+  check('getPreferenceAll', conditions.length > 0, `conditions=${conditions.length}`);
 
-  const boards = await getRoommateBoards({ region: 'seoul-mapo', page: 0 });
+  const boards = await getRoommateBoards({ region: 4, page: 0 });
+  const boardItems = boards.data.boards ?? [];
   check(
     'getRoommateBoards',
-    boards.data.boards.length > 0,
-    `boards=${boards.data.boards.length} first="${boards.data.boards[0].title}"`,
+    boardItems.length > 0,
+    `boards=${boardItems.length} first="${boardItems[0]?.title ?? boardItems[0]?.boardId}"`,
   );
 
-  const detail = await getRoommateBoardDetail('p-1');
+  const detail = await getRoommateBoardDetail('1');
+  const detailImages = detail.data.images ?? [];
   check(
     'getRoommateBoardDetail',
-    detail.data.boardId === 'p-1' && detail.data.images.length > 0,
-    `boardId=${detail.data.boardId} images=${detail.data.images.length} score=${detail.data.compatibility.score}`,
+    detail.data.boardId === 1 && detailImages.length > 0,
+    `boardId=${detail.data.boardId} images=${detailImages.length} score=${detail.data.compatibility?.score}`,
   );
 
   const matches = await getRoommateMatches();
+  const matchItems = matches.data.matches ?? [];
   check(
     'getRoommateMatches',
-    matches.data.matches.length > 0,
-    `matches=${matches.data.matches.length} score=${matches.data.matches[0].score}`,
+    matchItems.length > 0,
+    `matches=${matchItems.length} score=${matchItems[0]?.score}`,
   );
 
-  const like = await toggleBoardLike({ boardId: 'p-1' });
+  const like = await toggleBoardLike({ boardId: 1 });
   check('toggleBoardLike', !!like.data.updatedAt, `updatedAt=${like.data.updatedAt}`);
 
   const created = await createRoommateBoard({
     title: '테스트 게시글',
     contents: '내용',
-    deposit: '1000',
-    mountlyRent: '60',
-    managementCost: '5',
-    roomType: 'two-room',
-    region: 'seoul-mapo',
-    comeableAt: '2026-06-01',
+    deposit: 1000,
+    mountlyRent: 60,
+    managementCost: 5,
+    roomType: 2,
+    region: 4,
+    comeableAt: '2026-06-01T00:00:00Z',
     images: [{ image: 'https://x/1.jpg', thumnail: true }],
   });
   check('createRoommateBoard', !!created.data.updatedAt, `updatedAt=${created.data.updatedAt}`);
 
   const reqs = await getChatRequests();
-  check(
-    'getChatRequests',
-    reqs.data.chatRequireds.length > 0,
-    `requests=${reqs.data.chatRequireds.length}`,
-  );
+  const chatRequireds = reqs.data.chatRequireds ?? [];
+  check('getChatRequests', chatRequireds.length > 0, `requests=${chatRequireds.length}`);
 
   const score = await getMatchScore();
-  check(
-    'getMatchScore',
-    score.data.compatibility.lifeStyleInfo.length > 0,
-    `score=${score.data.compatibility.score}`,
-  );
+  const scoreItems = score.data.compatibility?.lifeStyleInfo ?? [];
+  check('getMatchScore', scoreItems.length > 0, `score=${score.data.compatibility?.score}`);
 
   const chats = await getChatRooms();
-  check('getChatRooms', chats.data.chatRooms.length > 0, `rooms=${chats.data.chatRooms.length}`);
+  const chatRooms = chats.data.chatRooms ?? [];
+  check('getChatRooms', chatRooms.length > 0, `rooms=${chatRooms.length}`);
 
   const alarms = await getAlarms();
-  check('getAlarms', alarms.data.alarms.length > 0, `alarms=${alarms.data.alarms.length}`);
+  const alarmItems = alarms.data.alarms ?? [];
+  check('getAlarms', alarmItems.length > 0, `alarms=${alarmItems.length}`);
 
   const mate = await getMyRoommate();
+  const matePreferences = mate.data.preferences ?? [];
   check(
     'getMyRoommate',
-    !!mate.data.userName && mate.data.compatibility.preferences.length > 0,
-    `userName=${mate.data.userName} prefs=${mate.data.compatibility.preferences.length}`,
+    !!mate.data.userName && matePreferences.length > 0,
+    `userName=${mate.data.userName} prefs=${matePreferences.length}`,
   );
 
   const cal = await getCalendars({ year: 2026, month: 6 });
-  check('getCalendars', cal.data.calendars.length > 0, `calendars=${cal.data.calendars.length}`);
+  const calendarItems = cal.data.calendars ?? [];
+  check('getCalendars', calendarItems.length > 0, `calendars=${calendarItems.length}`);
 
   const regions = await getRegions();
-  check('getRegions', regions.data.region.length > 0, `regions=${regions.data.region.length}`);
+  const regionItems = regions.data.region ?? [];
+  check('getRegions', regionItems.length > 0, `regions=${regionItems.length}`);
 
   const terms = await getTerms();
-  check('getTerms', terms.data.terms.length > 0, `terms=${terms.data.terms.length}`);
+  const termItems = terms.data.terms ?? [];
+  check('getTerms', termItems.length > 0, `terms=${termItems.length}`);
 
   const notices = await getBoNotices();
-  check('getBoNotices', notices.data.notices.length > 0, `notices=${notices.data.notices.length}`);
+  const noticeItems = notices.data.notices ?? [];
+  check('getBoNotices', noticeItems.length > 0, `notices=${noticeItems.length}`);
 
   // ── 어댑터: DTO → UI 타입 매핑 (화면이 실제로 받는 형태) ──
-  const post = boardListItemToRoomPost(boards.data.boards[0]);
+  const firstBoard = boardItems[0];
+  if (!firstBoard) throw new Error('스모크 테스트에 사용할 게시글이 없습니다.');
+  const post = boardListItemToRoomPost(firstBoard);
   check(
     'adapter: boardListItemToRoomPost',
     typeof post.deposit === 'number' &&
@@ -144,7 +149,9 @@ async function main() {
     `deposit=${post.deposit}(number) region=${post.region.city}/${post.region.district} author=${post.author.name}`,
   );
 
-  const card = matchListItemToRoommateCard(matches.data.matches[0]);
+  const firstMatch = matchItems[0];
+  if (!firstMatch) throw new Error('스모크 테스트에 사용할 매칭이 없습니다.');
+  const card = matchListItemToRoommateCard(firstMatch);
   check(
     'adapter: matchListItemToRoommateCard',
     typeof card.compatibilityScore === 'number' && card.user.name.length > 0,

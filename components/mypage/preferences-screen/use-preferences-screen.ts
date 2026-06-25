@@ -3,7 +3,13 @@ import { Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
-import { savePreferenceAll } from '@/lib/api';
+import {
+  compactNumbers,
+  CONDITION_BACKEND_IDS,
+  LIFESTYLE_BACKEND_IDS,
+  LIFESTYLE_CHOICE_BACKEND_IDS,
+  savePreferenceAll,
+} from '@/lib/api';
 import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
 
 export const PREFERENCE_PRIORITIES = [
@@ -85,15 +91,18 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     logEvent(AnalyticsEvent.PREFERENCE_COMPLETE);
     if (ONBOARDING_WRITE_ENABLED) {
       const res = await savePreferenceAll({
-        lifestyles: [
-          `gender-${gender}`,
-          `personality-${personality}`,
-          `privacy-${privacy}`,
-          `visitor-${visitor}`,
-          `smoking-${smoking}`,
-          `pet-${pet}`,
-        ],
-        conditions: selected,
+        lifestyles: compactNumbers([
+          LIFESTYLE_BACKEND_IDS.personality,
+          LIFESTYLE_BACKEND_IDS.privacy,
+          LIFESTYLE_BACKEND_IDS.visitor,
+          smoking === 'no' || smoking === 'outdoor' || smoking === 'yes'
+            ? LIFESTYLE_CHOICE_BACKEND_IDS.smoking[smoking]
+            : undefined,
+          pet === 'no' || pet === 'small' || pet === 'any'
+            ? LIFESTYLE_CHOICE_BACKEND_IDS.pet[pet]
+            : undefined,
+        ]),
+        conditions: compactNumbers(selected.map((id) => CONDITION_BACKEND_IDS[id])),
       });
       if (res.error) {
         Alert.alert('저장 실패');

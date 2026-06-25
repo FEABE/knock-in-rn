@@ -28,7 +28,7 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
       likedRooms.includes(post.id) && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
   );
   const likedMatches = (matchList ?? []).filter(
-    (match) => match.isLike === 'true' && !isUserBlocked(match.userId),
+    (match) => match.isLike === true && !isUserBlocked(String(match.userId)),
   );
 
   return {
@@ -40,6 +40,6 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
       setLikedRooms((prev) =>
         liked ? Array.from(new Set([...prev, post.id])) : prev.filter((id) => id !== post.id),
       ),
-    onRoommatePress: (match) => router.push(`/roommate/${match.userId}` as never),
+    onRoommatePress: (match) => router.push(`/roommate/${String(match.userId)}` as never),
   };
 }

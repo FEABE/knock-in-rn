@@ -66,7 +66,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
 
   const { data: matchList, loading: matchesLoading } = useRoommateMatchList();
   const visibleMatches = useMemo(
-    () => (matchList ?? []).filter((match) => !isUserBlocked(match.userId)),
+    () => (matchList ?? []).filter((match) => !isUserBlocked(String(match.userId))),
     [matchList, isUserBlocked],
   );
 
@@ -93,7 +93,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     },
     onRoommatePress: (match) => {
       logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.userId });
-      router.push(`/roommate/${match.userId}` as never);
+      router.push(`/roommate/${String(match.userId)}` as never);
     },
   };
 }

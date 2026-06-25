@@ -115,7 +115,7 @@ export function ProfileBasicStep() {
         name: profile.name.trim(),
         birth: toBirthApi(profile.birthDate),
         // 'male' → 'MALE' (백엔드 enum: MALE/FEMALE)
-        gender: (profile.gender ?? '').toUpperCase(),
+        gender: profile.gender === 'female' ? 'FEMALE' : 'MALE',
         email: profile.email.trim(),
         // ⚠️ 백엔드 약관 테이블이 비어있음(GET /terms → terms:null).
         // 유효한 약관 ID가 없어 임시로 빈 배열 전송. 백엔드가 약관을 시드하면

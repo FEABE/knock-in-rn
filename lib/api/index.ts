@@ -10,7 +10,9 @@
  *   EXPO_PUBLIC_USE_MOCK=false
  */
 export * from './client';
+export * from './backend-ids';
 export * from './entities';
+export * from './openapi-types';
 
 // React 데이터 훅 + 어댑터
 export * from './adapters';

@@ -10,79 +10,40 @@ import {
   request,
   USE_MOCK,
 } from './client';
-import type { Compatibility, PreferenceItem } from './entities';
+import type { OpenApiSchema } from './openapi-types';
 
 // ─── Request Types ────────────────────────────────────────────────────────────
 
-export type RoommateRequestCreate = {
-  chatRoomId: string;
-};
+export type RoommateRequestCreate =
+  OpenApiSchema<'org.example.knockin.dto.RoommateRequestDto$Request'>;
 
 /** 달력 등록/수정 본문. */
-export type CalendarWriteRequest = {
-  roommateId: string;
-  title: string;
-  contents: string;
-  startDt: string;
-  endDt: string;
-};
+export type CalendarWriteRequest = OpenApiSchema<'org.example.knockin.dto.CalendarDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 /** 룸메이트 요청 목록 항목. (reqeustee 오타 유지) */
-export type RoommateRequestItem = {
-  requester: string;
-  reqeustee: string;
-  createAt: string;
-  chatRoomId: string;
-  isAgree: string;
-};
+export type RoommateRequestItem =
+  OpenApiSchema<'org.example.knockin.dto.RoommateRequestListDto$Response$RoommateRequest'>;
 
-export type RoommateRequestListData = {
-  roommateRequests: RoommateRequestItem[];
-};
+export type RoommateRequestListData =
+  OpenApiSchema<'org.example.knockin.dto.RoommateRequestListDto$Response'>;
 
-/** 내 룸메이트 조회. compatibility 안에 preferences 포함(명세 그대로). */
-export type MyRoommateData = {
-  userId: string;
-  userName: string;
-  compatibility: Compatibility & {
-    preferences: PreferenceItem[];
-  };
-};
+/** 내 룸메이트 조회. */
+export type MyRoommateData = OpenApiSchema<'org.example.knockin.dto.MyRoommateDto$Response'>;
 
-export type CalendarItem = {
-  calendarId: string;
-  writer: string;
-  startDt: string;
-  endDt: string;
-  createAt: string;
-  type: string;
-  title: string;
-};
+export type CalendarItem =
+  OpenApiSchema<'org.example.knockin.dto.MyRoommateCalendarListDto$Response$Calendar'>;
 
-export type CalendarListData = {
-  calendars: CalendarItem[];
-};
+export type CalendarListData =
+  OpenApiSchema<'org.example.knockin.dto.MyRoommateCalendarListDto$Response'>;
 
-export type CalendarDetailData = {
-  writer: string;
-  startDt: string;
-  endDt: string;
-  createAt: string;
-  type: string;
-  title: string;
-  contents: string;
-};
+export type CalendarDetailData =
+  OpenApiSchema<'org.example.knockin.dto.MyRoommateCalendarDetailDto$Response'>;
 
-export type CalendarType = {
-  id: string;
-  name: string;
-};
+export type CalendarType = OpenApiSchema<'org.example.knockin.dto.CalendarTypesDto$Response$Type'>;
 
-export type CalendarTypesData = {
-  types: CalendarType[];
-};
+export type CalendarTypesData = OpenApiSchema<'org.example.knockin.dto.CalendarTypesDto$Response'>;
 
 export type CalendarQuery = {
   year?: number;
@@ -93,38 +54,38 @@ export type CalendarQuery = {
 
 const MOCK_REQUESTS: RoommateRequestItem[] = [
   {
-    requester: '하준',
-    reqeustee: '지민',
+    requester: 2,
+    reqeustee: 1,
     createAt: '2026-05-26T11:00:00Z',
-    chatRoomId: 'chat-1',
-    isAgree: 'false',
+    chatRoomId: 1,
+    isAgree: false,
   },
 ];
 
 const MOCK_MY_ROOMMATE: MyRoommateData = {
-  userId: 'u-2',
+  userId: 2,
   userName: '하준',
   compatibility: {
-    score: '85',
+    score: 85,
     lifeStyleInfo: [
       { title: '생활 리듬', percent: '88' },
       { title: '청결', percent: '82' },
     ],
-    preferences: [
-      {
-        preferencesId: 'pf-quiet',
-        name: '조용함 선호',
-        value: '5',
-        description: '소음에 민감해요',
-        type: 'range',
-      },
-    ],
   },
+  preferences: [
+    {
+      lifestyleId: 1,
+      name: '조용함 선호',
+      value: '5',
+      description: '소음에 민감해요',
+      type: 'SCALE',
+    },
+  ],
 };
 
 const MOCK_CALENDARS: CalendarItem[] = [
   {
-    calendarId: 'cal-1',
+    calendarId: 1,
     writer: '지민',
     startDt: '2026-06-05',
     endDt: '2026-06-05',
@@ -133,7 +94,7 @@ const MOCK_CALENDARS: CalendarItem[] = [
     title: '대청소',
   },
   {
-    calendarId: 'cal-2',
+    calendarId: 2,
     writer: '하준',
     startDt: '2026-06-10',
     endDt: '2026-06-10',
@@ -144,19 +105,15 @@ const MOCK_CALENDARS: CalendarItem[] = [
 ];
 
 const MOCK_CALENDAR_DETAIL: CalendarDetailData = {
-  writer: '지민',
-  startDt: '2026-06-05',
-  endDt: '2026-06-05',
-  createAt: '2026-05-28T09:00:00Z',
-  type: 'cleaning',
+  id: 1,
   title: '대청소',
   contents: '오전에 거실/주방 같이 청소해요.',
 };
 
 const MOCK_CALENDAR_TYPES: CalendarType[] = [
-  { id: 'cleaning', name: '청소' },
-  { id: 'bill', name: '정산' },
-  { id: 'event', name: '일정' },
+  { id: 1, name: '청소' },
+  { id: 2, name: '정산' },
+  { id: 3, name: '일정' },
 ];
 
 // ─── Client: 요청 ──────────────────────────────────────────────────────────────

@@ -27,7 +27,7 @@ export type UseMyPageHomeScreenReturn = {
 
 export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
   const router = useRouter();
-  const { session, signIn } = useSession();
+  const { session } = useSession();
   const [profileVisible, setProfileVisible] = useState(true);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
 
@@ -89,7 +89,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     genderLabel: genderLabel(user?.gender),
     matchingRows,
     accountRows,
-    onSignIn: signIn,
+    onSignIn: () => router.push('/kakao-login' as never),
     setProfileVisible,
     setNotificationEnabled,
   };

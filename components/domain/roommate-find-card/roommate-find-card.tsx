@@ -13,10 +13,14 @@ export type RoommateFindCardProps = {
  * 명세 MatchListItem 을 그대로 받아 렌더한다.
  */
 export function RoommateFindCard({ match, onPress }: RoommateFindCardProps) {
-  const [liked, setLiked] = useState(match.isLike === 'true');
+  const [liked, setLiked] = useState(match.isLike === true);
+  const name = match.name ?? '이름 없음';
   const score = Number(match.score) || 0;
-  const lifestyleChips = match.lifeStyles.slice(0, 4).map((l) => l.name);
-  const conditionChips = match.conditions.map((c) => c.name);
+  const lifestyleChips = (match.lifeStyles ?? [])
+    .slice(0, 4)
+    .map((l) => l.name)
+    .filter(Boolean);
+  const conditionChips = (match.conditions ?? []).map((c) => c.name).filter(Boolean);
 
   return (
     <Pressable
@@ -27,11 +31,11 @@ export function RoommateFindCard({ match, onPress }: RoommateFindCardProps) {
       {/* 헤더 */}
       <View className="flex-row items-center gap-3">
         <View className="h-11 w-11 items-center justify-center rounded-full bg-neutral-100">
-          <Text className="text-base font-semibold text-neutral-500">{match.name.charAt(0)}</Text>
+          <Text className="text-base font-semibold text-neutral-500">{name.charAt(0)}</Text>
         </View>
         <View className="flex-1 gap-1">
           <View className="flex-row items-center gap-2">
-            <Text className="text-sm font-semibold text-neutral-900">{match.name}</Text>
+            <Text className="text-sm font-semibold text-neutral-900">{name}</Text>
             <View className="rounded bg-emerald-50 px-1.5 py-0.5">
               <Text className="text-[10px] text-emerald-700">
                 {match.roomProfileType ? '방 있음' : '방 없음'}
@@ -53,9 +57,9 @@ export function RoommateFindCard({ match, onPress }: RoommateFindCardProps) {
       {/* 정보 행 */}
       <View className="gap-1.5">
         <InfoRow label="보증금 / 월세" value={`${match.deposit} / ${match.mounthRent}`} />
-        <InfoRow label="입주 가능" value={match.comeableAt} />
-        <InfoRow label="방 형태" value={match.roomType.join(', ')} />
-        <InfoRow label="위치" value={match.region} />
+        <InfoRow label="입주 가능" value={formatDate(match.comeableAt)} />
+        <InfoRow label="방 형태" value={(match.roomType ?? []).join(', ')} />
+        <InfoRow label="위치" value={String(match.region ?? '')} />
       </View>
 
       {/* 생활패턴 칩 */}
@@ -102,4 +106,13 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <Text className="text-sm font-medium text-neutral-800">{value}</Text>
     </View>
   );
+}
+
+function formatDate(value?: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
 }

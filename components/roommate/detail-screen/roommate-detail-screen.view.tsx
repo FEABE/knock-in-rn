@@ -74,18 +74,19 @@ function Header({ onBack }: { onBack: () => void }) {
 }
 
 function ProfileHead({ data }: { data: MatchDetailData }) {
+  const name = data.name ?? '이름 없음';
   return (
     <View className="items-center gap-3">
       <View className="h-24 w-24 items-center justify-center rounded-full bg-neutral-100">
-        <Text className="text-2xl font-semibold text-neutral-600">{data.name.charAt(0)}</Text>
+        <Text className="text-2xl font-semibold text-neutral-600">{name.charAt(0)}</Text>
       </View>
       <View className="items-center gap-1">
-        <Text className="text-xl font-bold text-neutral-900">{data.name}</Text>
-        <Text className="text-xs text-neutral-500">{data.region}</Text>
+        <Text className="text-xl font-bold text-neutral-900">{name}</Text>
+        <Text className="text-xs text-neutral-500">{String(data.region ?? '')}</Text>
       </View>
       <View className="flex-row gap-2">
-        {data.isAuthStudent === 'true' ? <Badge label="✓ 학교 인증" tone="emerald" /> : null}
-        {data.isAuthEmployee === 'true' ? <Badge label="✓ 회사 인증" tone="emerald" /> : null}
+        {data.isAuthStudent === true ? <Badge label="✓ 학교 인증" tone="emerald" /> : null}
+        {data.isAuthEmployee === true ? <Badge label="✓ 회사 인증" tone="emerald" /> : null}
         <Badge label="신원 확인" tone="sky" />
       </View>
     </View>
@@ -114,7 +115,8 @@ function LifestyleBlock({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const items = expanded ? data.lifeStyles : data.lifeStyles.slice(0, 4);
+  const lifeStyles = data.lifeStyles ?? [];
+  const items = expanded ? lifeStyles : lifeStyles.slice(0, 4);
   return (
     <Section title="생활 패턴">
       <View className="flex-row flex-wrap gap-2">
@@ -128,7 +130,7 @@ function LifestyleBlock({
           </View>
         ))}
       </View>
-      {data.lifeStyles.length > 4 ? (
+      {lifeStyles.length > 4 ? (
         <Pressable onPress={onToggle} className="items-center py-1">
           <Text className="text-xs text-neutral-500">{expanded ? '접기 ⌃' : '더보기 ⌄'}</Text>
         </Pressable>
@@ -143,21 +145,28 @@ function PreferredLivingBlock({ data }: { data: MatchDetailData }) {
       <View className="gap-2">
         <KeyVal label="예산 보증금" value={`${data.maxDeposit}만원 이하`} />
         <KeyVal label="예산 월세" value={`${data.maxMounthRent}만원 이하`} />
-        <KeyVal label="입주 희망 시기" value={data.comeableAt} />
-        <KeyVal label="희망 룸 형태" value={data.roomProfileType} />
-        <KeyVal label="희망 지역" value={data.region} />
+        <KeyVal label="입주 희망 시기" value={formatDate(data.comeableAt)} />
+        <KeyVal label="희망 룸 형태" value={data.roomProfileType ?? '-'} />
+        <KeyVal label="희망 지역" value={String(data.region ?? '-')} />
       </View>
     </Section>
   );
 }
 
 function PreferredRoommateBlock({ data }: { data: MatchDetailData }) {
-  const conditionText = data.conditions.map((condition) => condition.name).join(' · ');
+  const conditionText = (data.conditions ?? [])
+    .map((condition) => condition.name)
+    .filter(Boolean)
+    .join(' · ');
   return (
     <Section title="희망 룸메이트 조건">
       <View className="gap-2">
-        {data.preferences.map((preference) => (
-          <KeyVal key={preference.preferencesId} label={preference.name} value={preference.value} />
+        {(data.preferences ?? []).map((preference) => (
+          <KeyVal
+            key={preference.preferencesId}
+            label={preference.name ?? '-'}
+            value={preference.value ?? '-'}
+          />
         ))}
         {conditionText ? <KeyVal label="중요 조건" value={conditionText} /> : null}
       </View>
@@ -166,7 +175,7 @@ function PreferredRoommateBlock({ data }: { data: MatchDetailData }) {
 }
 
 function CompatibilityBlock({ data }: { data: MatchDetailData }) {
-  const score = Number(data.compatibility.score) || 0;
+  const score = Number(data.compatibility?.score) || 0;
   return (
     <Section title="나와 궁합">
       <View className="flex-row items-center gap-4 rounded-2xl border border-neutral-100 p-4">
@@ -174,7 +183,7 @@ function CompatibilityBlock({ data }: { data: MatchDetailData }) {
           <Text className="text-xl font-bold text-[#256EF4]">{score}점</Text>
         </View>
         <View className="flex-1 gap-2">
-          {data.compatibility.lifeStyleInfo.map((info, index) => {
+          {(data.compatibility?.lifeStyleInfo ?? []).map((info, index) => {
             const pct = Number(info.percent) || 0;
             return (
               <View key={index} className="gap-1">
@@ -247,6 +256,15 @@ function KeyVal({ label, value }: { label: string; value: string }) {
       <Text className="text-sm font-semibold text-neutral-800">{value}</Text>
     </View>
   );
+}
+
+function formatDate(value?: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
 }
 
 function Badge({ label, tone }: { label: string; tone: 'emerald' | 'sky' }) {

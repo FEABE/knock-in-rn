@@ -10,155 +10,107 @@ import {
   request,
   USE_MOCK,
 } from './client';
-import type { ConditionItem, LifestyleItem, ProfileRegionItem, RoomProfileItem } from './entities';
+import type { ConditionItem, LifestyleItem } from './entities';
+import type { OpenApiSchema } from './openapi-types';
 
 // ─── Request Types ────────────────────────────────────────────────────────────
 
 /** 기본정보1 (온보딩 1단계). */
-export type ProfileBasicRequest = {
-  name: string;
-  /** "YYYY-MM-DD" (OpenAPI string($date)) */
-  birth: string;
-  /** "MALE" | "FEMALE" (OpenAPI enum) */
-  gender: string;
-  email: string;
-  /** 동의한 약관의 정수 ID 목록 (OpenAPI array<integer>). */
-  terms: number[];
-};
+export type ProfileBasicRequest =
+  OpenApiSchema<'org.example.knockin.dto.SaveProfileBasicDto$Request'>;
 
 /** 기본정보2 (온보딩 2단계) — 생활패턴. */
-export type ProfileLifestyleRequest = {
-  lifestyles: string[];
-};
+export type ProfileLifestyleRequest =
+  OpenApiSchema<'org.example.knockin.dto.SaveProfileLifeStyleDto$Request'>;
 
 /** 기본정보3 (온보딩 3단계) — 방 정보. (명세상 mounthRent 오타 유지) */
-export type ProfileRoomInfoRequest = {
-  type: string;
-  minDeposit: string;
-  maxDeposit: string;
-  minMounthRent: string;
-  maxMounthRent: string;
-  comeEnableAt: string;
-  region: string[];
-  roomProfile: string[];
-  deposit: string;
-  mounthRent: string;
-};
+export type ProfileRoomInfoRequest =
+  OpenApiSchema<'org.example.knockin.dto.SaveProfileRoomInfoDto$Request'>;
 
 /** 기본정보 1,2,3 일괄. */
-export type ProfileAllRequest = ProfileBasicRequest &
-  ProfileLifestyleRequest &
-  ProfileRoomInfoRequest;
+export type ProfileAllRequest = OpenApiSchema<'org.example.knockin.dto.SaveProfileAllDto$Request'>;
 
 /** 선호조건1 (Phase 2 Step A). */
-export type PreferenceLifestyleRequest = {
-  lifestyles: string[];
-};
+export type PreferenceLifestyleRequest =
+  OpenApiSchema<'org.example.knockin.dto.SavePreferencesLifeStyleDto$Request'>;
 
 /** 선호조건2 (Phase 2 Step B). (명세상 값은 lifestyleId 형태) */
-export type PreferenceConditionsRequest = {
-  conditions: string[];
-};
+export type PreferenceConditionsRequest =
+  OpenApiSchema<'org.example.knockin.dto.SavePreferencesConditionsDto$Request'>;
 
 /** 선호조건 1,2 일괄. */
-export type PreferenceAllRequest = PreferenceLifestyleRequest & PreferenceConditionsRequest;
+export type PreferenceAllRequest =
+  OpenApiSchema<'org.example.knockin.dto.SavePreferencesAllDto$Request'>;
 
 /** 프로필 노출 상태 변경. */
-export type VisibilityRequest = {
-  status: string;
-};
+export type VisibilityRequest =
+  OpenApiSchema<'org.example.knockin.dto.ProfileVisibilityDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 /** GET /users/me/profile/all */
-export type ProfileAllData = {
-  lifestyles: LifestyleItem[];
-  type: string;
-  minDeposit: string;
-  maxDeposit: string;
-  minMounthRent: string;
-  maxMounthRent: string;
-  comeEnableAt: string;
-  region: ProfileRegionItem[];
-  roomProfile: RoomProfileItem[];
-  deposit: string;
-  mounthRent: string;
-};
+export type ProfileAllData = OpenApiSchema<'org.example.knockin.dto.MyProfileAllDto$Response'>;
 
 /** GET /users/me/preferences/all */
-export type PreferenceAllData = {
-  lifestyles: LifestyleItem[];
-  conditions: ConditionItem[];
-};
+export type PreferenceAllData =
+  OpenApiSchema<'org.example.knockin.dto.MyPreferencesAllDto$Response'>;
 
 /** 내 룸메이트 게시글 리스트 항목. (createAt 오타 유지) */
-export type MyBoardItem = {
-  boardId: string;
-  image: string;
-  title: string;
-  deposit: string;
-  mounthRent: string;
-  roomType: string;
-  region: string;
-  writer: string;
-  createAt: string;
-  viewer: string;
-};
+export type MyBoardItem =
+  OpenApiSchema<'org.example.knockin.dto.MyBoardListDto$Response$BoardItem'>;
 
-export type MyBoardListData = {
-  boards: MyBoardItem[];
-};
+export type MyBoardListData = OpenApiSchema<'org.example.knockin.dto.MyBoardListDto$Response'>;
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
 const MOCK_LIFESTYLES: LifestyleItem[] = [
   {
-    lifestyleId: 'ls-sleep',
+    lifestyleId: 1,
     name: '취침 시간',
     value: '24:00',
     description: '보통 자정쯤 잠들어요',
-    type: 'range',
+    type: 'SCALE',
   },
   {
-    lifestyleId: 'ls-clean',
+    lifestyleId: 2,
     name: '청결',
     value: '4',
     description: '깔끔한 편이에요',
-    type: 'range',
+    type: 'SCALE',
   },
   {
-    lifestyleId: 'ls-smoking',
+    lifestyleId: 3,
     name: '흡연',
     value: 'no',
     description: '비흡연',
-    type: 'single',
+    type: 'SINGLE_CHOICE',
   },
 ];
 
 const MOCK_CONDITIONS: ConditionItem[] = [
-  { conditionsId: 'cond-quiet', name: '조용한 환경' },
-  { conditionsId: 'cond-clean', name: '청결 중시' },
-  { conditionsId: 'cond-no-smoke', name: '비흡연자' },
+  { conditionsId: 1, name: '조용한 환경' },
+  { conditionsId: 2, name: '청결 중시' },
+  { conditionsId: 3, name: '비흡연자' },
 ];
 
 const MOCK_PROFILE_ALL: ProfileAllData = {
   lifestyles: MOCK_LIFESTYLES,
-  type: 'two-room',
-  minDeposit: '1000',
-  maxDeposit: '2000',
-  minMounthRent: '50',
-  maxMounthRent: '90',
-  comeEnableAt: '2026-06-01',
+  type: 'OFFER',
+  minDeposit: 1000,
+  maxDeposit: 2000,
+  minMounthRent: 50,
+  maxMounthRent: 90,
+  comeEnableAt: '2026-06-01T00:00:00Z',
   region: [
-    { regionId: 'seoul-mapo', region: '서울 마포구' },
-    { regionId: 'seoul-seongdong', region: '서울 성동구' },
+    { regionId: 3, region: '서울 마포구' },
+    { regionId: 5, region: '서울 성동구' },
   ],
   roomProfile: [
-    { roomProfileId: 'rp-1', roomProfileName: '풀옵션' },
-    { roomProfileId: 'rp-2', roomProfileName: '주차 가능' },
+    { roomProfileId: 1, roomProfileName: '풀옵션' },
+    { roomProfileId: 2, roomProfileName: '주차 가능' },
   ],
-  deposit: '1500',
-  mounthRent: '80',
+  deposit: 1500,
+  mounthRent: 80,
 };
 
 const MOCK_PREFERENCE_ALL: PreferenceAllData = {
@@ -169,16 +121,9 @@ const MOCK_PREFERENCE_ALL: PreferenceAllData = {
 const MOCK_MY_BOARDS: MyBoardListData = {
   boards: [
     {
-      boardId: 'p-1',
+      boardId: 1,
       image: 'https://picsum.photos/seed/p1/600/400',
       title: '망원 한강뷰 투룸 함께 살 룸메 구해요',
-      deposit: '1500',
-      mounthRent: '80',
-      roomType: 'two-room',
-      region: '서울 마포구',
-      writer: '지민',
-      createAt: '2026-05-10T09:00:00Z',
-      viewer: '312',
     },
   ],
 };

@@ -3,7 +3,15 @@ import { Alert } from 'react-native';
 import { useState, type Dispatch, type SetStateAction } from 'react';
 
 import type { RangeValue } from '@/components/ui/headless';
-import { updateProfileLifestyle, updateProfileRoomInfo } from '@/lib/api';
+import {
+  compactNumbers,
+  LIFESTYLE_BACKEND_IDS,
+  LIFESTYLE_CHOICE_BACKEND_IDS,
+  ROOM_TYPE_BACKEND_IDS,
+  updateProfileLifestyle,
+  updateProfileRoomInfo,
+} from '@/lib/api';
+import type { RoomType } from '@/lib/onboarding';
 
 export const PROFILE_SCALES = [
   {
@@ -93,23 +101,36 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
 
   const saveLifestyle = async () => {
     const res = await updateProfileLifestyle({
-      lifestyles: Object.entries(scales).map(([key, value]) => `${key}-${value}`),
+      lifestyles: compactNumbers([
+        ...Object.keys(scales).map(
+          (key) => LIFESTYLE_BACKEND_IDS[key as keyof typeof LIFESTYLE_BACKEND_IDS],
+        ),
+        smoking === 'no' || smoking === 'outdoor' || smoking === 'yes'
+          ? LIFESTYLE_CHOICE_BACKEND_IDS.smoking[smoking]
+          : undefined,
+        pet === 'no' || pet === 'small' || pet === 'any'
+          ? LIFESTYLE_CHOICE_BACKEND_IDS.pet[pet]
+          : undefined,
+      ]),
     });
     Alert.alert(res.error ? '저장 실패' : '저장 완료');
   };
 
   const saveRoom = async () => {
+    const roomTypeIds = compactNumbers(
+      roomTypes.map((label) => ROOM_TYPE_BACKEND_IDS[toRoomType(label)]),
+    );
     const res = await updateProfileRoomInfo({
-      type: roomTypes[0] ?? '',
-      minDeposit: String(deposit[0]),
-      maxDeposit: String(deposit[1]),
-      minMounthRent: String(rent[0]),
-      maxMounthRent: String(rent[1]),
-      comeEnableAt: moveText,
+      type: hasRoom ? 'OFFER' : 'SEEKER',
+      minDeposit: deposit[0],
+      maxDeposit: deposit[1],
+      minMounthRent: rent[0],
+      maxMounthRent: rent[1],
+      comeEnableAt: new Date(moveText.replaceAll('.', '-')).toISOString(),
       region: [],
-      roomProfile: roomTypes,
-      deposit: '',
-      mounthRent: '',
+      roomProfile: roomTypeIds,
+      deposit: hasRoom ? deposit[0] : undefined,
+      mounthRent: hasRoom ? rent[0] : undefined,
     });
     Alert.alert(res.error ? '저장 실패' : '저장 완료');
   };
@@ -133,4 +154,23 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     saveLifestyle,
     saveRoom,
   };
+}
+
+function toRoomType(label: string): RoomType {
+  switch (label) {
+    case '투룸':
+      return 'two-room';
+    case '쓰리룸 이상':
+      return 'three-room+';
+    case '오피스텔':
+      return 'officetel';
+    case '쉐어하우스':
+      return 'share-house';
+    case '아파트':
+      return 'apt';
+    case '빌라':
+      return 'villa';
+    default:
+      return 'one-room';
+  }
 }

@@ -31,7 +31,7 @@ export function useChatListScreen(): UseChatListScreenReturn {
   const rows = useMemo<ChatListRow[]>(
     () =>
       (rooms ?? []).map((room, index) => {
-        const proposal = room.isAgree !== 'true';
+        const proposal = room.isAgree !== true;
         return {
           room,
           proposal,
@@ -43,7 +43,7 @@ export function useChatListScreen(): UseChatListScreenReturn {
               : '채팅이 시작되었어요. 인사를 건네보세요.'),
           onPress: () => {
             logEvent(AnalyticsEvent.CHAT_ROOM_ENTER, { room_id: room.chatRoomId });
-            router.push(`/chat/${room.chatRoomId}` as never);
+            router.push(`/chat/${String(room.chatRoomId)}` as never);
           },
         };
       }),

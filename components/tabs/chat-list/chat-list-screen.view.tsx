@@ -29,7 +29,7 @@ export function ChatListScreenView({ rows, loading, error }: ChatListScreenViewP
       ) : (
         <ScrollView contentContainerClassName="p-2">
           {rows.map((row) => (
-            <ChatRoomRow key={row.room.chatRoomId} row={row} />
+            <ChatRoomRow key={String(row.room.chatRoomId)} row={row} />
           ))}
         </ScrollView>
       )}
@@ -38,6 +38,7 @@ export function ChatListScreenView({ rows, loading, error }: ChatListScreenViewP
 }
 
 function ChatRoomRow({ row }: { row: ChatListRow }) {
+  const name = row.room.name ?? '이름 없음';
   return (
     <Pressable
       onPress={row.onPress}
@@ -46,7 +47,7 @@ function ChatRoomRow({ row }: { row: ChatListRow }) {
       }`}
     >
       <View className="h-12 w-12 items-center justify-center rounded-full bg-[#256EF4]/15">
-        <Text className="font-semibold text-[#256EF4]">{row.room.name.charAt(0)}</Text>
+        <Text className="font-semibold text-[#256EF4]">{name.charAt(0)}</Text>
       </View>
       <View className="flex-1 gap-0.5">
         <View className="flex-row items-center gap-2">
@@ -55,7 +56,7 @@ function ChatRoomRow({ row }: { row: ChatListRow }) {
               <Text className="text-[10px] font-medium text-white">매칭 요청</Text>
             </View>
           ) : null}
-          <Text className="text-sm font-semibold text-neutral-900">{row.room.name}</Text>
+          <Text className="text-sm font-semibold text-neutral-900">{name}</Text>
         </View>
         <Text numberOfLines={1} className="text-xs text-neutral-500">
           {row.preview}

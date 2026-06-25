@@ -3,7 +3,15 @@ import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
-import { saveProfileAll, type ProfileAllRequest } from '@/lib/api';
+import {
+  compactNumbers,
+  LIFESTYLE_BACKEND_IDS,
+  LIFESTYLE_CHOICE_BACKEND_IDS,
+  regionBackendId,
+  roomTypeBackendId,
+  saveProfileAll,
+  type ProfileAllRequest,
+} from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import {
   ONBOARDING_WRITE_ENABLED,
@@ -24,25 +32,37 @@ function toRequest(values: OnboardingValues): ProfileAllRequest {
     : '';
   const isHas = room.hasRoom === true;
   const moveDate = isHas ? room.moveInDate : room.moveInBy;
+  const roomTypeId = roomTypeBackendId(isHas ? room.roomType : room.roomTypes[0]);
   return {
     name: profile.name,
     birth,
-    gender: (profile.gender ?? '').toUpperCase(),
+    gender: profile.gender === 'female' ? 'FEMALE' : 'MALE',
     email: profile.email,
     terms: Object.entries(terms)
       .filter(([, agreed]) => agreed)
       .map(([key]) => TERM_BACKEND_IDS[key as TermKey]),
-    lifestyles: Object.entries(profile.scales).map(([k, v]) => `${k}-${v}`),
-    type: isHas ? (room.roomType ?? '') : (room.roomTypes[0] ?? ''),
-    minDeposit: isHas ? '' : String(room.budgetDeposit.min),
-    maxDeposit: isHas ? '' : String(room.budgetDeposit.max),
-    minMounthRent: isHas ? '' : String(room.budgetRent.min),
-    maxMounthRent: isHas ? '' : String(room.budgetRent.max),
+    lifestyles: compactNumbers([
+      ...Object.keys(profile.scales).map(
+        (key) => LIFESTYLE_BACKEND_IDS[key as keyof typeof LIFESTYLE_BACKEND_IDS],
+      ),
+      profile.lifestyle.smoking
+        ? LIFESTYLE_CHOICE_BACKEND_IDS.smoking[profile.lifestyle.smoking]
+        : undefined,
+      profile.lifestyle.pet ? LIFESTYLE_CHOICE_BACKEND_IDS.pet[profile.lifestyle.pet] : undefined,
+    ]),
+    type: isHas ? 'OFFER' : 'SEEKER',
+    minDeposit: isHas ? undefined : room.budgetDeposit.min,
+    maxDeposit: isHas ? undefined : room.budgetDeposit.max,
+    minMounthRent: isHas ? undefined : room.budgetRent.min,
+    maxMounthRent: isHas ? undefined : room.budgetRent.max,
     comeEnableAt: moveDate ? moveDate.toISOString() : '',
-    region: isHas ? (room.region ? [room.region.id] : []) : room.regions.map((r) => r.id),
-    roomProfile: [],
-    deposit: isHas ? String(room.deposit ?? 0) : '',
-    mounthRent: isHas ? String(room.monthlyRent ?? 0) : '',
+    region: compactNumbers(
+      isHas ? [regionBackendId(room.region)] : room.regions.map(regionBackendId),
+    ),
+    roomProfile: compactNumbers([roomTypeId]),
+    deposit: isHas ? (room.deposit ?? 0) : undefined,
+    mounthRent: isHas ? (room.monthlyRent ?? 0) : undefined,
+    comeableAtNegotiable: false,
   };
 }
 
@@ -79,7 +99,14 @@ export default function OnboardingLayout() {
       }
     }
     // 기본 프로필 완성 → 로그인 처리 후 탐색으로 진입.
-    await signIn();
+    const signInResult = await signIn();
+    if (signInResult.status !== 'success') {
+      Alert.alert('로그인 필요', signInResult.message, [
+        { text: '나중에', style: 'cancel', onPress: () => router.replace('/explore' as never) },
+        { text: '로그인', onPress: () => router.replace('/kakao-login' as never) },
+      ]);
+      return;
+    }
     router.replace('/explore' as never);
   };
 
