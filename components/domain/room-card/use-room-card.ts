@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import type { RoomPost } from '@/lib/domain';
 
@@ -52,9 +52,7 @@ function timeAgo(date: Date): string {
 }
 
 function pickBadge(post: RoomPost): RoomCardBadge {
-  const diffDay = Math.floor(
-    (Date.now() - post.createdAt.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const diffDay = Math.floor((Date.now() - post.createdAt.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDay <= 3) return 'new';
   if (post.likes >= 25 || post.views >= 300) return 'hot';
   return null;
@@ -65,20 +63,13 @@ export function useRoomCard({
   onPress: onPressProp,
   onLikeChange,
 }: UseRoomCardProps): UseRoomCardReturn {
-  const [liked, setLiked] = useState(!!post.liked);
+  const liked = !!post.liked;
 
   const toggleLike = useCallback(() => {
-    setLiked((prev) => {
-      const next = !prev;
-      onLikeChange?.(post, next);
-      return next;
-    });
-  }, [onLikeChange, post]);
+    onLikeChange?.(post, !liked);
+  }, [liked, onLikeChange, post]);
 
-  const onPress = useCallback(
-    () => onPressProp?.(post),
-    [onPressProp, post],
-  );
+  const onPress = useCallback(() => onPressProp?.(post), [onPressProp, post]);
 
   const priceLabel = useMemo(
     () => `보증금 ${fmt(post.deposit)} / 월세 ${fmt(post.monthlyRent)}`,
@@ -90,10 +81,7 @@ export function useRoomCard({
     [post.roomType],
   );
 
-  const regionLabel = useMemo(
-    () => `${post.region.city} ${post.region.district}`,
-    [post.region],
-  );
+  const regionLabel = useMemo(() => `${post.region.city} ${post.region.district}`, [post.region]);
 
   const badge = useMemo(() => pickBadge(post), [post]);
   const timeAgoLabel = useMemo(() => timeAgo(post.createdAt), [post.createdAt]);

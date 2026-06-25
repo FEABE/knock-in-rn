@@ -3,7 +3,9 @@ import { Alert } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
+import { useRequireLogin } from '@/lib/auth';
 import { useModeration, useRoomStore, useSession, type RoomPost } from '@/lib/domain';
+import { goChatRoom, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
 
 export const ROOM_REPORT_REASONS = [
   '허위 매물',
@@ -44,10 +46,10 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useSession();
-  const { getById, posts, remove } = useRoomStore();
+  const { requireLogin } = useRequireLogin();
+  const { getById, posts, remove, update } = useRoomStore();
   const { report, blockUser, isPostBlocked, blockPost } = useModeration();
 
-  const [liked, setLiked] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -74,24 +76,13 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     if (post?.id) logEvent(AnalyticsEvent.ROOM_DETAIL_VIEW, { room_id: post.id });
   }, [post?.id]);
 
-  const requireLogin = (then: () => void) => {
-    if (!session) {
-      Alert.alert('로그인이 필요해요', '로그인하시겠어요?', [
-        { text: '취소', style: 'cancel' },
-        { text: '로그인', onPress: () => router.push('/kakao-login' as never) },
-      ]);
-      return;
-    }
-    then();
-  };
-
   return {
     post,
     photos,
     isLoggedIn: !!session,
     isOwner,
     blocked,
-    liked,
+    liked: !!post.liked,
     reportOpen,
     menuOpen,
     photoIndex,
@@ -105,7 +96,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     onBack: () => router.back(),
     onEdit: () => {
       setMenuOpen(false);
-      router.push(`/room/${post.id}/edit` as never);
+      goRoomEdit(router, post.id);
     },
     onDelete: () => {
       setMenuOpen(false);
@@ -121,20 +112,20 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
         },
       ]);
     },
-    onAuthorPress: () => router.push(`/roommate/rc-${post.author.id}` as never),
+    onAuthorPress: () => goRoommateDetail(router, `rc-${post.author.id}`),
     onLike: () =>
       requireLogin(() => {
-        const next = !liked;
+        const next = !post.liked;
         logEvent(next ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
           room_id: post.id,
         });
-        setLiked(next);
+        update(post.id, { liked: next });
       }),
     onRequestChat: () =>
       requireLogin(() => {
         Alert.alert('매칭 요청', `${post.author.name}님께 1:1 대화 요청을 보낼까요?`, [
           { text: '취소', style: 'cancel' },
-          { text: '요청 보내기', onPress: () => router.push(`/chat/${post.author.id}` as never) },
+          { text: '요청 보내기', onPress: () => goChatRoom(router, post.author.id) },
         ]);
       }),
     onReportReason: (reason) => {

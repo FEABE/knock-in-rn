@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { ROOM_TYPES, type RoomType } from '@/lib/onboarding';
 
 import { FilterSheet } from './filter-sheet';
+import { useRoomTypeFilterSheet } from './use-room-type-filter-sheet';
 
 export function RoomTypeFilterBody({
   value,
@@ -26,9 +26,7 @@ export function RoomTypeFilterBody({
           isAll ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
         }`}
       >
-        <Text
-          className={isAll ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'}
-        >
+        <Text className={isAll ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'}>
           전체
         </Text>
       </Pressable>
@@ -69,15 +67,15 @@ export function RoomTypeFilterSheet({
   value,
   onChange,
 }: RoomTypeFilterSheetProps) {
-  const [draft, setDraft] = useState<RoomType[]>(value);
+  const { draft, setDraft, reset, apply } = useRoomTypeFilterSheet({ open, value, onChange });
 
   return (
     <FilterSheet
       open={open}
       onOpenChange={onOpenChange}
       title="룸 형태"
-      onReset={() => setDraft([])}
-      onApply={() => onChange(draft)}
+      onReset={reset}
+      onApply={apply}
     >
       <RoomTypeFilterBody value={draft} onChange={setDraft} />
     </FilterSheet>

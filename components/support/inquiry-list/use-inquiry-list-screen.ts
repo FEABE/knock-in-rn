@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
 import { INQUIRIES } from '@/lib/domain';
+import { goSupportInquiryNew } from '@/lib/navigation/routes';
 
 export type InquiryListItem = {
   id: string;
@@ -43,7 +44,7 @@ export function useInquiryListScreen(): UseInquiryListScreenReturn {
   return {
     inquiries,
     publicCount: inquiries.filter((inquiry) => inquiry.isPublic).length,
-    onCreatePress: () => router.push('/support/inquiry-new' as never),
+    onCreatePress: () => goSupportInquiryNew(router),
   };
 }
 

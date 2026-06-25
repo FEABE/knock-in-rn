@@ -21,6 +21,7 @@ import {
   type OnboardingValues,
   type TermKey,
 } from '@/lib/onboarding';
+import { goExplore, goKakaoLogin } from '@/lib/navigation/routes';
 
 function toRequest(values: OnboardingValues): ProfileAllRequest {
   const { profile, room, terms } = values;
@@ -102,12 +103,12 @@ export default function OnboardingLayout() {
     const signInResult = await signIn();
     if (signInResult.status !== 'success') {
       Alert.alert('로그인 필요', signInResult.message, [
-        { text: '나중에', style: 'cancel', onPress: () => router.replace('/explore' as never) },
-        { text: '로그인', onPress: () => router.replace('/kakao-login' as never) },
+        { text: '나중에', style: 'cancel', onPress: () => goExplore(router, 'replace') },
+        { text: '로그인', onPress: () => goKakaoLogin(router, 'replace') },
       ]);
       return;
     }
-    router.replace('/explore' as never);
+    goExplore(router, 'replace');
   };
 
   return (

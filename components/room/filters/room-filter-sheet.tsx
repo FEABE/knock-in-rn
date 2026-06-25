@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/headless';
 import type { Region, RoomType } from '@/lib/onboarding';
 
-import { BudgetFilterBody, type BudgetValues } from './budget-filter-sheet';
+import { BudgetFilterBody } from './budget-filter-sheet';
 import { GenderFilterBody, type GenderFilterValue } from './gender-filter-sheet';
 import { RegionFilterBody } from './region-filter-sheet';
 import { RoomTypeFilterBody } from './room-type-filter-sheet';
+import { useRoomFilterSheet } from './use-room-filter-sheet';
 
 export type FilterTabKey = 'region' | 'gender' | 'budget' | 'roomType';
 
@@ -47,24 +47,25 @@ export function RoomFilterSheet({
   defaultTab = 'region',
   initial,
 }: RoomFilterSheetProps) {
-  const [draft, setDraft] = useState<RoomFilterValue>(value);
-  const [tab, setTab] = useState<FilterTabKey>(defaultTab);
-
-  // 시트가 열릴 때마다 현재 적용값/선택 탭으로 동기화 (RN Modal은 닫혀도 언마운트되지 않음)
-  useEffect(() => {
-    if (open) {
-      setDraft(value);
-      setTab(defaultTab);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const budget: BudgetValues = {
-    depositMin: draft.depositMin,
-    depositMax: draft.depositMax,
-    rentMin: draft.rentMin,
-    rentMax: draft.rentMax,
-  };
+  const {
+    draft,
+    tab,
+    budget,
+    setTab,
+    setRegions,
+    setGender,
+    setBudget,
+    setRoomTypes,
+    reset,
+    apply,
+  } = useRoomFilterSheet({
+    open,
+    value,
+    onChange,
+    onOpenChange,
+    defaultTab,
+    initial,
+  });
 
   return (
     <BottomSheet
@@ -100,41 +101,23 @@ export function RoomFilterSheet({
       </View>
 
       <View className="gap-4">
-        {tab === 'region' ? (
-          <RegionFilterBody
-            value={draft.regions}
-            onChange={(regions) => setDraft((p) => ({ ...p, regions }))}
-          />
-        ) : null}
-        {tab === 'gender' ? (
-          <GenderFilterBody
-            value={draft.gender}
-            onChange={(gender) => setDraft((p) => ({ ...p, gender }))}
-          />
-        ) : null}
-        {tab === 'budget' ? (
-          <BudgetFilterBody value={budget} onChange={(b) => setDraft((p) => ({ ...p, ...b }))} />
-        ) : null}
+        {tab === 'region' ? <RegionFilterBody value={draft.regions} onChange={setRegions} /> : null}
+        {tab === 'gender' ? <GenderFilterBody value={draft.gender} onChange={setGender} /> : null}
+        {tab === 'budget' ? <BudgetFilterBody value={budget} onChange={setBudget} /> : null}
         {tab === 'roomType' ? (
-          <RoomTypeFilterBody
-            value={draft.roomTypes}
-            onChange={(roomTypes) => setDraft((p) => ({ ...p, roomTypes }))}
-          />
+          <RoomTypeFilterBody value={draft.roomTypes} onChange={setRoomTypes} />
         ) : null}
       </View>
 
       <View className="mt-6 flex-row gap-3">
         <Pressable
-          onPress={() => initial && setDraft(initial)}
+          onPress={reset}
           className="h-12 flex-1 items-center justify-center rounded-xl border border-neutral-200 active:bg-neutral-50"
         >
           <Text className="text-sm font-medium text-neutral-700">초기화</Text>
         </Pressable>
         <Pressable
-          onPress={() => {
-            onChange(draft);
-            onOpenChange(false);
-          }}
+          onPress={apply}
           className="h-12 flex-[2] items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
         >
           <Text className="text-sm font-semibold text-white">적용하기</Text>

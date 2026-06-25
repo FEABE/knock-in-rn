@@ -3,10 +3,12 @@ import { Alert } from 'react-native';
 
 import type { RoomFormValues } from '@/components/room/room-post-form';
 import { createRoommateBoard, regionBackendId, roomTypeBackendId } from '@/lib/api';
-import { useRoomStore, useSession } from '@/lib/domain';
+import { useRequireLogin } from '@/lib/auth';
+import { useRoomStore } from '@/lib/domain';
+import { goKakaoLogin } from '@/lib/navigation/routes';
 
 export type UseNewRoomScreenReturn = {
-  session: ReturnType<typeof useSession>['session'];
+  session: ReturnType<typeof useRequireLogin>['session'];
   onBack: () => void;
   onSignIn: () => void;
   onSubmit: (values: RoomFormValues) => Promise<void>;
@@ -14,7 +16,7 @@ export type UseNewRoomScreenReturn = {
 
 export function useNewRoomScreen(): UseNewRoomScreenReturn {
   const router = useRouter();
-  const { session } = useSession();
+  const { session } = useRequireLogin();
   const { add } = useRoomStore();
 
   const onSubmit = async (values: RoomFormValues) => {
@@ -68,7 +70,7 @@ export function useNewRoomScreen(): UseNewRoomScreenReturn {
   return {
     session,
     onBack: () => router.back(),
-    onSignIn: () => router.push('/kakao-login' as never),
+    onSignIn: () => goKakaoLogin(router),
     onSubmit,
   };
 }

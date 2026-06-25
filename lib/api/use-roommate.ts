@@ -2,15 +2,19 @@
  * 룸메이트 게시글/매칭 화면용 데이터 훅.
  * API 응답을 lib/domain UI 타입으로 매핑해 반환한다.
  */
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { RoomPost, RoommateCard } from '@/lib/domain';
 
 import { boardListItemToRoomPost, matchListItemToRoommateCard } from './adapters';
+import { toRoommateMatchCardModel, type RoommateMatchCardModel } from './mappers';
 import {
   type BoardListQuery,
+  type BoardListData,
   type MatchDetailData,
   type MatchListItem,
+  type MatchListData,
   getRoommateBoards,
   getRoommateMatchDetail,
   getRoommateMatches,
@@ -20,7 +24,7 @@ import { type AsyncState, useApi } from './use-async';
 /** 룸메이트 게시글 목록 (RoomPost[]). */
 export function useRoommateBoards(query: BoardListQuery = {}): AsyncState<RoomPost[]> {
   const key = JSON.stringify(query);
-  const state = useApi(() => getRoommateBoards(query), [key]);
+  const state = useApi(['roommate', 'boards', key], () => getRoommateBoards(query));
   const posts = useMemo(
     () => state.data?.boards?.map(boardListItemToRoomPost) ?? null,
     [state.data],
@@ -30,7 +34,7 @@ export function useRoommateBoards(query: BoardListQuery = {}): AsyncState<RoomPo
 
 /** 룸메이트 매칭 목록 (RoommateCard[]). */
 export function useRoommateMatches(): AsyncState<RoommateCard[]> {
-  const state = useApi(() => getRoommateMatches(), []);
+  const state = useApi(['roommate', 'matches'], () => getRoommateMatches());
   const cards = useMemo(
     () => state.data?.matches?.map(matchListItemToRoommateCard) ?? null,
     [state.data],
@@ -40,11 +44,61 @@ export function useRoommateMatches(): AsyncState<RoommateCard[]> {
 
 /** 룸메이트 매칭 목록 (명세 원본 MatchListItem[]). 리치 카드 렌더용. */
 export function useRoommateMatchList(): AsyncState<MatchListItem[]> {
-  const state = useApi(() => getRoommateMatches(), []);
+  const state = useApi(['roommate', 'matches'], () => getRoommateMatches());
   return { ...state, data: state.data?.matches ?? null };
+}
+
+/** 룸메이트 매칭 목록 (화면용 ViewModel[]). */
+export function useRoommateMatchCards(): AsyncState<RoommateMatchCardModel[]> {
+  const state = useApi(['roommate', 'matches'], () => getRoommateMatches());
+  const cards = useMemo(
+    () => state.data?.matches?.map(toRoommateMatchCardModel) ?? null,
+    [state.data],
+  );
+  return { ...state, data: cards };
+}
+
+export function useRoommateBoardLikeActions() {
+  const queryClient = useQueryClient();
+
+  return useCallback(
+    (boardId: string | number, liked: boolean) => {
+      queryClient.setQueriesData<BoardListData>({ queryKey: ['roommate', 'boards'] }, (old) => {
+        if (!old?.boards) return old;
+        return {
+          ...old,
+          boards: old.boards.map((board) =>
+            String(board.boardId ?? '') === String(boardId) ? { ...board, isLike: liked } : board,
+          ),
+        };
+      });
+    },
+    [queryClient],
+  );
+}
+
+export function useRoommateMatchLikeActions() {
+  const queryClient = useQueryClient();
+
+  return useCallback(
+    (userId: string | number, liked: boolean) => {
+      queryClient.setQueriesData<MatchListData>({ queryKey: ['roommate', 'matches'] }, (old) => {
+        if (!old?.matches) return old;
+        return {
+          ...old,
+          matches: old.matches.map((match) =>
+            String(match.userId ?? '') === String(userId) ? { ...match, isLike: liked } : match,
+          ),
+        };
+      });
+    },
+    [queryClient],
+  );
 }
 
 /** 룸메이트 매칭 상세 (userId). */
 export function useRoommateMatchDetail(userId: string): AsyncState<MatchDetailData> {
-  return useApi(() => getRoommateMatchDetail(userId), [userId]);
+  return useApi(['roommate', 'matches', userId], () => getRoommateMatchDetail(userId), {
+    enabled: userId.length > 0,
+  });
 }

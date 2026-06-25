@@ -1,45 +1,42 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 
-import { useRoommateMatchList, type MatchListItem } from '@/lib/api';
+import {
+  useRoommateMatchCards,
+  useRoommateMatchLikeActions,
+  type RoommateMatchCardModel,
+} from '@/lib/api';
 import { useModeration, useRoomStore, type RoomPost } from '@/lib/domain';
+import { goExplore, goRoomDetail, goRoommateDetail } from '@/lib/navigation/routes';
 
 export type UseInterestsScreenReturn = {
   rooms: RoomPost[];
-  likedMatches: MatchListItem[];
+  likedMatches: RoommateMatchCardModel[];
   onExplorePress: () => void;
   onRoomPress: (post: RoomPost) => void;
   onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
-  onRoommatePress: (match: MatchListItem) => void;
+  onRoommatePress: (match: RoommateMatchCardModel) => void;
+  onRoommateLikeChange: (match: RoommateMatchCardModel, liked: boolean) => void;
 };
 
 export function useInterestsScreen(): UseInterestsScreenReturn {
   const router = useRouter();
-  const { posts } = useRoomStore();
+  const { posts, update } = useRoomStore();
   const { isPostBlocked, isUserBlocked } = useModeration();
-  const { data: matchList } = useRoommateMatchList();
-
-  const [likedRooms, setLikedRooms] = useState<string[]>(
-    [posts[0]?.id, posts[2]?.id].filter(Boolean) as string[],
-  );
+  const { data: matchList } = useRoommateMatchCards();
+  const setMatchLiked = useRoommateMatchLikeActions();
 
   const rooms = posts.filter(
-    (post) =>
-      likedRooms.includes(post.id) && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
+    (post) => post.liked === true && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
   );
-  const likedMatches = (matchList ?? []).filter(
-    (match) => match.isLike === true && !isUserBlocked(String(match.userId)),
-  );
+  const likedMatches = (matchList ?? []).filter((match) => match.liked && !isUserBlocked(match.id));
 
   return {
     rooms,
     likedMatches,
-    onExplorePress: () => router.push('/explore' as never),
-    onRoomPress: (post) => router.push(`/room/${post.id}` as never),
-    onRoomLikeChange: (post, liked) =>
-      setLikedRooms((prev) =>
-        liked ? Array.from(new Set([...prev, post.id])) : prev.filter((id) => id !== post.id),
-      ),
-    onRoommatePress: (match) => router.push(`/roommate/${String(match.userId)}` as never),
+    onExplorePress: () => goExplore(router),
+    onRoomPress: (post) => goRoomDetail(router, post.id),
+    onRoomLikeChange: (post, liked) => update(post.id, { liked }),
+    onRoommatePress: (match) => goRoommateDetail(router, match.id),
+    onRoommateLikeChange: (match, liked) => setMatchLiked(match.id, liked),
   };
 }

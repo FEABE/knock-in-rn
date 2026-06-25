@@ -16,6 +16,7 @@ export * from './openapi-types';
 
 // React 데이터 훅 + 어댑터
 export * from './adapters';
+export * from './mappers';
 export * from './use-async';
 export * from './use-roommate';
 export * from './use-chat';

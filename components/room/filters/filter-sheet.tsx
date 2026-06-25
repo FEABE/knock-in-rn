@@ -25,9 +25,7 @@ export function FilterSheet({
       onOpenChange={onOpenChange}
       contentClassName="rounded-t-2xl bg-white px-5 pb-8 pt-3"
     >
-      <Text className="mb-4 mt-1 text-lg font-bold text-neutral-900">
-        {title}
-      </Text>
+      <Text className="mb-4 mt-1 text-lg font-bold text-neutral-900">{title}</Text>
 
       <View className="gap-4">{children}</View>
 

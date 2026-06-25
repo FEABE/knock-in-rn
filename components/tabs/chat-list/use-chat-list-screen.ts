@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { type ChatRoomItem, useChatRooms } from '@/lib/api';
+import { goChatRoom } from '@/lib/navigation/routes';
 
 export type ChatListRow = {
   room: ChatRoomItem;
@@ -43,7 +44,7 @@ export function useChatListScreen(): UseChatListScreenReturn {
               : '채팅이 시작되었어요. 인사를 건네보세요.'),
           onPress: () => {
             logEvent(AnalyticsEvent.CHAT_ROOM_ENTER, { room_id: room.chatRoomId });
-            router.push(`/chat/${String(room.chatRoomId)}` as never);
+            goChatRoom(router, String(room.chatRoomId));
           },
         };
       }),

@@ -28,7 +28,9 @@ export function RoommateTabScreenView({
   setFilter,
   setFilterOpen,
   onRoomPress,
+  onRoomLikeChange,
   onRoommatePress,
+  onRoommateLikeChange,
   onCreatePress,
 }: RoommateTabScreenViewProps) {
   return (
@@ -69,7 +71,12 @@ export function RoommateTabScreenView({
                     </Text>
                     {visible.length === 0 ? <EmptyState message="조건에 맞는 방이 없어요" /> : null}
                     {visible.map((post) => (
-                      <RoomCard key={post.id} post={post} onPress={onRoomPress} />
+                      <RoomCard
+                        key={post.id}
+                        post={post}
+                        onPress={onRoomPress}
+                        onLikeChange={onRoomLikeChange}
+                      />
                     ))}
                     {hasMore ? (
                       <Pressable
@@ -101,7 +108,12 @@ export function RoommateTabScreenView({
               <EmptyState message="매칭된 룸메이트가 없어요" />
             ) : (
               visibleMatches.map((match) => (
-                <RoommateFindCard key={match.userId} match={match} onPress={onRoommatePress} />
+                <RoommateFindCard
+                  key={match.id}
+                  match={match}
+                  onPress={onRoommatePress}
+                  onLikeChange={onRoommateLikeChange}
+                />
               ))
             )}
           </ScrollView>

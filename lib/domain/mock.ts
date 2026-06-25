@@ -1,6 +1,14 @@
 import { REGIONS } from '@/lib/onboarding';
 
-import type { FaqItem, Inquiry, Notice, RoomPost, RoommateCard, UserSummary } from './types';
+import type {
+  ChatRoom,
+  FaqItem,
+  Inquiry,
+  Notice,
+  RoomPost,
+  RoommateCard,
+  UserSummary,
+} from './types';
 
 const region = (id: string) => REGIONS.find((r) => r.id === id) ?? REGIONS[0];
 
@@ -116,6 +124,7 @@ export const MOCK_ROOM_POSTS: RoomPost[] = [
     createdAt: new Date('2026-05-10'),
     moveInDate: new Date('2026-06-01'),
     status: 'open',
+    liked: true,
     author: MOCK_USERS[0],
     description: '한강 도보 5분, 햇볕 잘 들어요. 깨끗이 쓰시는 분 환영합니다.',
     thumbnailUrl: 'https://picsum.photos/seed/p1/600/400',
@@ -152,6 +161,7 @@ export const MOCK_ROOM_POSTS: RoomPost[] = [
     likes: 41,
     createdAt: new Date('2026-05-12'),
     status: 'open',
+    liked: true,
     author: MOCK_USERS[1],
     description: '신축 입주, 분리 욕실 가능. 청결 매우 중요시합니다.',
     thumbnailUrl: 'https://picsum.photos/seed/p3/600/400',
@@ -271,8 +281,6 @@ export const INQUIRIES: Inquiry[] = [
 ];
 
 export const MOCK_SESSION_USER: UserSummary = MOCK_USERS[0];
-
-import type { ChatRoom } from './types';
 
 export const MOCK_CHAT_ROOMS: ChatRoom[] = [
   {

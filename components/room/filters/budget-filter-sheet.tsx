@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { PanResponder, Text, View } from 'react-native';
 
 import { RangeSlider } from '@/components/ui/headless';
 
 import { FilterSheet } from './filter-sheet';
+import { useBudgetFilterSheet } from './use-budget-filter-sheet';
 
 export type BudgetValues = {
   depositMin: number;
@@ -80,22 +81,21 @@ export function BudgetFilterSheet({
   depositRange = DEFAULTS.deposit,
   rentRange = DEFAULTS.rent,
 }: BudgetFilterSheetProps) {
-  const [draft, setDraft] = useState<BudgetValues>(value);
+  const { draft, setDraft, reset, apply } = useBudgetFilterSheet({
+    open,
+    value,
+    onChange,
+    depositRange,
+    rentRange,
+  });
 
   return (
     <FilterSheet
       open={open}
       onOpenChange={onOpenChange}
       title="예산"
-      onReset={() =>
-        setDraft({
-          depositMin: depositRange[0],
-          depositMax: depositRange[1],
-          rentMin: rentRange[0],
-          rentMax: rentRange[1],
-        })
-      }
-      onApply={() => onChange(draft)}
+      onReset={reset}
+      onApply={apply}
     >
       <BudgetFilterBody
         value={draft}

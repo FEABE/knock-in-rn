@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useMemo, useState } from 'react';
 
 import { useSession } from '@/lib/domain';
+import { goExplore } from '@/lib/navigation/routes';
 
 export type WithdrawReason = {
   id: string;
@@ -49,7 +50,7 @@ export function useWithdrawScreen(): UseWithdrawScreenReturn {
         text: '확인',
         onPress: () => {
           signOut();
-          router.replace('/explore' as never);
+          goExplore(router, 'replace');
         },
       },
     ]);

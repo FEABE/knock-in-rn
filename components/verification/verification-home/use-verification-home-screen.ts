@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
 import { useSession } from '@/lib/domain';
+import { goVerificationCompany, goVerificationSchool } from '@/lib/navigation/routes';
 
 export type VerificationHomeCard = {
   id: 'school' | 'company';
@@ -34,7 +35,7 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
         description: '학교 이메일을 인증하면 학생 배지가 표시돼요.',
         verified: schoolVerified,
         bullets: ['학교 이메일(.ac.kr, .edu 등) 형식만 가능해요', '인증 코드는 5분간 유효해요'],
-        onPress: () => router.push('/verification/school' as never),
+        onPress: () => goVerificationSchool(router),
       },
       {
         id: 'company',
@@ -46,7 +47,7 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
           '개인 이메일은 인증이 제한될 수 있어요',
           '검토가 필요한 경우 대기 상태로 표시돼요',
         ],
-        onPress: () => router.push('/verification/company' as never),
+        onPress: () => goVerificationCompany(router),
       },
     ],
     [companyVerified, router, schoolVerified],

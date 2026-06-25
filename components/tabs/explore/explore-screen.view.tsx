@@ -30,7 +30,9 @@ export function ExploreScreenView({
   onSearchPress,
   onOnboardingPress,
   onRoomPress,
+  onRoomLikeChange,
   onRoommatePress,
+  onRoommateLikeChange,
 }: ExploreScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -73,7 +75,12 @@ export function ExploreScreenView({
               <EmptyBox message="조건에 맞는 방이 없어요" />
             ) : (
               visiblePosts.map((post) => (
-                <RoomCard key={post.id} post={post} onPress={onRoomPress} />
+                <RoomCard
+                  key={post.id}
+                  post={post}
+                  onPress={onRoomPress}
+                  onLikeChange={onRoomLikeChange}
+                />
               ))
             )}
           </ScrollView>
@@ -90,7 +97,12 @@ export function ExploreScreenView({
               <EmptyBox message="매칭된 룸메이트가 없어요" />
             ) : (
               visibleMatches.map((match) => (
-                <RoommateFindCard key={match.userId} match={match} onPress={onRoommatePress} />
+                <RoommateFindCard
+                  key={match.id}
+                  match={match}
+                  onPress={onRoommatePress}
+                  onLikeChange={onRoommateLikeChange}
+                />
               ))
             )}
           </ScrollView>

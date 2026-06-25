@@ -3,6 +3,15 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 
 import { useSession, type UserSummary } from '@/lib/domain';
+import {
+  goKakaoLogin,
+  goMypageAccount,
+  goMypageMyRooms,
+  goMypagePreferences,
+  goMypageProfile,
+  goSupport,
+  goVerification,
+} from '@/lib/navigation/routes';
 
 export type MyPageMenuRow = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -40,19 +49,19 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
         icon: 'person-outline',
         label: '내 프로필',
         sub: '생활패턴 · 방 조건 수정',
-        onPress: () => router.push('/mypage/profile' as never),
+        onPress: () => goMypageProfile(router),
       },
       {
         icon: 'options-outline',
         label: '선호 조건',
         sub: '원하는 룸메이트 조건 설정',
-        onPress: () => router.push('/mypage/preferences' as never),
+        onPress: () => goMypagePreferences(router),
       },
       {
         icon: 'home-outline',
         label: '내 방 관리',
         sub: '방 게시글 등록 · 수정',
-        onPress: () => router.push('/mypage/my-rooms' as never),
+        onPress: () => goMypageMyRooms(router),
       },
     ],
     [router],
@@ -65,17 +74,17 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
         label: '신원 인증',
         sub: '학교 · 회사 이메일 인증',
         badge: verified ? undefined : '미인증',
-        onPress: () => router.push('/verification' as never),
+        onPress: () => goVerification(router),
       },
       {
         icon: 'help-circle-outline',
         label: '고객센터',
-        onPress: () => router.push('/support' as never),
+        onPress: () => goSupport(router),
       },
       {
         icon: 'settings-outline',
         label: '계정 설정',
-        onPress: () => router.push('/mypage/account' as never),
+        onPress: () => goMypageAccount(router),
       },
     ],
     [router, verified],
@@ -89,7 +98,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     genderLabel: genderLabel(user?.gender),
     matchingRows,
     accountRows,
-    onSignIn: () => router.push('/kakao-login' as never),
+    onSignIn: () => goKakaoLogin(router),
     setProfileVisible,
     setNotificationEnabled,
   };

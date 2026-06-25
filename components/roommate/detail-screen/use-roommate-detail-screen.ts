@@ -1,13 +1,20 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
-import { type MatchDetailData, useRoommateMatchDetail } from '@/lib/api';
-import { useSession } from '@/lib/domain';
+import {
+  toRoommateMatchDetailModel,
+  type RoommateMatchDetailModel,
+  useRoommateMatchCards,
+  useRoommateMatchDetail,
+  useRoommateMatchLikeActions,
+} from '@/lib/api';
+import { useRequireLogin } from '@/lib/auth';
+import { goChatRoom } from '@/lib/navigation/routes';
 
 export type UseRoommateDetailScreenReturn = {
-  data: MatchDetailData | null;
+  data: RoommateMatchDetailModel | null;
   loading: boolean;
   error: string | null;
   liked: boolean;
@@ -23,27 +30,23 @@ export type UseRoommateDetailScreenReturn = {
 export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { session } = useSession();
-  const [liked, setLiked] = useState(false);
+  const { requireLogin } = useRequireLogin();
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const compatY = useRef(0);
   const firedCompat = useRef(false);
-  const { data, loading, error } = useRoommateMatchDetail(id ?? '');
+  const matchId = id ?? '';
+  const { data: rawData, loading, error } = useRoommateMatchDetail(matchId);
+  const { data: matchCards } = useRoommateMatchCards();
+  const setMatchLiked = useRoommateMatchLikeActions();
+  const liked = matchCards?.find((match) => match.id === matchId)?.liked ?? false;
+  const data = useMemo(
+    () => (rawData ? toRoommateMatchDetailModel(rawData, matchId) : null),
+    [rawData, matchId],
+  );
 
   useEffect(() => {
     if (id) logEvent(AnalyticsEvent.ROOMMATE_DETAIL_VIEW, { target_user_id: id });
   }, [id]);
-
-  const requireLogin = (then: () => void) => {
-    if (!session) {
-      Alert.alert('로그인이 필요해요', '로그인하시겠어요?', [
-        { text: '취소', style: 'cancel' },
-        { text: '로그인', onPress: () => router.push('/kakao-login' as never) },
-      ]);
-      return;
-    }
-    then();
-  };
 
   return {
     data,
@@ -68,18 +71,18 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
       requireLogin(() => {
         const next = !liked;
         if (next) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: id });
-        setLiked(next);
+        setMatchLiked(matchId, next);
       }),
     onRequest: () =>
       requireLogin(() => {
         if (!data) return;
-        Alert.alert('매칭 요청', `${data.name ?? '상대'}님께 매칭을 요청할까요?`, [
+        Alert.alert('매칭 요청', `${data.name}님께 매칭을 요청할까요?`, [
           { text: '취소', style: 'cancel' },
           {
             text: '요청',
             onPress: () => {
               logEvent(AnalyticsEvent.ROOMMATE_MATCH_REQUEST, { target_user_id: id });
-              router.push(`/chat/${id}` as never);
+              goChatRoom(router, data.id);
             },
           },
         ]);

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
+import { goExplore } from '@/lib/navigation/routes';
 import { ONBOARDING_STEPS, STEP_LABELS, useOnboarding } from '@/lib/onboarding';
 
 /** 와이어프레임 온보딩 헤더: 우상단 닫기 + 분할 진행 바 + 단계 라벨. */
@@ -11,7 +12,7 @@ export function OnboardingHeader() {
 
   const exit = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)/explore' as never);
+    else goExplore(router, 'replace');
   };
 
   return (

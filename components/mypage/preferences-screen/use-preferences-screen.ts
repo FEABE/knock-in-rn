@@ -10,6 +10,7 @@ import {
   LIFESTYLE_CHOICE_BACKEND_IDS,
   savePreferenceAll,
 } from '@/lib/api';
+import { goExplore } from '@/lib/navigation/routes';
 import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
 
 export const PREFERENCE_PRIORITIES = [
@@ -62,7 +63,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const [selected, setSelected] = useState<string[]>([]);
 
   const exit = () => {
-    if (fromOnboarding) router.replace('/explore' as never);
+    if (fromOnboarding) goExplore(router, 'replace');
     else router.back();
   };
 

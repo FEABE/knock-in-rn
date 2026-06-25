@@ -15,6 +15,7 @@ export function InterestsScreenView({
   onRoomPress,
   onRoomLikeChange,
   onRoommatePress,
+  onRoommateLikeChange,
 }: InterestsScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -58,7 +59,7 @@ export function InterestsScreenView({
               {rooms.map((post) => (
                 <RoomCard
                   key={post.id}
-                  post={{ ...post, liked: true }}
+                  post={post}
                   onPress={onRoomPress}
                   onLikeChange={onRoomLikeChange}
                 />
@@ -73,7 +74,12 @@ export function InterestsScreenView({
           ) : (
             <ScrollView contentContainerClassName="gap-4 p-5">
               {likedMatches.map((match) => (
-                <RoommateFindCard key={match.userId} match={match} onPress={onRoommatePress} />
+                <RoommateFindCard
+                  key={match.id}
+                  match={match}
+                  onPress={onRoommatePress}
+                  onLikeChange={onRoommateLikeChange}
+                />
               ))}
             </ScrollView>
           )}

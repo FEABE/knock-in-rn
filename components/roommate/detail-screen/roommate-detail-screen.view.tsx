@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
-import type { MatchDetailData } from '@/lib/api';
+import type { RoommateMatchDetailModel } from '@/lib/api';
 
 import type { UseRoommateDetailScreenReturn } from './use-roommate-detail-screen';
 
@@ -73,34 +73,30 @@ function Header({ onBack }: { onBack: () => void }) {
   );
 }
 
-function ProfileHead({ data }: { data: MatchDetailData }) {
-  const name = data.name ?? '이름 없음';
+function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
   return (
     <View className="items-center gap-3">
       <View className="h-24 w-24 items-center justify-center rounded-full bg-neutral-100">
-        <Text className="text-2xl font-semibold text-neutral-600">{name.charAt(0)}</Text>
+        <Text className="text-2xl font-semibold text-neutral-600">{data.initial}</Text>
       </View>
       <View className="items-center gap-1">
-        <Text className="text-xl font-bold text-neutral-900">{name}</Text>
-        <Text className="text-xs text-neutral-500">{String(data.region ?? '')}</Text>
+        <Text className="text-xl font-bold text-neutral-900">{data.name}</Text>
+        <Text className="text-xs text-neutral-500">{data.regionLabel}</Text>
       </View>
       <View className="flex-row gap-2">
-        {data.isAuthStudent === true ? <Badge label="✓ 학교 인증" tone="emerald" /> : null}
-        {data.isAuthEmployee === true ? <Badge label="✓ 회사 인증" tone="emerald" /> : null}
+        {data.isAuthStudent ? <Badge label="✓ 학교 인증" tone="emerald" /> : null}
+        {data.isAuthEmployee ? <Badge label="✓ 회사 인증" tone="emerald" /> : null}
         <Badge label="신원 확인" tone="sky" />
       </View>
     </View>
   );
 }
 
-function RoomStatus({ data }: { data: MatchDetailData }) {
-  const hasRoom = !!data.roomProfileType;
+function RoomStatus({ data }: { data: RoommateMatchDetailModel }) {
   return (
     <Section title="방 여부">
       <View className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-        <Text className="text-sm text-neutral-600">
-          {hasRoom ? `${data.roomProfileType} · ${data.region}` : '아직 방이 없어요'}
-        </Text>
+        <Text className="text-sm text-neutral-600">{data.roomStatusLabel}</Text>
       </View>
     </Section>
   );
@@ -111,18 +107,17 @@ function LifestyleBlock({
   expanded,
   onToggle,
 }: {
-  data: MatchDetailData;
+  data: RoommateMatchDetailModel;
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const lifeStyles = data.lifeStyles ?? [];
-  const items = expanded ? lifeStyles : lifeStyles.slice(0, 4);
+  const items = expanded ? data.lifeStyles : data.lifeStyles.slice(0, 4);
   return (
     <Section title="생활 패턴">
       <View className="flex-row flex-wrap gap-2">
         {items.map((lifestyle) => (
           <View
-            key={lifestyle.lifestyleId}
+            key={lifestyle.id}
             className="min-w-[47%] flex-1 gap-0.5 rounded-2xl bg-neutral-50 p-3"
           >
             <Text className="text-[11px] text-neutral-500">{lifestyle.name}</Text>
@@ -130,7 +125,7 @@ function LifestyleBlock({
           </View>
         ))}
       </View>
-      {lifeStyles.length > 4 ? (
+      {data.lifeStyles.length > 4 ? (
         <Pressable onPress={onToggle} className="items-center py-1">
           <Text className="text-xs text-neutral-500">{expanded ? '접기 ⌃' : '더보기 ⌄'}</Text>
         </Pressable>
@@ -139,67 +134,53 @@ function LifestyleBlock({
   );
 }
 
-function PreferredLivingBlock({ data }: { data: MatchDetailData }) {
+function PreferredLivingBlock({ data }: { data: RoommateMatchDetailModel }) {
   return (
     <Section title="희망 거주 조건">
       <View className="gap-2">
-        <KeyVal label="예산 보증금" value={`${data.maxDeposit}만원 이하`} />
-        <KeyVal label="예산 월세" value={`${data.maxMounthRent}만원 이하`} />
-        <KeyVal label="입주 희망 시기" value={formatDate(data.comeableAt)} />
-        <KeyVal label="희망 룸 형태" value={data.roomProfileType ?? '-'} />
-        <KeyVal label="희망 지역" value={String(data.region ?? '-')} />
+        {data.livingRows.map((row) => (
+          <KeyVal key={row.label} label={row.label} value={row.value} />
+        ))}
       </View>
     </Section>
   );
 }
 
-function PreferredRoommateBlock({ data }: { data: MatchDetailData }) {
-  const conditionText = (data.conditions ?? [])
-    .map((condition) => condition.name)
-    .filter(Boolean)
-    .join(' · ');
+function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
   return (
     <Section title="희망 룸메이트 조건">
       <View className="gap-2">
-        {(data.preferences ?? []).map((preference) => (
-          <KeyVal
-            key={preference.preferencesId}
-            label={preference.name ?? '-'}
-            value={preference.value ?? '-'}
-          />
+        {data.preferenceRows.map((preference) => (
+          <KeyVal key={preference.key} label={preference.label} value={preference.value} />
         ))}
-        {conditionText ? <KeyVal label="중요 조건" value={conditionText} /> : null}
+        {data.conditionText ? <KeyVal label="중요 조건" value={data.conditionText} /> : null}
       </View>
     </Section>
   );
 }
 
-function CompatibilityBlock({ data }: { data: MatchDetailData }) {
-  const score = Number(data.compatibility?.score) || 0;
+function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
   return (
     <Section title="나와 궁합">
       <View className="flex-row items-center gap-4 rounded-2xl border border-neutral-100 p-4">
         <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-[#256EF4]">
-          <Text className="text-xl font-bold text-[#256EF4]">{score}점</Text>
+          <Text className="text-xl font-bold text-[#256EF4]">{data.compatibility.score}점</Text>
         </View>
         <View className="flex-1 gap-2">
-          {(data.compatibility?.lifeStyleInfo ?? []).map((info, index) => {
-            const pct = Number(info.percent) || 0;
-            return (
-              <View key={index} className="gap-1">
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-xs text-neutral-600">{info.title}</Text>
-                  <Text className="text-xs font-semibold text-[#256EF4]">{info.percent}점</Text>
-                </View>
-                <View className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
-                  <View
-                    style={{ width: `${Math.min(100, pct)}%` }}
-                    className="h-full rounded-full bg-[#256EF4]"
-                  />
-                </View>
+          {data.compatibility.items.map((info) => (
+            <View key={info.key} className="gap-1">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-xs text-neutral-600">{info.title}</Text>
+                <Text className="text-xs font-semibold text-[#256EF4]">{info.label}점</Text>
               </View>
-            );
-          })}
+              <View className="h-1.5 overflow-hidden rounded-full bg-neutral-200">
+                <View
+                  style={{ width: `${Math.min(100, info.percent)}%` }}
+                  className="h-full rounded-full bg-[#256EF4]"
+                />
+              </View>
+            </View>
+          ))}
         </View>
       </View>
     </Section>
@@ -256,15 +237,6 @@ function KeyVal({ label, value }: { label: string; value: string }) {
       <Text className="text-sm font-semibold text-neutral-800">{value}</Text>
     </View>
   );
-}
-
-function formatDate(value?: string): string {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
-    date.getDate(),
-  ).padStart(2, '0')}`;
 }
 
 function Badge({ label, tone }: { label: string; tone: 'emerald' | 'sky' }) {

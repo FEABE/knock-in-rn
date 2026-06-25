@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { REGIONS, type Region } from '@/lib/onboarding';
+import type { Region } from '@/lib/onboarding';
 
 import { FilterSheet } from './filter-sheet';
+import { useRegionFilterBody } from './use-region-filter-body';
+import { useRegionFilterSheet } from './use-region-filter-sheet';
 
 export function RegionFilterBody({
   value,
@@ -12,23 +13,10 @@ export function RegionFilterBody({
   value: Region[];
   onChange: (next: Region[]) => void;
 }) {
-  const cities = useMemo(() => {
-    const set = new Set<string>();
-    REGIONS.forEach((r) => set.add(r.city));
-    return Array.from(set);
-  }, []);
-
-  const [activeCity, setActiveCity] = useState<string>(cities[0]);
-
-  const districts = useMemo(
-    () => REGIONS.filter((r) => r.city === activeCity),
-    [activeCity],
-  );
-
-  const toggle = (region: Region) => {
-    const exists = value.some((r) => r.id === region.id);
-    onChange(exists ? value.filter((r) => r.id !== region.id) : [...value, region]);
-  };
+  const { cities, activeCity, districts, setActiveCity, toggleRegion } = useRegionFilterBody({
+    value,
+    onChange,
+  });
 
   return (
     <>
@@ -45,9 +33,7 @@ export function RegionFilterBody({
                 >
                   <Text
                     className={
-                      selected
-                        ? 'text-sm font-semibold text-[#256EF4]'
-                        : 'text-sm text-neutral-500'
+                      selected ? 'text-sm font-semibold text-[#256EF4]' : 'text-sm text-neutral-500'
                     }
                   >
                     {city}
@@ -65,7 +51,7 @@ export function RegionFilterBody({
               return (
                 <Pressable
                   key={r.id}
-                  onPress={() => toggle(r)}
+                  onPress={() => toggleRegion(r)}
                   className="flex-row items-center justify-between border-b border-neutral-50 px-4 py-3"
                 >
                   <Text className="text-sm text-neutral-800">{r.district}</Text>
@@ -90,7 +76,7 @@ export function RegionFilterBody({
             {value.map((r) => (
               <Pressable
                 key={r.id}
-                onPress={() => toggle(r)}
+                onPress={() => toggleRegion(r)}
                 className="flex-row items-center gap-1 rounded-full bg-[#256EF4]/10 px-3 py-1.5"
               >
                 <Text className="text-xs text-[#256EF4]">
@@ -113,21 +99,16 @@ export type RegionFilterSheetProps = {
   onChange: (next: Region[]) => void;
 };
 
-export function RegionFilterSheet({
-  open,
-  onOpenChange,
-  value,
-  onChange,
-}: RegionFilterSheetProps) {
-  const [draft, setDraft] = useState<Region[]>(value);
+export function RegionFilterSheet({ open, onOpenChange, value, onChange }: RegionFilterSheetProps) {
+  const { draft, setDraft, reset, apply } = useRegionFilterSheet({ open, value, onChange });
 
   return (
     <FilterSheet
       open={open}
       onOpenChange={onOpenChange}
       title="지역"
-      onReset={() => setDraft([])}
-      onApply={() => onChange(draft)}
+      onReset={reset}
+      onApply={apply}
     >
       <RegionFilterBody value={draft} onChange={setDraft} />
     </FilterSheet>

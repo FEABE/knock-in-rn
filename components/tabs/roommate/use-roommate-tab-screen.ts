@@ -4,17 +4,21 @@ import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type BoardListQuery,
-  type MatchListItem,
+  type RoommateMatchCardModel,
+  useRoommateBoardLikeActions,
   useRoommateBoards,
-  useRoommateMatchList,
+  useRoommateMatchCards,
+  useRoommateMatchLikeActions,
+  regionKeyBackendId,
 } from '@/lib/api';
 import { useModeration, type ListFilter, type RoomPost, type SortKey } from '@/lib/domain';
+import { goNewRoom, goRoomDetail, goRoommateDetail } from '@/lib/navigation/routes';
 
 export type UseRoommateTabScreenReturn = {
   filter: ListFilter;
   filterOpen: boolean;
   filteredPosts: RoomPost[];
-  visibleMatches: MatchListItem[];
+  visibleMatches: RoommateMatchCardModel[];
   postsLoading: boolean;
   postsError: string | null;
   matchesLoading: boolean;
@@ -22,7 +26,9 @@ export type UseRoommateTabScreenReturn = {
   setFilter: Dispatch<SetStateAction<ListFilter>>;
   setFilterOpen: (next: boolean) => void;
   onRoomPress: (post: RoomPost) => void;
-  onRoommatePress: (match: MatchListItem) => void;
+  onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
+  onRoommatePress: (match: RoommateMatchCardModel) => void;
+  onRoommateLikeChange: (match: RoommateMatchCardModel, liked: boolean) => void;
   onCreatePress: () => void;
 };
 
@@ -31,6 +37,8 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
   const [filter, setFilter] = useState<ListFilter>({ sort: 'latest' });
   const [filterOpen, setFilterOpen] = useState(false);
   const { isPostBlocked, isUserBlocked } = useModeration();
+  const setBoardLiked = useRoommateBoardLikeActions();
+  const setMatchLiked = useRoommateMatchLikeActions();
 
   const boardQuery = useMemo(() => mapFilterToQuery(filter), [filter]);
   const {
@@ -39,7 +47,7 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
     error: postsError,
     reload: reloadPosts,
   } = useRoommateBoards(boardQuery);
-  const { data: matchList, loading: matchesLoading } = useRoommateMatchList();
+  const { data: matchList, loading: matchesLoading } = useRoommateMatchCards();
 
   const filteredPosts = useMemo(
     () =>
@@ -53,7 +61,7 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
   );
 
   const visibleMatches = useMemo(
-    () => (matchList ?? []).filter((match) => !isUserBlocked(String(match.userId))),
+    () => (matchList ?? []).filter((match) => !isUserBlocked(match.id)),
     [matchList, isUserBlocked],
   );
 
@@ -79,13 +87,23 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
     setFilterOpen,
     onRoomPress: (post) => {
       logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
-      router.push(`/room/${post.id}` as never);
+      goRoomDetail(router, post.id);
+    },
+    onRoomLikeChange: (post, liked) => {
+      logEvent(liked ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
+        room_id: post.id,
+      });
+      setBoardLiked(post.id, liked);
     },
     onRoommatePress: (match) => {
-      logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.userId });
-      router.push(`/roommate/${String(match.userId)}` as never);
+      logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.id });
+      goRoommateDetail(router, match.id);
     },
-    onCreatePress: () => router.push('/room/new' as never),
+    onRoommateLikeChange: (match, liked) => {
+      if (liked) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: match.id });
+      setMatchLiked(match.id, liked);
+    },
+    onCreatePress: () => goNewRoom(router),
   };
 }
 
@@ -98,12 +116,12 @@ function sortPosts(posts: RoomPost[], sort: SortKey): RoomPost[] {
 }
 
 function mapFilterToQuery(filter: ListFilter): BoardListQuery {
-  const region = filter.regionIds?.length ? Number(filter.regionIds[0]) : undefined;
+  const region = filter.regionIds?.length ? regionKeyBackendId(filter.regionIds[0]) : undefined;
   return {
     minMounthRent: filter.rentMin,
     maxMounthRent: filter.rentMax,
     gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
-    region: Number.isFinite(region) ? region : undefined,
+    region,
     sort: filter.sort === 'latest' ? 'createdAt,desc' : undefined,
   };
 }

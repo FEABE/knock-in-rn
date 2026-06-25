@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { FilterSheet } from './filter-sheet';
+import { useGenderFilterSheet } from './use-gender-filter-sheet';
 
 export type GenderFilterValue = 'any' | 'male' | 'female';
 
@@ -51,21 +51,16 @@ export type GenderFilterSheetProps = {
   onChange: (next: GenderFilterValue) => void;
 };
 
-export function GenderFilterSheet({
-  open,
-  onOpenChange,
-  value,
-  onChange,
-}: GenderFilterSheetProps) {
-  const [draft, setDraft] = useState<GenderFilterValue>(value);
+export function GenderFilterSheet({ open, onOpenChange, value, onChange }: GenderFilterSheetProps) {
+  const { draft, setDraft, reset, apply } = useGenderFilterSheet({ open, value, onChange });
 
   return (
     <FilterSheet
       open={open}
       onOpenChange={onOpenChange}
       title="성별"
-      onReset={() => setDraft('any')}
-      onApply={() => onChange(draft)}
+      onReset={reset}
+      onApply={apply}
     >
       <GenderFilterBody value={draft} onChange={setDraft} />
     </FilterSheet>

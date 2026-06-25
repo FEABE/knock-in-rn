@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
 import { useRoomStore, useSession, type RoomPost } from '@/lib/domain';
+import { goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
 
 export type UseMyRoomsScreenReturn = {
   loggedIn: boolean;
@@ -23,9 +24,9 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
     loggedIn: !!session,
     rooms,
     onBack: () => router.back(),
-    onCreatePress: () => router.push('/room/new' as never),
-    onRoomPress: (post) => router.push(`/room/${post.id}` as never),
-    onEditPress: (post) => router.push(`/room/${post.id}/edit` as never),
+    onCreatePress: () => goNewRoom(router),
+    onRoomPress: (post) => goRoomDetail(router, post.id),
+    onEditPress: (post) => goRoomEdit(router, post.id),
     onDeletePress: (post) =>
       Alert.alert('삭제', '게시글을 삭제할까요?', [
         { text: '취소', style: 'cancel' },

@@ -1,7 +1,5 @@
 import type { ExpoConfig } from 'expo/config';
 
-
-
 const config: ExpoConfig = {
   name: 'knock-in-rn',
   slug: 'knock-in-rn',
@@ -35,6 +33,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     '@react-native-firebase/app',
+    'expo-secure-store',
     [
       'expo-splash-screen',
       {

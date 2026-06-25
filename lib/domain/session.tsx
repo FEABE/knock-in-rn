@@ -1,5 +1,19 @@
 import { login as kakaoLogin } from '@react-native-seoul/kakao-login';
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import {
+  clearStoredAuthSession,
+  readStoredAuthSession,
+  writeStoredAuthSession,
+} from '@/lib/auth/session-storage';
 
 import { MOCK_SESSION_USER } from './mock';
 import type { Session } from './types';
@@ -49,6 +63,25 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     };
   });
 
+  useEffect(() => {
+    if (USE_MOCK || initial !== undefined) return;
+
+    let cancelled = false;
+    readStoredAuthSession().then((stored) => {
+      if (cancelled || !stored) return;
+      setAccessToken(stored.accessToken);
+      setSession({
+        user: MOCK_SESSION_USER,
+        isProfileComplete: stored.basicInfo,
+        visibility: 'public',
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initial]);
+
   const signIn = useCallback(async (provider: SocialProvider = 'kakao'): Promise<SignInResult> => {
     if (USE_MOCK) {
       setAccessToken('mock-access-token');
@@ -78,6 +111,12 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       }
 
       setAccessToken(res.data.accessToken);
+      await writeStoredAuthSession({
+        accessToken: res.data.accessToken,
+        basicInfo: res.data.basicInfo,
+        preferenceInfo: res.data.preferenceInfo,
+        savedAt: new Date().toISOString(),
+      });
       setSession({
         user: MOCK_SESSION_USER,
         isProfileComplete: res.data.basicInfo,
@@ -104,6 +143,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
 
   const signOut = useCallback(() => {
     setAccessToken(null);
+    void clearStoredAuthSession();
     setSession(null);
   }, []);
 

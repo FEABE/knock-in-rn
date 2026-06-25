@@ -3,6 +3,12 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
 import { FAQ_ITEMS, INQUIRIES, NOTICES } from '@/lib/domain';
+import {
+  goSupportFaq,
+  goSupportInquiries,
+  goSupportInquiryNew,
+  goSupportNotice,
+} from '@/lib/navigation/routes';
 
 export type SupportHomeAction = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -25,25 +31,25 @@ export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
         icon: 'help-circle-outline',
         title: '자주 묻는 질문',
         description: `${FAQ_ITEMS.length}개 질문`,
-        onPress: () => router.push('/support/faq' as never),
+        onPress: () => goSupportFaq(router),
       },
       {
         icon: 'megaphone-outline',
         title: '공지사항',
         description: `${NOTICES.length}개 공지`,
-        onPress: () => router.push('/support/notice' as never),
+        onPress: () => goSupportNotice(router),
       },
       {
         icon: 'chatbox-ellipses-outline',
         title: '문의내역',
         description: `${INQUIRIES.length}건의 문의`,
-        onPress: () => router.push('/support/inquiries' as never),
+        onPress: () => goSupportInquiries(router),
       },
       {
         icon: 'create-outline',
         title: '문의하기',
         description: '새 문의를 작성해요',
-        onPress: () => router.push('/support/inquiry-new' as never),
+        onPress: () => goSupportInquiryNew(router),
       },
     ],
     [router],
