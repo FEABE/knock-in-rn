@@ -68,24 +68,30 @@ function minimalUser(
 
 /** 게시글 리스트 항목 → RoomPost (룸메 탐색 카드용). */
 export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
+  const regionValue = item.region ?? item.regionFullName;
   const region =
-    item.region !== undefined
-      ? parseRegion(labelForRegionId(item.region))
+    regionValue !== undefined
+      ? typeof regionValue === 'number'
+        ? parseRegion(labelForRegionId(regionValue))
+        : parseRegion(String(regionValue))
       : { id: '', city: '', district: '' };
-  const id = String(item.boardId ?? '');
+  const id = String(item.boardId ?? item.id ?? '');
   return {
     id,
     title: item.title ?? `방 게시글 #${id}`,
-    thumbnailUrl: item.image || undefined,
+    thumbnailUrl: item.image ?? item.imageUrl,
     deposit: num(item.deposit),
-    monthlyRent: num(item.mounthRent),
-    roomType: toRoomType(item.roomType),
+    monthlyRent: num(item.mounthRent ?? item.monthlyRent),
+    roomType: toRoomType(item.roomType ?? item.roomTypes?.[0]),
     region,
-    views: num(item.viewer),
+    views: num(item.viewer ?? item.hits),
     likes: 0,
-    createdAt: item.createAt ? new Date(item.createAt) : new Date(),
+    createdAt:
+      (item.createAt ?? item.createdAt)
+        ? new Date(item.createAt ?? item.createdAt ?? '')
+        : new Date(),
     status: 'open',
-    author: minimalUser(item.writer ?? '익명', region),
+    author: minimalUser(item.writer ?? item.memberName ?? '익명', region),
     description: '',
     liked: bool(item.isLike),
   };
@@ -94,13 +100,19 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
 /** 게시글 상세 응답 → RoomPost. */
 export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
   const liked = 'isLike' in data ? bool(data.isLike as boolean | string | undefined) : false;
-  const region = regionFromBackendId(data.region);
+  const region =
+    data.region !== undefined
+      ? typeof data.region === 'number'
+        ? regionFromBackendId(data.region)
+        : parseRegion(String(data.region))
+      : parseRegion(data.regionFullName ?? '');
   const id = String(data.boardId ?? '');
-  const writer = data.writer ?? '익명';
-  const photoUrls = data.images?.filter(Boolean) ?? [];
-  const options = (data.roomOption ?? [])
-    .map(roomOptionFromBackendId)
-    .filter((option): option is NonNullable<typeof option> => option !== null);
+  const writer = data.writer ?? data.memberName ?? '익명';
+  const photoUrls = (data.images ?? []).map(imageUrl).filter(Boolean);
+  const options =
+    data.roomOption
+      ?.map(roomOptionFromBackendId)
+      .filter((option): option is NonNullable<typeof option> => option !== null) ?? [];
 
   return {
     id,
@@ -108,20 +120,23 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
     thumbnailUrl: photoUrls[0],
     photoUrls,
     deposit: num(data.deposit),
-    monthlyRent: num(data.mounthRent),
-    roomType: toRoomType(data.roomType),
+    monthlyRent: num(data.mounthRent ?? data.monthlyRent),
+    roomType: toRoomType(data.roomType ?? data.roomTypeName),
     region,
-    views: num(data.viewer),
+    views: num(data.viewer ?? data.hits),
     likes: 0,
-    createdAt: data.createAt ? new Date(data.createAt) : new Date(),
+    createdAt:
+      (data.createAt ?? data.createdAt)
+        ? new Date(data.createAt ?? data.createdAt ?? '')
+        : new Date(),
     status: 'open',
     author: minimalUser(writer, region, {
       id: writer,
       badges: [
-        ...(data.isAuthStudent
+        ...(data.isAuthStudent || hasAuthentication(data.authentications, 'STUDENT')
           ? [{ kind: 'school' as const, label: '학생 인증', verifiedAt: new Date() }]
           : []),
-        ...(data.isAuthEmployee
+        ...(data.isAuthEmployee || hasAuthentication(data.authentications, 'COMPANY')
           ? [{ kind: 'company' as const, label: '직장 인증', verifiedAt: new Date() }]
           : []),
       ],
@@ -135,19 +150,26 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
 
 /** 매칭 리스트 항목 → RoommateCard (매칭 탭 카드용). */
 export function matchListItemToRoommateCard(item: MatchListItem): RoommateCard {
-  const region = parseRegion(String(item.region ?? ''));
+  const region = parseRegion(
+    String(
+      item.region ??
+        item.offerProfile?.regionFullName ??
+        item.seekerProfile?.regionFullNames?.[0] ??
+        '',
+    ),
+  );
   const conditionLabels = (item.conditions ?? []).map((c) => c.name ?? '').filter(Boolean);
-  const userId = String(item.userId ?? '');
+  const userId = String(item.userId ?? item.memberId ?? '');
   return {
     id: userId,
-    user: minimalUser(item.name ?? '익명', region, {
+    user: minimalUser(item.name ?? item.memberName ?? '익명', region, {
       id: userId,
       bio: conditionLabels.join(' · '),
       importantConditions: conditionLabels,
     }),
     preferredRegions: [region],
-    budgetMin: num(item.minMounthRent) || undefined,
-    budgetMax: num(item.maxMounthRent) || undefined,
+    budgetMin: num(item.minMounthRent ?? item.seekerProfile?.minMonthlyRent) || undefined,
+    budgetMax: num(item.maxMounthRent ?? item.seekerProfile?.maxMonthlyRent) || undefined,
     moveInBy: item.comeableAt ? new Date(item.comeableAt) : undefined,
     compatibilityScore: num(item.score) || undefined,
     liked: bool(item.isLike),
@@ -178,4 +200,13 @@ function toRoomType(value: string | number | undefined): RoomType {
     return value;
   }
   return roomTypeFromBackendId(value);
+}
+
+function imageUrl(image: NonNullable<BoardDetailData['images']>[number] | undefined): string {
+  if (!image) return '';
+  return typeof image === 'string' ? image : (image.url ?? '');
+}
+
+function hasAuthentication(value: unknown, expected: 'STUDENT' | 'COMPANY'): boolean {
+  return Array.isArray(value) ? value.includes(expected) : value === expected;
 }

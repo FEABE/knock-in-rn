@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ReportListItem, UseBlockedListScreenReturn } from './use-blocked-list-screen';
@@ -8,6 +8,8 @@ export type BlockedListScreenViewProps = UseBlockedListScreenReturn;
 export function BlockedListScreenView({
   users,
   reports,
+  loading,
+  error,
   onBack,
   onUnblock,
 }: BlockedListScreenViewProps) {
@@ -25,7 +27,14 @@ export function BlockedListScreenView({
           <Text className="text-sm font-semibold text-neutral-800">
             차단한 사용자 ({users.length})
           </Text>
-          {users.length === 0 ? (
+          {loading ? (
+            <View className="items-center gap-3 p-8">
+              <ActivityIndicator color="#256EF4" />
+              <Text className="text-sm text-neutral-400">차단 목록을 불러오는 중...</Text>
+            </View>
+          ) : error ? (
+            <EmptyBox message={`차단 목록을 불러오지 못했어요: ${error}`} />
+          ) : users.length === 0 ? (
             <EmptyBox message="차단한 사용자가 없어요" />
           ) : (
             users.map((user) => (
@@ -39,9 +48,7 @@ export function BlockedListScreenView({
                   </View>
                   <View>
                     <Text className="text-sm font-semibold text-neutral-900">{user.name}</Text>
-                    <Text className="text-xs text-neutral-500">
-                      {user.region.city} {user.region.district}
-                    </Text>
+                    <Text className="text-xs text-neutral-500">차단일 {user.dateLabel}</Text>
                   </View>
                 </View>
                 <Pressable

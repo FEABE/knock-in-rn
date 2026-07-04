@@ -23,6 +23,8 @@ export function RoomInfoStepView({
   noRoom,
   canProceed,
   toast,
+  submitting,
+  submitError,
   onComplete,
   setHasRoom,
   selectSido,
@@ -193,7 +195,18 @@ export function RoomInfoStepView({
         ) : null}
       </ScrollView>
 
-      <OnboardingFooter canProceed={canProceed} primaryLabel="완료" showBack onPress={onComplete} />
+      {submitError ? (
+        <View className="px-5 pb-2">
+          <Text className="text-xs text-red-500">{submitError}</Text>
+        </View>
+      ) : null}
+
+      <OnboardingFooter
+        canProceed={canProceed}
+        showBack
+        loading={submitting}
+        onPress={onComplete}
+      />
 
       {toast ? (
         <View pointerEvents="none" className="absolute inset-x-0 bottom-28 items-center px-5">

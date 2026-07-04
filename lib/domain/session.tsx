@@ -15,12 +15,13 @@ import {
   writeStoredAuthSession,
 } from '@/lib/auth/session-storage';
 
-import { MOCK_SESSION_USER } from './mock';
-import type { Session } from './types';
+import type { Session, UserSummary } from './types';
 import {
+  getProfileAll,
   setAccessToken,
   socialLoginSdk,
   socialLoginWeb,
+  type ProfileAllData,
   type SocialProvider,
   USE_MOCK,
 } from '@/lib/api';
@@ -57,7 +58,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     if (initial !== undefined) return initial;
     if (!USE_MOCK) return null;
     return {
-      user: MOCK_SESSION_USER,
+      user: sessionUserFromProfile(),
       isProfileComplete: true,
       visibility: 'public',
     };
@@ -70,10 +71,13 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     readStoredAuthSession().then((stored) => {
       if (cancelled || !stored) return;
       setAccessToken(stored.accessToken);
-      setSession({
-        user: MOCK_SESSION_USER,
-        isProfileComplete: stored.basicInfo,
-        visibility: 'public',
+      loadSessionUser().then((user) => {
+        if (cancelled) return;
+        setSession({
+          user,
+          isProfileComplete: stored.basicInfo,
+          visibility: 'public',
+        });
       });
     });
 
@@ -86,7 +90,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     if (USE_MOCK) {
       setAccessToken('mock-access-token');
       setSession({
-        user: MOCK_SESSION_USER,
+        user: await loadSessionUser(),
         isProfileComplete: true,
         visibility: 'public',
       });
@@ -117,8 +121,9 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         preferenceInfo: res.data.preferenceInfo,
         savedAt: new Date().toISOString(),
       });
+      const user = await loadSessionUser();
       setSession({
-        user: MOCK_SESSION_USER,
+        user,
         isProfileComplete: res.data.basicInfo,
         visibility: 'public',
       });
@@ -194,4 +199,41 @@ function classifyThrownError(code?: string, message?: string): SignInFailureKind
     return 'network';
   }
   return 'failed';
+}
+
+async function loadSessionUser(): Promise<UserSummary> {
+  try {
+    const res = await getProfileAll();
+    if (res.status === 200 && !res.error) return sessionUserFromProfile(res.data);
+  } catch {
+    // 로그인 성공 후 프로필 조회가 실패해도 세션 자체는 유지한다.
+  }
+  return sessionUserFromProfile();
+}
+
+function sessionUserFromProfile(profile?: ProfileAllData): UserSummary {
+  const region = parseProfileRegion(profile?.region?.[0]?.region);
+  return {
+    id: 'me',
+    name: '사용자',
+    age: 0,
+    gender: 'other',
+    preferredGender: 'any',
+    bio: '',
+    region,
+    badges: [],
+    lifestyle: {},
+    importantConditions:
+      profile?.lifestyles?.map((item) => item.description ?? item.name ?? '') ?? [],
+  };
+}
+
+function parseProfileRegion(value?: string) {
+  if (!value) return { id: 'unknown', city: '-', district: '' };
+  const [city = value, district = ''] = value.split(' ');
+  return {
+    id: value,
+    city,
+    district,
+  };
 }

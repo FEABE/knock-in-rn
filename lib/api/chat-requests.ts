@@ -19,18 +19,34 @@ export type ChatRequestCreate = OpenApiSchema<'org.example.knockin.dto.ChatReque
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 /** 채팅 요청 목록 항목. (creatAt 오타 유지) */
-export type ChatRequestItem =
-  OpenApiSchema<'org.example.knockin.dto.ChatRequestListDto$Response$ChatRequired'>;
+export type ChatRequestItem = OpenApiSchema<'org.example.knockin.dto.ChatRequestListDto$Response'> &
+  Partial<{
+    name: string;
+    type: 'sent' | 'received';
+    creatAt: string;
+    chatReqId: number;
+  }>;
 
-export type ChatRequestListData =
-  OpenApiSchema<'org.example.knockin.dto.ChatRequestListDto$Response'>;
+export type ChatRequestListData = {
+  chatRequireds?: ChatRequestItem[];
+};
 
 /** 요청자/피요청자 공통 프로필. */
 export type ChatRequestParty =
-  OpenApiSchema<'org.example.knockin.dto.ChatRequestDetailDto$Response$RequesterInfo'>;
+  OpenApiSchema<'org.example.knockin.dto.ChatRequestDetailDto$Response$MemberInfo'> &
+    Partial<{
+      name: string;
+      score: number;
+      createAt: string;
+      isAgree: boolean;
+    }>;
 
 export type ChatRequestDetailData =
-  OpenApiSchema<'org.example.knockin.dto.ChatRequestDetailDto$Response'>;
+  OpenApiSchema<'org.example.knockin.dto.ChatRequestDetailDto$Response'> &
+    Partial<{
+      requester: ChatRequestParty;
+      requestee: ChatRequestParty;
+    }>;
 
 export type MatchScoreData = OpenApiSchema<'org.example.knockin.dto.MatchScoreDto$Response'>;
 
@@ -96,7 +112,10 @@ export function getChatRequests(
   params: PageParams = {},
 ): Promise<ApiResponse<ChatRequestListData>> {
   if (USE_MOCK) return mockOk({ chatRequireds: MOCK_REQUESTS });
-  return request('GET', '/chat-requests', { query: params });
+  return request<ChatRequestItem[]>('GET', '/chat-requests', { query: params }).then((res) => ({
+    ...res,
+    data: { chatRequireds: (res.data ?? []).map(normalizeChatRequestItem) },
+  }));
 }
 
 /** GET /chat-requests/{requestId} — 채팅 요청 상세 조회 */
@@ -104,7 +123,10 @@ export function getChatRequestDetail(
   requestId: string,
 ): Promise<ApiResponse<ChatRequestDetailData>> {
   if (USE_MOCK) return mockOk(MOCK_REQUEST_DETAIL);
-  return request('GET', `/chat-requests/${requestId}`);
+  return request<ChatRequestDetailData>('GET', `/chat-requests/${requestId}`).then((res) => ({
+    ...res,
+    data: normalizeChatRequestDetail(res.data),
+  }));
 }
 
 /** POST /chat-requests — 채팅 요청 */
@@ -135,4 +157,31 @@ export function cancelChatRequest(requestId: string): Promise<ApiResponse<Update
 export function getMatchScore(): Promise<ApiResponse<MatchScoreData>> {
   if (USE_MOCK) return mockOk(MOCK_SCORE);
   return request('GET', '/roommate/matches/score');
+}
+
+function normalizeChatRequestItem(item: ChatRequestItem): ChatRequestItem {
+  return {
+    ...item,
+    name: item.name ?? item.memberName,
+    creatAt: item.creatAt ?? item.createdAt,
+    chatReqId: item.chatReqId ?? item.requiredId,
+  };
+}
+
+function normalizeChatRequestDetail(data: ChatRequestDetailData): ChatRequestDetailData {
+  const requester = data.requester ?? normalizeParty(data.opponent);
+  const requestee = data.requestee ?? normalizeParty(data.me);
+  return {
+    ...data,
+    requester,
+    requestee,
+  };
+}
+
+function normalizeParty(party: ChatRequestParty | undefined): ChatRequestParty | undefined {
+  if (!party) return undefined;
+  return {
+    ...party,
+    name: party.name ?? party.memberName,
+  };
 }

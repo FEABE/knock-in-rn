@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
-import { useModeration, useSession } from '@/lib/domain';
+import { useAccountActions, useBlockedUsers } from '@/lib/api';
+import { useSession } from '@/lib/domain';
 import {
   goExplore,
   goMypageBlocked,
@@ -31,7 +32,8 @@ export type UseAccountSettingsScreenReturn = {
 export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
   const router = useRouter();
   const { signOut } = useSession();
-  const { blockedUserIds, reports } = useModeration();
+  const { data: blockedUsers } = useBlockedUsers();
+  const { requestLogout } = useAccountActions();
 
   const logout = () => {
     Alert.alert('로그아웃', '현재 계정에서 로그아웃할까요?', [
@@ -39,8 +41,18 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
       {
         text: '로그아웃',
         style: 'destructive',
-        onPress: () => {
-          signOut();
+        onPress: async () => {
+          try {
+            await requestLogout();
+          } catch (error) {
+            Alert.alert(
+              '로그아웃 실패',
+              error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.',
+            );
+            return;
+          } finally {
+            signOut();
+          }
           goExplore(router, 'replace');
         },
       },
@@ -56,7 +68,7 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
           {
             icon: 'shield-checkmark-outline',
             title: '차단 / 신고 관리',
-            description: `차단 ${blockedUserIds.size}명 · 신고 ${reports.length}건`,
+            description: `차단 ${blockedUsers?.length ?? 0}명`,
             onPress: () => goMypageBlocked(router),
           },
           {

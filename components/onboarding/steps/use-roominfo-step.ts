@@ -1,7 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
-import { useOnboardingRoom, type Region, type RoomType } from '@/lib/onboarding';
+import {
+  compactNumbers,
+  regionBackendId,
+  roomTypeBackendId,
+  saveProfileRoomInfo,
+  type ProfileRoomInfoRequest,
+} from '@/lib/api';
+import {
+  ONBOARDING_WRITE_ENABLED,
+  useOnboarding,
+  useOnboardingRoom,
+  type Region,
+  type RoomType,
+} from '@/lib/onboarding';
 
 export const ROOM_INFO_ROOM_TYPES: { value: RoomType; label: string }[] = [
   { value: 'one-room', label: '원룸' },
@@ -36,6 +49,8 @@ export type UseRoomInfoStepReturn = {
   noRoom: boolean;
   canProceed: boolean;
   toast: string | null;
+  submitting: boolean;
+  submitError: string | null;
   onComplete?: () => void;
   setHasRoom: (next: boolean) => void;
   selectSido: (value: string) => void;
@@ -54,7 +69,10 @@ export type UseRoomInfoStepReturn = {
 };
 
 export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomInfoStepReturn {
+  const { goNext, isStepSaved, markStepSaved } = useOnboarding();
   const { room, patch } = useOnboardingRoom();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     onboardingTiming.enterStep();
@@ -95,6 +113,35 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     toastTimer.current = setTimeout(() => setToast(null), 2000);
   };
 
+  const saveAndProceed = async () => {
+    if (!ONBOARDING_WRITE_ENABLED) {
+      onComplete?.();
+      goNext();
+      return;
+    }
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const body = roomToProfileRoomInfoRequest(room);
+      const signature = JSON.stringify(body);
+      if (!isStepSaved('roominfo', signature)) {
+        const res = await saveProfileRoomInfo(body);
+        if (res.status !== 200 || res.error) {
+          setSubmitError(res.error?.message ?? `저장에 실패했어요 (status ${res.status})`);
+          return;
+        }
+        markStepSaved('roominfo', signature);
+      }
+      onComplete?.();
+      goNext();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '네트워크 오류가 발생했어요.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   useEffect(
     () => () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -132,7 +179,9 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     noRoom,
     canProceed,
     toast,
-    onComplete,
+    submitting,
+    submitError,
+    onComplete: saveAndProceed,
     setHasRoom: (next) => patch({ hasRoom: next }),
     selectSido: (value) => commitDraft({ ...draft, sido: value }),
     selectGugun: (value) => commitDraft({ ...draft, gugun: value }),
@@ -154,6 +203,42 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     },
     setMoveInBy: (value) => patch({ moveInBy: value }),
   };
+}
+
+function roomToProfileRoomInfoRequest(
+  room: ReturnType<typeof useOnboardingRoom>['room'],
+): ProfileRoomInfoRequest {
+  if (room.hasRoom === true) {
+    return {
+      type: 'OFFER',
+      region: compactNumbers([regionBackendId(room.region)]),
+      roomProfile: compactNumbers([roomTypeBackendId(room.roomType)]),
+      deposit: room.deposit ?? undefined,
+      mounthRent: room.monthlyRent ?? undefined,
+      minDeposit: room.deposit ?? undefined,
+      maxDeposit: room.deposit ?? undefined,
+      minMounthRent: room.monthlyRent ?? undefined,
+      maxMounthRent: room.monthlyRent ?? undefined,
+      comeEnableAt: toApiDateTime(room.moveInDate),
+      comeableAtNegotiable: false,
+    };
+  }
+
+  return {
+    type: 'SEEKER',
+    region: compactNumbers(room.regions.map(regionBackendId)),
+    roomProfile: compactNumbers(room.roomTypes.map(roomTypeBackendId)),
+    minDeposit: room.budgetDeposit.min,
+    maxDeposit: room.budgetDeposit.max,
+    minMounthRent: room.budgetRent.min,
+    maxMounthRent: room.budgetRent.max,
+    comeEnableAt: toApiDateTime(room.moveInBy),
+    comeableAtNegotiable: false,
+  };
+}
+
+function toApiDateTime(date: Date | null | undefined): string | undefined {
+  return date ? date.toISOString() : undefined;
 }
 
 function startOfToday(): Date {

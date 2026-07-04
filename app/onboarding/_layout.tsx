@@ -24,7 +24,7 @@ import {
 import { goExplore, goKakaoLogin } from '@/lib/navigation/routes';
 
 function toRequest(values: OnboardingValues): ProfileAllRequest {
-  const { profile, room, terms } = values;
+  const { profile, room, terms, preferences } = values;
   const birth = profile.birthDate
     ? `${profile.birthDate.getFullYear()}-${String(profile.birthDate.getMonth() + 1).padStart(
         2,
@@ -32,8 +32,9 @@ function toRequest(values: OnboardingValues): ProfileAllRequest {
       )}-${String(profile.birthDate.getDate()).padStart(2, '0')}`
     : '';
   const isHas = room.hasRoom === true;
-  const moveDate = isHas ? room.moveInDate : room.moveInBy;
-  const roomTypeId = roomTypeBackendId(isHas ? room.roomType : room.roomTypes[0]);
+  const moveDate = isHas ? room.moveInDate : (preferences.moveInBy ?? room.moveInBy);
+  const seekerRoomTypes = preferences.roomTypes.length ? preferences.roomTypes : room.roomTypes;
+  const seekerBudgetRent = preferences.budget ?? room.budgetRent;
   return {
     name: profile.name,
     birth,
@@ -54,13 +55,15 @@ function toRequest(values: OnboardingValues): ProfileAllRequest {
     type: isHas ? 'OFFER' : 'SEEKER',
     minDeposit: isHas ? undefined : room.budgetDeposit.min,
     maxDeposit: isHas ? undefined : room.budgetDeposit.max,
-    minMounthRent: isHas ? undefined : room.budgetRent.min,
-    maxMounthRent: isHas ? undefined : room.budgetRent.max,
+    minMounthRent: isHas ? undefined : seekerBudgetRent.min,
+    maxMounthRent: isHas ? undefined : seekerBudgetRent.max,
     comeEnableAt: moveDate ? moveDate.toISOString() : '',
     region: compactNumbers(
       isHas ? [regionBackendId(room.region)] : room.regions.map(regionBackendId),
     ),
-    roomProfile: compactNumbers([roomTypeId]),
+    roomProfile: compactNumbers(
+      isHas ? [roomTypeBackendId(room.roomType)] : seekerRoomTypes.map(roomTypeBackendId),
+    ),
     deposit: isHas ? (room.deposit ?? 0) : undefined,
     mounthRent: isHas ? (room.monthlyRent ?? 0) : undefined,
     comeableAtNegotiable: false,

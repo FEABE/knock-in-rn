@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
-import { INQUIRIES } from '@/lib/domain';
+import { useSupportInquiries } from '@/lib/api';
 import { goSupportInquiryNew } from '@/lib/navigation/routes';
 
 export type InquiryListItem = {
@@ -19,37 +19,22 @@ export type InquiryListItem = {
 export type UseInquiryListScreenReturn = {
   inquiries: InquiryListItem[];
   publicCount: number;
+  loading: boolean;
+  error: string | null;
   onCreatePress: () => void;
 };
 
 export function useInquiryListScreen(): UseInquiryListScreenReturn {
   const router = useRouter();
+  const { data, loading, error } = useSupportInquiries();
 
-  const inquiries = useMemo<InquiryListItem[]>(
-    () =>
-      INQUIRIES.map((inquiry) => ({
-        id: inquiry.id,
-        title: inquiry.title,
-        body: inquiry.body,
-        answer: inquiry.answer,
-        authorName: inquiry.authorName,
-        dateLabel: fmtDate(inquiry.createdAt),
-        statusLabel: inquiry.answer ? '답변 완료' : '답변 대기',
-        answered: !!inquiry.answer,
-        isPublic: inquiry.isPublic,
-      })),
-    [],
-  );
+  const inquiries = useMemo<InquiryListItem[]>(() => data ?? [], [data]);
 
   return {
     inquiries,
     publicCount: inquiries.filter((inquiry) => inquiry.isPublic).length,
+    loading,
+    error,
     onCreatePress: () => goSupportInquiryNew(router),
   };
-}
-
-function fmtDate(d: Date): string {
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate(),
-  ).padStart(2, '0')}`;
 }

@@ -6,6 +6,7 @@ import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   compactNumbers,
   CONDITION_BACKEND_IDS,
+  getPreferenceAll,
   LIFESTYLE_BACKEND_IDS,
   LIFESTYLE_CHOICE_BACKEND_IDS,
   savePreferenceAll,
@@ -61,6 +62,42 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const [smoking, setSmoking] = useState<string | null>('any');
   const [pet, setPet] = useState<string | null>('any');
   const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getPreferenceAll().then((res) => {
+      if (!mounted || res.error || res.status !== 200 || !res.data) return;
+      const conditionIds = new Set(
+        (res.data.conditions ?? []).map((condition) => condition.conditionsId),
+      );
+      const nextSelected = Object.entries(CONDITION_BACKEND_IDS)
+        .filter(([, id]) => conditionIds.has(id))
+        .map(([id]) => id);
+      setSelected(nextSelected.slice(0, 3));
+
+      for (const item of res.data.lifestyles ?? []) {
+        if (item.lifestyleId === LIFESTYLE_BACKEND_IDS.personality && item.value) {
+          const value = Number(item.value);
+          if (Number.isFinite(value)) setPersonality(value);
+        }
+        if (item.lifestyleId === LIFESTYLE_BACKEND_IDS.privacy && item.value) {
+          const value = Number(item.value);
+          if (Number.isFinite(value)) setPrivacy(value);
+        }
+        if (item.lifestyleId === LIFESTYLE_BACKEND_IDS.visitor && item.value) {
+          const value = Number(item.value);
+          if (Number.isFinite(value)) setVisitor(value);
+        }
+        const smokingValue = smokingFromBackendId(item.lifestyleId);
+        if (smokingValue) setSmoking(smokingValue);
+        const petValue = petFromBackendId(item.lifestyleId);
+        if (petValue) setPet(petValue);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const exit = () => {
     if (fromOnboarding) goExplore(router, 'replace');
@@ -144,4 +181,19 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     togglePriority,
     save,
   };
+}
+
+function smokingFromBackendId(id: number | undefined): string | null {
+  if (id === undefined) return null;
+  return (
+    Object.entries(LIFESTYLE_CHOICE_BACKEND_IDS.smoking).find(([, value]) => value === id)?.[0] ??
+    null
+  );
+}
+
+function petFromBackendId(id: number | undefined): string | null {
+  if (id === undefined) return null;
+  return (
+    Object.entries(LIFESTYLE_CHOICE_BACKEND_IDS.pet).find(([, value]) => value === id)?.[0] ?? null
+  );
 }

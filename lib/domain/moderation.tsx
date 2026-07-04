@@ -2,10 +2,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+
+import { useBlockedUsers } from '@/lib/api/use-account';
 
 export type ReportTarget = {
   kind: 'post' | 'user';
@@ -34,9 +37,15 @@ export type ModerationContextValue = {
 const ModerationContext = createContext<ModerationContextValue | null>(null);
 
 export function ModerationProvider({ children }: { children: ReactNode }) {
+  const { data: apiBlockedUsers } = useBlockedUsers();
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const [blockedPostIds, setBlockedPostIds] = useState<Set<string>>(new Set());
   const [reports, setReports] = useState<ReportRecord[]>([]);
+
+  useEffect(() => {
+    if (!apiBlockedUsers) return;
+    setBlockedUserIds(new Set(apiBlockedUsers.map((user) => user.id)));
+  }, [apiBlockedUsers]);
 
   const blockUser = useCallback((id: string) => {
     setBlockedUserIds((prev) => new Set(prev).add(id));
@@ -96,19 +105,13 @@ export function ModerationProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return (
-    <ModerationContext.Provider value={value}>
-      {children}
-    </ModerationContext.Provider>
-  );
+  return <ModerationContext.Provider value={value}>{children}</ModerationContext.Provider>;
 }
 
 export function useModeration(): ModerationContextValue {
   const ctx = useContext(ModerationContext);
   if (!ctx) {
-    throw new Error(
-      'useModeration must be used inside <ModerationProvider>',
-    );
+    throw new Error('useModeration must be used inside <ModerationProvider>');
   }
   return ctx;
 }

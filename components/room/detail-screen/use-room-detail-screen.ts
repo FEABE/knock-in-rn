@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
+  blockUser as blockUserRequest,
   useRoommateBoardDetail,
   useRoommateBoardLikeActions,
   useRoommateBoardWriteActions,
@@ -172,11 +173,22 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
         {
           text: '차단',
           style: 'destructive',
-          onPress: () => {
-            blockUser(post.author.id);
-            blockPost(post.id);
-            setReportOpen(false);
-            router.back();
+          onPress: async () => {
+            try {
+              const res = await blockUserRequest({ userId: post.author.id });
+              if (res.status !== 200 || res.error) {
+                throw new Error(res.error?.message ?? '차단에 실패했습니다.');
+              }
+              blockUser(post.author.id);
+              blockPost(post.id);
+              setReportOpen(false);
+              router.back();
+            } catch (blockError) {
+              Alert.alert(
+                '차단 실패',
+                blockError instanceof Error ? blockError.message : '잠시 후 다시 시도해주세요.',
+              );
+            }
           },
         },
       ]);

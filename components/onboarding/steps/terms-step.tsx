@@ -1,6 +1,8 @@
 import { Linking, ScrollView, Text, View } from 'react-native';
+import { useMemo } from 'react';
 
 import { TermsAgreement } from '@/components/ui/headless';
+import { useSupportTerms } from '@/lib/api';
 import { TERMS, useOnboarding, useOnboardingTerms } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
@@ -8,6 +10,15 @@ import { OnboardingFooter } from '../onboarding-footer';
 export function TermsStep() {
   const { terms, setTerms, isTermsValid } = useOnboardingTerms();
   const { goNext } = useOnboarding();
+  const { data: apiTerms, loading } = useSupportTerms();
+  const renderTerms = useMemo(
+    () =>
+      TERMS.map((term, index) => ({
+        ...term,
+        label: apiTerms?.[index]?.title ?? term.label,
+      })),
+    [apiTerms],
+  );
 
   return (
     <View className="flex-1 bg-white">
@@ -17,12 +28,14 @@ export function TermsStep() {
             서비스 이용을 위해{'\n'}약관에 동의해주세요
           </Text>
           <Text className="text-sm text-neutral-500">
-            필수 약관 동의 후 서비스를 이용할 수 있어요.
+            {loading
+              ? '약관 목록을 확인하고 있어요.'
+              : '필수 약관 동의 후 서비스를 이용할 수 있어요.'}
           </Text>
         </View>
 
         <TermsAgreement.Root
-          terms={TERMS}
+          terms={renderTerms}
           value={terms}
           onValueChange={setTerms}
           className="gap-3 rounded-2xl border border-neutral-200 p-4"
@@ -44,7 +57,7 @@ export function TermsStep() {
 
           <View className="h-px bg-neutral-100" />
 
-          {TERMS.map((term) => (
+          {renderTerms.map((term) => (
             <TermsAgreement.Item
               key={term.key}
               termKey={term.key}

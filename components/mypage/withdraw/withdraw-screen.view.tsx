@@ -10,6 +10,7 @@ export function WithdrawScreenView({
   reasons,
   selectedReasonIds,
   canSubmit,
+  submitting,
   onBack,
   toggleReason,
   submit,
@@ -27,8 +28,8 @@ export function WithdrawScreenView({
         <View className="gap-2">
           <Text className="text-xl font-bold text-neutral-900">떠나기 전에 확인해주세요</Text>
           <Text className="text-sm leading-5 text-neutral-500">
-            탈퇴 신청 후에는 프로필, 관심 목록, 채팅 기록 확인이 제한돼요. 실제 삭제는 서버 API 연동
-            후 처리됩니다.
+            탈퇴 후에는 프로필, 관심 목록, 채팅 기록 확인이 제한돼요. 계정 삭제는 서버에서
+            처리됩니다.
           </Text>
         </View>
 
@@ -63,7 +64,7 @@ export function WithdrawScreenView({
           <Text
             className={`text-sm font-semibold ${canSubmit ? 'text-white' : 'text-neutral-500'}`}
           >
-            탈퇴 신청
+            {submitting ? '처리 중...' : '탈퇴하기'}
           </Text>
         </Pressable>
       </View>

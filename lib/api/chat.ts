@@ -17,14 +17,16 @@ import type { OpenApiSchema } from './openapi-types';
 
 // ─── REST Types ───────────────────────────────────────────────────────────────
 
-export type ChatRoomItem =
-  OpenApiSchema<'org.example.knockin.dto.ChatRoomListDto$Response$ChatRoom'> &
-    Partial<{
-      lastMessage: string;
-      unreadCount: number;
-    }>;
+export type ChatRoomItem = OpenApiSchema<'org.example.knockin.dto.ChatRoomListDto$Response'> &
+  Partial<{
+    name: string;
+    creatAt: string;
+    isAgree: boolean;
+    lastMessage: string;
+    unreadCount: number;
+  }>;
 
-export type ChatRoomListData = OpenApiSchema<'org.example.knockin.dto.ChatRoomListDto$Response'> & {
+export type ChatRoomListData = {
   chatRooms?: ChatRoomItem[];
 };
 
@@ -106,5 +108,17 @@ const MOCK_CHAT_ROOMS: ChatRoomItem[] = [
 /** GET /chats — 채팅방 목록 조회 */
 export function getChatRooms(params: PageParams = {}): Promise<ApiResponse<ChatRoomListData>> {
   if (USE_MOCK) return mockOk({ chatRooms: MOCK_CHAT_ROOMS });
-  return request('GET', '/chats', { query: params });
+  return request<ChatRoomItem[]>('GET', '/chats', { query: params }).then((res) => ({
+    ...res,
+    data: { chatRooms: (res.data ?? []).map(normalizeChatRoomItem) },
+  }));
+}
+
+function normalizeChatRoomItem(item: ChatRoomItem): ChatRoomItem {
+  return {
+    ...item,
+    name: item.name ?? item.memberName,
+    creatAt: item.creatAt ?? item.createdAt,
+    isAgree: item.isAgree ?? item.status === 'ACCEPTED',
+  };
 }

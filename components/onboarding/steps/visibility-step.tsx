@@ -1,7 +1,14 @@
 import { ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
 
 import { SegmentedControl } from '@/components/ui/headless';
-import { useOnboardingProfile, type ProfileVisibility } from '@/lib/onboarding';
+import { updateVisibility } from '@/lib/api';
+import {
+  ONBOARDING_WRITE_ENABLED,
+  useOnboarding,
+  useOnboardingProfile,
+  type ProfileVisibility,
+} from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 
@@ -24,7 +31,37 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export function VisibilityStep() {
+  const { goNext, isStepSaved, markStepSaved } = useOnboarding();
   const { profile, patch } = useOnboardingProfile();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const onNext = async () => {
+    if (!ONBOARDING_WRITE_ENABLED) {
+      goNext();
+      return;
+    }
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const body = { status: profile.visibility === 'public' ? 'PUBLIC' : 'PRIVATE' } as const;
+      const signature = JSON.stringify(body);
+      if (!isStepSaved('visibility', signature)) {
+        const res = await updateVisibility(body);
+        if (res.status !== 200 || res.error) {
+          setSubmitError(res.error?.message ?? `저장에 실패했어요 (status ${res.status})`);
+          return;
+        }
+        markStepSaved('visibility', signature);
+      }
+      goNext();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '네트워크 오류가 발생했어요.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -76,7 +113,13 @@ export function VisibilityStep() {
         />
       </ScrollView>
 
-      <OnboardingFooter canProceed={true} showBack />
+      {submitError ? (
+        <View className="px-5 pb-2">
+          <Text className="text-xs text-red-500">{submitError}</Text>
+        </View>
+      ) : null}
+
+      <OnboardingFooter canProceed={true} showBack loading={submitting} onPress={onNext} />
     </View>
   );
 }

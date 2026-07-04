@@ -12,8 +12,14 @@ export function InquiryFormScreenView({
   title,
   body,
   isPublic,
+  categories,
+  categoryId,
+  loadingCategories,
+  submitError,
   canSubmit,
   submitted,
+  submitting,
+  setCategoryId,
   setTitle,
   setBody,
   setIsPublic,
@@ -35,6 +41,41 @@ export function InquiryFormScreenView({
 
         <View className="gap-3">
           <Text className="text-sm font-semibold text-neutral-800">새 문의 작성</Text>
+          {submitError ? (
+            <View className="rounded-lg bg-rose-50 p-3">
+              <Text className="text-xs text-rose-600">{submitError}</Text>
+            </View>
+          ) : null}
+          <View className="gap-2">
+            <Text className="text-xs font-medium text-neutral-500">문의 유형</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {loadingCategories ? (
+                <Text className="text-xs text-neutral-400">유형을 불러오는 중...</Text>
+              ) : (
+                categories.map((category) => (
+                  <Pressable
+                    key={category.id}
+                    onPress={() => setCategoryId(category.id)}
+                    className={`rounded-full border px-3 py-2 ${
+                      categoryId === category.id
+                        ? 'border-[#256EF4] bg-[#256EF4]'
+                        : 'border-neutral-200 bg-white'
+                    }`}
+                  >
+                    <Text
+                      className={
+                        categoryId === category.id
+                          ? 'text-xs font-semibold text-white'
+                          : 'text-xs text-neutral-700'
+                      }
+                    >
+                      {category.name}
+                    </Text>
+                  </Pressable>
+                ))
+              )}
+            </View>
+          </View>
           <TextField
             value={title}
             onChangeValue={setTitle}
@@ -84,7 +125,7 @@ export function InquiryFormScreenView({
                   : 'text-sm font-semibold text-neutral-500'
               }
             >
-              문의 접수
+              {submitting ? '접수 중...' : '문의 접수'}
             </Text>
           </Pressable>
         </View>

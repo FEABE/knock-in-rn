@@ -27,6 +27,11 @@ export type LoginData = {
   preferenceInfo: boolean;
 };
 
+type LoginDataResponse = Partial<LoginData> & {
+  access_token?: string;
+  token?: string;
+};
+
 export type SocialProvider = 'kakao' | 'apple';
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
@@ -42,7 +47,9 @@ const MOCK_LOGIN: LoginData = {
 /** 카카오/애플 로그인·회원가입 (웹 방식) — GET /oauth2/authorization/{provider} */
 export function socialLoginWeb(provider: SocialProvider): Promise<ApiResponse<LoginData>> {
   if (USE_MOCK) return mockOk(MOCK_LOGIN);
-  return request('GET', `/oauth2/authorization/${provider}`, { auth: false });
+  return request<LoginDataResponse>('GET', `/oauth2/authorization/${provider}`, {
+    auth: false,
+  }).then(normalizeLoginResponse);
 }
 
 /** 카카오/애플 로그인·회원가입 (SDK 방식) — POST /sdk/oauth2/authorization/{provider} */
@@ -51,10 +58,10 @@ export function socialLoginSdk(
   authObj: AuthObj,
 ): Promise<ApiResponse<LoginData>> {
   if (USE_MOCK) return mockOk(MOCK_LOGIN);
-  return request('POST', `/sdk/oauth2/authorization/${provider}`, {
+  return request<LoginDataResponse>('POST', `/sdk/oauth2/authorization/${provider}`, {
     auth: false,
-    body: { authObj },
-  });
+    body: { authObj, ...authObj },
+  }).then(normalizeLoginResponse);
 }
 
 /** 로그아웃 — POST /auth/logout */
@@ -67,4 +74,18 @@ export function logout(accessToken: string): Promise<ApiResponse<UpdatedAt>> {
 export function withdraw(): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('DELETE', '/users/me');
+}
+
+function normalizeLoginResponse(res: ApiResponse<LoginDataResponse>): ApiResponse<LoginData> {
+  if (!res.data) return res as ApiResponse<LoginData>;
+  const accessToken = res.data.accessToken ?? res.data.access_token ?? res.data.token;
+  return {
+    ...res,
+    data: {
+      ...res.data,
+      accessToken: accessToken ?? '',
+      basicInfo: res.data.basicInfo === true,
+      preferenceInfo: res.data.preferenceInfo === true,
+    },
+  };
 }

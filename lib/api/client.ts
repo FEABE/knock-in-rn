@@ -10,6 +10,8 @@
  */
 
 import { create, type AxiosRequestConfig } from 'axios';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 export type ApiError = {
   code?: string;
@@ -36,7 +38,8 @@ export type PageParams = {
   sort?: string;
 };
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
+const RAW_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
+export const API_BASE_URL = resolveApiBaseUrl(RAW_API_BASE_URL);
 
 /** 기본값은 mock 사용. 실서버 연동 시 EXPO_PUBLIC_USE_MOCK=false 로 끈다. */
 export const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK !== 'false';
@@ -65,15 +68,45 @@ export function mockUpdatedAt(): Promise<ApiResponse<UpdatedAt>> {
 
 const MOCK_DELAY_MS = 250;
 
+function resolveApiBaseUrl(rawUrl: string): string {
+  if (!rawUrl || !__DEV__ || Platform.OS === 'web') return rawUrl;
+  if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(rawUrl)) return rawUrl;
+
+  const expoHost = getExpoDevHost();
+  if (!expoHost) {
+    if (Platform.OS === 'android') return rawUrl.replace(/\/\/(127\.0\.0\.1|localhost)/i, '//10.0.2.2');
+    return rawUrl;
+  }
+
+  return rawUrl.replace(/\/\/(127\.0\.0\.1|localhost)/i, `//${expoHost}`);
+}
+
+function getExpoDevHost(): string | null {
+  const constants = Constants as any;
+  const candidates = [
+    constants.expoConfig?.hostUri,
+    constants.manifest2?.extra?.expoClient?.hostUri,
+    constants.manifest?.debuggerHost,
+    constants.manifest?.hostUri,
+  ];
+  const hostUri = candidates.find((value) => typeof value === 'string' && value.length > 0);
+  if (!hostUri) return null;
+  return hostUri.split(':')[0] ?? null;
+}
+
 /** 테스트/mock에서 사용할 고정 시각. Date.now 의존을 한 곳으로 모은다. */
 export function nowIso(): string {
   return new Date().toISOString();
 }
 
 type RequestOptions = {
-  query?: Record<string, string | number | boolean | undefined | null>;
+  query?: Record<
+    string,
+    string | number | boolean | readonly (string | number | boolean)[] | undefined | null
+  >;
   body?: unknown;
   auth?: boolean;
+  headers?: Record<string, string>;
 };
 
 type KnockAxiosRequestConfig = AxiosRequestConfig & {
@@ -127,13 +160,14 @@ export async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<ApiResponse<T>> {
-  const { query, body, auth = true } = options;
+  const { query, body, auth = true, headers } = options;
 
   const config: KnockAxiosRequestConfig = {
     method,
     url: path,
     params: query,
     data: body,
+    headers,
     skipAuth: !auth,
   };
 

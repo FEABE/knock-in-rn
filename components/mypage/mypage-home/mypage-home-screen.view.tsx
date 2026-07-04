@@ -14,6 +14,8 @@ export function MyPageHomeScreenView({
   profileVisible,
   notificationEnabled,
   genderLabel,
+  profileRegionLabel,
+  roomTypeLabel,
   matchingRows,
   accountRows,
   onSignIn,
@@ -61,10 +63,11 @@ export function MyPageHomeScreenView({
             <View className="flex-1 gap-1">
               <Text className="text-base font-bold text-neutral-900">{user.name}</Text>
               <Text className="text-xs text-neutral-500">
-                {user.age}세 · {genderLabel} · {user.region.city} {user.region.district}
+                {user.age > 0 ? `${user.age}세 · ` : ''}
+                {genderLabel} · {profileRegionLabel}
               </Text>
               <View className="mt-0.5 flex-row gap-1.5">
-                <Tag label="방 없어요" />
+                <Tag label={roomTypeLabel} />
                 {verified ? <Tag label="학교/회사 인증" tone="emerald" /> : null}
               </View>
             </View>

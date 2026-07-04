@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
-import { FAQ_ITEMS, INQUIRIES, NOTICES } from '@/lib/domain';
+import { useSupportCounts } from '@/lib/api';
 import {
   goSupportFaq,
   goSupportInquiries,
@@ -24,25 +24,26 @@ export type UseSupportHomeScreenReturn = {
 
 export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
   const router = useRouter();
+  const { data: counts, loading } = useSupportCounts();
 
   const actions = useMemo<SupportHomeAction[]>(
     () => [
       {
         icon: 'help-circle-outline',
         title: '자주 묻는 질문',
-        description: `${FAQ_ITEMS.length}개 질문`,
+        description: loading ? '불러오는 중' : `${counts?.faqCount ?? 0}개 질문`,
         onPress: () => goSupportFaq(router),
       },
       {
         icon: 'megaphone-outline',
         title: '공지사항',
-        description: `${NOTICES.length}개 공지`,
+        description: loading ? '불러오는 중' : `${counts?.noticeCount ?? 0}개 공지`,
         onPress: () => goSupportNotice(router),
       },
       {
         icon: 'chatbox-ellipses-outline',
         title: '문의내역',
-        description: `${INQUIRIES.length}건의 문의`,
+        description: loading ? '불러오는 중' : `${counts?.inquiryCount ?? 0}건의 문의`,
         onPress: () => goSupportInquiries(router),
       },
       {
@@ -52,7 +53,7 @@ export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
         onPress: () => goSupportInquiryNew(router),
       },
     ],
-    [router],
+    [counts?.faqCount, counts?.inquiryCount, counts?.noticeCount, loading, router],
   );
 
   return {

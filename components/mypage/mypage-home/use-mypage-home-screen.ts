@@ -1,7 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
+import {
+  useMyPageProfileSummary,
+  useMyVerificationSummary,
+  useNotificationSettingToggle,
+  useProfileVisibilityToggle,
+} from '@/lib/api';
 import { useSession, type UserSummary } from '@/lib/domain';
 import {
   goKakaoLogin,
@@ -27,6 +33,8 @@ export type UseMyPageHomeScreenReturn = {
   profileVisible: boolean;
   notificationEnabled: boolean;
   genderLabel: string;
+  profileRegionLabel: string;
+  roomTypeLabel: string;
   matchingRows: MyPageMenuRow[];
   accountRows: MyPageMenuRow[];
   onSignIn: () => void;
@@ -37,11 +45,17 @@ export type UseMyPageHomeScreenReturn = {
 export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
   const router = useRouter();
   const { session } = useSession();
-  const [profileVisible, setProfileVisible] = useState(true);
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
+  const profile = useMyPageProfileSummary(!!session);
+  const verification = useMyVerificationSummary(!!session);
+  const { profileVisible, setProfileVisible } = useProfileVisibilityToggle();
+  const { notificationEnabled, setNotificationEnabled } = useNotificationSettingToggle(!!session);
 
   const user = session?.user ?? null;
-  const verified = (user?.badges.length ?? 0) > 0;
+  const verified = verification.data?.verified ?? (user?.badges.length ?? 0) > 0;
+  const profileRegionLabel =
+    profile.data?.regionLabel ??
+    (user ? `${user.region.city} ${user.region.district}`.trim() : '-');
+  const roomTypeLabel = profile.data?.roomTypeLabel ?? '방 없어요';
 
   const matchingRows = useMemo<MyPageMenuRow[]>(
     () => [
@@ -96,6 +110,8 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     profileVisible,
     notificationEnabled,
     genderLabel: genderLabel(user?.gender),
+    profileRegionLabel,
+    roomTypeLabel,
     matchingRows,
     accountRows,
     onSignIn: () => goKakaoLogin(router),

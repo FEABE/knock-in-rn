@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
@@ -7,7 +7,14 @@ import type { UseTermsScreenReturn } from './use-terms-screen';
 
 export type TermsScreenViewProps = UseTermsScreenReturn;
 
-export function TermsScreenView({ sections, activeId, active, setActiveId }: TermsScreenViewProps) {
+export function TermsScreenView({
+  sections,
+  activeId,
+  active,
+  loading,
+  error,
+  setActiveId,
+}: TermsScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="약관 및 정책" />
@@ -35,10 +42,26 @@ export function TermsScreenView({ sections, activeId, active, setActiveId }: Ter
         ))}
       </View>
       <ScrollView contentContainerClassName="p-5">
-        <View className="gap-3 rounded-2xl border border-neutral-200 bg-white p-5">
-          <Text className="text-base font-semibold text-neutral-900">{active.title}</Text>
-          <Text className="text-sm leading-7 text-neutral-700">{active.body}</Text>
-        </View>
+        {loading ? (
+          <View className="items-center gap-3 p-10">
+            <ActivityIndicator color="#256EF4" />
+            <Text className="text-sm text-neutral-400">약관을 불러오는 중...</Text>
+          </View>
+        ) : error ? (
+          <View className="rounded-2xl border border-dashed border-neutral-200 p-8">
+            <Text className="text-center text-sm text-neutral-500">약관을 불러오지 못했어요</Text>
+            <Text className="mt-2 text-center text-xs text-neutral-400">{error}</Text>
+          </View>
+        ) : active ? (
+          <View className="gap-3 rounded-2xl border border-neutral-200 bg-white p-5">
+            <Text className="text-base font-semibold text-neutral-900">{active.title}</Text>
+            <Text className="text-sm leading-7 text-neutral-700">{active.body}</Text>
+          </View>
+        ) : (
+          <View className="rounded-2xl border border-dashed border-neutral-200 p-8">
+            <Text className="text-center text-sm text-neutral-400">등록된 약관이 없어요</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

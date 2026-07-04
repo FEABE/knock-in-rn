@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
@@ -11,6 +11,8 @@ export type InquiryListScreenViewProps = UseInquiryListScreenReturn;
 export function InquiryListScreenView({
   inquiries,
   publicCount,
+  loading,
+  error,
   onCreatePress,
 }: InquiryListScreenViewProps) {
   return (
@@ -23,7 +25,7 @@ export function InquiryListScreenView({
             <Text className="text-base font-semibold text-neutral-900">
               공개 문의 {publicCount}
             </Text>
-            <Text className="text-xs text-neutral-400">데모 데이터로 문의 상태를 확인해요</Text>
+            <Text className="text-xs text-neutral-400">문의 상태를 확인해요</Text>
           </View>
           <Pressable
             onPress={onCreatePress}
@@ -34,7 +36,19 @@ export function InquiryListScreenView({
           </Pressable>
         </View>
 
-        {inquiries.length === 0 ? (
+        {loading ? (
+          <View className="items-center gap-3 p-10">
+            <ActivityIndicator color="#256EF4" />
+            <Text className="text-sm text-neutral-400">문의내역을 불러오는 중...</Text>
+          </View>
+        ) : error ? (
+          <View className="items-center gap-2 rounded-lg border border-neutral-200 p-8">
+            <Text className="text-sm font-semibold text-neutral-800">
+              문의내역을 불러오지 못했어요
+            </Text>
+            <Text className="text-xs text-neutral-400">{error}</Text>
+          </View>
+        ) : inquiries.length === 0 ? (
           <View className="items-center gap-2 rounded-lg border border-neutral-200 p-8">
             <Text className="text-sm font-semibold text-neutral-800">문의내역이 없어요</Text>
             <Text className="text-xs text-neutral-400">궁금한 점을 운영팀에 남겨주세요</Text>

@@ -24,10 +24,19 @@ export type CalendarWriteRequest = OpenApiSchema<'org.example.knockin.dto.Calend
 
 /** 룸메이트 요청 목록 항목. (reqeustee 오타 유지) */
 export type RoommateRequestItem =
-  OpenApiSchema<'org.example.knockin.dto.RoommateRequestListDto$Response$RoommateRequest'>;
+  OpenApiSchema<'org.example.knockin.dto.RoommateRequestListDto$Response'> &
+    Partial<{
+      requester: number;
+      reqeustee: number;
+      isAgree: boolean;
+    }>;
 
-export type RoommateRequestListData =
-  OpenApiSchema<'org.example.knockin.dto.RoommateRequestListDto$Response'>;
+type RoommateRequestPageData =
+  OpenApiSchema<'org.springframework.data.domain.PageOrg.example.knockin.dto.RoommateRequestListDto$Response'>;
+
+export type RoommateRequestListData = Partial<RoommateRequestPageData> & {
+  roommateRequests?: RoommateRequestItem[];
+};
 
 /** 내 룸메이트 조회. */
 export type MyRoommateData = OpenApiSchema<'org.example.knockin.dto.MyRoommateDto$Response'>;
@@ -149,7 +158,24 @@ export function getRoommateRequests(
   params: PageParams = {},
 ): Promise<ApiResponse<RoommateRequestListData>> {
   if (USE_MOCK) return mockOk({ roommateRequests: MOCK_REQUESTS });
-  return request('GET', '/roommate-requests', { query: params });
+  return request<RoommateRequestPageData>('GET', '/roommate-requests', { query: params }).then(
+    (res) => ({
+      ...res,
+      data: {
+        ...res.data,
+        roommateRequests: (res.data?.content ?? []).map(normalizeRoommateRequestItem),
+      },
+    }),
+  );
+}
+
+function normalizeRoommateRequestItem(item: RoommateRequestItem): RoommateRequestItem {
+  return {
+    ...item,
+    requester: item.requester ?? item.requesterId,
+    reqeustee: item.reqeustee ?? item.requesteeId,
+    isAgree: item.isAgree ?? item.status === 'ACCEPTED',
+  };
 }
 
 // ─── Client: 내 룸메이트 ────────────────────────────────────────────────────────

@@ -17,6 +17,7 @@ import { getMyBoards } from './profile';
 import {
   type BoardListQuery,
   type BoardListData,
+  type BoardListItem,
   type BoardDetailData,
   type BoardWriteRequest,
   type MatchDetailData,
@@ -28,7 +29,6 @@ import {
   getRoommateBoards,
   getRoommateMatchDetail,
   getRoommateMatches,
-  hydrateBoardListData,
   reportRoommateBoard,
   toggleBoardLike,
   updateRoommateBoard,
@@ -52,9 +52,17 @@ export function useMyRoommateBoards(enabled = true): AsyncState<RoomPost[]> {
     ['profile', 'my-boards'],
     async () => {
       const res = await getMyBoards();
-      if (res.status !== 200 || res.error || !res.data?.boards?.length) return res;
-      const hydrated = await hydrateBoardListData({ boards: res.data.boards });
-      return { ...res, data: { ...res.data, boards: hydrated.boards } };
+      const boards = (res.data?.boards ?? []).map(
+        (board) =>
+          ({
+            ...board,
+            roomTypes: board.roomTypes ? [board.roomTypes] : undefined,
+          }) as BoardListItem,
+      );
+      if (res.status !== 200 || res.error || boards.length === 0) {
+        return { ...res, data: { boards } satisfies BoardListData };
+      }
+      return { ...res, data: { boards } satisfies BoardListData };
     },
     { enabled },
   );

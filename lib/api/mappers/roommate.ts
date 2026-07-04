@@ -53,23 +53,28 @@ export type RoommateMatchDetailModel = {
 };
 
 export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCardModel {
-  const id = stringValue(match.userId, '');
+  const id = stringValue(match.userId ?? match.memberId, '');
   const score = numberValue(match.score);
-  const roomTypeLabel = (match.roomType ?? [])
-    .map(labelForRoomTypeId)
+  const roomTypes = match.roomType ?? match.seekerProfile?.roomTypeNames ?? [];
+  const roomTypeLabel = roomTypes
+    .map((type) => (typeof type === 'number' ? labelForRoomTypeId(type) : type))
     .filter((label) => label !== '-')
     .join(', ');
+  const region =
+    match.region ?? match.offerProfile?.regionFullName ?? match.seekerProfile?.regionFullNames?.[0];
 
   return {
     id,
-    name: match.name ?? '이름 없음',
+    name: match.name ?? match.memberName ?? '이름 없음',
     hasRoom: match.roomProfileType === 'OFFER',
     liked: booleanValue(match.isLike),
     compatibilityScore: score,
-    depositRentLabel: `${numberValue(match.deposit)} / ${numberValue(match.mounthRent)}`,
+    depositRentLabel: `${numberValue(match.deposit ?? match.offerProfile?.deposit)} / ${numberValue(
+      match.mounthRent ?? match.offerProfile?.monthlyRent,
+    )}`,
     moveInLabel: formatDateLabel(match.comeableAt),
     roomTypeLabel: roomTypeLabel || '-',
-    regionLabel: labelForRegionId(match.region),
+    regionLabel: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
     lifestyleChips: definedLabels((match.lifeStyles ?? []).slice(0, 4).map((item) => item.name)),
     conditionChips: definedLabels((match.conditions ?? []).map((item) => item.name)),
   };
@@ -79,20 +84,26 @@ export function toRoommateMatchDetailModel(
   data: MatchDetailData,
   id: string,
 ): RoommateMatchDetailModel {
-  const name = data.name ?? '이름 없음';
+  const name = data.name ?? data.memberName ?? '이름 없음';
+  const region =
+    data.region ?? data.offerProfile?.regionFullName ?? data.seekerProfile?.regionFullNames?.[0];
   const roomStatusLabel =
     data.roomProfileType === 'OFFER'
-      ? `${labelForRoomProfileType(data.roomProfileType)} · ${labelForRegionId(data.region)}`
+      ? `${labelForRoomProfileType(data.roomProfileType)} · ${
+          typeof region === 'number' ? labelForRegionId(region) : (region ?? '-')
+        }`
       : '아직 방이 없어요';
 
   return {
     id,
     name,
     initial: name.charAt(0),
-    regionLabel: labelForRegionId(data.region),
+    regionLabel: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
     roomStatusLabel,
-    isAuthStudent: booleanValue(data.isAuthStudent),
-    isAuthEmployee: booleanValue(data.isAuthEmployee),
+    isAuthStudent:
+      booleanValue(data.isAuthStudent) || hasAuthentication(data.authentications, 'STUDENT'),
+    isAuthEmployee:
+      booleanValue(data.isAuthEmployee) || hasAuthentication(data.authentications, 'COMPANY'),
     lifeStyles: (data.lifeStyles ?? []).map((item, index) => ({
       id: stringValue(item.lifestyleId, `lifestyle-${index}`),
       name: item.name ?? '-',
@@ -100,10 +111,16 @@ export function toRoommateMatchDetailModel(
     })),
     livingRows: [
       { label: '예산 보증금', value: `${numberValue(data.maxDeposit)}만원 이하` },
-      { label: '예산 월세', value: `${numberValue(data.maxMounthRent)}만원 이하` },
+      {
+        label: '예산 월세',
+        value: `${numberValue(data.maxMounthRent ?? data.seekerProfile?.maxMonthlyRent)}만원 이하`,
+      },
       { label: '입주 희망 시기', value: formatDateLabel(data.comeableAt) },
       { label: '희망 룸 형태', value: labelForRoomProfileType(data.roomProfileType) },
-      { label: '희망 지역', value: labelForRegionId(data.region) },
+      {
+        label: '희망 지역',
+        value: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
+      },
     ],
     preferenceRows: (data.preferences ?? []).map((preference, index) => ({
       key: stringValue(preference.preferencesId, `preference-${index}`),
@@ -126,4 +143,8 @@ export function toRoommateMatchDetailModel(
       }),
     },
   };
+}
+
+function hasAuthentication(value: unknown, expected: 'STUDENT' | 'COMPANY'): boolean {
+  return Array.isArray(value) ? value.includes(expected) : value === expected;
 }

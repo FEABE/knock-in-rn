@@ -28,11 +28,41 @@ export type BoardListQuery = {
   sort?: string;
 };
 
-/** 게시글 등록/수정 이미지 항목. (thumnail 오타 유지) */
-export type BoardImageInput = OpenApiSchema<'org.example.knockin.dto.BoardDto$Request$ImageDto'>;
+/** 게시글 등록/수정 이미지 항목. (서버는 fileIndex/thumbnail, 기존 화면은 image/thumnail 사용) */
+export type BoardImageInput = Partial<OpenApiSchema<'BoardFileRequest'>> &
+  Partial<{
+    image: string;
+    uri: string;
+    name: string;
+    type: string;
+    thumnail: boolean;
+  }>;
 
-/** 게시글 등록/수정 본문. (mountlyRent 오타 유지) */
-export type BoardWriteRequest = OpenApiSchema<'org.example.knockin.dto.BoardDto$Request'>;
+type BoardSaveRequest = Omit<OpenApiSchema<'BoardSaveRequest'>, 'images'>;
+type BoardModifyRequest = Omit<
+  OpenApiSchema<'org.example.knockin.dto.BoardModifyDto$Request'>,
+  'existingImages' | 'newImages'
+>;
+
+/** 게시글 등록/수정 본문. 기존 화면의 오타 필드도 호환한다. */
+export type BoardWriteRequest = Partial<BoardSaveRequest & BoardModifyRequest> & {
+  title: string;
+  contents: string;
+  deposit: number;
+  managementCost: number;
+  mountlyRent?: number;
+  monthlyRent?: number;
+  roomType?: number;
+  roomTypeId?: number;
+  region?: number;
+  regionId?: number;
+  comeableAt?: string;
+  comeableDate?: string;
+  roomOption?: number[];
+  images?: BoardImageInput[];
+  existingImages?: OpenApiSchema<'org.example.knockin.dto.BoardModifyDto$Request$ExistingFileDto'>[];
+  newImages?: OpenApiSchema<'org.example.knockin.dto.BoardModifyDto$Request$NewFileDto'>[];
+};
 
 export type BoardLikeRequest = Record<string, number>;
 
@@ -41,38 +71,106 @@ export type BoardReportRequest = OpenApiSchema<'org.example.knockin.dto.ReportDt
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 /** 게시글 리스트 항목. */
-type BoardListItemSwagger =
-  OpenApiSchema<'org.example.knockin.dto.BoardListDto$Response$BoardItem'>;
+type BoardListItemSwagger = Omit<
+  OpenApiSchema<'org.example.knockin.dto.BoardListDto$Response'>,
+  'roomTypes' | 'badges'
+> & {
+  roomTypes?: string | string[];
+  badges?: string | string[];
+};
 
 export type BoardListItem = BoardListItemSwagger &
   Partial<{
+    boardId: number;
+    image: string;
     title: string;
     deposit: number;
     mounthRent: number;
+    monthlyRent: number;
     roomType: number | string;
     region: number | string;
     writer: string;
     createAt: string;
+    createdAt: string;
     viewer: number;
     isPopular: boolean;
     isNew: boolean;
     isLike: boolean;
   }>;
 
-export type BoardListData = OpenApiSchema<'org.example.knockin.dto.BoardListDto$Response'> & {
+type BoardListPageData =
+  OpenApiSchema<'org.springframework.data.domain.PageOrg.example.knockin.dto.BoardListDto$Response'>;
+
+export type BoardListData = Partial<BoardListPageData> & {
   boards?: BoardListItem[];
 };
 
 /** 게시글 상세. */
-export type BoardDetailData = OpenApiSchema<'org.example.knockin.dto.BoardDetailDto$Response'>;
+type BoardDetailSwagger = Omit<
+  OpenApiSchema<'org.example.knockin.dto.BoardDetailDto$Response'>,
+  'images'
+>;
+
+export type BoardDetailData = BoardDetailSwagger &
+  Partial<{
+    images: (
+      | OpenApiSchema<'org.example.knockin.dto.BoardDetailDto$Response$FileDetailDto'>
+      | string
+    )[];
+    mounthRent: number;
+    roomType: number | string;
+    region: number | string;
+    createAt: string;
+    viewer: number;
+    roomOption: number[];
+    writer: string;
+    imageUrl: string;
+    preferences: PreferenceItem[];
+    isAuthStudent: boolean;
+    isAuthEmployee: boolean;
+    isLike: boolean;
+  }>;
 
 /** 매칭 리스트 항목. */
-export type MatchListItem = OpenApiSchema<'org.example.knockin.dto.MatchListDto$Response$Match'>;
+export type MatchListItem = OpenApiSchema<'org.example.knockin.dto.MatchListDto$Response'> &
+  Partial<{
+    userId: number;
+    name: string;
+    deposit: number;
+    mounthRent: number;
+    minDeposit: number;
+    minMounthRent: number;
+    maxDeposit: number;
+    maxMounthRent: number;
+    comeableAt: string;
+    roomType: (number | string)[];
+    region: number | string;
+  }>;
 
-export type MatchListData = OpenApiSchema<'org.example.knockin.dto.MatchListDto$Response'>;
+type MatchListPageData =
+  OpenApiSchema<'org.springframework.data.domain.SliceOrg.example.knockin.dto.MatchListDto$Response'>;
+
+export type MatchListData = Partial<MatchListPageData> & {
+  matches?: MatchListItem[];
+};
 
 /** 매칭 상세. */
-export type MatchDetailData = OpenApiSchema<'org.example.knockin.dto.MatchDetailDto$Response'>;
+export type MatchDetailData = OpenApiSchema<'org.example.knockin.dto.MatchDetailDto$Response'> &
+  Partial<{
+    name: string;
+    minDeposit: number;
+    maxDeposit: number;
+    deposit: number;
+    minMounthRent: number;
+    maxMounthRent: number;
+    mounthRent: number;
+    region: number | string;
+    roomOption: number[];
+    comeableAt: string;
+    preferences: PreferenceItem[];
+    isAuthStudent: boolean;
+    isAuthEmployee: boolean;
+  }>;
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
@@ -259,15 +357,18 @@ export async function getRoommateBoards(
   query: BoardListQuery = {},
 ): Promise<ApiResponse<BoardListData>> {
   if (USE_MOCK) return mockOk({ boards: MOCK_BOARDS });
-  const res = await request<BoardListData>('GET', '/roommate/boards', {
+  const { region, type, ...restQuery } = query;
+  const res = await request<BoardListPageData>('GET', '/roommate/boards', {
     query: {
       page: 0,
       size: 20,
-      ...query,
+      ...restQuery,
+      regionIds: region === undefined ? undefined : [region],
+      roomTypeIds: type === undefined ? undefined : [type],
     },
   });
-  if (res.status !== 200 || res.error || !res.data?.boards?.length) return res;
-  return { ...res, data: await hydrateBoardListData(res.data) };
+  if (res.status !== 200 || res.error || !res.data) return { ...res, data: { boards: [] } };
+  return { ...res, data: pageToBoardListData(res.data) };
 }
 
 /** GET /roommate/boards/{boardId} — 게시글 상세 조회 */
@@ -279,7 +380,10 @@ export function getRoommateBoardDetail(boardId: string): Promise<ApiResponse<Boa
 /** GET /roommate/matches — 매칭 리스트 탐색 */
 export function getRoommateMatches(): Promise<ApiResponse<MatchListData>> {
   if (USE_MOCK) return mockOk({ matches: MOCK_MATCHES });
-  return request('GET', '/roommate/matches');
+  return request<MatchListPageData>('GET', '/roommate/matches').then((res) => ({
+    ...res,
+    data: sliceToMatchListData(res.data),
+  }));
 }
 
 /** GET /roommate/matches/{userId} — 매칭 상세 조회 */
@@ -297,7 +401,10 @@ export function toggleBoardLike(body: BoardLikeRequest): Promise<ApiResponse<Upd
 /** POST /roommate/boards — 게시글 등록 */
 export function createRoommateBoard(body: BoardWriteRequest): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
-  return request('POST', '/roommate/boards', { body });
+  return request('POST', '/roommate/boards', {
+    body: boardWriteRequestToFormData(body, 'create'),
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 }
 
 /** PUT /roommate/boards/{boardId} — 게시글 수정 */
@@ -306,7 +413,10 @@ export function updateRoommateBoard(
   body: BoardWriteRequest,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
-  return request('PUT', `/roommate/boards/${boardId}`, { body });
+  return request('PUT', `/roommate/boards/${boardId}`, {
+    body: boardWriteRequestToFormData(body, 'update'),
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 }
 
 /** DELETE /roommate/boards/{boardId} — 게시글 삭제 */
@@ -324,44 +434,122 @@ export function reportRoommateBoard(
   return request('POST', `/roommate/boards/${boardId}/reports`, { body });
 }
 
-export async function hydrateBoardListData(data: BoardListData): Promise<BoardListData> {
-  const boards = (data.boards ?? []) as BoardListItem[];
-  if (!boards.length) return data;
-
-  const hydrated = await Promise.all(
-    boards.map(async (board) => {
-      if (!board.boardId) return board;
-      const detail = USE_MOCK
-        ? await mockOk({
-            ...MOCK_BOARD_DETAIL,
-            boardId: board.boardId,
-            images: board.image ? [board.image] : MOCK_BOARD_DETAIL.images,
-            title: board.title ?? MOCK_BOARD_DETAIL.title,
-          })
-        : await request<BoardDetailData>('GET', `/roommate/boards/${board.boardId}`);
-      if (detail.status !== 200 || detail.error || !detail.data) return board;
-      return detailToBoardListItem(detail.data, board);
-    }),
-  );
-
-  return { ...data, boards: hydrated };
+function pageToBoardListData(data: BoardListPageData): BoardListData {
+  const boards = (data.content ?? []).map(normalizeBoardListItem);
+  return { ...data, boards };
 }
 
-function detailToBoardListItem(detail: BoardDetailData, base: BoardListItem): BoardListItem {
-  const liked =
-    'isLike' in detail && typeof detail.isLike === 'boolean' ? detail.isLike : base.isLike;
+function normalizeBoardListItem(item: BoardListItemSwagger): BoardListItem {
+  const boardId = item.id;
+  const image = item.imageUrl;
+  const mounthRent = item.monthlyRent;
+  const roomType = firstValue(item.roomTypes);
+  const region = item.regionFullName;
+  const writer = item.memberName;
+  const createAt = item.comeableDate;
+  const viewer = item.hits;
   return {
-    ...base,
-    boardId: detail.boardId ?? base.boardId,
-    image: base.image ?? detail.images?.[0],
-    title: detail.title ?? base.title,
-    deposit: detail.deposit,
-    mounthRent: detail.mounthRent,
-    roomType: detail.roomType,
-    region: detail.region,
-    createAt: detail.createAt,
-    viewer: detail.viewer,
-    writer: detail.writer,
-    isLike: liked,
+    ...item,
+    boardId,
+    image,
+    mounthRent,
+    roomType,
+    region,
+    writer,
+    createAt,
+    viewer,
+    isNew: hasValue(item.badges, 'NEW'),
+    isPopular: hasValue(item.badges, 'HOT'),
   };
+}
+
+function sliceToMatchListData(data: MatchListPageData): MatchListData {
+  const matches = (data.content ?? []).map(normalizeMatchListItem);
+  return { ...data, matches };
+}
+
+function normalizeMatchListItem(
+  item: OpenApiSchema<'org.example.knockin.dto.MatchListDto$Response'>,
+): MatchListItem {
+  const offer = item.offerProfile;
+  const seeker = item.seekerProfile;
+  return {
+    ...item,
+    userId: item.memberId,
+    name: item.memberName,
+    deposit: offer?.deposit,
+    mounthRent: offer?.monthlyRent,
+    minDeposit: seeker?.minDeposit,
+    maxDeposit: seeker?.maxDeposit,
+    minMounthRent: seeker?.minMonthlyRent,
+    maxMounthRent: seeker?.maxMonthlyRent,
+    roomType: offer?.roomTypeName ? [offer.roomTypeName] : seeker?.roomTypeNames,
+    region: offer?.regionFullName ?? seeker?.regionFullNames?.[0],
+  };
+}
+
+function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | 'update'): FormData {
+  const images = body.images ?? [];
+  const files = images
+    .map((image, index) => ({
+      image,
+      index,
+      uri: image.uri ?? image.image,
+      thumbnail: image.thumbnail ?? image.thumnail ?? index === 0,
+    }))
+    .filter((entry) => entry.uri && !entry.uri.startsWith('http'));
+  const requestBody =
+    mode === 'create'
+      ? {
+          title: body.title,
+          contents: body.contents,
+          deposit: body.deposit,
+          mountlyRent: body.mountlyRent ?? body.monthlyRent ?? 0,
+          managementCost: body.managementCost,
+          roomTypeId: body.roomTypeId ?? body.roomType ?? 0,
+          regionId: body.regionId ?? body.region ?? 0,
+          comeableDateNegotiable: body.comeableDateNegotiable ?? false,
+          comeableDate: body.comeableDate ?? body.comeableAt,
+          images: files.map((entry) => ({
+            fileIndex: entry.index,
+            thumbnail: entry.thumbnail,
+          })),
+        }
+      : {
+          title: body.title,
+          contents: body.contents,
+          deposit: body.deposit,
+          monthlyRent: body.monthlyRent ?? body.mountlyRent ?? 0,
+          managementCost: body.managementCost,
+          roomTypeId: body.roomTypeId ?? body.roomType ?? 0,
+          regionId: body.regionId ?? body.region ?? 0,
+          comeableDateNegotiable: body.comeableDateNegotiable ?? false,
+          comeableDate: body.comeableDate ?? body.comeableAt,
+          deleteExtraOptionIds: [],
+          newExtraOptionIds: body.roomOption ?? [],
+          existingImages: body.existingImages ?? [],
+          newImages: files.map((entry) => ({
+            fileIndex: entry.index,
+            thumbnail: entry.thumbnail,
+          })),
+        };
+
+  const formData = new FormData();
+  formData.append('request', JSON.stringify(requestBody));
+  for (const { uri, image, index } of files) {
+    formData.append('files', {
+      uri,
+      name: image.name ?? `board-${index + 1}.jpg`,
+      type: image.type ?? 'image/jpeg',
+    } as any);
+  }
+  return formData;
+}
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function hasValue(value: string | string[] | undefined, expected: string): boolean {
+  return Array.isArray(value) ? value.includes(expected) : value === expected;
 }

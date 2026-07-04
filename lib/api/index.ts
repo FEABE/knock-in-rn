@@ -20,6 +20,8 @@ export * from './mappers';
 export * from './use-async';
 export * from './use-roommate';
 export * from './use-chat';
+export * from './use-support';
+export * from './use-account';
 
 export * from './auth';
 export * from './profile';

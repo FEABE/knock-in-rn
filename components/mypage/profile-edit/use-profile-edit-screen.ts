@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
 import type { RangeValue } from '@/components/ui/headless';
 import {
   compactNumbers,
+  getProfileAll,
+  labelForRoomTypeId,
   LIFESTYLE_BACKEND_IDS,
   LIFESTYLE_CHOICE_BACKEND_IDS,
   ROOM_TYPE_BACKEND_IDS,
@@ -99,6 +101,42 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
   const [roomTypes, setRoomTypes] = useState<string[]>(['원룸']);
   const moveText = '2025.06.01';
 
+  useEffect(() => {
+    let mounted = true;
+    getProfileAll().then((res) => {
+      if (!mounted || res.error || res.status !== 200 || !res.data) return;
+      const data = res.data;
+      const nextScales: Record<string, number> = {};
+      let nextSmoking: string | null = null;
+      let nextPet: string | null = null;
+      for (const item of data.lifestyles ?? []) {
+        const key = lifestyleKeyFromBackendId(item.lifestyleId);
+        if (key && item.value !== undefined) {
+          const value = Number(item.value);
+          if (Number.isFinite(value)) nextScales[key] = value;
+        }
+        nextSmoking = nextSmoking ?? smokingFromBackendId(item.lifestyleId);
+        nextPet = nextPet ?? petFromBackendId(item.lifestyleId);
+      }
+      if (Object.keys(nextScales).length > 0) setScales(nextScales);
+      if (nextSmoking) setSmoking(nextSmoking);
+      if (nextPet) setPet(nextPet);
+      if (data.type) setHasRoom(data.type === 'OFFER');
+      setDeposit([data.minDeposit ?? data.deposit ?? 0, data.maxDeposit ?? data.deposit ?? 500]);
+      setRent([
+        data.minMounthRent ?? data.mounthRent ?? 0,
+        data.maxMounthRent ?? data.mounthRent ?? 50,
+      ]);
+      const labels = (data.roomProfile ?? [])
+        .map((item) => labelForRoomTypeId(item.roomProfileId))
+        .filter((label) => label !== '-');
+      if (labels.length > 0) setRoomTypes(labels);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const saveLifestyle = async () => {
     const res = await updateProfileLifestyle({
       lifestyles: compactNumbers([
@@ -154,6 +192,28 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     saveLifestyle,
     saveRoom,
   };
+}
+
+function lifestyleKeyFromBackendId(id: number | undefined): string | null {
+  if (id === undefined) return null;
+  const scale = Object.entries(LIFESTYLE_BACKEND_IDS).find(([, value]) => value === id);
+  if (scale) return scale[0];
+  return null;
+}
+
+function smokingFromBackendId(id: number | undefined): string | null {
+  if (id === undefined) return null;
+  return (
+    Object.entries(LIFESTYLE_CHOICE_BACKEND_IDS.smoking).find(([, value]) => value === id)?.[0] ??
+    null
+  );
+}
+
+function petFromBackendId(id: number | undefined): string | null {
+  if (id === undefined) return null;
+  return (
+    Object.entries(LIFESTYLE_CHOICE_BACKEND_IDS.pet).find(([, value]) => value === id)?.[0] ?? null
+  );
 }
 
 function toRoomType(label: string): RoomType {

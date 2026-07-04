@@ -13,11 +13,12 @@ import {
 
 import type { UseChatRoomReturn } from '@/components/ui/headless/chat-room/use-chat-room';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
-import type { UserSummary } from '@/lib/domain';
+import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
 import type { UseChatRoomScreenReturn } from './use-chat-room-screen';
 
-export type ChatRoomScreenViewProps = UseChatRoomScreenReturn & {
+export type ChatRoomScreenViewProps = Omit<UseChatRoomScreenReturn, 'room'> & {
+  room: DomainChatRoom;
   chat: UseChatRoomReturn;
 };
 
@@ -31,7 +32,6 @@ export function ChatRoomScreenView({
   openRequestSheet,
   closeRequestSheet,
   confirmRequest,
-  acceptAsDemo,
   handleSend,
   onMessagesChanged,
 }: ChatRoomScreenViewProps) {
@@ -53,7 +53,6 @@ export function ChatRoomScreenView({
         matched={chat.matched}
         requestSent={requestSent}
         onOpenRequestSheet={openRequestSheet}
-        onAcceptAsDemo={() => acceptAsDemo(chat.requestMatch)}
       />
 
       <ScrollView
@@ -152,9 +151,12 @@ function ChatHeader({
       <AvatarInitial name={peer.name} />
       <View className="flex-1 flex-row items-center gap-2">
         <Text className="text-base font-semibold text-neutral-900">{peer.name}</Text>
-        <Text className="text-xs text-neutral-400">
-          {peer.age}세 · {peer.gender === 'female' ? '여성' : '남성'}
-        </Text>
+        {peer.age > 0 ? (
+          <Text className="text-xs text-neutral-400">
+            {peer.age}세 ·{' '}
+            {peer.gender === 'female' ? '여성' : peer.gender === 'male' ? '남성' : '기타'}
+          </Text>
+        ) : null}
         {matched ? (
           <View className="rounded bg-emerald-50 px-1.5 py-0.5">
             <Text className="text-[10px] text-emerald-700">룸메이트 확정</Text>
@@ -176,12 +178,10 @@ function RequestBanner({
   matched,
   requestSent,
   onOpenRequestSheet,
-  onAcceptAsDemo,
 }: {
   matched: boolean;
   requestSent: boolean;
   onOpenRequestSheet: () => void;
-  onAcceptAsDemo: () => void;
 }) {
   if (matched) {
     return (
@@ -199,12 +199,6 @@ function RequestBanner({
           <Text className="text-sm font-medium text-[#256EF4]">룸메이트 요청을 보냈어요</Text>
           <Text className="text-xs text-[#256EF4]">상대가 수락하면 매칭이 완료돼요</Text>
         </View>
-        <Pressable
-          onPress={onAcceptAsDemo}
-          className="rounded-full bg-white px-4 py-2 active:opacity-90"
-        >
-          <Text className="text-xs font-semibold text-[#256EF4]">수락으로 보기</Text>
-        </Pressable>
       </View>
     );
   }
@@ -293,7 +287,7 @@ function RoommateRequestModal({
           <View className="gap-2 rounded-lg bg-[#256EF4]/10 p-4">
             <Text className="text-sm font-semibold text-[#256EF4]">제안 후 상태</Text>
             <Text className="text-xs leading-5 text-[#256EF4]/80">
-              채팅 상단에 요청 대기 배너가 표시되고, 데모에서는 수락 상태를 바로 확인할 수 있어요.
+              채팅 상단에 요청 대기 배너가 표시되고, 상대가 수락하면 매칭 상태로 변경돼요.
             </Text>
           </View>
 

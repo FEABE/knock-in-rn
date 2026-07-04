@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import { useMemo, useState } from 'react';
 
+import { useAccountActions } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import { goExplore } from '@/lib/navigation/routes';
 
@@ -14,6 +15,7 @@ export type UseWithdrawScreenReturn = {
   reasons: WithdrawReason[];
   selectedReasonIds: Set<string>;
   canSubmit: boolean;
+  submitting: boolean;
   onBack: () => void;
   toggleReason: (id: string) => void;
   submit: () => void;
@@ -22,6 +24,7 @@ export type UseWithdrawScreenReturn = {
 export function useWithdrawScreen(): UseWithdrawScreenReturn {
   const router = useRouter();
   const { signOut } = useSession();
+  const { requestWithdraw, withdrawing } = useAccountActions();
   const [selectedReasonIds, setSelectedReasonIds] = useState<Set<string>>(new Set());
 
   const reasons = useMemo<WithdrawReason[]>(
@@ -45,11 +48,23 @@ export function useWithdrawScreen(): UseWithdrawScreenReturn {
 
   const submit = () => {
     if (selectedReasonIds.size === 0) return;
-    Alert.alert('탈퇴 신청 완료', '데모 모드에서는 세션만 로그아웃 처리돼요.', [
+    Alert.alert('탈퇴하기', '계정과 프로필을 삭제할까요?', [
+      { text: '취소', style: 'cancel' },
       {
-        text: '확인',
-        onPress: () => {
+        text: '탈퇴',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await requestWithdraw();
+          } catch (error) {
+            Alert.alert(
+              '탈퇴 실패',
+              error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.',
+            );
+            return;
+          }
           signOut();
+          Alert.alert('탈퇴 완료', '계정이 삭제되었어요.');
           goExplore(router, 'replace');
         },
       },
@@ -59,7 +74,8 @@ export function useWithdrawScreen(): UseWithdrawScreenReturn {
   return {
     reasons,
     selectedReasonIds,
-    canSubmit: selectedReasonIds.size > 0,
+    canSubmit: selectedReasonIds.size > 0 && !withdrawing,
+    submitting: withdrawing,
     onBack: () => router.back(),
     toggleReason,
     submit,

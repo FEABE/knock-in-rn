@@ -1,6 +1,4 @@
-import { useMemo } from 'react';
-
-import { NOTICES } from '@/lib/domain';
+import { useSupportNotices } from '@/lib/api';
 
 export type NoticeListItem = {
   id: string;
@@ -11,25 +9,16 @@ export type NoticeListItem = {
 
 export type UseNoticeScreenReturn = {
   notices: NoticeListItem[];
+  loading: boolean;
+  error: string | null;
 };
 
 export function useNoticeScreen(): UseNoticeScreenReturn {
-  const notices = useMemo<NoticeListItem[]>(
-    () =>
-      NOTICES.map((notice) => ({
-        id: notice.id,
-        title: notice.title,
-        body: notice.body,
-        dateLabel: fmtDate(notice.createdAt),
-      })),
-    [],
-  );
+  const { data, loading, error } = useSupportNotices();
 
-  return { notices };
-}
-
-function fmtDate(d: Date): string {
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate(),
-  ).padStart(2, '0')}`;
+  return {
+    notices: data ?? [],
+    loading,
+    error,
+  };
 }

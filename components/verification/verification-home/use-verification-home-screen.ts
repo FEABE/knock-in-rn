@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
+import { getVerifications, useApi } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import { goVerificationCompany, goVerificationSchool } from '@/lib/navigation/routes';
 
@@ -23,8 +24,11 @@ export type UseVerificationHomeScreenReturn = {
 export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
   const router = useRouter();
   const { session } = useSession();
-  const schoolVerified = session?.user.badges.some((badge) => badge.kind === 'school') ?? false;
-  const companyVerified = session?.user.badges.some((badge) => badge.kind === 'company') ?? false;
+  const { data } = useApi(['profile', 'verifications'], () => getVerifications(), {
+    enabled: !!session,
+  });
+  const schoolVerified = data?.studentAuth?.isAccepted === 'true';
+  const companyVerified = data?.employeeAuth?.isAccepted === 'true';
 
   const cards = useMemo<VerificationHomeCard[]>(
     () => [
