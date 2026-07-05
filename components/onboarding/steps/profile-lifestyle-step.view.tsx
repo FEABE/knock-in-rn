@@ -2,28 +2,23 @@ import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { SegmentedControl } from '@/components/ui/headless';
-import type { PetPolicy, Smoking } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import { ScaleSlider } from '../scale-slider';
-import {
-  PET_OPTIONS,
-  SCALES,
-  SMOKING_OPTIONS,
-  type UseProfileLifestyleStepReturn,
-} from './use-profile-lifestyle-step';
+import { type UseProfileLifestyleStepReturn } from './use-profile-lifestyle-step';
 
 export type ProfileLifestyleStepViewProps = UseProfileLifestyleStepReturn;
 
 export function ProfileLifestyleStepView({
-  profile,
   scales,
+  choiceValues,
+  scaleOptions,
+  choiceGroups,
   submitting,
   submitError,
   canProceed,
   setScale,
-  setSmoking,
-  setPet,
+  setChoice,
   onScaleComplete,
   onNext,
 }: ProfileLifestyleStepViewProps) {
@@ -37,13 +32,13 @@ export function ProfileLifestyleStepView({
         </View>
 
         <View className="gap-3">
-          {SCALES.map((s) => {
+          {scaleOptions.map((s) => {
             const v = scales[s.key] ?? 3;
             return (
               <View key={s.key} className="rounded-2xl bg-neutral-50 p-4">
                 <ScaleSlider
                   label={s.label}
-                  valueLabel={s.levels[v - 1]}
+                  valueLabel={s.levels[v - 1] ?? s.levels[0] ?? ''}
                   minLabel={s.minLabel}
                   maxLabel={s.maxLabel}
                   value={scales[s.key] ?? null}
@@ -55,29 +50,19 @@ export function ProfileLifestyleStepView({
           })}
         </View>
 
-        <Pill label="흡연">
-          <SegmentedControl<Smoking>
-            options={SMOKING_OPTIONS as unknown as { value: Smoking; label: string }[]}
-            value={profile.lifestyle.smoking ?? null}
-            onValueChange={setSmoking}
-            className="flex-row gap-2"
-            renderItem={({ option, selected }) => (
-              <Choice label={option.label} selected={selected} />
-            )}
-          />
-        </Pill>
-
-        <Pill label="반려동물">
-          <SegmentedControl<PetPolicy>
-            options={PET_OPTIONS as unknown as { value: PetPolicy; label: string }[]}
-            value={profile.lifestyle.pet ?? null}
-            onValueChange={setPet}
-            className="flex-row gap-2"
-            renderItem={({ option, selected }) => (
-              <Choice label={option.label} selected={selected} />
-            )}
-          />
-        </Pill>
+        {choiceGroups.map((group) => (
+          <Pill key={group.key} label={group.label}>
+            <SegmentedControl<string>
+              options={group.options}
+              value={choiceValues[group.key] ?? null}
+              onValueChange={(value) => setChoice(group.key, value)}
+              className="flex-row gap-2"
+              renderItem={({ option, selected }) => (
+                <Choice label={option.label} selected={selected} />
+              )}
+            />
+          </Pill>
+        ))}
       </ScrollView>
 
       {submitError ? (

@@ -29,6 +29,7 @@ export function ChatRoomScreenView({
   requestSheetVisible,
   chat,
   onBack,
+  onLeave,
   openRequestSheet,
   closeRequestSheet,
   confirmRequest,
@@ -47,7 +48,7 @@ export function ChatRoomScreenView({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       className="flex-1"
     >
-      <ChatHeader peer={room.peer} matched={chat.matched} onBack={onBack} />
+      <ChatHeader peer={room.peer} matched={chat.matched} onBack={onBack} onLeave={onLeave} />
 
       <RequestBanner
         matched={chat.matched}
@@ -123,7 +124,7 @@ export function ChatRoomScreenView({
 export function ChatRoomBlockedView({ peer, onBack }: { peer: UserSummary; onBack: () => void }) {
   return (
     <View className="flex-1 bg-white">
-      <ChatHeader peer={peer} matched={false} onBack={onBack} />
+      <ChatHeader peer={peer} matched={false} onBack={onBack} onLeave={onBack} />
       <View className="flex-1 items-center justify-center gap-3 p-10">
         <Text className="text-base text-neutral-500">차단한 사용자에요</Text>
         <Text className="text-center text-xs leading-5 text-neutral-400">
@@ -138,10 +139,12 @@ function ChatHeader({
   peer,
   matched,
   onBack,
+  onLeave,
 }: {
   peer: UserSummary;
   matched: boolean;
   onBack: () => void;
+  onLeave: () => void;
 }) {
   return (
     <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
@@ -167,7 +170,7 @@ function ChatHeader({
           </View>
         )}
       </View>
-      <Pressable className="h-9 w-9 items-center justify-center">
+      <Pressable onPress={onLeave} className="h-9 w-9 items-center justify-center">
         <Ionicons name="ellipsis-horizontal" size={20} color="#A3A3A3" />
       </Pressable>
     </View>

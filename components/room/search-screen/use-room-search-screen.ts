@@ -1,26 +1,7 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-const INITIAL_RECENT = [
-  '마포구 원룸',
-  '서대문구 즉시입주',
-  '신촌 쉐어하우스',
-  '홍대 비흡연',
-  '강남역 오피스텔',
-  '연남동 빌라 여성만',
-  '풀옵션 투룸',
-];
-
-export const POPULAR_ROOM_SEARCH_TERMS = [
-  '즉시입주',
-  '마포구 원룸',
-  '서대문구',
-  '쉐어하우스',
-  '풀옵션',
-  '비흡연',
-  '여성만',
-  '홍대 근처',
-];
+import { getPopularSearch, useApi } from '@/lib/api';
 
 export type UseRoomSearchScreenReturn = {
   query: string;
@@ -37,7 +18,15 @@ export type UseRoomSearchScreenReturn = {
 export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [recent, setRecent] = useState<string[]>(INITIAL_RECENT);
+  const [recent, setRecent] = useState<string[]>([]);
+  const { data: popularData } = useApi(['search', 'popular'], () => getPopularSearch());
+  const popular = useMemo(
+    () =>
+      popularData?.rank
+        ?.map((item) => item.keyword)
+        .filter((keyword): keyword is string => Boolean(keyword)) ?? [],
+    [popularData],
+  );
 
   const submit = (term: string) => {
     const trimmed = term.trim();
@@ -49,7 +38,7 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
   return {
     query,
     recent,
-    popular: POPULAR_ROOM_SEARCH_TERMS,
+    popular,
     setQuery,
     clearQuery: () => setQuery(''),
     clearRecent: () => setRecent([]),

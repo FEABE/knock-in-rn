@@ -1,18 +1,12 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
-import type { RoomOption, UserSummary } from '@/lib/domain';
-import { REGIONS, ROOM_TYPES, type Region } from '@/lib/onboarding';
+import { useRegionOptions, useRoomAddOptionOptions, useRoomTypeOptions } from '@/lib/api';
+import type { UserSummary } from '@/lib/domain';
+import type { Region } from '@/lib/onboarding';
 
 import type { UseRoomPostFormReturn } from './use-room-post-form';
-
-const OPTION_LIST: { value: RoomOption; label: string }[] = [
-  { value: 'full-option', label: '풀옵션' },
-  { value: 'parking', label: '주차 가능' },
-  { value: 'elevator', label: '엘리베이터' },
-  { value: 'pet', label: '반려동물 가능' },
-];
 
 const MAX_PHOTOS = 10;
 const PHOTO_SLOTS = 4;
@@ -44,6 +38,9 @@ export function RoomPostFormView({
   toggleProfileInfo,
   submit,
 }: RoomPostFormViewProps) {
+  const roomTypes = useRoomTypeOptions();
+  const roomOptions = useRoomAddOptionOptions(mode === 'edit');
+
   return (
     <>
       <ScrollView contentContainerClassName="gap-6 p-5 pb-28">
@@ -119,7 +116,7 @@ export function RoomPostFormView({
 
         <Section title="룸 형태" badge={mode === 'edit' ? '프로필 값' : undefined}>
           <View className="flex-row flex-wrap gap-2">
-            {ROOM_TYPES.map((rt) => {
+            {roomTypes.options.map((rt) => {
               const selected = draft.roomType === rt.value;
               return (
                 <Pressable
@@ -159,30 +156,36 @@ export function RoomPostFormView({
           </View>
         </Section>
 
-        <Section title="옵션 (복수 선택)">
-          <View className="flex-row flex-wrap gap-2">
-            {OPTION_LIST.map((o) => {
-              const selected = draft.options.includes(o.value);
-              return (
-                <Pressable
-                  key={o.value}
-                  onPress={() => toggleOption(o.value)}
-                  className={`rounded-full border px-3 py-1.5 active:opacity-80 ${
-                    selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
-                  }`}
-                >
-                  <Text
-                    className={
-                      selected ? 'text-xs font-medium text-[#256EF4]' : 'text-xs text-neutral-700'
-                    }
+        {mode === 'edit' && roomOptions.options.length > 0 ? (
+          <Section title="옵션 (복수 선택)">
+            <View className="flex-row flex-wrap gap-2">
+              {roomOptions.options.map((o) => {
+                const selected = draft.options.includes(o.value);
+                return (
+                  <Pressable
+                    key={o.value}
+                    onPress={() => toggleOption(o.value)}
+                    className={`rounded-full border px-3 py-1.5 active:opacity-80 ${
+                      selected
+                        ? 'border-[#256EF4] bg-[#256EF4]/10'
+                        : 'border-neutral-200 bg-white'
+                    }`}
                   >
-                    {o.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Section>
+                    <Text
+                      className={
+                        selected
+                          ? 'text-xs font-medium text-[#256EF4]'
+                          : 'text-xs text-neutral-700'
+                      }
+                    >
+                      {o.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Section>
+        ) : null}
 
         <Section title="게시글 내용">
           <TextField
@@ -406,11 +409,14 @@ function RegionTable({
   selected: Region | null;
   onSelect: (r: Region) => void;
 }) {
-  const cities = ['서울', '경기', '인천'];
-  const byCity = cities.map((c) => ({
-    city: c,
-    districts: REGIONS.filter((r) => r.city === c).slice(0, 4),
-  }));
+  const regions = useRegionOptions();
+  const [activeCity, setActiveCity] = useState<string | null>(regions.cities[0]?.id ?? null);
+
+  useEffect(() => {
+    if (!activeCity && regions.cities[0]) setActiveCity(regions.cities[0].id);
+  }, [activeCity, regions.cities]);
+
+  const districts = activeCity ? regions.getChildren(activeCity) : [];
 
   return (
     <View className="rounded-xl border border-neutral-200">
@@ -425,21 +431,30 @@ function RegionTable({
           <Text className="text-center text-[11px] text-neutral-500">동</Text>
         </View>
       </View>
-      {byCity.map((row) => (
-        <View key={row.city} className="flex-row border-b border-neutral-50">
-          <View className="flex-1 items-center justify-center py-3">
-            <Text
-              className={
-                selected?.city === row.city
-                  ? 'text-sm font-semibold text-[#256EF4]'
-                  : 'text-sm text-neutral-700'
-              }
+      <View className="flex-row border-b border-neutral-50">
+        <View className="flex-1 py-2">
+          {regions.cities.map((city) => (
+            <Pressable
+              key={city.id}
+              onPress={() => setActiveCity(city.id)}
+              className="items-center py-1.5"
             >
-              {row.city}
-            </Text>
-          </View>
-          <View className="flex-1 gap-1 py-2">
-            {row.districts.map((r) => (
+              <Text
+                className={
+                  activeCity === city.id
+                    ? 'text-sm font-semibold text-[#256EF4]'
+                    : 'text-sm text-neutral-700'
+                }
+              >
+                {city.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <View className="flex-1 gap-1 py-2">
+          {districts.map((option) => {
+            const r = option.region;
+            return (
               <Pressable key={r.id} onPress={() => onSelect(r)} className="items-center py-0.5">
                 <Text
                   className={
@@ -451,13 +466,13 @@ function RegionTable({
                   {r.district}
                 </Text>
               </Pressable>
-            ))}
-          </View>
-          <View className="flex-1 items-center justify-center py-3">
-            <Text className="text-xs text-neutral-400">—</Text>
-          </View>
+            );
+          })}
         </View>
-      ))}
+        <View className="flex-1 items-center justify-center py-3">
+          <Text className="text-xs text-neutral-400">—</Text>
+        </View>
+      </View>
     </View>
   );
 }

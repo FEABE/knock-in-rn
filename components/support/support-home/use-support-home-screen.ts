@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
 import { useSupportCounts } from '@/lib/api';
+import { useRequireLogin } from '@/lib/auth';
 import {
   goSupportFaq,
   goSupportInquiries,
@@ -24,7 +25,8 @@ export type UseSupportHomeScreenReturn = {
 
 export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
   const router = useRouter();
-  const { data: counts, loading } = useSupportCounts();
+  const { session, requireLogin } = useRequireLogin();
+  const { data: counts, loading } = useSupportCounts(Boolean(session));
 
   const actions = useMemo<SupportHomeAction[]>(
     () => [
@@ -44,16 +46,31 @@ export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
         icon: 'chatbox-ellipses-outline',
         title: '문의내역',
         description: loading ? '불러오는 중' : `${counts?.inquiryCount ?? 0}건의 문의`,
-        onPress: () => goSupportInquiries(router),
+        onPress: () =>
+          requireLogin(() => goSupportInquiries(router), {
+            title: '로그인 필요',
+            message: '문의내역은 로그인 후 확인할 수 있어요.',
+          }),
       },
       {
         icon: 'create-outline',
         title: '문의하기',
         description: '새 문의를 작성해요',
-        onPress: () => goSupportInquiryNew(router),
+        onPress: () =>
+          requireLogin(() => goSupportInquiryNew(router), {
+            title: '로그인 필요',
+            message: '문의 접수는 로그인 후 이용할 수 있어요.',
+          }),
       },
     ],
-    [counts?.faqCount, counts?.inquiryCount, counts?.noticeCount, loading, router],
+    [
+      counts?.faqCount,
+      counts?.inquiryCount,
+      counts?.noticeCount,
+      loading,
+      requireLogin,
+      router,
+    ],
   );
 
   return {

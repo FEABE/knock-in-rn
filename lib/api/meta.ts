@@ -1,7 +1,7 @@
 /**
  * 도메인 3. 일반/메타데이터
  */
-import { type ApiResponse, mockOk, request, USE_MOCK } from './client';
+import { type ApiResponse, type PageParams, mockOk, request, USE_MOCK } from './client';
 import type { OpenApiSchema } from './openapi-types';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -27,6 +27,12 @@ export type RegionMeta =
 export type RoomAddOption =
   OpenApiSchema<'org.example.knockin.dto.MetaRoomAddOptionsDto$Response$RoomAddOptionItem'>;
 
+export type AppVersionData = OpenApiSchema<'org.example.knockin.dto.AppVersionDto$Response'>;
+export type AuthEmailListData =
+  OpenApiSchema<'org.example.knockin.dto.AuthEmailListDto$Response'>;
+export type FaqListData = OpenApiSchema<'org.example.knockin.dto.FaqListDto$Response'>;
+export type FaqAllListData = OpenApiSchema<'org.example.knockin.dto.FaqAllListDto$Response'>;
+export type FaqDetail = OpenApiSchema<'org.example.knockin.dto.FaqDto$Response'>;
 export type TermsListData = OpenApiSchema<'org.example.knockin.dto.TermsListDto$Response'>;
 export type PopularSearchData = OpenApiSchema<'org.example.knockin.dto.PopularSearchDto$Response'>;
 export type LifestylePatternsData =
@@ -39,10 +45,8 @@ export type RoomAddOptionsData =
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
 const MOCK_TERMS: TermSummary[] = [
-  { id: 1, title: '서비스 이용약관 (필수)' },
-  { id: 2, title: '개인정보 처리방침 (필수)' },
-  { id: 3, title: '마케팅 정보 수신 (선택)' },
-  { id: 4, title: '위치기반 서비스 (선택)' },
+  { id: 1, title: '서비스 이용약관' },
+  { id: 4, title: '개인정보 처리방침' },
 ];
 
 const MOCK_POPULAR: PopularKeyword[] = [
@@ -56,20 +60,32 @@ const MOCK_POPULAR: PopularKeyword[] = [
 const MOCK_LIFESTYLE_PATTERNS: LifestylePattern[] = [
   {
     id: 1,
-    name: '취침 패턴',
+    name: '청소 깔끔도',
     type: 'SCALE',
     details: [
-      { values: 'early', description: '일찍 자요 (~23시)' },
-      { values: 'late', description: '늦게 자요 (01시~)' },
+      { values: '1', description: '자주 안함' },
+      { values: '2', description: '종종 안함' },
+      { values: '3', description: '보통' },
+      { values: '4', description: '깔끔함' },
+      { values: '5', description: '매우 깔끔함' },
     ],
   },
   {
     id: 2,
-    name: '청결',
-    type: 'SCALE',
+    name: '흡연 여부',
+    type: 'SINGLE_CHOICE',
     details: [
-      { values: 'high', description: '매우 깔끔' },
-      { values: 'mid', description: '보통' },
+      { values: '1', description: '흡연자' },
+      { values: '2', description: '비흡연자' },
+    ],
+  },
+  {
+    id: 3,
+    name: 'MBTI 성향',
+    type: 'SINGLE_CHOICE',
+    details: [
+      { values: '1', description: '내향형' },
+      { values: '2', description: '외향형' },
     ],
   },
 ];
@@ -77,20 +93,38 @@ const MOCK_LIFESTYLE_PATTERNS: LifestylePattern[] = [
 const MOCK_ROOM_TYPES: RoomTypeMeta[] = [
   { id: 1, name: '원룸' },
   { id: 2, name: '투룸' },
-  { id: 3, name: '쓰리룸 이상' },
+  { id: 3, name: '쓰리룸+' },
   { id: 4, name: '오피스텔' },
-  { id: 5, name: '셰어하우스' },
-  { id: 6, name: '아파트' },
-  { id: 7, name: '빌라' },
+  { id: 5, name: '아파트' },
 ];
 
 const MOCK_REGIONS: RegionMeta[] = [
-  { id: 1, name: '서울', parentId: 0 },
-  { id: 2, name: '마포구', parentId: 1 },
+  { id: 1, name: '서울특별시' },
+  { id: 2, name: '경기도' },
   { id: 3, name: '강남구', parentId: 1 },
-  { id: 4, name: '성동구', parentId: 1 },
-  { id: 5, name: '경기', parentId: 0 },
-  { id: 6, name: '성남시', parentId: 5 },
+  { id: 4, name: '마포구', parentId: 1 },
+  { id: 5, name: '송파구', parentId: 1 },
+  { id: 6, name: '서초구', parentId: 1 },
+  { id: 7, name: '성동구', parentId: 1 },
+  { id: 8, name: '종로구', parentId: 1 },
+  { id: 9, name: '영등포구', parentId: 1 },
+  { id: 10, name: '용산구', parentId: 1 },
+  { id: 11, name: '수원시 영통구', parentId: 2 },
+  { id: 12, name: '성남시 분당구', parentId: 2 },
+  { id: 13, name: '고양시 일산동구', parentId: 2 },
+  { id: 14, name: '용인시 수지구', parentId: 2 },
+  { id: 15, name: '안양시 동안구', parentId: 2 },
+  { id: 16, name: '부천시', parentId: 2 },
+  { id: 17, name: '남양주시', parentId: 2 },
+  { id: 18, name: '화성시', parentId: 2 },
+  { id: 19, name: '역삼동', parentId: 3 },
+  { id: 20, name: '삼성동', parentId: 3 },
+  { id: 21, name: '청담동', parentId: 3 },
+  { id: 22, name: '논현동', parentId: 3 },
+  { id: 23, name: '서교동', parentId: 4 },
+  { id: 24, name: '합정동', parentId: 4 },
+  { id: 25, name: '망원동', parentId: 4 },
+  { id: 26, name: '연남동', parentId: 4 },
 ];
 
 const MOCK_ROOM_ADD_OPTIONS: RoomAddOption[] = [
@@ -98,6 +132,24 @@ const MOCK_ROOM_ADD_OPTIONS: RoomAddOption[] = [
   { id: 2, name: '풀옵션' },
   { id: 3, name: '엘리베이터' },
   { id: 4, name: '반려동물 가능' },
+];
+
+const MOCK_FAQS: NonNullable<FaqAllListData['faqInfoList']> = [
+  {
+    id: 1,
+    title: '학교/회사 이메일 인증은 얼마나 걸리나요?',
+    contents: '인증 코드를 입력하면 즉시 접수되고, 승인 상태는 인증 화면에서 확인할 수 있어요.',
+  },
+  {
+    id: 2,
+    title: '룸메이트 매칭 요청은 어디서 확인하나요?',
+    contents: '채팅방과 룸메이트 요청 목록에서 확인할 수 있어요.',
+  },
+];
+
+const MOCK_AUTH_EMAILS: NonNullable<AuthEmailListData['authEmailInfoList']> = [
+  { id: 1, domain: 'ac.kr', name: '학교 이메일', type: 'STUDENT' },
+  { id: 2, domain: 'company.com', name: '회사 이메일', type: 'COMPANY' },
 ];
 
 // ─── Client ───────────────────────────────────────────────────────────────────
@@ -147,4 +199,47 @@ export function getRegions(): Promise<ApiResponse<RegionsData>> {
 export function getRoomAddOptions(): Promise<ApiResponse<RoomAddOptionsData>> {
   if (USE_MOCK) return mockOk({ roomAddOption: MOCK_ROOM_ADD_OPTIONS });
   return request('GET', '/meta/room-add-options', { auth: false });
+}
+
+/** GET /meta/app-version — 현재 앱버전 조회 */
+export function getAppVersion(): Promise<ApiResponse<AppVersionData>> {
+  if (USE_MOCK) return mockOk({ id: 1, version: '1.0.0' });
+  return request('GET', '/meta/app-version', { auth: false });
+}
+
+/** GET /meta/auth-email — 인증 이메일 목록 조회 */
+export function getAuthEmails(): Promise<ApiResponse<AuthEmailListData>> {
+  if (USE_MOCK) return mockOk({ authEmailInfoList: MOCK_AUTH_EMAILS });
+  return request('GET', '/meta/auth-email', { auth: false });
+}
+
+/** GET /meta/faq — 자주묻는 질문 목록 조회 */
+export function getFaqs(params: PageParams = {}): Promise<ApiResponse<FaqListData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      faqInfoList: MOCK_FAQS.map(({ id, title, sort }) => ({ id, title, sort })),
+    });
+  }
+  return request('GET', '/meta/faq', {
+    auth: false,
+    query: { page: 0, size: 50, ...params },
+  });
+}
+
+/** GET /meta/faq/{id} — 자주묻는 질문 상세 조회 */
+export function getFaqDetail(id: string): Promise<ApiResponse<FaqDetail>> {
+  if (USE_MOCK) {
+    const faq = MOCK_FAQS.find((item) => String(item.id ?? '') === id) ?? MOCK_FAQS[0];
+    return mockOk(faq);
+  }
+  return request('GET', `/meta/faq/${id}`, { auth: false });
+}
+
+/** GET /meta/faqAll — 자주묻는 질문 목록,상세 조회 */
+export function getFaqAll(params: PageParams = {}): Promise<ApiResponse<FaqAllListData>> {
+  if (USE_MOCK) return mockOk({ faqInfoList: MOCK_FAQS });
+  return request('GET', '/meta/faqAll', {
+    auth: false,
+    query: { page: 0, size: 50, ...params },
+  });
 }

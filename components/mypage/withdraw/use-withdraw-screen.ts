@@ -63,7 +63,7 @@ export function useWithdrawScreen(): UseWithdrawScreenReturn {
             );
             return;
           }
-          signOut();
+          await signOut();
           Alert.alert('탈퇴 완료', '계정이 삭제되었어요.');
           goExplore(router, 'replace');
         },

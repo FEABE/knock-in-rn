@@ -2,8 +2,8 @@
  * API 공통 클라이언트 레이어.
  *
  * 모든 응답은 명세의 `{ status, data, error }` 엔벨로프를 따른다.
- * 현재는 mock 응답을 반환하며, `EXPO_PUBLIC_USE_MOCK=false` + `EXPO_PUBLIC_API_BASE_URL`
- * 설정 시 실제 서버로 전환된다.
+ * `EXPO_PUBLIC_API_BASE_URL` 설정 시 실제 서버로 요청한다.
+ * 테스트 데이터가 필요할 때만 `EXPO_PUBLIC_USE_MOCK=true` 로 mock 응답을 사용한다.
  *
  * 필드명은 서버 명세를 1:1로 따른다. 명세상의 오타(mounthRent, thumnail,
  * createAt, mountlyRent, comeableAt 등)도 그대로 유지한다.
@@ -41,8 +41,8 @@ export type PageParams = {
 const RAW_API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 export const API_BASE_URL = resolveApiBaseUrl(RAW_API_BASE_URL);
 
-/** 기본값은 mock 사용. 실서버 연동 시 EXPO_PUBLIC_USE_MOCK=false 로 끈다. */
-export const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK !== 'false';
+/** 기본값은 실 API 사용. 테스트 데이터가 필요할 때만 EXPO_PUBLIC_USE_MOCK=true 로 켠다. */
+export const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK === 'true';
 
 let accessToken: string | null = null;
 
@@ -125,32 +125,8 @@ apiClient.interceptors.request.use((config) => {
   if (accessToken && !skipAuth) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
-  if (__DEV__) {
-    const url = `${config.baseURL ?? ''}${config.url ?? ''}`;
-    console.log(`[API →] ${config.method?.toUpperCase()} ${url}`, config.data ?? '');
-  }
   return config;
 });
-
-// 개발 중 응답/에러를 터미널에서 바로 보기 위한 로깅.
-apiClient.interceptors.response.use(
-  (res) => {
-    if (__DEV__) {
-      console.log(`[API ←] ${res.status} ${res.config.url}`, res.data);
-    }
-    return res;
-  },
-  (error) => {
-    if (__DEV__) {
-      const status = error.response?.status ?? 'NETWORK';
-      console.log(
-        `[API ✗] ${status} ${error.config?.url ?? ''}`,
-        error.response?.data ?? error.message,
-      );
-    }
-    return Promise.reject(error);
-  },
-);
 
 /**
  * 실제 네트워크 요청 (USE_MOCK=false 일 때 사용).

@@ -64,9 +64,9 @@ export type BoardWriteRequest = Partial<BoardSaveRequest & BoardModifyRequest> &
   newImages?: OpenApiSchema<'org.example.knockin.dto.BoardModifyDto$Request$NewFileDto'>[];
 };
 
-export type BoardLikeRequest = Record<string, number>;
-
 export type BoardReportRequest = OpenApiSchema<'org.example.knockin.dto.ReportDto$Request'>;
+export type MatchReportRequest =
+  OpenApiSchema<'org.example.knockin.dto.MemberReportDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
@@ -130,6 +130,8 @@ export type BoardDetailData = BoardDetailSwagger &
     isAuthEmployee: boolean;
     isLike: boolean;
   }>;
+
+export type BoardEditData = OpenApiSchema<'org.example.knockin.dto.BoardEditDto$Response'>;
 
 /** 매칭 리스트 항목. */
 export type MatchListItem = OpenApiSchema<'org.example.knockin.dto.MatchListDto$Response'> &
@@ -377,6 +379,28 @@ export function getRoommateBoardDetail(boardId: string): Promise<ApiResponse<Boa
   return request('GET', `/roommate/boards/${boardId}`);
 }
 
+/** GET /roommate/boards/{boardId}/edit — 게시글 편집 form */
+export function getRoommateBoardEdit(boardId: string): Promise<ApiResponse<BoardEditData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      images: [{ boardFileId: 1, url: 'https://picsum.photos/seed/p1/600/400' }],
+      title: MOCK_BOARD_DETAIL.title ?? '',
+      deposit: MOCK_BOARD_DETAIL.deposit ?? 0,
+      monthlyRent: MOCK_BOARD_DETAIL.mounthRent ?? 0,
+      managementCost: MOCK_BOARD_DETAIL.managementCost ?? 0,
+      roomType: { roomTypeId: 2, name: '투룸' },
+      region: { regionId: 4, fullName: '서울 마포구' },
+      comeableDate: MOCK_BOARD_DETAIL.comeableDate,
+      comeableDateNegotiable: false,
+      roomExtraOptions: [{ extraOptionId: 1, name: '풀옵션' }],
+      contents: MOCK_BOARD_DETAIL.contents ?? '',
+      lifeStyles: MOCK_BOARD_DETAIL.lifeStyles,
+      conditions: MOCK_BOARD_DETAIL.conditions,
+    });
+  }
+  return request('GET', `/roommate/boards/${boardId}/edit`);
+}
+
 /** GET /roommate/matches — 매칭 리스트 탐색 */
 export function getRoommateMatches(): Promise<ApiResponse<MatchListData>> {
   if (USE_MOCK) return mockOk({ matches: MOCK_MATCHES });
@@ -392,10 +416,16 @@ export function getRoommateMatchDetail(userId: string): Promise<ApiResponse<Matc
   return request('GET', `/roommate/matches/${userId}`);
 }
 
-/** POST /roommate/boards/likes — 게시글 관심(찜) 등록/취소 */
-export function toggleBoardLike(body: BoardLikeRequest): Promise<ApiResponse<UpdatedAt>> {
+/** POST /roommate/matches/{memberId}/likes — 매칭 사용자 관심(찜) 등록/취소 */
+export function toggleMatchLike(memberId: string | number): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
-  return request('POST', '/roommate/boards/likes', { body });
+  return request('POST', `/roommate/matches/${memberId}/likes`);
+}
+
+/** POST /roommate/boards/{boardId}/likes — 게시글 관심(찜) 등록/취소 */
+export function toggleBoardLike(boardId: string | number): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('POST', `/roommate/boards/${boardId}/likes`);
 }
 
 /** POST /roommate/boards — 게시글 등록 */
@@ -432,6 +462,15 @@ export function reportRoommateBoard(
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('POST', `/roommate/boards/${boardId}/reports`, { body });
+}
+
+/** POST /roommate/matches/{memberId}/reports — 매칭 사용자 신고 */
+export function reportRoommateMatch(
+  memberId: string,
+  body: MatchReportRequest,
+): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('POST', `/roommate/matches/${memberId}/reports`, { body });
 }
 
 function pageToBoardListData(data: BoardListPageData): BoardListData {
@@ -525,8 +564,8 @@ function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | '
           regionId: body.regionId ?? body.region ?? 0,
           comeableDateNegotiable: body.comeableDateNegotiable ?? false,
           comeableDate: body.comeableDate ?? body.comeableAt,
-          deleteExtraOptionIds: [],
-          newExtraOptionIds: body.roomOption ?? [],
+          deleteExtraOptionIds: body.deleteExtraOptionIds ?? [],
+          newExtraOptionIds: body.newExtraOptionIds ?? body.roomOption ?? [],
           existingImages: body.existingImages ?? [],
           newImages: files.map((entry) => ({
             fileIndex: entry.index,

@@ -1,7 +1,6 @@
 import {
   compactNumbers,
   regionBackendId,
-  roomOptionBackendId,
   roomTypeBackendId,
   type BoardWriteRequest,
 } from '@/lib/api';
@@ -14,7 +13,7 @@ type BoardWriteRequestWithOptions = BoardWriteRequest & {
 
 export function roomFormValuesToBoardWriteRequest(values: RoomFormValues): BoardWriteRequest {
   const imageUrls = values.imageUrls.filter(Boolean);
-  const roomOption = compactNumbers(values.options.map(roomOptionBackendId));
+  const roomOption = compactNumbers(values.options);
   const body: BoardWriteRequestWithOptions = {
     title: values.title,
     contents: values.description,

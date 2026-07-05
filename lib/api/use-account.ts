@@ -78,15 +78,15 @@ export function useNotificationSettingToggle(enabled = true) {
 
   const mutation = useMutation({
     mutationFn: async (next: boolean) => {
-      const targets = settings.length ? settings : [{ id: '1', name: '알림', isEnable: true }];
-      return Promise.all(
-        targets.map((setting) =>
-          updateNotificationSetting({
-            settingId: String(setting.id),
-            enabled: next,
-          }),
-        ),
-      );
+      const targets = settings.length ? settings : [{ id: 1, name: '알림', isEnable: true }];
+      const requests = targets.flatMap((setting) => {
+        const settingId = Number(setting.id);
+        return Number.isFinite(settingId) ? [{ settingId, enabled: next }] : [];
+      });
+      if (!requests.length) {
+        throw new Error('알림 설정 ID를 확인하지 못했습니다.');
+      }
+      return Promise.all(requests.map(updateNotificationSetting));
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile', 'notification-settings'] });
@@ -138,8 +138,8 @@ export function useProfileVisibilityToggle() {
   };
 }
 
-export function useBlockedUsers(): AsyncState<BlockedUserItem[]> {
-  const state = useApi(['profile', 'blocks'], () => getBlocks());
+export function useBlockedUsers(enabled = Boolean(getAccessToken())): AsyncState<BlockedUserItem[]> {
+  const state = useApi(['profile', 'blocks'], () => getBlocks(), { enabled });
   const users = useMemo<BlockedUserItem[] | null>(
     () =>
       state.data?.blocks?.map((block) => ({

@@ -15,7 +15,7 @@ import {
   type InquiryCreate,
   type InquiryItem,
 } from './notification';
-import { getTermDetail, getTerms, type TermSummary } from './meta';
+import { getFaqAll, getTermDetail, getTerms, type TermSummary } from './meta';
 import type { AsyncState } from './use-async';
 import { useApi } from './use-async';
 
@@ -61,21 +61,23 @@ export type SupportCounts = {
   inquiryCount: number;
 };
 
-export function useSupportCounts(): AsyncState<SupportCounts> {
-  const categories = useApi(['support', 'categories'], () => getInquiryCategories());
+export function useSupportCounts(includePrivate = true): AsyncState<SupportCounts> {
+  const faqs = useApi(['support', 'faqs'], () => getFaqAll());
   const notices = useApi(['support', 'notices'], () => getBoNotices());
-  const inquiries = useApi(['support', 'inquiries'], () => getInquiries());
+  const inquiries = useApi(['support', 'inquiries'], () => getInquiries(), {
+    enabled: includePrivate,
+  });
 
   return {
     data: {
-      faqCount: categories.data?.inquirieCategorys?.length ?? 0,
+      faqCount: faqs.data?.faqInfoList?.length ?? 0,
       noticeCount: notices.data?.notices?.length ?? 0,
-      inquiryCount: inquiries.data?.inquiries?.length ?? 0,
+      inquiryCount: includePrivate ? (inquiries.data?.inquiries?.length ?? 0) : 0,
     },
-    loading: categories.loading || notices.loading || inquiries.loading,
-    error: categories.error ?? notices.error ?? inquiries.error,
+    loading: faqs.loading || notices.loading || (includePrivate && inquiries.loading),
+    error: faqs.error ?? notices.error ?? (includePrivate ? inquiries.error : null),
     reload: () => {
-      categories.reload();
+      faqs.reload();
       notices.reload();
       inquiries.reload();
     },
@@ -83,17 +85,14 @@ export function useSupportCounts(): AsyncState<SupportCounts> {
 }
 
 export function useSupportFaqs(): AsyncState<SupportFaqItem[]> {
-  const state = useApi(['support', 'categories'], () => getInquiryCategories());
+  const state = useApi(['support', 'faqs'], () => getFaqAll());
   const items = useMemo<SupportFaqItem[] | null>(
     () =>
-      state.data?.inquirieCategorys?.map((category) => {
-        const name = category.name ?? '기타';
-        return {
-          id: String(category.id ?? name),
-          question: `${name} 관련 문의는 어디에서 하나요?`,
-          answer: `문의하기 화면에서 ${name} 카테고리로 접수하면 운영팀이 확인 후 답변합니다.`,
-        };
-      }) ?? null,
+      state.data?.faqInfoList?.map((faq) => ({
+        id: String(faq.id ?? faq.title ?? ''),
+        question: faq.title ?? '질문',
+        answer: faq.contents ?? '',
+      })) ?? null,
     [state.data],
   );
 
@@ -107,7 +106,7 @@ export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
       state.data?.notices?.map((notice) => ({
         id: String(notice.id ?? notice.title ?? ''),
         title: notice.title ?? '공지',
-        body: notice.contents ?? '',
+        body: '',
         dateLabel: formatDateLabel(notice.createAt),
       })) ?? null,
     [state.data],
@@ -116,9 +115,10 @@ export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
   return { ...state, data: items };
 }
 
-export function useSupportInquiries(): AsyncState<SupportInquiryListItem[]> {
+export function useSupportInquiries(enabled = true): AsyncState<SupportInquiryListItem[]> {
   const query = useQuery({
     queryKey: ['support', 'inquiries', 'with-detail'],
+    enabled,
     queryFn: async () => {
       const list = await getInquiries();
       if (list.status !== 200 || list.error) {
@@ -189,8 +189,8 @@ export function useSupportTerms(): AsyncState<SupportTermsSection[]> {
   };
 }
 
-export function useSupportCategories(): AsyncState<SupportCategory[]> {
-  const state = useApi(['support', 'categories'], () => getInquiryCategories());
+export function useSupportCategories(enabled = true): AsyncState<SupportCategory[]> {
+  const state = useApi(['support', 'categories'], () => getInquiryCategories(), { enabled });
   const categories = useMemo<SupportCategory[] | null>(
     () =>
       state.data?.inquirieCategorys?.map((category) => ({

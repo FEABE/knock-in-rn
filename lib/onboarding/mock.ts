@@ -1,18 +1,24 @@
-import type { ImportantCondition, Region, RoomType, Term, TermKey } from './types';
+import type { ImportantCondition, Region, RoomType, Term, TermKey, TermsAgreement } from './types';
 
 /**
  * 로컬 약관 key → 백엔드 약관 정수 ID 매핑.
  *
- * ⚠️ 백엔드에 약관 목록 조회 API(GET /terms)가 없어, 와이어프레임 노출 순서 기준
- *    1..N 으로 임시 매핑했다. 백엔드의 실제 termId 가 확인되면 이 값만 교체할 것.
- *    saveBasicInfo / saveProfileAll 의 terms(array<integer>) 에 사용된다.
+ * 현재 백엔드 GET /terms 는 게시된 필수 약관만 내려준다.
+ * 선택 약관은 앱 로컬 동의값으로만 유지하고, 서버 저장 시에는 보내지 않는다.
  */
-export const TERM_BACKEND_IDS: Record<TermKey, number> = {
+export const TERM_BACKEND_IDS: Partial<Record<TermKey, number>> = {
   'terms-of-service': 1,
-  'privacy-policy': 2,
-  'marketing-push': 3,
-  location: 4,
+  'privacy-policy': 4,
 };
+
+export function agreedTermBackendIds(terms: TermsAgreement): number[] {
+  const ids = Object.entries(terms).flatMap(([key, agreed]) => {
+    const direct = Number(key);
+    const id = Number.isFinite(direct) ? direct : TERM_BACKEND_IDS[key as TermKey];
+    return agreed && id !== undefined ? [id] : [];
+  });
+  return [...new Set(ids)];
+}
 
 export const TERMS: Term[] = [
   {

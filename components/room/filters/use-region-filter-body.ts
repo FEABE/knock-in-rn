@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { REGIONS, type Region } from '@/lib/onboarding';
+import { useRegionOptions } from '@/lib/api';
+import type { Region } from '@/lib/onboarding';
 
 export type UseRegionFilterBodyProps = {
   value: Region[];
@@ -8,15 +9,18 @@ export type UseRegionFilterBodyProps = {
 };
 
 export function useRegionFilterBody({ value, onChange }: UseRegionFilterBodyProps) {
-  const cities = useMemo(() => {
-    const set = new Set<string>();
-    REGIONS.forEach((r) => set.add(r.city));
-    return Array.from(set);
-  }, []);
+  const regionOptions = useRegionOptions();
+  const cities = regionOptions.cities;
+  const [activeCity, setActiveCity] = useState<string | null>(cities[0]?.id ?? null);
 
-  const [activeCity, setActiveCity] = useState<string>(cities[0]);
+  useEffect(() => {
+    if (!activeCity && cities[0]) setActiveCity(cities[0].id);
+  }, [activeCity, cities]);
 
-  const districts = useMemo(() => REGIONS.filter((r) => r.city === activeCity), [activeCity]);
+  const districts = useMemo(
+    () => regionOptions.getChildren(activeCity),
+    [activeCity, regionOptions],
+  );
 
   const toggleRegion = (region: Region) => {
     const exists = value.some((r) => r.id === region.id);

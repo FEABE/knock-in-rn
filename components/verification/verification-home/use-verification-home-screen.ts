@@ -27,8 +27,8 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
   const { data } = useApi(['profile', 'verifications'], () => getVerifications(), {
     enabled: !!session,
   });
-  const schoolVerified = data?.studentAuth?.isAccepted === 'true';
-  const companyVerified = data?.employeeAuth?.isAccepted === 'true';
+  const schoolVerified = data?.studentAuth?.isAccepted === true;
+  const companyVerified = data?.employeeAuth?.isAccepted === true;
 
   const cards = useMemo<VerificationHomeCard[]>(
     () => [

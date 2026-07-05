@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
-import { saveProfileBasic, type ProfileBasicRequest } from '@/lib/api';
-import {
-  ONBOARDING_WRITE_ENABLED,
-  useOnboarding,
-  useOnboardingProfile,
-  type Gender,
-} from '@/lib/onboarding';
+import { useOnboarding, useOnboardingProfile, type Gender } from '@/lib/onboarding';
 
 export const GENDER_OPTIONS = [
   { value: 'male', label: '남성' },
@@ -30,11 +24,9 @@ export type UseProfileBasicStepReturn = {
 };
 
 export function useProfileBasicStep(): UseProfileBasicStepReturn {
-  const { goNext, isStepSaved, markStepSaved } = useOnboarding();
+  const { goNext } = useOnboarding();
   const { profile, patch } = useOnboardingProfile();
   const [birthText, setBirthText] = useState(() => formatBirth(profile.birthDate));
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     onboardingTiming.enterStep();
@@ -63,47 +55,14 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
     EMAIL_RE.test(profile.email);
 
   const onNext = async () => {
-    if (!ONBOARDING_WRITE_ENABLED) {
-      proceed();
-      return;
-    }
-    if (submitting) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const body: ProfileBasicRequest = {
-        name: profile.name.trim(),
-        birth: toBirthApi(profile.birthDate),
-        gender: profile.gender === 'female' ? 'FEMALE' : 'MALE',
-        email: profile.email.trim(),
-        terms: [],
-      };
-
-      const signature = JSON.stringify(body);
-      if (isStepSaved('profile-basic', signature)) {
-        proceed();
-        return;
-      }
-
-      const res = await saveProfileBasic(body);
-      if (res.status !== 200 || res.error) {
-        setSubmitError(res.error?.message ?? `저장에 실패했어요 (status ${res.status})`);
-        return;
-      }
-      markStepSaved('profile-basic', signature);
-      proceed();
-    } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : '네트워크 오류가 발생했어요.');
-    } finally {
-      setSubmitting(false);
-    }
+    proceed();
   };
 
   return {
     profile,
     birthText,
-    submitting,
-    submitError,
+    submitting: false,
+    submitError: null,
     canProceed,
     onNameChange: (value) => patch({ name: value }),
     onBirthChange,
@@ -134,14 +93,6 @@ function parseBirth(text: string): Date | null {
     return null;
   }
   return date;
-}
-
-function toBirthApi(date: Date | null): string {
-  if (!date) return '';
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 function formatBirthInput(text: string): string {

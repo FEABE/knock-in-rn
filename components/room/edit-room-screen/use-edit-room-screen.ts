@@ -3,7 +3,17 @@ import { Alert } from 'react-native';
 
 import { roomFormValuesToBoardWriteRequest } from '@/components/room/room-post-form.api';
 import type { RoomFormDraft, RoomFormValues } from '@/components/room/room-post-form';
-import { useRoommateBoardDetail, useRoommateBoardWriteActions } from '@/lib/api';
+import {
+  compactNumbers,
+  regionFromBackendId,
+  roomOptionBackendId,
+  roomTypeFromBackendId,
+  type BoardEditData,
+  type BoardWriteRequest,
+  useRoommateBoardDetail,
+  useRoommateBoardEdit,
+  useRoommateBoardWriteActions,
+} from '@/lib/api';
 import { useSession, type RoomPost } from '@/lib/domain';
 
 export type EditRoomState = 'loading' | 'missing' | 'forbidden' | 'editable';
@@ -24,9 +34,10 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
   const boardId = typeof id === 'string' ? id : '';
   const { session } = useSession();
   const { data: post, loading, error } = useRoommateBoardDetail(boardId);
+  const { data: editData, loading: editLoading } = useRoommateBoardEdit(boardId);
   const { updateBoard, deleteBoard } = useRoommateBoardWriteActions();
 
-  const state: EditRoomState = loading
+  const state: EditRoomState = loading || editLoading
     ? 'loading'
     : !post || error
       ? 'missing'
@@ -59,8 +70,10 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
 
   const onSubmit = async (values: RoomFormValues) => {
     if (!post) return;
+    const body = roomFormValuesToBoardWriteRequest(values);
+    applyEditMetadata(body, values, editData ?? undefined);
     try {
-      await updateBoard(post.id, roomFormValuesToBoardWriteRequest(values));
+      await updateBoard(post.id, body);
     } catch (updateError) {
       Alert.alert(
         '수정 실패',
@@ -77,11 +90,57 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
     state,
     post: post ?? undefined,
     profile: session?.user,
-    initial: post ? toInitialDraft(post) : undefined,
+    initial: editData ? toInitialDraftFromEdit(editData) : post ? toInitialDraft(post) : undefined,
     onBack: () => router.back(),
     onDelete,
     onSubmit,
   };
+}
+
+function toInitialDraftFromEdit(edit: BoardEditData): Partial<RoomFormDraft> {
+  return {
+    title: edit.title,
+    deposit: String(edit.deposit),
+    rent: String(edit.monthlyRent),
+    maintenance: String(edit.managementCost),
+    roomType: roomTypeFromBackendId(edit.roomType?.roomTypeId),
+    regions: [regionFromBackendId(edit.region?.regionId ?? edit.region?.fullName)],
+    description: edit.contents,
+    moveInDate: edit.comeableDate ? fmtDate(new Date(edit.comeableDate)) : '',
+    imageUrlsText: edit.images?.map((image) => image.url).filter(Boolean).join('\n') ?? '',
+    options:
+      edit.roomExtraOptions
+        ?.map((option) => option.extraOptionId)
+        .filter((option): option is number => Number.isFinite(option)) ?? [],
+    showProfileInfo: true,
+  };
+}
+
+function applyEditMetadata(
+  body: BoardWriteRequest,
+  values: RoomFormValues,
+  edit: BoardEditData | undefined,
+) {
+  if (!edit) return;
+
+  const selectedOptionIds = compactNumbers(values.options);
+  const previousOptionIds = compactNumbers(
+    edit.roomExtraOptions?.map((option) => option.extraOptionId) ?? [],
+  );
+  body.deleteExtraOptionIds = previousOptionIds.filter((id) => !selectedOptionIds.includes(id));
+  body.newExtraOptionIds = selectedOptionIds.filter((id) => !previousOptionIds.includes(id));
+
+  const imageUrlSet = new Set(values.imageUrls);
+  body.existingImages =
+    edit.images
+      ?.filter(
+        (image): image is { boardFileId: number; url?: string } =>
+          image.boardFileId !== undefined && !!image.url && imageUrlSet.has(image.url),
+      )
+      .map((image, index) => ({
+        boardFileId: image.boardFileId,
+        thumbnail: index === 0,
+      })) ?? [];
 }
 
 function toInitialDraft(post: RoomPost): Partial<RoomFormDraft> {
@@ -95,7 +154,7 @@ function toInitialDraft(post: RoomPost): Partial<RoomFormDraft> {
     description: post.description,
     moveInDate: post.moveInDate ? fmtDate(post.moveInDate) : '',
     imageUrlsText: (post.photoUrls ?? (post.thumbnailUrl ? [post.thumbnailUrl] : [])).join('\n'),
-    options: post.options ?? [],
+    options: compactNumbers(post.options?.map(roomOptionBackendId) ?? []),
     showProfileInfo: true,
   };
 }

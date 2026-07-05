@@ -1,17 +1,19 @@
 import { ScrollView, Text, View } from 'react-native';
 
-import { BirthDateField, ChipMultiSelect, RangeSlider } from '@/components/ui/headless';
+import { ChipMultiSelect, RangeSlider } from '@/components/ui/headless';
+import { useRoomTypeOptions } from '@/lib/api';
 import {
   BUDGET_BOUNDS,
-  ROOM_TYPES,
   useOnboardingPreferences,
   type RoomType,
 } from '@/lib/onboarding';
 
+import { CalendarField } from '../calendar-field';
 import { OnboardingFooter } from '../onboarding-footer';
 
 export function PreferencesStep() {
   const { preferences, patch } = useOnboardingPreferences();
+  const roomTypes = useRoomTypeOptions();
 
   return (
     <View className="flex-1 bg-white">
@@ -64,39 +66,17 @@ export function PreferencesStep() {
         </Field>
 
         <Field label="입주 희망 시기">
-          <BirthDateField
+          <CalendarField
             value={preferences.moveInBy}
-            onValueChange={(v) => patch({ moveInBy: v })}
-            minYear={new Date().getFullYear()}
-            maxYear={new Date().getFullYear() + 2}
-          >
-            {({ yearField, monthField, dayField, isComplete, isValid }) => (
-              <View className="gap-1">
-                <View className="flex-row gap-2">
-                  <View className="flex-[2] rounded-xl border border-neutral-200 px-4 py-3">
-                    <Text className="text-base">{yearField.value || yearField.placeholder}</Text>
-                  </View>
-                  <View className="flex-1 rounded-xl border border-neutral-200 px-4 py-3">
-                    <Text className="text-base">{monthField.value || monthField.placeholder}</Text>
-                  </View>
-                  <View className="flex-1 rounded-xl border border-neutral-200 px-4 py-3">
-                    <Text className="text-base">{dayField.value || dayField.placeholder}</Text>
-                  </View>
-                </View>
-                <Text className="text-xs text-neutral-400">
-                  날짜 입력 UI는 화면에 맞게 자유롭게 채워주세요.
-                </Text>
-                {isComplete && !isValid ? (
-                  <Text className="text-xs text-red-500">올바른 날짜를 입력해주세요</Text>
-                ) : null}
-              </View>
-            )}
-          </BirthDateField>
+            onChange={(v) => patch({ moveInBy: v })}
+            placeholder="입주 희망일 선택"
+            minDate={new Date()}
+          />
         </Field>
 
         <Field label="원하는 방 형태 (복수 선택)">
           <ChipMultiSelect<RoomType>
-            options={ROOM_TYPES.map((r) => ({
+            options={roomTypes.options.map((r) => ({
               value: r.value,
               label: r.label,
             }))}

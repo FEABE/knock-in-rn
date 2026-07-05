@@ -2,8 +2,8 @@
  * UT Firebase Analytics 래퍼.
  *
  * - 모든 이벤트에 공통 파라미터(session_id, ts)를 자동으로 포함한다.
- * - 네이티브 모듈이 없는 환경(web / 네이티브 리빌드 전)에서는 콘솔 로그로 대체하여
- *   앱이 절대 죽지 않도록 한다. (analytics는 실패해도 사용자 흐름을 막지 않는다)
+ * - 네이티브 모듈이 없는 환경(web / 네이티브 리빌드 전)에서는 조용히 무시한다.
+ *   analytics는 실패해도 사용자 흐름을 막지 않는다.
  *
  * 사용 예) logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id })
  */
@@ -72,13 +72,12 @@ export async function logEvent(name: string, params?: AnalyticsParams): Promise<
   const payload = withCommon(params);
   const instance = getInstance();
   if (!instance) {
-    if (__DEV__) console.log(`[analytics] ${name}`, payload);
     return;
   }
   try {
     await analyticsMod.logEvent(instance, name, payload);
-  } catch (e) {
-    if (__DEV__) console.warn(`[analytics] logEvent 실패: ${name}`, e);
+  } catch {
+    return;
   }
 }
 
@@ -92,7 +91,6 @@ export async function logEvent(name: string, params?: AnalyticsParams): Promise<
 export async function logScreenView(screenName: string): Promise<void> {
   const instance = getInstance();
   if (!instance) {
-    if (__DEV__) console.log(`[analytics] screen_view`, screenName);
     return;
   }
   try {
@@ -100,8 +98,8 @@ export async function logScreenView(screenName: string): Promise<void> {
       screen_name: screenName,
       screen_class: screenName,
     });
-  } catch (e) {
-    if (__DEV__) console.warn('[analytics] screen_view 실패', e);
+  } catch {
+    return;
   }
 }
 

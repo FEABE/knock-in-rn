@@ -6,6 +6,7 @@ import {
   useCreateSupportInquiryAction,
   useSupportCategories,
 } from '@/lib/api';
+import { useRequireLogin } from '@/lib/auth';
 
 export type UseInquiryFormScreenReturn = {
   title: string;
@@ -32,7 +33,8 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
   const [submitted, setSubmitted] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { data: categories, loading: loadingCategories } = useSupportCategories();
+  const { session, requireLogin } = useRequireLogin();
+  const { data: categories, loading: loadingCategories } = useSupportCategories(Boolean(session));
   const { submitInquiry, submitting } = useCreateSupportInquiryAction();
   const categoryList = useMemo(() => categories ?? [], [categories]);
 
@@ -41,14 +43,27 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
   }, [categoryId, categoryList]);
 
   const canSubmit =
-    title.trim().length > 0 && body.trim().length > 0 && !!categoryId && !submitting;
+    Boolean(session) && title.trim().length > 0 && body.trim().length > 0 && !!categoryId && !submitting;
 
   const submit = async () => {
+    if (!session) {
+      const message = '문의 접수는 로그인 후 이용할 수 있어요.';
+      setSubmitError(message);
+      requireLogin(() => undefined, { title: '로그인 필요', message });
+      return;
+    }
     if (!canSubmit) return;
+    const numericCategoryId = Number(categoryId);
+    if (!Number.isFinite(numericCategoryId)) {
+      const message = '문의 유형을 다시 선택해주세요.';
+      setSubmitError(message);
+      Alert.alert('접수 실패', message);
+      return;
+    }
     setSubmitError(null);
     try {
       await submitInquiry({
-        categoryId,
+        categoryId: numericCategoryId,
         title: title.trim(),
         contents: `${body.trim()}\n\n공개 여부: ${isPublic ? '공개' : '비공개'}`,
       });

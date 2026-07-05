@@ -64,18 +64,14 @@ function PromptStep({ onStart, onSkip }: { onStart: () => void; onSkip: () => vo
 function PreferenceForm({
   step,
   gender,
-  personality,
-  privacy,
-  visitor,
-  smoking,
-  pet,
+  scales,
+  choiceValues,
+  scaleOptions,
+  choiceGroups,
   selected,
   setGender,
-  setPersonality,
-  setPrivacy,
-  setVisitor,
-  setSmoking,
-  setPet,
+  setScale,
+  setChoice,
   goBackStep,
   goPriorityStep,
   togglePriority,
@@ -111,55 +107,29 @@ function PreferenceForm({
               value={gender}
               onChange={setGender}
             />
-            <ScaleSlider
-              label="원하는 성격 스타일"
-              valueLabel={
-                ['내향적', '조금', '상관없어요', '조금', '외향적'][(personality ?? 3) - 1]
-              }
-              minLabel="내향적"
-              maxLabel="외향적"
-              value={personality}
-              onChange={setPersonality}
-            />
-            <ScaleSlider
-              label="개인 공간 중요도"
-              valueLabel={
-                ['덜 중요해도 OK', '', '보통', '', '중요하게 여겨요'][(privacy ?? 3) - 1] || '보통'
-              }
-              minLabel="덜 중요해도 OK"
-              maxLabel="중요하게 여기는 분"
-              value={privacy}
-              onChange={setPrivacy}
-            />
-            <ScaleSlider
-              label="방문객 빈도"
-              valueLabel={
-                ['거의 없으면 OK', '', '가끔까지 OK', '', '자주도 OK'][(visitor ?? 3) - 1] ||
-                '가끔까지 OK'
-              }
-              minLabel="거의 없으면 OK"
-              maxLabel="자주도 OK"
-              value={visitor}
-              onChange={setVisitor}
-            />
-            <Pick
-              label="흡연 여부"
-              options={[
-                { value: 'any', label: '상관없어요' },
-                { value: 'no', label: '비흡연자만' },
-              ]}
-              value={smoking}
-              onChange={setSmoking}
-            />
-            <Pick
-              label="반려동물"
-              options={[
-                { value: 'any', label: '상관없어요' },
-                { value: 'no', label: '없었으면 해요' },
-              ]}
-              value={pet}
-              onChange={setPet}
-            />
+            {scaleOptions.map((scale) => {
+              const value = scales[scale.key] ?? 3;
+              return (
+                <ScaleSlider
+                  key={scale.key}
+                  label={scale.label}
+                  valueLabel={scale.levels[value - 1] ?? scale.levels[0] ?? ''}
+                  minLabel={scale.minLabel}
+                  maxLabel={scale.maxLabel}
+                  value={scales[scale.key] ?? null}
+                  onChange={(next) => setScale(scale.key, next)}
+                />
+              );
+            })}
+            {choiceGroups.map((group) => (
+              <Pick
+                key={group.key}
+                label={group.label}
+                options={group.options}
+                value={choiceValues[group.key] ?? null}
+                onChange={(next) => setChoice(group.key, next)}
+              />
+            ))}
           </ScrollView>
           <BottomBtn label="다음" onPress={goPriorityStep} />
         </>

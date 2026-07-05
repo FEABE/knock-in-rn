@@ -1,8 +1,8 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { BottomSheet, ChipMultiSelect, SegmentedControl } from '@/components/ui/headless';
+import { useRegionOptions } from '@/lib/api';
 import type { ListFilter } from '@/lib/domain';
-import { REGIONS } from '@/lib/onboarding';
 
 import { GENDER_OPTIONS } from '../roommate-filter-bar';
 
@@ -19,6 +19,8 @@ export function RoommateFilterSheet({
   filter,
   onFilterChange,
 }: RoommateFilterSheetProps) {
+  const regions = useRegionOptions();
+
   return (
     <BottomSheet
       open={open}
@@ -102,9 +104,9 @@ export function RoommateFilterSheet({
           <Text className="text-sm font-semibold text-neutral-800">지역</Text>
           <ScrollView style={{ maxHeight: 220 }}>
             <ChipMultiSelect
-              options={REGIONS.map((r) => ({
-                value: r.id,
-                label: `${r.city} ${r.district}`,
+              options={regions.selectableRegions.map((r) => ({
+                value: r.region.id,
+                label: `${r.region.city} ${r.region.district}`,
               }))}
               value={filter.regionIds ?? []}
               onValueChange={(v) => onFilterChange((p) => ({ ...p, regionIds: v }))}

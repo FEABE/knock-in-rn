@@ -2,23 +2,26 @@ import { Linking, ScrollView, Text, View } from 'react-native';
 import { useMemo } from 'react';
 
 import { TermsAgreement } from '@/components/ui/headless';
-import { useSupportTerms } from '@/lib/api';
-import { TERMS, useOnboarding, useOnboardingTerms } from '@/lib/onboarding';
+import { getTerms, useApi } from '@/lib/api';
+import { type Term, useOnboarding, useOnboardingTerms } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 
 export function TermsStep() {
-  const { terms, setTerms, isTermsValid } = useOnboardingTerms();
+  const { terms, setTerms } = useOnboardingTerms();
   const { goNext } = useOnboarding();
-  const { data: apiTerms, loading } = useSupportTerms();
-  const renderTerms = useMemo(
-    () =>
-      TERMS.map((term, index) => ({
-        ...term,
-        label: apiTerms?.[index]?.title ?? term.label,
-      })),
-    [apiTerms],
-  );
+  const { data, loading } = useApi(['meta', 'terms'], () => getTerms());
+  const renderTerms = useMemo<Term[]>(() => {
+    const apiTerms = data?.terms ?? [];
+    return apiTerms.flatMap((term) =>
+      term.id === undefined || !term.title
+        ? []
+        : [{ key: String(term.id), label: term.title, required: true }],
+    );
+  }, [data?.terms]);
+  const requiredTerms = renderTerms.filter((term) => term.required);
+  const canProceed =
+    requiredTerms.length > 0 && requiredTerms.every((term) => !!terms[term.key]);
 
   return (
     <View className="flex-1 bg-white">
@@ -95,7 +98,7 @@ export function TermsStep() {
         </TermsAgreement.Root>
       </ScrollView>
 
-      <OnboardingFooter canProceed={isTermsValid} onPress={goNext} />
+      <OnboardingFooter canProceed={canProceed} onPress={goNext} />
     </View>
   );
 }

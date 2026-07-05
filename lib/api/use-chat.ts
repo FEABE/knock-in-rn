@@ -2,11 +2,20 @@
  * 채팅 화면용 데이터 훅.
  */
 import { useMemo } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { ChatMessage, ChatRoom, UserSummary } from '@/lib/domain';
 
-import { type ChatRoomItem, getChatRooms } from './chat';
+import {
+  type ChatRoomDetailData,
+  type ChatRoomItem,
+  getChatRoomDetail,
+  getChatRooms,
+  leaveChatRoom,
+  uploadChatImage,
+  type ChatImageUpload,
+} from './chat';
+import { createChatRequest, type ChatRequestCreate } from './chat-requests';
 import { createRoommateRequest } from './roommate';
 import { type AsyncState, useApi } from './use-async';
 
@@ -17,11 +26,12 @@ export function useChatRooms(): AsyncState<ChatRoomItem[]> {
 }
 
 export function useChatRoomDetail(chatRoomId: string): AsyncState<ChatRoom> {
-  const state = useChatRooms();
+  const state = useApi(['chat', 'rooms', chatRoomId], () => getChatRoomDetail(chatRoomId), {
+    enabled: chatRoomId.length > 0,
+  });
   const room = useMemo<ChatRoom | null>(() => {
-    const source = state.data?.find((item) => String(item.chatRoomId ?? '') === chatRoomId);
-    if (!source) return null;
-    return chatRoomItemToDomainRoom(source);
+    if (!state.data) return null;
+    return chatRoomDetailToDomainRoom(chatRoomId, state.data);
   }, [chatRoomId, state.data]);
 
   return {
@@ -29,6 +39,39 @@ export function useChatRoomDetail(chatRoomId: string): AsyncState<ChatRoom> {
     data: room,
     loading: state.loading,
     error: state.error ?? (!state.loading && !room ? '채팅방을 찾을 수 없습니다.' : null),
+  };
+}
+
+export function useChatRoomActions() {
+  const queryClient = useQueryClient();
+  const leaveMutation = useMutation({
+    mutationFn: (chatRoomId: string) => leaveChatRoom(chatRoomId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] });
+    },
+  });
+  const uploadImageMutation = useMutation({
+    mutationFn: ({ chatRoomId, file }: { chatRoomId: string; file: ChatImageUpload }) =>
+      uploadChatImage(chatRoomId, file),
+  });
+
+  return {
+    leaveChat: async (chatRoomId: string) => {
+      const res = await leaveMutation.mutateAsync(chatRoomId);
+      if (res.status !== 200 || res.error) {
+        throw new Error(res.error?.message ?? '채팅방을 나가지 못했습니다.');
+      }
+      return res.data;
+    },
+    uploadImage: async (chatRoomId: string, file: ChatImageUpload) => {
+      const res = await uploadImageMutation.mutateAsync({ chatRoomId, file });
+      if (res.status !== 200 || res.error) {
+        throw new Error(res.error?.message ?? '이미지를 업로드하지 못했습니다.');
+      }
+      return res.data;
+    },
+    leaving: leaveMutation.isPending,
+    uploadingImage: uploadImageMutation.isPending,
   };
 }
 
@@ -50,6 +93,28 @@ export function useRoommateRequestAction() {
   };
 }
 
+export function useChatRequestActions() {
+  const queryClient = useQueryClient();
+  const createMutation = useMutation({
+    mutationFn: (body: ChatRequestCreate) => createChatRequest(body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['chat', 'requests'] });
+      await queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] });
+    },
+  });
+
+  return {
+    requestChat: async (body: ChatRequestCreate) => {
+      const res = await createMutation.mutateAsync(body);
+      if (res.status !== 200 || res.error) {
+        throw new Error(res.error?.message ?? '채팅 요청에 실패했습니다.');
+      }
+      return res.data;
+    },
+    requestingChat: createMutation.isPending,
+  };
+}
+
 function chatRoomItemToDomainRoom(item: ChatRoomItem): ChatRoom {
   const id = String(item.chatRoomId ?? '');
   const peer = userFromChatRoom(item);
@@ -63,6 +128,19 @@ function chatRoomItemToDomainRoom(item: ChatRoomItem): ChatRoom {
   };
 }
 
+function chatRoomDetailToDomainRoom(chatRoomId: string, detail: ChatRoomDetailData): ChatRoom {
+  const peer = userFromChatRoomDetail(detail);
+  const messages = detailMessages(detail, peer.id);
+  const matched = detail.matchingRequiredList?.some((request) => request.status === 'ACCEPTED') === true;
+  return {
+    id: chatRoomId,
+    peer,
+    messages,
+    matched,
+    acceptedRequest: matched,
+  };
+}
+
 function userFromChatRoom(item: ChatRoomItem): UserSummary {
   const name = item.name ?? '사용자';
   return {
@@ -72,6 +150,28 @@ function userFromChatRoom(item: ChatRoomItem): UserSummary {
     gender: 'other',
     preferredGender: 'any',
     bio: '',
+    region: {
+      id: 'unknown',
+      city: '-',
+      district: '',
+    },
+    badges: [],
+    lifestyle: {},
+    importantConditions: [],
+  };
+}
+
+function userFromChatRoomDetail(detail: ChatRoomDetailData): UserSummary {
+  const profile = detail.opponentProfile;
+  const name = profile?.name ?? '사용자';
+  return {
+    id: String(profile?.id ?? name),
+    name,
+    age: profile?.age ?? 0,
+    gender: profile?.gender === 'FEMALE' ? 'female' : profile?.gender === 'MALE' ? 'male' : 'other',
+    preferredGender: 'any',
+    bio: '',
+    avatarUrl: profile?.profileImageUrl,
     region: {
       id: 'unknown',
       city: '-',
@@ -106,6 +206,35 @@ function initialMessagesFromChatRoom(item: ChatRoomItem, peerId: string): ChatMe
   }
 
   return messages;
+}
+
+function detailMessages(detail: ChatRoomDetailData, peerId: string): ChatMessage[] {
+  const messages =
+    detail.messages?.map((message) => {
+      const type = message.type;
+      const isSystem = type === 'LEFT_ROOM';
+      return {
+        id: String(message.id ?? `${message.senderId ?? 'system'}-${message.createdAt ?? Date.now()}`),
+        authorId: isSystem ? 'system' : String(message.senderId ?? peerId),
+        body: isSystem
+          ? '채팅방을 나갔어요.'
+          : message.contents || message.imageUrl || '이미지 메시지',
+        sentAt: parseDate(message.createdAt),
+        kind: isSystem ? 'system' : 'text',
+      } satisfies ChatMessage;
+    }) ?? [];
+
+  if (messages.length > 0) return messages;
+
+  return [
+    {
+      id: `chat-${detail.opponentProfile?.id ?? 'new'}-system`,
+      authorId: 'system',
+      body: '채팅이 시작되었어요.',
+      sentAt: new Date(),
+      kind: 'system',
+    },
+  ];
 }
 
 function parseDate(value?: string): Date {

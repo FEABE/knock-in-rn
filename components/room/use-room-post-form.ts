@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
-import type { RoomOption } from '@/lib/domain';
 import type { Region, RoomType } from '@/lib/onboarding';
 
 import {
@@ -30,7 +29,7 @@ export type UseRoomPostFormReturn = {
   selectRegion: (next: Region) => void;
   setMoveInDate: (next: string) => void;
   setImageUrlsText: (next: string) => void;
-  toggleOption: (next: RoomOption) => void;
+  toggleOption: (next: number) => void;
   setDescription: (next: string) => void;
   toggleProfileInfo: () => void;
   submit: () => void;

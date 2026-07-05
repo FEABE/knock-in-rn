@@ -133,6 +133,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
 }
 
 function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
+  void sort;
   return {
     region: filter.regions.length ? regionBackendId(filter.regions[0]) : undefined,
     gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
@@ -141,7 +142,6 @@ function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQu
     minMounthRent: filter.rentMin,
     maxMounthRent: filter.rentMax,
     type: filter.roomTypes.length ? roomTypeBackendId(filter.roomTypes[0]) : undefined,
-    sort: sort === 'latest' ? 'createAt,desc' : sort === 'views' ? 'viewer,desc' : undefined,
   };
 }
 

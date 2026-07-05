@@ -5,13 +5,14 @@ import { useEffect, useState } from 'react';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   blockUser as blockUserRequest,
+  useChatRequestActions,
   useRoommateBoardDetail,
   useRoommateBoardLikeActions,
   useRoommateBoardWriteActions,
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { useModeration, useSession, type RoomPost } from '@/lib/domain';
-import { goChatRoom, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
+import { goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
 
 export const ROOM_REPORT_REASONS = [
   '허위 매물',
@@ -57,6 +58,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
   const { data: post, loading, error } = useRoommateBoardDetail(boardId);
+  const { requestChat } = useChatRequestActions();
   const setBoardLiked = useRoommateBoardLikeActions();
   const { deleteBoard, reportBoard } = useRoommateBoardWriteActions();
   const { report, blockUser, isPostBlocked, blockPost } = useModeration();
@@ -146,7 +148,31 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
         if (!post) return;
         Alert.alert('매칭 요청', `${post.author.name}님께 1:1 대화 요청을 보낼까요?`, [
           { text: '취소', style: 'cancel' },
-          { text: '요청 보내기', onPress: () => goChatRoom(router, post.author.id) },
+          {
+            text: '요청 보내기',
+            onPress: async () => {
+              const requesteeId = Number(post.author.id);
+              const requestBoardId = Number(post.id);
+              if (!Number.isFinite(requesteeId)) {
+                Alert.alert('요청 실패', '상대 사용자 정보를 확인하지 못했습니다.');
+                return;
+              }
+              try {
+                await requestChat({
+                  requesteeId,
+                  boardId: Number.isFinite(requestBoardId) ? requestBoardId : undefined,
+                });
+                Alert.alert('요청 완료', '상대방에게 채팅 요청을 보냈어요.');
+              } catch (requestError) {
+                Alert.alert(
+                  '요청 실패',
+                  requestError instanceof Error
+                    ? requestError.message
+                    : '잠시 후 다시 시도해주세요.',
+                );
+              }
+            },
+          },
         ]);
       }),
     onReportReason: (reason) => {
@@ -174,8 +200,13 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
           text: '차단',
           style: 'destructive',
           onPress: async () => {
+            const authorId = Number(post.author.id);
+            if (!Number.isFinite(authorId)) {
+              Alert.alert('차단 실패', '작성자 정보를 확인하지 못했습니다.');
+              return;
+            }
             try {
-              const res = await blockUserRequest({ userId: post.author.id });
+              const res = await blockUserRequest({ userId: authorId });
               if (res.status !== 200 || res.error) {
                 throw new Error(res.error?.message ?? '차단에 실패했습니다.');
               }

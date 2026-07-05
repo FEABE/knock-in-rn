@@ -19,18 +19,22 @@ import {
   type BoardListData,
   type BoardListItem,
   type BoardDetailData,
+  type BoardEditData,
   type BoardWriteRequest,
   type MatchDetailData,
   type MatchListItem,
   type MatchListData,
   createRoommateBoard,
   deleteRoommateBoard,
+  getRoommateBoardEdit,
   getRoommateBoardDetail,
   getRoommateBoards,
   getRoommateMatchDetail,
   getRoommateMatches,
   reportRoommateBoard,
+  reportRoommateMatch,
   toggleBoardLike,
+  toggleMatchLike,
   updateRoommateBoard,
 } from './roommate-boards';
 import { type AsyncState, useApi } from './use-async';
@@ -90,6 +94,15 @@ export function useRoommateBoardDetail(boardId: string): AsyncState<RoomPost> {
   return { ...state, data: post };
 }
 
+/** 룸메이트 게시글 편집 form. */
+export function useRoommateBoardEdit(boardId: string): AsyncState<BoardEditData> {
+  return useApi(
+    ['roommate', 'boards', 'edit', boardId],
+    () => getRoommateBoardEdit(boardId),
+    { enabled: boardId.length > 0 },
+  );
+}
+
 /** 룸메이트 매칭 목록 (RoommateCard[]). */
 export function useRoommateMatches(): AsyncState<RoommateCard[]> {
   const state = useApi(['roommate', 'matches'], () => getRoommateMatches());
@@ -119,7 +132,7 @@ export function useRoommateMatchCards(): AsyncState<RoommateMatchCardModel[]> {
 export function useRoommateBoardLikeActions() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (boardId: string | number) => toggleBoardLike({ boardId: Number(boardId) }),
+    mutationFn: (boardId: string | number) => toggleBoardLike(boardId),
     onSettled: async (_data, _error, boardId) => {
       await queryClient.invalidateQueries({ queryKey: ['roommate', 'boards'] });
       await queryClient.invalidateQueries({
@@ -218,6 +231,13 @@ export function useRoommateBoardWriteActions() {
 
 export function useRoommateMatchLikeActions() {
   const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (userId: string | number) => toggleMatchLike(userId),
+    onSettled: async (_data, _error, userId) => {
+      await queryClient.invalidateQueries({ queryKey: ['roommate', 'matches'] });
+      await queryClient.invalidateQueries({ queryKey: ['roommate', 'matches', String(userId)] });
+    },
+  });
 
   return useCallback(
     (userId: string | number, liked: boolean) => {
@@ -230,9 +250,28 @@ export function useRoommateMatchLikeActions() {
           ),
         };
       });
+      mutation.mutate(userId);
     },
-    [queryClient],
+    [mutation, queryClient],
   );
+}
+
+export function useRoommateMatchReportActions() {
+  const mutation = useMutation({
+    mutationFn: ({ memberId, contents }: { memberId: string; contents: string }) =>
+      reportRoommateMatch(memberId, { contents }),
+  });
+
+  return {
+    reportMatch: async (memberId: string, contents: string) => {
+      const res = await mutation.mutateAsync({ memberId, contents });
+      if (res.status !== 200 || res.error) {
+        throw new Error(res.error?.message ?? '사용자 신고에 실패했습니다.');
+      }
+      return res.data;
+    },
+    reportingMatch: mutation.isPending,
+  };
 }
 
 /** 룸메이트 매칭 상세 (userId). */

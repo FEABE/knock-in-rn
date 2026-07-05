@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { ROOM_TYPES, type RoomType } from '@/lib/onboarding';
+import { useRoomTypeOptions } from '@/lib/api';
+import type { RoomType } from '@/lib/onboarding';
 
 import { FilterSheet } from './filter-sheet';
 import { useRoomTypeFilterSheet } from './use-room-type-filter-sheet';
@@ -13,6 +14,7 @@ export function RoomTypeFilterBody({
   onChange: (next: RoomType[]) => void;
 }) {
   const isAll = value.length === 0;
+  const roomTypes = useRoomTypeOptions();
 
   const toggle = (rt: RoomType) => {
     onChange(value.includes(rt) ? value.filter((p) => p !== rt) : [...value, rt]);
@@ -30,7 +32,7 @@ export function RoomTypeFilterBody({
           전체
         </Text>
       </Pressable>
-      {ROOM_TYPES.map((rt) => {
+      {roomTypes.options.map((rt) => {
         const selected = value.includes(rt.value);
         return (
           <Pressable

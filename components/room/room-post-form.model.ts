@@ -1,4 +1,3 @@
-import type { RoomOption } from '@/lib/domain';
 import type { Region, RoomType } from '@/lib/onboarding';
 
 export type RoomFormValues = {
@@ -11,7 +10,7 @@ export type RoomFormValues = {
   description: string;
   moveInDate?: Date;
   imageUrls: string[];
-  options: RoomOption[];
+  options: number[];
   showProfileInfo: boolean;
 };
 
@@ -27,7 +26,7 @@ export type RoomFormDraft = {
   description: string;
   moveInDate: string;
   imageUrlsText: string;
-  options: RoomOption[];
+  options: number[];
   showProfileInfo: boolean;
 };
 

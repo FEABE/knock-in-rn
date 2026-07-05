@@ -81,7 +81,7 @@ async function main() {
     `matches=${matchItems.length} score=${matchItems[0]?.score}`,
   );
 
-  const like = await toggleBoardLike({ boardId: 1 });
+  const like = await toggleBoardLike(1);
   check('toggleBoardLike', !!like.data.updatedAt, `updatedAt=${like.data.updatedAt}`);
 
   const created = await createRoommateBoard({

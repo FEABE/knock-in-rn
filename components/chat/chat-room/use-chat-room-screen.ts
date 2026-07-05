@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState, type MutableRefObject } from 'r
 import { Alert, type ScrollView } from 'react-native';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
-import { useChatRoomDetail, useRoommateRequestAction } from '@/lib/api';
+import { useChatRoomActions, useChatRoomDetail, useRoommateRequestAction } from '@/lib/api';
 import { useModeration, useSession, type ChatRoom as DomainChatRoom } from '@/lib/domain';
 
 export type UseChatRoomScreenReturn = {
@@ -20,6 +20,7 @@ export type UseChatRoomScreenReturn = {
   closeRequestSheet: () => void;
   confirmRequest: () => Promise<void>;
   handleSend: (canSend: boolean, send: () => void) => void;
+  onLeave: () => void;
   onMessagesChanged: () => void;
 };
 
@@ -32,6 +33,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const { isUserBlocked } = useModeration();
   const { session } = useSession();
   const { data: room, loading, error } = useChatRoomDetail(chatRoomId);
+  const { leaveChat } = useChatRoomActions();
   const { requestRoommate } = useRoommateRequestAction();
   const [requestSent, setRequestSent] = useState(false);
   const [requestSheetVisible, setRequestSheetVisible] = useState(false);
@@ -85,6 +87,27 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     closeRequestSheet: () => setRequestSheetVisible(false),
     confirmRequest,
     handleSend,
+    onLeave: () => {
+      if (!room) return;
+      Alert.alert('채팅방 나가기', '이 채팅방을 나갈까요?', [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '나가기',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await leaveChat(room.id);
+              router.back();
+            } catch (leaveError) {
+              Alert.alert(
+                '나가기 실패',
+                leaveError instanceof Error ? leaveError.message : '잠시 후 다시 시도해주세요.',
+              );
+            }
+          },
+        },
+      ]);
+    },
     onMessagesChanged,
   };
 }

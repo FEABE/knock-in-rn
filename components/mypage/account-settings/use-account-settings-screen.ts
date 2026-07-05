@@ -44,14 +44,10 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
         onPress: async () => {
           try {
             await requestLogout();
-          } catch (error) {
-            Alert.alert(
-              '로그아웃 실패',
-              error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.',
-            );
-            return;
+          } catch {
+            // 서버 로그아웃 실패가 기기 로그아웃을 막으면 사용자가 빠져나갈 수 없다.
           } finally {
-            signOut();
+            await signOut();
           }
           goExplore(router, 'replace');
         },

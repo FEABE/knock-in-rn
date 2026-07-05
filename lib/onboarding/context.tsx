@@ -12,7 +12,6 @@ import {
   type TermKey,
   type TermsAgreement,
 } from './types';
-import { TERMS } from './mock';
 
 export type OnboardingStep =
   | 'terms'
@@ -42,10 +41,7 @@ export const STEP_LABELS: Record<OnboardingStep, string> = {
 };
 
 function emptyTerms(): TermsAgreement {
-  return TERMS.reduce<TermsAgreement>((acc, t) => {
-    acc[t.key] = false;
-    return acc;
-  }, {} as TermsAgreement);
+  return {};
 }
 
 export type OnboardingContextValue = {
@@ -184,7 +180,8 @@ export function OnboardingProvider({
     });
   }, []);
 
-  const isTermsValid = TERMS.filter((t) => t.required).every((t) => !!values.terms[t.key]);
+  const termValues = Object.values(values.terms);
+  const isTermsValid = termValues.length > 0 && termValues.every(Boolean);
   const isProfileComplete = isBasicProfileComplete(values.profile);
 
   const ctx = useMemo<OnboardingContextValue>(

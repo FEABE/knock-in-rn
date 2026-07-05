@@ -2,36 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import {
-  compactNumbers,
-  regionBackendId,
-  roomTypeBackendId,
-  saveProfileRoomInfo,
-  type ProfileRoomInfoRequest,
+  useRegionOptions,
+  useRoomTypeOptions,
+  type RegionSelectOption,
+  type RoomTypeOption,
 } from '@/lib/api';
-import {
-  ONBOARDING_WRITE_ENABLED,
-  useOnboarding,
-  useOnboardingRoom,
-  type Region,
-  type RoomType,
-} from '@/lib/onboarding';
-
-export const ROOM_INFO_ROOM_TYPES: { value: RoomType; label: string }[] = [
-  { value: 'one-room', label: '원룸' },
-  { value: 'two-room', label: '투룸' },
-  { value: 'three-room+', label: '쓰리룸 이상' },
-  { value: 'officetel', label: '오피스텔' },
-  { value: 'share-house', label: '쉐어하우스' },
-  { value: 'apt', label: '아파트' },
-  { value: 'villa', label: '빌라' },
-];
+import { useOnboarding, useOnboardingRoom, type Region, type RoomType } from '@/lib/onboarding';
 
 export const MAX_PREF_ROOM_TYPES = 3;
 export const MAX_REGIONS = 3;
-
-export const SIDO = ['서울', '경기', '인천', '충청'];
-export const GUGUN = ['전체', '마포구', '서대문구', '강남구', '송파구', '노원구', '광진구'];
-export const DONG = ['전체', '합정동', '망원동', '연남동', '상수동'];
 
 export type RegionDraft = { sido: string | null; gugun: string | null; dong: string | null };
 
@@ -44,6 +23,10 @@ export type UseRoomInfoStepProps = {
 export type UseRoomInfoStepReturn = {
   room: ReturnType<typeof useOnboardingRoom>['room'];
   draft: RegionDraft;
+  cityOptions: RegionSelectOption[];
+  gugunOptions: RegionSelectOption[];
+  dongOptions: RegionSelectOption[];
+  roomTypeOptions: RoomTypeOption[];
   today: Date;
   hasRoom: boolean;
   noRoom: boolean;
@@ -69,10 +52,10 @@ export type UseRoomInfoStepReturn = {
 };
 
 export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomInfoStepReturn {
-  const { goNext, isStepSaved, markStepSaved } = useOnboarding();
+  const { goNext } = useOnboarding();
   const { room, patch } = useOnboardingRoom();
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const regions = useRegionOptions();
+  const roomTypes = useRoomTypeOptions();
 
   useEffect(() => {
     onboardingTiming.enterStep();
@@ -84,11 +67,14 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
 
   const [draft, setDraft] = useState<RegionDraft>(() => {
     if (room.hasRoom === true && room.region) {
-      const [s, g, d] = room.region.id.split('-');
-      return { sido: s ?? null, gugun: g ?? null, dong: d || null };
+      return { sido: null, gugun: null, dong: room.region.id };
     }
     return EMPTY_DRAFT;
   });
+  const gugunOptions = draft.sido ? regions.getChildren(draft.sido) : [];
+  const childDongOptions = draft.gugun ? regions.getChildren(draft.gugun) : [];
+  const selectedGugun = draft.gugun ? regions.getOption(draft.gugun) : undefined;
+  const dongOptions = selectedGugun ? [selectedGugun, ...childDongOptions] : [];
 
   const today = startOfToday();
   const moveInValid = room.moveInDate != null && room.moveInDate >= today;
@@ -114,32 +100,8 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
   };
 
   const saveAndProceed = async () => {
-    if (!ONBOARDING_WRITE_ENABLED) {
-      onComplete?.();
-      goNext();
-      return;
-    }
-    if (submitting) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const body = roomToProfileRoomInfoRequest(room);
-      const signature = JSON.stringify(body);
-      if (!isStepSaved('roominfo', signature)) {
-        const res = await saveProfileRoomInfo(body);
-        if (res.status !== 200 || res.error) {
-          setSubmitError(res.error?.message ?? `저장에 실패했어요 (status ${res.status})`);
-          return;
-        }
-        markStepSaved('roominfo', signature);
-      }
-      onComplete?.();
-      goNext();
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : '네트워크 오류가 발생했어요.');
-    } finally {
-      setSubmitting(false);
-    }
+    onComplete?.();
+    goNext();
   };
 
   useEffect(
@@ -150,7 +112,7 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
   );
 
   const commitDraft = (next: RegionDraft) => {
-    const region = regionFromDraft(next);
+    const region = regionFromDraft(next, regions.getOption, regions.getChildren);
     if (!region) {
       setDraft(next);
       return;
@@ -174,17 +136,21 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
   return {
     room,
     draft,
+    cityOptions: regions.cities,
+    gugunOptions,
+    dongOptions,
+    roomTypeOptions: roomTypes.options,
     today,
     hasRoom,
     noRoom,
     canProceed,
     toast,
-    submitting,
-    submitError,
+    submitting: false,
+    submitError: null,
     onComplete: saveAndProceed,
     setHasRoom: (next) => patch({ hasRoom: next }),
-    selectSido: (value) => commitDraft({ ...draft, sido: value }),
-    selectGugun: (value) => commitDraft({ ...draft, gugun: value }),
+    selectSido: (value) => commitDraft({ sido: value, gugun: null, dong: null }),
+    selectGugun: (value) => commitDraft({ ...draft, gugun: value, dong: null }),
     selectDong: (value) => commitDraft({ ...draft, dong: value }),
     removeRegion: (id) => patch({ regions: room.regions.filter((r) => r.id !== id) }),
     setDeposit: (value) => patch({ deposit: value }),
@@ -205,57 +171,20 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
   };
 }
 
-function roomToProfileRoomInfoRequest(
-  room: ReturnType<typeof useOnboardingRoom>['room'],
-): ProfileRoomInfoRequest {
-  if (room.hasRoom === true) {
-    return {
-      type: 'OFFER',
-      region: compactNumbers([regionBackendId(room.region)]),
-      roomProfile: compactNumbers([roomTypeBackendId(room.roomType)]),
-      deposit: room.deposit ?? undefined,
-      mounthRent: room.monthlyRent ?? undefined,
-      minDeposit: room.deposit ?? undefined,
-      maxDeposit: room.deposit ?? undefined,
-      minMounthRent: room.monthlyRent ?? undefined,
-      maxMounthRent: room.monthlyRent ?? undefined,
-      comeEnableAt: toApiDateTime(room.moveInDate),
-      comeableAtNegotiable: false,
-    };
-  }
-
-  return {
-    type: 'SEEKER',
-    region: compactNumbers(room.regions.map(regionBackendId)),
-    roomProfile: compactNumbers(room.roomTypes.map(roomTypeBackendId)),
-    minDeposit: room.budgetDeposit.min,
-    maxDeposit: room.budgetDeposit.max,
-    minMounthRent: room.budgetRent.min,
-    maxMounthRent: room.budgetRent.max,
-    comeEnableAt: toApiDateTime(room.moveInBy),
-    comeableAtNegotiable: false,
-  };
-}
-
-function toApiDateTime(date: Date | null | undefined): string | undefined {
-  return date ? date.toISOString() : undefined;
-}
-
 function startOfToday(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-function regionFromDraft(d: RegionDraft): Region | null {
+function regionFromDraft(
+  d: RegionDraft,
+  getOption: (id: string | null | undefined) => RegionSelectOption | undefined,
+  getChildren: (id: string | null | undefined) => RegionSelectOption[],
+): Region | null {
   if (!d.sido) return null;
-  if (d.gugun === '전체') {
-    return { id: d.sido, city: d.sido, district: '전체' };
-  }
   if (!d.gugun) return null;
-  if (d.dong == null) return null;
-  if (d.dong === '전체') {
-    return { id: `${d.sido}-${d.gugun}`, city: d.sido, district: d.gugun };
-  }
-  return { id: `${d.sido}-${d.gugun}-${d.dong}`, city: d.sido, district: `${d.gugun} ${d.dong}` };
+  if (!getChildren(d.gugun).length) return getOption(d.gugun)?.region ?? null;
+  if (!d.dong) return null;
+  return getOption(d.dong)?.region ?? null;
 }

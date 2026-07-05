@@ -18,29 +18,53 @@ import type { OpenApiSchema } from './openapi-types';
 /** 기본정보1 (온보딩 1단계). */
 export type ProfileBasicRequest =
   OpenApiSchema<'org.example.knockin.dto.SaveProfileBasicDto$Request'>;
+export type ProfileBasicUpdateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ModifyProfileBasicDto$Request'>;
 
 /** 기본정보2 (온보딩 2단계) — 생활패턴. */
 export type ProfileLifestyleRequest =
   OpenApiSchema<'org.example.knockin.dto.SaveProfileLifeStyleDto$Request'>;
+export type ProfileLifestyleUpdateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ModifyProfileLifeStyleDto$Request'>;
 
 /** 기본정보3 (온보딩 3단계) — 방 정보. (명세상 mounthRent 오타 유지) */
 export type ProfileRoomInfoRequest =
   OpenApiSchema<'org.example.knockin.dto.SaveProfileRoomInfoDto$Request'>;
+export type ProfileRoomInfoUpdateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ModifyProfileRoomInfoDto$Request'>;
 
 /** 기본정보 1,2,3 일괄. */
 export type ProfileAllRequest = OpenApiSchema<'org.example.knockin.dto.SaveProfileAllDto$Request'>;
+export type ProfileAllUpdateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ModifyProfileAllDto$Request'>;
+
+type ComeableAtNegotiableRequest = {
+  comeableAtNegotiable?: boolean;
+  isComeableAtNegotiable?: boolean;
+};
+
+export type ProfileRoomInfoRuntimeRequest = ProfileRoomInfoRequest &
+  Required<ComeableAtNegotiableRequest>;
+
+export type ProfileAllRuntimeRequest = ProfileAllRequest & Required<ComeableAtNegotiableRequest>;
 
 /** 선호조건1 (Phase 2 Step A). */
 export type PreferenceLifestyleRequest =
   OpenApiSchema<'org.example.knockin.dto.SavePreferencesLifeStyleDto$Request'>;
+export type PreferenceLifestyleUpdateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ModifyPreferencesLifeStyleDto$Request'>;
 
 /** 선호조건2 (Phase 2 Step B). (명세상 값은 lifestyleId 형태) */
 export type PreferenceConditionsRequest =
   OpenApiSchema<'org.example.knockin.dto.SavePreferencesConditionsDto$Request'>;
+export type PreferenceConditionsUpdateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ModifyPreferencesConditionsDto$Request'>;
 
 /** 선호조건 1,2 일괄. */
 export type PreferenceAllRequest =
   OpenApiSchema<'org.example.knockin.dto.SavePreferencesAllDto$Request'>;
+export type PreferenceAllUpdateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ModifyPreferencesAllDto$Request'>;
 
 /** 프로필 노출 상태 변경. */
 export type VisibilityRequest =
@@ -60,6 +84,19 @@ export type MyBoardItem =
   OpenApiSchema<'org.example.knockin.dto.MyBoardListDto$Response$BoardItem'>;
 
 export type MyBoardListData = OpenApiSchema<'org.example.knockin.dto.MyBoardListDto$Response'>;
+
+export function withComeableAtNegotiable<T extends object>(
+  body: T,
+): T & Required<ComeableAtNegotiableRequest> {
+  const current = body as ComeableAtNegotiableRequest;
+  const value = current.comeableAtNegotiable ?? current.isComeableAtNegotiable ?? false;
+  return {
+    ...body,
+    // Swagger exposes comeableAtNegotiable, while the current backend runtime also expects isComeableAtNegotiable.
+    comeableAtNegotiable: value,
+    isComeableAtNegotiable: value,
+  };
+}
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
@@ -159,14 +196,16 @@ export function saveProfileAll(body: ProfileAllRequest): Promise<ApiResponse<Upd
 // ─── Client: 기본정보 수정 ──────────────────────────────────────────────────────
 
 /** PUT /users/me/profile/basic */
-export function updateProfileBasic(body: ProfileBasicRequest): Promise<ApiResponse<UpdatedAt>> {
+export function updateProfileBasic(
+  body: ProfileBasicUpdateRequest,
+): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', '/users/me/profile/basic', { body });
 }
 
 /** PUT /users/me/profile/lifestyle */
 export function updateProfileLifestyle(
-  body: ProfileLifestyleRequest,
+  body: ProfileLifestyleUpdateRequest,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', '/users/me/profile/lifestyle', { body });
@@ -174,14 +213,14 @@ export function updateProfileLifestyle(
 
 /** PUT /users/me/profile/roominfo */
 export function updateProfileRoomInfo(
-  body: ProfileRoomInfoRequest,
+  body: ProfileRoomInfoUpdateRequest,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', '/users/me/profile/roominfo', { body });
 }
 
 /** PUT /users/me/profile/all */
-export function updateProfileAll(body: ProfileAllRequest): Promise<ApiResponse<UpdatedAt>> {
+export function updateProfileAll(body: ProfileAllUpdateRequest): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', '/users/me/profile/all', { body });
 }
@@ -212,7 +251,7 @@ export function savePreferenceAll(body: PreferenceAllRequest): Promise<ApiRespon
 
 /** PUT /users/me/preferences/lifestyle */
 export function updatePreferenceLifestyle(
-  body: PreferenceLifestyleRequest,
+  body: PreferenceLifestyleUpdateRequest,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', '/users/me/preferences/lifestyle', { body });
@@ -220,14 +259,16 @@ export function updatePreferenceLifestyle(
 
 /** PUT /users/me/preferences/conditions */
 export function updatePreferenceConditions(
-  body: PreferenceConditionsRequest,
+  body: PreferenceConditionsUpdateRequest,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', '/users/me/preferences/conditions', { body });
 }
 
 /** PUT /users/me/preferences/all */
-export function updatePreferenceAll(body: PreferenceAllRequest): Promise<ApiResponse<UpdatedAt>> {
+export function updatePreferenceAll(
+  body: PreferenceAllUpdateRequest,
+): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', '/users/me/preferences/all', { body });
 }

@@ -5,8 +5,8 @@ export type PreferredGender = 'same' | 'any';
 export type CleanlinessLevel = 1 | 2 | 3 | 4 | 5;
 export type NoiseSensitivity = 1 | 2 | 3 | 4 | 5;
 
-export type Smoking = 'no' | 'outdoor' | 'yes';
-export type PetPolicy = 'no' | 'small' | 'any';
+export type Smoking = string;
+export type PetPolicy = string;
 
 export type Lifestyle = {
   sleepTime: string;
@@ -19,14 +19,7 @@ export type Lifestyle = {
 
 export type ProfileVisibility = 'public' | 'hidden' | 'matched';
 
-export type RoomType =
-  | 'one-room'
-  | 'two-room'
-  | 'three-room+'
-  | 'officetel'
-  | 'share-house'
-  | 'apt'
-  | 'villa';
+export type RoomType = string;
 
 export type Region = {
   id: string;
@@ -39,7 +32,7 @@ export type ImportantCondition = {
   label: string;
 };
 
-export type TermKey = 'terms-of-service' | 'privacy-policy' | 'marketing-push' | 'location';
+export type TermKey = string;
 
 export type Term = {
   key: TermKey;
@@ -48,17 +41,8 @@ export type Term = {
   href?: string;
 };
 
-/**
- * 와이어프레임 "생활 패턴" 스텝의 6개 척도(1~5).
- * 기존 Lifestyle 타입과 별개로 온보딩 슬라이더 응답을 담는다.
- */
-export type LifestyleScaleKey =
-  | 'sleep'
-  | 'cleanliness'
-  | 'noise'
-  | 'personality'
-  | 'privacy'
-  | 'visitor';
+/** Swagger /meta/lifestyle-patterns 의 SCALE 패턴 key. */
+export type LifestyleScaleKey = string;
 
 export type LifestyleScales = Partial<Record<LifestyleScaleKey, number>>;
 
@@ -72,6 +56,7 @@ export type BasicProfile = {
   bio: string;
   lifestyle: Partial<Lifestyle>;
   scales: LifestyleScales;
+  lifestyleChoices: Record<string, string>;
   importantConditionIds: string[];
   dealbreaker: string;
   visibility: ProfileVisibility;
@@ -121,7 +106,7 @@ export type PreferenceConditions = {
   roomTypes: RoomType[];
 };
 
-export type TermsAgreement = Record<TermKey, boolean>;
+export type TermsAgreement = Record<string, boolean>;
 
 export type OnboardingValues = {
   terms: TermsAgreement;
@@ -140,8 +125,8 @@ export function emptyBasicProfile(): BasicProfile {
     regions: [],
     bio: '',
     lifestyle: {},
-    // 슬라이더가 중앙(3)으로 표시되므로 저장값도 3으로 초기화해 표시·상태를 일치시킨다.
-    scales: { sleep: 3, cleanliness: 3, noise: 3, personality: 3, privacy: 3, visitor: 3 },
+    scales: {},
+    lifestyleChoices: {},
     importantConditionIds: [],
     dealbreaker: '',
     visibility: 'public',

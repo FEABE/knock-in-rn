@@ -64,10 +64,9 @@ export function socialLoginSdk(
   }).then(normalizeLoginResponse);
 }
 
-/** 로그아웃 — POST /auth/logout */
-export function logout(accessToken: string): Promise<ApiResponse<UpdatedAt>> {
-  if (USE_MOCK) return mockUpdatedAt();
-  return request('POST', '/auth/logout', { body: { accessToken } });
+/** 로그아웃 — Swagger에는 서버 로그아웃 API가 없어서 기기 세션 삭제만 수행한다. */
+export function logout(_accessToken?: string): Promise<ApiResponse<UpdatedAt>> {
+  return mockUpdatedAt();
 }
 
 /** 회원 탈퇴 — DELETE /users/me */

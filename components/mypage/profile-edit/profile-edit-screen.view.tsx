@@ -1,30 +1,33 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CalendarField } from '@/components/onboarding/calendar-field';
 import { RangeField } from '@/components/onboarding/range-field';
+import { RegionFilterBody } from '@/components/room/filters';
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl, Tabs } from '@/components/ui/headless';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
+import { useRoomTypeOptions } from '@/lib/api';
 
-import {
-  PROFILE_ROOM_TYPES,
-  PROFILE_SCALES,
-  type UseProfileEditScreenReturn,
-} from './use-profile-edit-screen';
+import { type UseProfileEditScreenReturn } from './use-profile-edit-screen';
 
 export type ProfileEditScreenViewProps = UseProfileEditScreenReturn;
 
 export function ProfileEditScreenView({
   scales,
-  smoking,
-  pet,
+  choiceValues,
+  scaleOptions,
+  choiceGroups,
   hasRoom,
+  regions,
+  moveInDate,
   deposit,
   rent,
   roomTypes,
-  setSmoking,
-  setPet,
+  setChoice,
   setHasRoom,
+  setRegions,
+  setMoveInDate,
   setDeposit,
   setRent,
   setRoomTypes,
@@ -33,6 +36,9 @@ export function ProfileEditScreenView({
   saveLifestyle,
   saveRoom,
 }: ProfileEditScreenViewProps) {
+  const roomTypeOptions = useRoomTypeOptions();
+  const isOffer = hasRoom === true;
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
@@ -70,38 +76,29 @@ export function ProfileEditScreenView({
 
         <Tabs.Content value="lifestyle" className="flex-1">
           <ScrollView className="flex-1" contentContainerClassName="gap-7 p-5 pb-28">
-            {PROFILE_SCALES.map((scale) => {
+            {scaleOptions.map((scale) => {
               const value = scales[scale.key] ?? 3;
               return (
                 <ScaleSlider
                   key={scale.key}
                   label={scale.label}
-                  valueLabel={scale.levels[value - 1]}
-                  minLabel={scale.min}
-                  maxLabel={scale.max}
+                  valueLabel={scale.levels[value - 1] ?? scale.levels[0] ?? ''}
+                  minLabel={scale.minLabel}
+                  maxLabel={scale.maxLabel}
                   value={scales[scale.key] ?? null}
                   onChange={(next) => setScale(scale.key, next)}
                 />
               );
             })}
-            <Choices
-              label="흡연"
-              options={[
-                { value: 'no', label: '비흡연' },
-                { value: 'yes', label: '흡연' },
-              ]}
-              value={smoking}
-              onChange={setSmoking}
-            />
-            <Choices
-              label="반려동물"
-              options={[
-                { value: 'no', label: '없음' },
-                { value: 'any', label: '있음' },
-              ]}
-              value={pet}
-              onChange={setPet}
-            />
+            {choiceGroups.map((group) => (
+              <Choices
+                key={group.key}
+                label={group.label}
+                options={group.options}
+                value={choiceValues[group.key] ?? null}
+                onChange={(value) => setChoice(group.key, value)}
+              />
+            ))}
           </ScrollView>
           <SaveBar onSave={saveLifestyle} />
         </Tabs.Content>
@@ -117,8 +114,17 @@ export function ProfileEditScreenView({
               value={hasRoom ? 'yes' : 'no'}
               onChange={(value) => setHasRoom(value === 'yes')}
             />
+            <View className="gap-2">
+              <Text className="text-sm font-semibold text-neutral-800">
+                {isOffer ? '방 위치' : '선호 지역'}
+              </Text>
+              <RegionFilterBody
+                value={regions}
+                onChange={(next) => setRegions(isOffer ? next.slice(-1) : next.slice(0, 3))}
+              />
+            </View>
             <RangeField
-              label="예산 보증금"
+              label={isOffer ? '보증금' : '예산 보증금'}
               min={0}
               max={6000}
               step={100}
@@ -129,7 +135,7 @@ export function ProfileEditScreenView({
               formatBubble={(lo, hi) => `${lo}~${hi}만원`}
             />
             <RangeField
-              label="예산 월세"
+              label={isOffer ? '월세' : '예산 월세'}
               min={0}
               max={500}
               step={10}
@@ -141,17 +147,34 @@ export function ProfileEditScreenView({
             />
             <View className="gap-2">
               <Text className="text-sm font-semibold text-neutral-800">
-                선호 방 형태 (복수 선택)
+                {isOffer ? '입주 가능 시기' : '입주 희망 시기'}
+              </Text>
+              <CalendarField
+                value={moveInDate}
+                onChange={setMoveInDate}
+                minDate={new Date()}
+                placeholder={isOffer ? '입주 가능일 선택' : '입주 희망일 선택'}
+              />
+            </View>
+            <View className="gap-2">
+              <Text className="text-sm font-semibold text-neutral-800">
+                {isOffer ? '방 형태' : '선호 방 형태 (복수 선택)'}
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {PROFILE_ROOM_TYPES.map((roomType) => {
-                  const selected = roomTypes.includes(roomType);
+                {roomTypeOptions.options.map((roomType) => {
+                  const selected = roomTypes.includes(roomType.value);
                   return (
                     <Pressable
-                      key={roomType}
+                      key={roomType.value}
                       onPress={() =>
                         setRoomTypes((prev) =>
-                          selected ? prev.filter((item) => item !== roomType) : [...prev, roomType],
+                          isOffer
+                            ? selected
+                              ? []
+                              : [roomType.value]
+                            : selected
+                              ? prev.filter((item) => item !== roomType.value)
+                              : [...prev, roomType.value],
                         )
                       }
                       className={`rounded-full border px-4 py-2 ${
@@ -163,7 +186,7 @@ export function ProfileEditScreenView({
                           selected ? 'text-sm font-medium text-white' : 'text-sm text-neutral-600'
                         }
                       >
-                        {roomType}
+                        {roomType.label}
                       </Text>
                     </Pressable>
                   );

@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   clearStoredAuthSession,
@@ -28,6 +29,8 @@ import {
 
 // WebBrowser.maybeCompleteAuthSession(); // 더 이상 사용하지 않음
 
+const E2E_ACCESS_TOKEN = process.env.EXPO_PUBLIC_E2E_ACCESS_TOKEN;
+
 export type SignInFailureKind = 'cancelled' | 'network' | 'failed';
 
 export type SignInResult =
@@ -47,13 +50,14 @@ export type SignInResult =
 export type SessionContextValue = {
   session: Session;
   signIn: (provider?: SocialProvider) => Promise<SignInResult>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   setVisibility: (next: 'public' | 'hidden' | 'matched') => void;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children, initial }: { children: ReactNode; initial?: Session }) {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<Session>(() => {
     if (initial !== undefined) return initial;
     if (!USE_MOCK) return null;
@@ -68,6 +72,21 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     if (USE_MOCK || initial !== undefined) return;
 
     let cancelled = false;
+    if (__DEV__ && E2E_ACCESS_TOKEN) {
+      setAccessToken(E2E_ACCESS_TOKEN);
+      loadSessionUser().then((user) => {
+        if (cancelled) return;
+        setSession({
+          user,
+          isProfileComplete: true,
+          visibility: 'public',
+        });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     readStoredAuthSession().then((stored) => {
       if (cancelled || !stored) return;
       setAccessToken(stored.accessToken);
@@ -146,11 +165,12 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     }
   }, []);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
     setAccessToken(null);
-    void clearStoredAuthSession();
+    await clearStoredAuthSession();
+    queryClient.clear();
     setSession(null);
-  }, []);
+  }, [queryClient]);
 
   const setVisibility = useCallback((next: 'public' | 'hidden' | 'matched') => {
     setSession((prev) => (prev ? { ...prev, visibility: next } : prev));

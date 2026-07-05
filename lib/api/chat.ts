@@ -9,7 +9,9 @@ import {
   API_BASE_URL,
   type ApiResponse,
   type PageParams,
+  type UpdatedAt,
   mockOk,
+  mockUpdatedAt,
   request,
   USE_MOCK,
 } from './client';
@@ -28,6 +30,18 @@ export type ChatRoomItem = OpenApiSchema<'org.example.knockin.dto.ChatRoomListDt
 
 export type ChatRoomListData = {
   chatRooms?: ChatRoomItem[];
+};
+
+export type ChatRoomDetailData =
+  OpenApiSchema<'org.example.knockin.dto.ChatRoomDetailDto$Response'>;
+
+export type ChatRoomImageData =
+  OpenApiSchema<'org.example.knockin.dto.ChatRoomImageDto$Response'>;
+
+export type ChatImageUpload = {
+  uri: string;
+  name?: string;
+  type?: string;
 };
 
 // ─── WebSocket ─────────────────────────────────────────────────────────────────
@@ -103,6 +117,33 @@ const MOCK_CHAT_ROOMS: ChatRoomItem[] = [
   },
 ];
 
+const MOCK_CHAT_DETAIL: ChatRoomDetailData = {
+  opponentProfile: {
+    id: 2,
+    name: '하준',
+    age: 29,
+    gender: 'MALE',
+    score: 91,
+  },
+  messages: [
+    {
+      id: 1,
+      senderId: 2,
+      contents: '안녕하세요. 게시글 보고 연락드렸어요.',
+      createdAt: '2026-05-13T09:24:00Z',
+      type: 'TEXT',
+    },
+    {
+      id: 2,
+      senderId: 1,
+      contents: '좋아요. 청소 규칙이랑 공과금 기준만 미리 정하면 괜찮을 것 같아요.',
+      createdAt: '2026-05-13T09:28:00Z',
+      type: 'TEXT',
+    },
+  ],
+  matchingRequiredList: [],
+};
+
 // ─── Client ───────────────────────────────────────────────────────────────────
 
 /** GET /chats — 채팅방 목록 조회 */
@@ -112,6 +153,38 @@ export function getChatRooms(params: PageParams = {}): Promise<ApiResponse<ChatR
     ...res,
     data: { chatRooms: (res.data ?? []).map(normalizeChatRoomItem) },
   }));
+}
+
+/** GET /chats/{chatId} — 채팅방 상세 조회 */
+export function getChatRoomDetail(chatId: string): Promise<ApiResponse<ChatRoomDetailData>> {
+  if (USE_MOCK) return mockOk(MOCK_CHAT_DETAIL);
+  return request('GET', `/chats/${chatId}`);
+}
+
+/** POST /chats/{chatId}/images — 채팅방 이미지 업로드 */
+export function uploadChatImage(
+  chatId: string,
+  file: ChatImageUpload,
+): Promise<ApiResponse<ChatRoomImageData>> {
+  if (USE_MOCK) return mockOk({ imageUrl: file.uri });
+
+  const formData = new FormData();
+  formData.append('file', {
+    uri: file.uri,
+    name: file.name ?? 'chat-image.jpg',
+    type: file.type ?? 'image/jpeg',
+  } as any);
+
+  return request('POST', `/chats/${chatId}/images`, {
+    body: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
+/** POST /chats/{chatId}/leave — 채팅방 나가기 */
+export function leaveChatRoom(chatId: string): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('POST', `/chats/${chatId}/leave`);
 }
 
 function normalizeChatRoomItem(item: ChatRoomItem): ChatRoomItem {

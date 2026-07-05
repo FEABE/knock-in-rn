@@ -24,11 +24,11 @@ export function RegionFilterBody({
         <View className="w-24 rounded-xl bg-neutral-50">
           <ScrollView showsVerticalScrollIndicator={false}>
             {cities.map((city) => {
-              const selected = city === activeCity;
+              const selected = city.id === activeCity;
               return (
                 <Pressable
-                  key={city}
-                  onPress={() => setActiveCity(city)}
+                  key={city.id}
+                  onPress={() => setActiveCity(city.id)}
                   className={`px-3 py-3 ${selected ? 'bg-white' : ''}`}
                 >
                   <Text
@@ -36,7 +36,7 @@ export function RegionFilterBody({
                       selected ? 'text-sm font-semibold text-[#256EF4]' : 'text-sm text-neutral-500'
                     }
                   >
-                    {city}
+                    {city.label}
                   </Text>
                 </Pressable>
               );
@@ -46,7 +46,8 @@ export function RegionFilterBody({
 
         <View className="flex-1 rounded-xl border border-neutral-100">
           <ScrollView showsVerticalScrollIndicator={false}>
-            {districts.map((r) => {
+            {districts.map((option) => {
+              const r = option.region;
               const selected = value.some((d) => d.id === r.id);
               return (
                 <Pressable

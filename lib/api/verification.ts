@@ -10,42 +10,28 @@ import {
   request,
   USE_MOCK,
 } from './client';
+import type { OpenApiSchema } from './openapi-types';
 
 export type VerificationKind = 'student' | 'company';
 
 // ─── Request Types ────────────────────────────────────────────────────────────
 
-export type VerifySendRequest = {
-  email: string;
-};
+export type VerifySendRequest = OpenApiSchema<'org.example.knockin.dto.EmailSendDto$Request'>;
 
-export type VerifyConfirmRequest = {
-  email: string;
-  authNo: string;
-};
+export type VerifyConfirmRequest =
+  OpenApiSchema<'org.example.knockin.dto.EmailConfirmDto$Request'>;
 
-export type BlockRequest = {
-  userId: string;
-};
+export type BlockRequest = OpenApiSchema<'org.example.knockin.dto.BlockDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
-export type VerificationStatus = {
-  isAccepted: string;
-  email: string;
-  createAt: string;
-};
+export type VerificationStatus =
+  OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response$AuthInfo'>;
 
-export type VerificationsData = {
-  studentAuth: VerificationStatus;
-  employeeAuth: VerificationStatus;
-};
+export type VerificationsData =
+  OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response'>;
 
-export type BlockItem = {
-  userId: string;
-  name: string;
-  createAt: string;
-};
+export type BlockItem = OpenApiSchema<'org.example.knockin.dto.BlockListDto$Response$Block'>;
 
 export type BlockListData = {
   blocks: BlockItem[];
@@ -55,39 +41,43 @@ export type BlockListData = {
 
 const MOCK_VERIFICATIONS: VerificationsData = {
   studentAuth: {
-    isAccepted: 'false',
+    isAccepted: false,
     email: '',
     createAt: '',
   },
   employeeAuth: {
-    isAccepted: 'true',
+    isAccepted: true,
     email: 'jimin@company.com',
     createAt: '2026-05-15T09:00:00Z',
   },
 };
 
 const MOCK_BLOCKS: BlockItem[] = [
-  { userId: 'u-9', name: '차단된사용자', createAt: '2026-05-01T09:00:00Z' },
+  { userId: 9, name: '차단된사용자', createAt: '2026-05-01T09:00:00Z' },
 ];
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
-/** POST /auth/verify/{kind}/send — 인증번호 발급 */
+/** POST /auth/verify/student/send, /auth/verify/company/send — 인증번호 발급 */
 export function sendVerificationCode(
   kind: VerificationKind,
   body: VerifySendRequest,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
-  return request('POST', `/auth/verify/${kind}/send`, { body });
+  return kind === 'student'
+    ? request('POST', '/auth/verify/student/send', { body })
+    : request('POST', '/auth/verify/company/send', { body });
 }
 
-/** POST /auth/verify/{kind}/confirm — 인증번호 인증 */
+/** POST /auth/verify/student/confirm, /auth/verify/company/confirm — 인증번호 인증 */
 export function confirmVerificationCode(
   kind: VerificationKind,
   body: VerifyConfirmRequest,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
-  return request('POST', `/auth/verify/${kind}/confirm`, { body });
+  return kind === 'student'
+    ? request('POST', '/auth/verify/student/confirm', { body })
+    : request('POST', '/auth/verify/company/confirm', { body });
 }
 
 /** GET /users/me/verifications — 신원인증 목록 조회 */

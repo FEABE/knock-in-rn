@@ -7,9 +7,14 @@ import {
   compactNumbers,
   CONDITION_BACKEND_IDS,
   getPreferenceAll,
-  LIFESTYLE_BACKEND_IDS,
-  LIFESTYLE_CHOICE_BACKEND_IDS,
+  lifestyleIdsFromPatternOptions,
+  lifestyleModifyItemsFromPatternOptions,
+  lifestyleSelectionsFromBackendIds,
   savePreferenceAll,
+  updatePreferenceAll,
+  useLifestylePatternOptions,
+  type LifestyleChoiceGroup,
+  type LifestyleScaleOption,
 } from '@/lib/api';
 import { goExplore } from '@/lib/navigation/routes';
 import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
@@ -30,18 +35,14 @@ export type PreferencesStep = 0 | 1 | 2;
 export type UsePreferencesScreenReturn = {
   step: PreferencesStep;
   gender: string | null;
-  personality: number | null;
-  privacy: number | null;
-  visitor: number | null;
-  smoking: string | null;
-  pet: string | null;
+  scales: Record<string, number>;
+  choiceValues: Record<string, string>;
+  scaleOptions: LifestyleScaleOption[];
+  choiceGroups: LifestyleChoiceGroup[];
   selected: string[];
   setGender: (next: string) => void;
-  setPersonality: (next: number) => void;
-  setPrivacy: (next: number) => void;
-  setVisitor: (next: number) => void;
-  setSmoking: (next: string) => void;
-  setPet: (next: string) => void;
+  setScale: (key: string, next: number) => void;
+  setChoice: (key: string, next: string) => void;
   start: () => void;
   skip: () => void;
   goBackStep: () => void;
@@ -54,13 +55,14 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const fromOnboarding = from === 'onboarding';
+  const lifestyleOptions = useLifestylePatternOptions();
   const [step, setStep] = useState<PreferencesStep>(0);
   const [gender, setGender] = useState<string | null>('same');
-  const [personality, setPersonality] = useState<number | null>(3);
-  const [privacy, setPrivacy] = useState<number | null>(3);
-  const [visitor, setVisitor] = useState<number | null>(3);
-  const [smoking, setSmoking] = useState<string | null>('any');
-  const [pet, setPet] = useState<string | null>('any');
+  const [scales, setScales] = useState<Record<string, number>>({});
+  const [choiceValues, setChoiceValues] = useState<Record<string, string>>({});
+  const [loadedLifestyles, setLoadedLifestyles] = useState<{ id?: number; lifestyleId?: number }[]>(
+    [],
+  );
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
@@ -74,30 +76,31 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
         .filter(([, id]) => conditionIds.has(id))
         .map(([id]) => id);
       setSelected(nextSelected.slice(0, 3));
-
-      for (const item of res.data.lifestyles ?? []) {
-        if (item.lifestyleId === LIFESTYLE_BACKEND_IDS.personality && item.value) {
-          const value = Number(item.value);
-          if (Number.isFinite(value)) setPersonality(value);
-        }
-        if (item.lifestyleId === LIFESTYLE_BACKEND_IDS.privacy && item.value) {
-          const value = Number(item.value);
-          if (Number.isFinite(value)) setPrivacy(value);
-        }
-        if (item.lifestyleId === LIFESTYLE_BACKEND_IDS.visitor && item.value) {
-          const value = Number(item.value);
-          if (Number.isFinite(value)) setVisitor(value);
-        }
-        const smokingValue = smokingFromBackendId(item.lifestyleId);
-        if (smokingValue) setSmoking(smokingValue);
-        const petValue = petFromBackendId(item.lifestyleId);
-        if (petValue) setPet(petValue);
-      }
+      setLoadedLifestyles(
+        (res.data.lifestyles ?? []).map((item) => ({
+          id: item.id,
+          lifestyleId: item.lifestyleId,
+        })),
+      );
     });
     return () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const loadedLifestyleIds = loadedLifestyles.flatMap((item) =>
+      item.lifestyleId === undefined ? [] : [item.lifestyleId],
+    );
+    if (!loadedLifestyleIds.length) return;
+    const next = lifestyleSelectionsFromBackendIds(lifestyleOptions, loadedLifestyleIds);
+    if (Object.keys(next.scales).length > 0) {
+      setScales((prev) => ({ ...prev, ...next.scales }));
+    }
+    if (Object.keys(next.choices).length > 0) {
+      setChoiceValues((prev) => ({ ...prev, ...next.choices }));
+    }
+  }, [lifestyleOptions.scaleOptions, lifestyleOptions.choiceGroups, loadedLifestyles]);
 
   const exit = () => {
     if (fromOnboarding) goExplore(router, 'replace');
@@ -128,22 +131,30 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const save = async () => {
     logEvent(AnalyticsEvent.PREFERENCE_COMPLETE);
     if (ONBOARDING_WRITE_ENABLED) {
-      const res = await savePreferenceAll({
-        lifestyles: compactNumbers([
-          LIFESTYLE_BACKEND_IDS.personality,
-          LIFESTYLE_BACKEND_IDS.privacy,
-          LIFESTYLE_BACKEND_IDS.visitor,
-          smoking === 'no' || smoking === 'outdoor' || smoking === 'yes'
-            ? LIFESTYLE_CHOICE_BACKEND_IDS.smoking[smoking]
-            : undefined,
-          pet === 'no' || pet === 'small' || pet === 'any'
-            ? LIFESTYLE_CHOICE_BACKEND_IDS.pet[pet]
-            : undefined,
-        ]),
-        conditions: compactNumbers(selected.map((id) => CONDITION_BACKEND_IDS[id])),
-      });
+      const lifestyles = lifestyleIdsFromPatternOptions(lifestyleOptions, scales, choiceValues);
+      const conditions = compactNumbers(selected.map((id) => CONDITION_BACKEND_IDS[id]));
+      const modifyItems = lifestyleModifyItemsFromPatternOptions(
+        lifestyleOptions,
+        loadedLifestyles,
+        scales,
+        choiceValues,
+      );
+      if (!lifestyles.length && !conditions.length) {
+        Alert.alert('입력 확인 필요', '생활 패턴 또는 중요 조건을 하나 이상 선택해주세요.');
+        return;
+      }
+      const res =
+        !fromOnboarding && modifyItems.length
+          ? await updatePreferenceAll({
+              lifestyles: modifyItems,
+              conditions,
+            })
+          : await savePreferenceAll({
+              lifestyles,
+              conditions,
+            });
       if (res.error) {
-        Alert.alert('저장 실패');
+        Alert.alert('저장 실패', res.error.message ?? '잠시 후 다시 시도해주세요.');
         return;
       }
     }
@@ -153,18 +164,14 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   return {
     step,
     gender,
-    personality,
-    privacy,
-    visitor,
-    smoking,
-    pet,
+    scales,
+    choiceValues,
+    scaleOptions: lifestyleOptions.scaleOptions,
+    choiceGroups: lifestyleOptions.choiceGroups,
     selected,
     setGender,
-    setPersonality,
-    setPrivacy,
-    setVisitor,
-    setSmoking,
-    setPet,
+    setScale: (key, next) => setScales((prev) => ({ ...prev, [key]: next })),
+    setChoice: (key, next) => setChoiceValues((prev) => ({ ...prev, [key]: next })),
     start: () => {
       logEvent(AnalyticsEvent.PREFERENCE_PROMPT_START);
       setStep(1);
@@ -181,19 +188,4 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     togglePriority,
     save,
   };
-}
-
-function smokingFromBackendId(id: number | undefined): string | null {
-  if (id === undefined) return null;
-  return (
-    Object.entries(LIFESTYLE_CHOICE_BACKEND_IDS.smoking).find(([, value]) => value === id)?.[0] ??
-    null
-  );
-}
-
-function petFromBackendId(id: number | undefined): string | null {
-  if (id === undefined) return null;
-  return (
-    Object.entries(LIFESTYLE_CHOICE_BACKEND_IDS.pet).find(([, value]) => value === id)?.[0] ?? null
-  );
 }

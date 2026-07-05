@@ -5,12 +5,8 @@ import { CalendarField } from '../calendar-field';
 import { OnboardingFooter } from '../onboarding-footer';
 import { RangeField } from '../range-field';
 import {
-  DONG,
-  GUGUN,
   MAX_PREF_ROOM_TYPES,
   MAX_REGIONS,
-  ROOM_INFO_ROOM_TYPES,
-  SIDO,
   type RegionDraft,
   type UseRoomInfoStepReturn,
 } from './use-roominfo-step';
@@ -18,6 +14,10 @@ import {
 export function RoomInfoStepView({
   room,
   draft,
+  cityOptions,
+  gugunOptions,
+  dongOptions,
+  roomTypeOptions,
   today,
   hasRoom,
   noRoom,
@@ -44,6 +44,9 @@ export function RoomInfoStepView({
   const regionTable = (
     <RegionTable
       draft={draft}
+      cityOptions={cityOptions}
+      gugunOptions={gugunOptions}
+      dongOptions={dongOptions}
       onSelectSido={selectSido}
       onSelectGugun={selectGugun}
       onSelectDong={selectDong}
@@ -94,7 +97,7 @@ export function RoomInfoStepView({
 
             <Section label="방 형태">
               <View className="flex-row flex-wrap gap-2">
-                {ROOM_INFO_ROOM_TYPES.map((t) => (
+                {roomTypeOptions.map((t) => (
                   <Chip
                     key={t.value}
                     label={t.label}
@@ -172,7 +175,7 @@ export function RoomInfoStepView({
 
             <Section label={`선호 방 형태 (복수 선택 · 최대 ${MAX_PREF_ROOM_TYPES}개)`}>
               <View className="flex-row flex-wrap gap-2">
-                {ROOM_INFO_ROOM_TYPES.map((t) => {
+                {roomTypeOptions.map((t) => {
                   const selected = room.roomTypes.includes(t.value);
                   const disabled = !selected && room.roomTypes.length >= MAX_PREF_ROOM_TYPES;
                   return (
@@ -301,20 +304,26 @@ function RoomChoice({
 
 function RegionTable({
   draft,
+  cityOptions,
+  gugunOptions,
+  dongOptions,
   onSelectSido,
   onSelectGugun,
   onSelectDong,
 }: {
   draft: RegionDraft;
+  cityOptions: { id: string; label: string }[];
+  gugunOptions: { id: string; label: string }[];
+  dongOptions: { id: string; label: string }[];
   onSelectSido: (v: string) => void;
   onSelectGugun: (v: string) => void;
   onSelectDong: (v: string) => void;
 }) {
   return (
     <View className="flex-row overflow-hidden rounded-xl border border-neutral-200">
-      <Column title="시·도" items={SIDO} selected={draft.sido} onPick={onSelectSido} border />
-      <Column title="구·군" items={GUGUN} selected={draft.gugun} onPick={onSelectGugun} border />
-      <Column title="동" items={DONG} selected={draft.dong} onPick={onSelectDong} />
+      <Column title="시·도" items={cityOptions} selected={draft.sido} onPick={onSelectSido} border />
+      <Column title="구·군" items={gugunOptions} selected={draft.gugun} onPick={onSelectGugun} border />
+      <Column title="동" items={dongOptions} selected={draft.dong} onPick={onSelectDong} />
     </View>
   );
 }
@@ -327,7 +336,7 @@ function Column({
   border,
 }: {
   title: string;
-  items: string[];
+  items: { id: string; label: string }[];
   selected: string | null;
   onPick: (v: string) => void;
   border?: boolean;
@@ -343,17 +352,17 @@ function Column({
         showsVerticalScrollIndicator={false}
       >
         {items.map((it) => {
-          const on = it === selected;
+          const on = it.id === selected;
           return (
             <Pressable
-              key={it}
-              onPress={() => onPick(it)}
+              key={it.id}
+              onPress={() => onPick(it.id)}
               className={`py-3 ${on ? 'bg-[#256EF4]/10' : ''}`}
             >
               <Text
                 className={`text-center text-sm ${on ? 'font-medium text-[#256EF4]' : 'text-neutral-700'}`}
               >
-                {it}
+                {it.label}
               </Text>
             </Pressable>
           );

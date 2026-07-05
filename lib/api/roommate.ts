@@ -22,6 +22,9 @@ export type CalendarWriteRequest = OpenApiSchema<'org.example.knockin.dto.Calend
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
+export type RoommateRequestData =
+  OpenApiSchema<'org.example.knockin.dto.RoommateRequestDto$Response'>;
+
 /** 룸메이트 요청 목록 항목. (reqeustee 오타 유지) */
 export type RoommateRequestItem =
   OpenApiSchema<'org.example.knockin.dto.RoommateRequestListDto$Response'> &
@@ -130,26 +133,60 @@ const MOCK_CALENDAR_TYPES: CalendarType[] = [
 /** POST /roommate-requests — 룸메이트 요청 (같이 살아요) */
 export function createRoommateRequest(
   body: RoommateRequestCreate,
-): Promise<ApiResponse<UpdatedAt>> {
-  if (USE_MOCK) return mockUpdatedAt();
+): Promise<ApiResponse<RoommateRequestData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      roommateMatchingRequiredInfo: {
+        id: 1,
+        requesterMemberId: 1,
+        requesteeMemberId: 2,
+        status: 'PENDING',
+        createdAt: '2026-05-26T11:00:00Z',
+      },
+    });
+  }
   return request('POST', '/roommate-requests', { body });
 }
 
 /** POST /roommate-requests/{requestId}/accept */
-export function acceptRoommateRequest(requestId: string): Promise<ApiResponse<UpdatedAt>> {
-  if (USE_MOCK) return mockUpdatedAt();
+export function acceptRoommateRequest(requestId: string): Promise<ApiResponse<RoommateRequestData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      roommateMatchingRequiredInfo: {
+        id: Number(requestId) || 1,
+        status: 'ACCEPTED',
+        updatedAt: '2026-05-26T11:00:00Z',
+      },
+    });
+  }
   return request('POST', `/roommate-requests/${requestId}/accept`);
 }
 
 /** POST /roommate-requests/{requestId}/reject */
-export function rejectRoommateRequest(requestId: string): Promise<ApiResponse<UpdatedAt>> {
-  if (USE_MOCK) return mockUpdatedAt();
+export function rejectRoommateRequest(requestId: string): Promise<ApiResponse<RoommateRequestData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      roommateMatchingRequiredInfo: {
+        id: Number(requestId) || 1,
+        status: 'REJECTED',
+        updatedAt: '2026-05-26T11:00:00Z',
+      },
+    });
+  }
   return request('POST', `/roommate-requests/${requestId}/reject`);
 }
 
 /** POST /roommate-requests/{requestId}/cancel */
-export function cancelRoommateRequest(requestId: string): Promise<ApiResponse<UpdatedAt>> {
-  if (USE_MOCK) return mockUpdatedAt();
+export function cancelRoommateRequest(requestId: string): Promise<ApiResponse<RoommateRequestData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      roommateMatchingRequiredInfo: {
+        id: Number(requestId) || 1,
+        status: 'CANCELED',
+        updatedAt: '2026-05-26T11:00:00Z',
+      },
+    });
+  }
   return request('POST', `/roommate-requests/${requestId}/cancel`);
 }
 

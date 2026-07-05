@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
 import { useSupportInquiries } from '@/lib/api';
+import { useRequireLogin } from '@/lib/auth';
 import { goSupportInquiryNew } from '@/lib/navigation/routes';
 
 export type InquiryListItem = {
@@ -26,7 +27,8 @@ export type UseInquiryListScreenReturn = {
 
 export function useInquiryListScreen(): UseInquiryListScreenReturn {
   const router = useRouter();
-  const { data, loading, error } = useSupportInquiries();
+  const { session, requireLogin } = useRequireLogin();
+  const { data, loading, error } = useSupportInquiries(Boolean(session));
 
   const inquiries = useMemo<InquiryListItem[]>(() => data ?? [], [data]);
 
@@ -34,7 +36,11 @@ export function useInquiryListScreen(): UseInquiryListScreenReturn {
     inquiries,
     publicCount: inquiries.filter((inquiry) => inquiry.isPublic).length,
     loading,
-    error,
-    onCreatePress: () => goSupportInquiryNew(router),
+    error: session ? error : '문의내역은 로그인 후 확인할 수 있어요.',
+    onCreatePress: () =>
+      requireLogin(() => goSupportInquiryNew(router), {
+        title: '로그인 필요',
+        message: '문의 접수는 로그인 후 이용할 수 있어요.',
+      }),
   };
 }

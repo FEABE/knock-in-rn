@@ -2,10 +2,14 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BottomSheet } from '@/components/ui/headless';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import type { RoommateMatchDetailModel } from '@/lib/api';
 
-import type { UseRoommateDetailScreenReturn } from './use-roommate-detail-screen';
+import {
+  ROOMMATE_REPORT_REASONS,
+  type UseRoommateDetailScreenReturn,
+} from './use-roommate-detail-screen';
 
 export type RoommateDetailScreenViewProps = UseRoommateDetailScreenReturn;
 
@@ -14,17 +18,20 @@ export function RoommateDetailScreenView({
   loading,
   error,
   liked,
+  reportOpen,
   lifestyleExpanded,
+  setReportOpen,
   onBack,
   onScroll,
   onCompatibilityLayout,
   toggleLifestyle,
   onLike,
   onRequest,
+  onReportReason,
 }: RoommateDetailScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <Header onBack={onBack} />
+      <Header onBack={onBack} onReport={() => setReportOpen(true)} />
 
       {loading ? (
         <View className="flex-1 items-center justify-center gap-3">
@@ -55,20 +62,40 @@ export function RoommateDetailScreenView({
           </ScrollView>
 
           <BottomBar liked={liked} onLike={onLike} onRequest={onRequest} />
+          <BottomSheet
+            open={reportOpen}
+            onOpenChange={setReportOpen}
+            contentClassName="rounded-t-2xl bg-white px-5 pb-8 pt-3"
+          >
+            <Text className="mb-3 text-base font-semibold text-neutral-900">사용자 신고</Text>
+            <View className="gap-2">
+              {ROOMMATE_REPORT_REASONS.map((reason) => (
+                <Pressable
+                  key={reason}
+                  onPress={() => onReportReason(reason)}
+                  className="rounded-xl border border-neutral-200 px-4 py-3 active:bg-neutral-50"
+                >
+                  <Text className="text-sm text-neutral-800">{reason}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </BottomSheet>
         </>
       )}
     </SafeAreaView>
   );
 }
 
-function Header({ onBack }: { onBack: () => void }) {
+function Header({ onBack, onReport }: { onBack: () => void; onReport: () => void }) {
   return (
     <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
       <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
         <Text className="text-2xl text-neutral-700">‹</Text>
       </Pressable>
       <Text className="text-base font-semibold text-neutral-900">룸메이트 찾기</Text>
-      <View className="h-9 w-9" />
+      <Pressable onPress={onReport} className="h-9 w-9 items-center justify-center">
+        <Text className="text-xl text-neutral-700">⋯</Text>
+      </Pressable>
     </View>
   );
 }
