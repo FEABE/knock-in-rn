@@ -4,6 +4,7 @@ import { getLifestylePatterns, type LifestylePattern } from './meta';
 import { useApi } from './use-async';
 
 export type LifestyleScaleOption = {
+  patternId: number;
   key: string;
   label: string;
   minLabel: string;
@@ -16,9 +17,11 @@ export type LifestyleChoiceOption = {
   value: string;
   label: string;
   backendId: number;
+  detailValue: string;
 };
 
 export type LifestyleChoiceGroup = {
+  patternId: number;
   key: string;
   label: string;
   options: LifestyleChoiceOption[];
@@ -38,6 +41,7 @@ export type LifestylePatternOptionsState = LifestylePatternOptions & {
 export type LifestyleExistingSelection = {
   id?: number;
   lifestyleId?: number;
+  value?: string;
 };
 
 export type LifestyleModifyItem = {
@@ -105,22 +109,26 @@ export function lifestyleModifyItemsFromPatternOptions(
   });
 }
 
-export function lifestyleSelectionsFromBackendIds(
+export function lifestyleSelectionsFromProfileItems(
   options: LifestylePatternOptions,
-  ids: number[],
+  items: LifestyleExistingSelection[],
 ): { scales: Record<string, number>; choices: Record<string, string> } {
-  const idSet = new Set(ids);
   const scales: Record<string, number> = {};
   const choices: Record<string, string> = {};
 
-  for (const scale of options.scaleOptions) {
-    for (const [value, id] of Object.entries(scale.backendIdsByValue)) {
-      if (idSet.has(id)) scales[scale.key] = Number(value);
+  for (const item of items) {
+    if (item.lifestyleId === undefined || item.value == null) continue;
+    const scale = options.scaleOptions.find((option) => option.patternId === item.lifestyleId);
+    if (scale) {
+      const value = Number(item.value);
+      if (Number.isFinite(value) && scale.backendIdsByValue[value] !== undefined) {
+        scales[scale.key] = value;
+      }
+      continue;
     }
-  }
-  for (const group of options.choiceGroups) {
-    const option = group.options.find((item) => idSet.has(item.backendId));
-    if (option) choices[group.key] = option.value;
+    const group = options.choiceGroups.find((option) => option.patternId === item.lifestyleId);
+    const choice = group?.options.find((option) => option.detailValue === String(item.value));
+    if (group && choice) choices[group.key] = choice.value;
   }
 
   return { scales, choices };
@@ -153,12 +161,8 @@ function lifestyleSelectionsWithKeys(
 
 function lifestyleKeyByBackendId(options: LifestylePatternOptions): Map<number, string> {
   const map = new Map<number, string>();
-  options.scaleOptions.forEach((scale) => {
-    Object.values(scale.backendIdsByValue).forEach((id) => map.set(id, scale.key));
-  });
-  options.choiceGroups.forEach((group) => {
-    group.options.forEach((option) => map.set(option.backendId, group.key));
-  });
+  options.scaleOptions.forEach((scale) => map.set(scale.patternId, scale.key));
+  options.choiceGroups.forEach((group) => map.set(group.patternId, group.key));
   return map;
 }
 
@@ -186,6 +190,7 @@ function buildLifestylePatternOptions(patterns: LifestylePattern[]): LifestylePa
         }),
       );
       scaleOptions.push({
+        patternId: pattern.id,
         key,
         label: pattern.name,
         minLabel: sorted[0]?.description ?? pattern.name,
@@ -198,12 +203,14 @@ function buildLifestylePatternOptions(patterns: LifestylePattern[]): LifestylePa
 
     if (pattern.type === 'SINGLE_CHOICE' || pattern.type === 'BOOLEAN') {
       choiceGroups.push({
+        patternId: pattern.id,
         key,
         label: pattern.name,
         options: details.map((detail) => ({
           value: String(detail.backendId),
           label: detail.description ?? '',
           backendId: detail.backendId,
+          detailValue: detail.values ?? '',
         })),
       });
     }

@@ -166,7 +166,7 @@ export const REGION_BACKEND_IDS: Record<string, number> = {
 export const REGION_BACKEND_LABELS: Record<number, string> = Object.fromEntries(
   Object.entries(REGION_BACKEND_IDS)
     .filter(([key]) => key.includes('-') && /[가-힣]/.test(key))
-    .map(([key, value]) => [value, key.replace('-', ' ')]),
+    .map(([key, value]) => [value, key.replaceAll('-', ' ')]),
 );
 
 export type BackendIdRegistry = {
@@ -203,7 +203,10 @@ export function regionBackendId(region: Region | null | undefined): number | und
     region.id,
     `${region.city}-${region.district}`,
     region.district.includes(' ') ? `${region.city}-${region.district.split(' ')[0]}` : undefined,
-    ...region.id.split('-').slice(0, -1).map((_, index, parts) => parts.slice(0, parts.length - index).join('-')),
+    ...region.id
+      .split('-')
+      .slice(0, -1)
+      .map((_, index, parts) => parts.slice(0, parts.length - index).join('-')),
   ];
   for (const key of candidates) {
     if (key && REGION_BACKEND_IDS[key] !== undefined) return REGION_BACKEND_IDS[key];

@@ -7,7 +7,7 @@ export function CompanyVerificationScreen() {
       title="회사 이메일 인증"
       label="회사 이메일"
       iconName="business-outline"
-      defaultEmail="honggildong1234@samsung.com"
+      defaultEmail=""
       placeholder="name@company.com"
     />
   );

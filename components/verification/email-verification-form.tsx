@@ -1,7 +1,8 @@
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import {
   EmailVerification,
+  TextField,
   type EmailVerificationProps,
 } from '@/components/ui/headless';
 
@@ -67,16 +68,14 @@ export function EmailVerificationForm({
         }) => (
           <View className="gap-4">
             <View className="gap-2">
-              <Text className="text-sm font-semibold text-neutral-800">
-                이메일
-              </Text>
-              <TextInput
+              <Text className="text-sm font-semibold text-neutral-800">이메일</Text>
+              <TextField
                 value={email}
-                onChangeText={setEmail}
+                onChangeValue={setEmail}
                 placeholder={emailPlaceholder}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                editable={step === 'enter-email'}
+                disabled={step !== 'enter-email'}
                 className={`rounded-xl border px-4 py-3 text-base ${
                   step === 'enter-email'
                     ? 'border-neutral-200 bg-white'
@@ -88,9 +87,7 @@ export function EmailVerificationForm({
                   onPress={sendCode}
                   disabled={!isEmailValid || isSending}
                   className={`h-12 items-center justify-center rounded-xl ${
-                    isEmailValid && !isSending
-                      ? 'bg-[#256EF4] active:opacity-90'
-                      : 'bg-neutral-300'
+                    isEmailValid && !isSending ? 'bg-[#256EF4] active:opacity-90' : 'bg-neutral-300'
                   }`}
                 >
                   <Text className="text-sm font-semibold text-white">
@@ -107,22 +104,18 @@ export function EmailVerificationForm({
                     인증코드 ({codeLength}자리)
                   </Text>
                   {isVerified ? (
-                    <Text className="text-xs text-emerald-600">
-                      ✓ 인증 완료
-                    </Text>
+                    <Text className="text-xs text-emerald-600">✓ 인증 완료</Text>
                   ) : cooldown > 0 ? (
-                    <Text className="text-xs text-neutral-400">
-                      {cooldown}초 후 재전송 가능
-                    </Text>
+                    <Text className="text-xs text-neutral-400">{cooldown}초 후 재전송 가능</Text>
                   ) : null}
                 </View>
-                <TextInput
+                <TextField
                   value={code}
-                  onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, codeLength))}
+                  onChangeValue={(t) => setCode(t.replace(/\D/g, '').slice(0, codeLength))}
                   placeholder="인증코드 입력"
                   keyboardType="number-pad"
                   maxLength={codeLength}
-                  editable={!isVerified}
+                  disabled={isVerified}
                   className={`rounded-xl border px-4 py-3 text-center text-xl tracking-[8px] ${
                     isVerified
                       ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
@@ -169,23 +162,17 @@ export function EmailVerificationForm({
                     onPress={() => onVerified?.()}
                     className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
                   >
-                    <Text className="text-sm font-semibold text-white">
-                      완료
-                    </Text>
+                    <Text className="text-sm font-semibold text-white">완료</Text>
                   </Pressable>
                 )}
               </View>
             ) : null}
 
-            {error ? (
-              <Text className="text-xs text-red-500">{error}</Text>
-            ) : null}
+            {error ? <Text className="text-xs text-red-500">{error}</Text> : null}
 
             {step !== 'enter-email' && !isVerified ? (
               <Pressable onPress={reset} className="self-start">
-                <Text className="text-xs text-neutral-400 underline">
-                  이메일 다시 입력
-                </Text>
+                <Text className="text-xs text-neutral-400 underline">이메일 다시 입력</Text>
               </Pressable>
             ) : null}
           </View>

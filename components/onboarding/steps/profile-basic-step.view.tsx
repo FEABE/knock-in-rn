@@ -25,7 +25,13 @@ export function ProfileBasicStepView({
 }: ProfileBasicStepViewProps) {
   return (
     <View className="flex-1 bg-white">
-      <ScrollView className="flex-1" contentContainerClassName="gap-7 px-5 py-6">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-7 px-5 py-6"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
         <View className="gap-1">
           <Text className="text-2xl font-bold text-neutral-900">안녕하세요! 👋</Text>
           <Text className="text-2xl font-bold text-neutral-900">기본 정보를 알려주세요</Text>

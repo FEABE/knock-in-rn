@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,8 +7,6 @@ import { RangeField } from '@/components/onboarding/range-field';
 import { RegionFilterBody } from '@/components/room/filters';
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl, Tabs } from '@/components/ui/headless';
-import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
-import { useRoomTypeOptions } from '@/lib/api';
 
 import { type UseProfileEditScreenReturn } from './use-profile-edit-screen';
 
@@ -24,6 +23,8 @@ export function ProfileEditScreenView({
   deposit,
   rent,
   roomTypes,
+  roomTypeOptions,
+  bottomPadding,
   setChoice,
   setHasRoom,
   setRegions,
@@ -36,14 +37,13 @@ export function ProfileEditScreenView({
   saveLifestyle,
   saveRoom,
 }: ProfileEditScreenViewProps) {
-  const roomTypeOptions = useRoomTypeOptions();
   const isOffer = hasRoom === true;
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
         <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-          <Text className="text-2xl text-neutral-700">‹</Text>
+          <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
         <Text className="text-base font-semibold text-neutral-900">내 프로필</Text>
       </View>
@@ -100,7 +100,7 @@ export function ProfileEditScreenView({
               />
             ))}
           </ScrollView>
-          <SaveBar onSave={saveLifestyle} />
+          <SaveBar onSave={saveLifestyle} bottomPadding={bottomPadding} />
         </Tabs.Content>
 
         <Tabs.Content value="room" className="flex-1">
@@ -161,7 +161,7 @@ export function ProfileEditScreenView({
                 {isOffer ? '방 형태' : '선호 방 형태 (복수 선택)'}
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {roomTypeOptions.options.map((roomType) => {
+                {roomTypeOptions.map((roomType) => {
                   const selected = roomTypes.includes(roomType.value);
                   return (
                     <Pressable
@@ -194,7 +194,7 @@ export function ProfileEditScreenView({
               </View>
             </View>
           </ScrollView>
-          <SaveBar onSave={saveRoom} />
+          <SaveBar onSave={saveRoom} bottomPadding={bottomPadding} />
         </Tabs.Content>
       </Tabs.Root>
     </SafeAreaView>
@@ -238,9 +238,7 @@ function Choices({
   );
 }
 
-function SaveBar({ onSave }: { onSave: () => void }) {
-  const bottomPadding = useSafeBottomPadding(12, 24);
-
+function SaveBar({ onSave, bottomPadding }: { onSave: () => void; bottomPadding: number }) {
   return (
     <View
       className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"

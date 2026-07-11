@@ -12,27 +12,48 @@ export type VerificationHomeScreenViewProps = UseVerificationHomeScreenReturn;
 export function VerificationHomeScreenView({ cards, onBack }: VerificationHomeScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-        <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#404040" />
-        </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">신원 인증</Text>
-      </View>
+      <Header onBack={onBack} />
 
-      <ScrollView contentContainerClassName="gap-5 p-5">
+      <ScrollView contentContainerClassName="gap-5 px-4 pb-28 pt-5">
         <View className="gap-2">
-          <Text className="text-xl font-bold text-neutral-900">신뢰 배지를 추가해보세요</Text>
-          <Text className="text-sm leading-5 text-neutral-500">
-            학교 또는 회사 이메일로 인증하면 프로필에 배지가 표시되고 상대방에게 신뢰를 줄 수
-            있어요.
+          <Text className="text-xl font-bold text-[#17171B]">인증 방식을 선택해주세요</Text>
+          <Text className="text-sm leading-5 text-[#696976]">
+            인증 시 프로필에 배지가 표시되며, 상대에게 신뢰를 줄 수 있어요
           </Text>
         </View>
 
-        {cards.map((card) => (
-          <VerificationCard key={card.id} card={card} />
-        ))}
+        <View className="gap-3">
+          {cards.map((card) => (
+            <VerificationCard key={card.id} card={card} />
+          ))}
+        </View>
+
+        <View className="flex-row items-start gap-3 rounded-md bg-[#E9F0FE] px-4 py-4">
+          <Ionicons name="information-circle-outline" size={21} color="#256EF4" />
+          <Text className="flex-1 text-sm leading-5 text-[#256EF4]">
+            인증 종류별로 각각 배지가 표시돼요{`\n`}하나만 인증해도 배지가 노출돼요
+          </Text>
+        </View>
       </ScrollView>
+
+      <View className="absolute inset-x-0 bottom-0 bg-white px-4 pb-5 pt-3">
+        <View className="h-12 items-center justify-center rounded-lg bg-[#ECECF3]">
+          <Text className="text-base font-semibold text-[#AAAABA]">다음으로</Text>
+        </View>
+      </View>
     </SafeAreaView>
+  );
+}
+
+function Header({ onBack }: { onBack: () => void }) {
+  return (
+    <View className="h-12 flex-row items-center px-2">
+      <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
+        <Ionicons name="chevron-back" size={24} color="#696976" />
+      </Pressable>
+      <Text className="flex-1 text-center text-base font-medium text-[#17171B]">신원 인증</Text>
+      <View className="w-10" />
+    </View>
   );
 }
 
@@ -40,45 +61,25 @@ function VerificationCard({ card }: { card: VerificationHomeCard }) {
   return (
     <Pressable
       onPress={card.onPress}
-      className="gap-4 rounded-lg border border-neutral-200 bg-white p-4 active:bg-neutral-50"
+      className="min-h-[92px] flex-row items-center gap-4 rounded-md bg-[#F6F6FA] px-5 py-4 active:opacity-80"
     >
-      <View className="flex-row items-center justify-between gap-3">
-        <View className="flex-row items-center gap-3">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-[#256EF4]/10">
-            <Ionicons name={card.icon} size={20} color="#256EF4" />
-          </View>
-          <View className="gap-0.5">
-            <Text className="text-base font-semibold text-neutral-900">{card.title}</Text>
-            <Text className="text-xs text-neutral-500">{card.description}</Text>
-          </View>
-        </View>
-        <StatusPill verified={card.verified} />
+      <View className="h-[52px] w-[52px] items-center justify-center bg-[#E1E2EB]">
+        <Ionicons name={card.icon} size={25} color="#696976" />
       </View>
-
-      <View className="gap-1">
-        {card.bullets.map((bullet) => (
-          <Text key={bullet} className="text-[11px] text-neutral-400">
-            · {bullet}
-          </Text>
-        ))}
-      </View>
-
-      <View className="flex-row items-center justify-between border-t border-neutral-100 pt-3">
-        <Text className="text-sm font-semibold text-[#256EF4]">
-          {card.verified ? '상태 확인' : '인증하기'}
+      <View className="flex-1 gap-1">
+        <Text className="text-base font-bold text-[#17171B]">{card.title}</Text>
+        <Text numberOfLines={1} className="text-sm text-[#696976]">
+          {card.description}
         </Text>
-        <Ionicons name="chevron-forward" size={18} color="#256EF4" />
+      </View>
+      <View className="items-end gap-2">
+        <View className={`rounded px-3 py-1 ${card.verified ? 'bg-emerald-50' : 'bg-[#ECECF3]'}`}>
+          <Text className={`text-xs ${card.verified ? 'text-emerald-700' : 'text-[#AAAABA]'}`}>
+            {card.verified ? '인증완료' : '미인증'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#AAAABA" />
       </View>
     </Pressable>
-  );
-}
-
-function StatusPill({ verified }: { verified: boolean }) {
-  return (
-    <View className={`rounded-full px-2 py-0.5 ${verified ? 'bg-emerald-50' : 'bg-[#256EF4]/10'}`}>
-      <Text className={`text-[10px] ${verified ? 'text-emerald-700' : 'text-[#256EF4]'}`}>
-        {verified ? '인증완료' : '미인증'}
-      </Text>
-    </View>
   );
 }

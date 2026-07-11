@@ -12,7 +12,8 @@ import {
   regionKeyBackendId,
 } from '@/lib/api';
 import { useModeration, type ListFilter, type RoomPost, type SortKey } from '@/lib/domain';
-import { goNewRoom, goRoomDetail, goRoommateDetail } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
+import { goNewRoom, goRoomDetail, goRoommateDetail, goRoomSearch } from '@/lib/navigation/routes';
 
 export type UseRoommateTabScreenReturn = {
   filter: ListFilter;
@@ -29,6 +30,7 @@ export type UseRoommateTabScreenReturn = {
   onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
   onRoommatePress: (match: RoommateMatchCardModel) => void;
   onRoommateLikeChange: (match: RoommateMatchCardModel, liked: boolean) => void;
+  onSearchPress: () => void;
   onCreatePress: () => void;
 };
 
@@ -37,6 +39,7 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
   const [filter, setFilter] = useState<ListFilter>({ sort: 'latest' });
   const [filterOpen, setFilterOpen] = useState(false);
   const { isPostBlocked, isUserBlocked } = useModeration();
+  const { requireLogin } = useRequireLogin();
   const setBoardLiked = useRoommateBoardLikeActions();
   const setMatchLiked = useRoommateMatchLikeActions();
 
@@ -89,20 +92,23 @@ export function useRoommateTabScreen(): UseRoommateTabScreenReturn {
       logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
       goRoomDetail(router, post.id);
     },
-    onRoomLikeChange: (post, liked) => {
-      logEvent(liked ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
-        room_id: post.id,
-      });
-      setBoardLiked(post.id, liked);
-    },
+    onRoomLikeChange: (post, liked) =>
+      requireLogin(() => {
+        logEvent(liked ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
+          room_id: post.id,
+        });
+        setBoardLiked(post.id, liked);
+      }),
     onRoommatePress: (match) => {
       logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.id });
       goRoommateDetail(router, match.id);
     },
-    onRoommateLikeChange: (match, liked) => {
-      if (liked) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: match.id });
-      setMatchLiked(match.id, liked);
-    },
+    onRoommateLikeChange: (match, liked) =>
+      requireLogin(() => {
+        if (liked) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: match.id });
+        setMatchLiked(match.id, liked);
+      }),
+    onSearchPress: () => goRoomSearch(router),
     onCreatePress: () => goNewRoom(router),
   };
 }
@@ -116,11 +122,12 @@ function sortPosts(posts: RoomPost[], sort: SortKey): RoomPost[] {
 }
 
 function mapFilterToQuery(filter: ListFilter): BoardListQuery {
-  const region = filter.regionIds?.length ? regionKeyBackendId(filter.regionIds[0]) : undefined;
   return {
     minMounthRent: filter.rentMin,
     maxMounthRent: filter.rentMax,
     gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
-    region,
+    regionIds: filter.regionIds
+      ?.map(regionKeyBackendId)
+      .filter((id): id is number => id !== undefined),
   };
 }

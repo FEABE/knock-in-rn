@@ -16,13 +16,13 @@ import type { OpenApiSchema } from './openapi-types';
 
 /** 게시글 리스트 탐색 필터/쿼리. */
 export type BoardListQuery = {
-  region?: number;
+  regionIds?: number[];
   gender?: 'MALE' | 'FEMALE';
   minDeposit?: number;
   maxDeposit?: number;
   minMounthRent?: number;
   maxMounthRent?: number;
-  type?: number;
+  roomTypeIds?: number[];
   page?: number;
   size?: number;
   sort?: string;
@@ -65,8 +65,7 @@ export type BoardWriteRequest = Partial<BoardSaveRequest & BoardModifyRequest> &
 };
 
 export type BoardReportRequest = OpenApiSchema<'org.example.knockin.dto.ReportDto$Request'>;
-export type MatchReportRequest =
-  OpenApiSchema<'org.example.knockin.dto.MemberReportDto$Request'>;
+export type MatchReportRequest = OpenApiSchema<'org.example.knockin.dto.MemberReportDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
@@ -359,14 +358,11 @@ export async function getRoommateBoards(
   query: BoardListQuery = {},
 ): Promise<ApiResponse<BoardListData>> {
   if (USE_MOCK) return mockOk({ boards: MOCK_BOARDS });
-  const { region, type, ...restQuery } = query;
   const res = await request<BoardListPageData>('GET', '/roommate/boards', {
     query: {
       page: 0,
       size: 20,
-      ...restQuery,
-      regionIds: region === undefined ? undefined : [region],
-      roomTypeIds: type === undefined ? undefined : [type],
+      ...query,
     },
   });
   if (res.status !== 200 || res.error || !res.data) return { ...res, data: { boards: [] } };
@@ -433,7 +429,6 @@ export function createRoommateBoard(body: BoardWriteRequest): Promise<ApiRespons
   if (USE_MOCK) return mockUpdatedAt();
   return request('POST', '/roommate/boards', {
     body: boardWriteRequestToFormData(body, 'create'),
-    headers: { 'Content-Type': 'multipart/form-data' },
   });
 }
 
@@ -445,7 +440,6 @@ export function updateRoommateBoard(
   if (USE_MOCK) return mockUpdatedAt();
   return request('PUT', `/roommate/boards/${boardId}`, {
     body: boardWriteRequestToFormData(body, 'update'),
-    headers: { 'Content-Type': 'multipart/form-data' },
   });
 }
 
@@ -536,7 +530,8 @@ function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | '
       uri: image.uri ?? image.image,
       thumbnail: image.thumbnail ?? image.thumnail ?? index === 0,
     }))
-    .filter((entry) => entry.uri && !entry.uri.startsWith('http'));
+    .filter((entry) => entry.uri && !entry.uri.startsWith('http'))
+    .map((entry, fileIndex) => ({ ...entry, fileIndex }));
   const requestBody =
     mode === 'create'
       ? {
@@ -550,7 +545,7 @@ function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | '
           comeableDateNegotiable: body.comeableDateNegotiable ?? false,
           comeableDate: body.comeableDate ?? body.comeableAt,
           images: files.map((entry) => ({
-            fileIndex: entry.index,
+            fileIndex: entry.fileIndex,
             thumbnail: entry.thumbnail,
           })),
         }
@@ -568,13 +563,20 @@ function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | '
           newExtraOptionIds: body.newExtraOptionIds ?? body.roomOption ?? [],
           existingImages: body.existingImages ?? [],
           newImages: files.map((entry) => ({
-            fileIndex: entry.index,
+            fileIndex: entry.fileIndex,
             thumbnail: entry.thumbnail,
           })),
         };
 
   const formData = new FormData();
-  formData.append('request', JSON.stringify(requestBody));
+  const requestJson = JSON.stringify(requestBody);
+  if (typeof (formData as FormData & { getParts?: () => unknown }).getParts === 'function') {
+    // React Native FormData는 웹 Blob을 직렬화하지 않는다. string 파트에 타입을 붙이면
+    // 네이티브 네트워크 계층이 @RequestPart JSON으로 전송한다.
+    formData.append('request', { string: requestJson, type: 'application/json' } as any);
+  } else {
+    formData.append('request', new Blob([requestJson], { type: 'application/json' }));
+  }
   for (const { uri, image, index } of files) {
     formData.append('files', {
       uri,

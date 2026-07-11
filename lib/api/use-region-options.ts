@@ -7,6 +7,7 @@ import { useApi } from './use-async';
 
 export type RegionSelectOption = {
   id: string;
+  parentId: string | null;
   label: string;
   region: Region;
 };
@@ -55,7 +56,8 @@ function buildRegionTree(metas: RegionMeta[]) {
 
   const childrenMetaByParent = new Map<string | null, RegionMeta[]>();
   metas.forEach((meta) => {
-    const parentId = meta.parentId === undefined || meta.parentId === null ? null : String(meta.parentId);
+    const parentId =
+      meta.parentId === undefined || meta.parentId === null ? null : String(meta.parentId);
     const list = childrenMetaByParent.get(parentId) ?? [];
     list.push(meta);
     childrenMetaByParent.set(parentId, list);
@@ -90,16 +92,28 @@ function buildRegionTree(metas: RegionMeta[]) {
 
 function metaToOption(meta: RegionMeta, metaById: Map<string, RegionMeta>): RegionSelectOption {
   const id = String(meta.id);
-  const parent = meta.parentId === undefined || meta.parentId === null ? undefined : metaById.get(String(meta.parentId));
+  const parent =
+    meta.parentId === undefined || meta.parentId === null
+      ? undefined
+      : metaById.get(String(meta.parentId));
   const grandParent =
     parent?.parentId === undefined || parent.parentId === null
       ? undefined
       : metaById.get(String(parent.parentId));
-  const city = grandParent ? shortCityName(grandParent.name) : parent ? shortCityName(parent.name) : shortCityName(meta.name);
-  const district = grandParent ? `${parent?.name ?? ''} ${meta.name}`.trim() : parent ? (meta.name ?? '') : '전체';
+  const city = grandParent
+    ? shortCityName(grandParent.name)
+    : parent
+      ? shortCityName(parent.name)
+      : shortCityName(meta.name);
+  const district = grandParent
+    ? `${parent?.name ?? ''} ${meta.name}`.trim()
+    : parent
+      ? (meta.name ?? '')
+      : '전체';
 
   return {
     id,
+    parentId: meta.parentId === undefined || meta.parentId === null ? null : String(meta.parentId),
     label: parent ? district : city,
     region: {
       id,

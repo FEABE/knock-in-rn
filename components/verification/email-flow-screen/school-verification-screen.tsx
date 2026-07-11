@@ -7,7 +7,7 @@ export function SchoolVerificationScreen() {
       title="학교 이메일 인증"
       label="학교 이메일"
       iconName="school-outline"
-      defaultEmail="honggildong1234@yonsei.ac.kr"
+      defaultEmail=""
       placeholder="example@univ.ac.kr"
     />
   );

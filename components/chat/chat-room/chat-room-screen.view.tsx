@@ -1,67 +1,84 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect } from 'react';
+import { Image } from 'expo-image';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
-import type { UseChatRoomReturn } from '@/components/ui/headless/chat-room/use-chat-room';
-import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
+import { TextField } from '@/components/ui/headless';
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
 import type { UseChatRoomScreenReturn } from './use-chat-room-screen';
 
 export type ChatRoomScreenViewProps = Omit<UseChatRoomScreenReturn, 'room'> & {
   room: DomainChatRoom;
-  chat: UseChatRoomReturn;
 };
 
 export function ChatRoomScreenView({
   room,
   scrollRef,
-  requestSent,
   requestSheetVisible,
-  chat,
+  messages,
+  draft,
+  setDraft,
+  canSend,
+  socketStatus,
+  socketError,
+  uploadingImage,
+  processingRequest,
+  inputBottomPadding,
+  modalBottomPadding,
   onBack,
   onLeave,
   openRequestSheet,
   closeRequestSheet,
   confirmRequest,
-  handleSend,
-  onMessagesChanged,
+  acceptRequest,
+  rejectRequest,
+  cancelRequest,
+  sendMessage,
+  pickAndSendImage,
 }: ChatRoomScreenViewProps) {
-  const inputBottomPadding = useSafeBottomPadding(8, 8);
-  const modalBottomPadding = useSafeBottomPadding(16, 20);
-
-  useEffect(() => {
-    onMessagesChanged();
-  }, [chat.messages.length, onMessagesChanged]);
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       className="flex-1"
     >
-      <ChatHeader peer={room.peer} matched={chat.matched} onBack={onBack} onLeave={onLeave} />
+      <ChatHeader peer={room.peer} matched={room.matched} onBack={onBack} onLeave={onLeave} />
 
       <RequestBanner
-        matched={chat.matched}
-        requestSent={requestSent}
+        matched={room.matched}
+        request={room.roommateRequest}
+        processing={processingRequest}
         onOpenRequestSheet={openRequestSheet}
+        onAccept={acceptRequest}
+        onReject={rejectRequest}
+        onCancel={cancelRequest}
       />
+
+      {socketStatus !== 'connected' ? (
+        <View className="flex-row items-center justify-center gap-2 bg-neutral-100 px-4 py-2">
+          {socketStatus === 'connecting' ? (
+            <ActivityIndicator size="small" color="#696976" />
+          ) : null}
+          <Text className="text-xs text-[#696976]">
+            {socketError ?? '채팅 서버에 연결하는 중이에요'}
+          </Text>
+        </View>
+      ) : null}
 
       <ScrollView
         ref={scrollRef}
         className="flex-1 bg-neutral-50"
         contentContainerClassName="gap-2 px-4 py-4"
       >
-        {chat.messages.map((message) => {
+        {messages.map((message) => {
           if (message.kind === 'system') {
             return (
               <View key={message.id} className="my-2 items-center">
@@ -77,17 +94,25 @@ export function ChatRoomScreenView({
               <View className="max-w-[80%] flex-row items-end gap-1">
                 {!message.mine ? <AvatarInitial name={room.peer.name} size="sm" /> : null}
                 <View className="gap-0.5">
-                  <View
-                    className={`rounded-2xl px-3 py-2 ${
-                      message.mine ? 'bg-[#256EF4]' : 'border border-neutral-200 bg-white'
-                    }`}
-                  >
-                    <Text
-                      className={message.mine ? 'text-sm text-white' : 'text-sm text-neutral-800'}
+                  {message.kind === 'image' && message.imageUrl ? (
+                    <Image
+                      source={{ uri: message.imageUrl }}
+                      style={{ width: 210, height: 210, borderRadius: 12 }}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View
+                      className={`rounded-2xl px-3 py-2 ${
+                        message.mine ? 'bg-[#256EF4]' : 'border border-neutral-200 bg-white'
+                      }`}
                     >
-                      {message.body}
-                    </Text>
-                  </View>
+                      <Text
+                        className={message.mine ? 'text-sm text-white' : 'text-sm text-neutral-800'}
+                      >
+                        {message.body}
+                      </Text>
+                    </View>
+                  )}
                   <Text
                     className={`text-[10px] text-neutral-400 ${
                       message.mine ? 'text-right' : 'text-left'
@@ -103,10 +128,12 @@ export function ChatRoomScreenView({
       </ScrollView>
 
       <MessageInput
-        draft={chat.draft}
-        setDraft={chat.setDraft}
-        canSend={chat.canSend}
-        onSend={() => handleSend(chat.canSend, chat.send)}
+        draft={draft}
+        setDraft={setDraft}
+        canSend={canSend}
+        uploadingImage={uploadingImage}
+        onAdd={pickAndSendImage}
+        onSend={sendMessage}
         bottomPadding={inputBottomPadding}
       />
 
@@ -166,7 +193,9 @@ function ChatHeader({
           </View>
         ) : (
           <View className="rounded bg-[#256EF4]/10 px-1.5 py-0.5">
-            <Text className="text-[10px] text-[#256EF4]">궁합 91점</Text>
+            <Text className="text-[10px] text-[#256EF4]">
+              {peer.compatibilityScore != null ? `궁합 ${peer.compatibilityScore}점` : '매칭 대화'}
+            </Text>
           </View>
         )}
       </View>
@@ -179,12 +208,20 @@ function ChatHeader({
 
 function RequestBanner({
   matched,
-  requestSent,
+  request,
+  processing,
   onOpenRequestSheet,
+  onAccept,
+  onReject,
+  onCancel,
 }: {
   matched: boolean;
-  requestSent: boolean;
+  request: DomainChatRoom['roommateRequest'];
+  processing: boolean;
   onOpenRequestSheet: () => void;
+  onAccept: () => void;
+  onReject: () => void;
+  onCancel: () => void;
 }) {
   if (matched) {
     return (
@@ -195,13 +232,45 @@ function RequestBanner({
     );
   }
 
-  if (requestSent) {
+  if (request?.status === 'PENDING' && request.role === 'requestee') {
+    return (
+      <View className="flex-row items-center gap-3 border-b border-[#256EF4]/15 bg-[#256EF4]/10 px-4 py-3">
+        <View className="flex-1">
+          <Text className="text-sm font-medium text-[#256EF4]">룸메이트 요청이 도착했어요</Text>
+          <Text className="text-xs text-[#256EF4]">수락하면 룸메이트 매칭이 완료돼요</Text>
+        </View>
+        <Pressable
+          onPress={onReject}
+          disabled={processing}
+          className="rounded-full border border-[#256EF4] px-3 py-2"
+        >
+          <Text className="text-xs font-semibold text-[#256EF4]">거절</Text>
+        </Pressable>
+        <Pressable
+          onPress={onAccept}
+          disabled={processing}
+          className="rounded-full bg-[#256EF4] px-3 py-2"
+        >
+          <Text className="text-xs font-semibold text-white">수락</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (request?.status === 'PENDING') {
     return (
       <View className="flex-row items-center gap-3 border-b border-[#256EF4]/15 bg-[#256EF4]/10 px-4 py-3">
         <View className="flex-1">
           <Text className="text-sm font-medium text-[#256EF4]">룸메이트 요청을 보냈어요</Text>
           <Text className="text-xs text-[#256EF4]">상대가 수락하면 매칭이 완료돼요</Text>
         </View>
+        <Pressable
+          onPress={onCancel}
+          disabled={processing || request.role === 'unknown'}
+          className="rounded-full border border-[#256EF4] px-3 py-2"
+        >
+          <Text className="text-xs font-semibold text-[#256EF4]">요청 취소</Text>
+        </Pressable>
       </View>
     );
   }
@@ -227,12 +296,16 @@ function MessageInput({
   setDraft,
   canSend,
   onSend,
+  onAdd,
+  uploadingImage,
   bottomPadding,
 }: {
   draft: string;
   setDraft: (next: string) => void;
   canSend: boolean;
   onSend: () => void;
+  onAdd: () => void;
+  uploadingImage: boolean;
   bottomPadding: number;
 }) {
   return (
@@ -240,12 +313,20 @@ function MessageInput({
       className="flex-row items-center gap-2 border-t border-neutral-100 bg-white px-3 py-2"
       style={{ paddingBottom: bottomPadding }}
     >
-      <View className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
-        <Ionicons name="add" size={20} color="#737373" />
-      </View>
-      <TextInput
+      <Pressable
+        onPress={onAdd}
+        disabled={uploadingImage}
+        className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100"
+      >
+        {uploadingImage ? (
+          <ActivityIndicator size="small" color="#737373" />
+        ) : (
+          <Ionicons name="add" size={20} color="#737373" />
+        )}
+      </Pressable>
+      <TextField
         value={draft}
-        onChangeText={setDraft}
+        onChangeValue={setDraft}
         placeholder="메시지 보내기"
         multiline
         className="max-h-24 min-h-10 flex-1 rounded-2xl bg-neutral-100 px-4 py-2 text-sm"

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +12,7 @@ export function EditRoomScreenView({
   state,
   profile,
   initial,
+  submitting,
   onBack,
   onDelete,
   onSubmit,
@@ -29,14 +31,12 @@ export function EditRoomScreenView({
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
-        <View className="flex-row items-center gap-2">
-          <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-            <Text className="text-2xl text-neutral-700">‹</Text>
-          </Pressable>
-          <Text className="text-base font-semibold text-neutral-900">방 게시글 수정</Text>
-        </View>
-        <Pressable onPress={onDelete} className="px-3 py-1">
+      <View className="relative h-12 items-center justify-center px-3">
+        <Pressable onPress={onBack} className="absolute left-3 h-9 w-9 items-center justify-center">
+          <Ionicons name="chevron-back" size={24} color="#404047" />
+        </Pressable>
+        <Text className="text-base font-semibold text-neutral-900">게시글 수정</Text>
+        <Pressable onPress={onDelete} className="absolute right-3 px-3 py-1">
           <Text className="text-sm text-rose-500">삭제</Text>
         </Pressable>
       </View>
@@ -46,6 +46,7 @@ export function EditRoomScreenView({
         submitLabel="수정 완료"
         profile={profile}
         initial={initial}
+        submitting={submitting}
         onSubmit={onSubmit}
       />
     </SafeAreaView>

@@ -1,10 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert } from 'react-native';
+import { Alert, Share } from 'react-native';
 import { useEffect, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   blockUser as blockUserRequest,
+  getAccessTokenMemberId,
   useChatRequestActions,
   useRoommateBoardDetail,
   useRoommateBoardLikeActions,
@@ -36,6 +38,7 @@ export type UseRoomDetailScreenReturn = {
   photoIndex: number;
   descExpanded: boolean;
   lifestyleExpanded: boolean;
+  bottomPadding: number;
   setReportOpen: (next: boolean) => void;
   setMenuOpen: (next: boolean) => void;
   setPhotoIndex: (next: number) => void;
@@ -45,6 +48,7 @@ export type UseRoomDetailScreenReturn = {
   onEdit: () => void;
   onDelete: () => void;
   onAuthorPress: () => void;
+  onShare: () => void;
   onLike: () => void;
   onRequestChat: () => void;
   onReportReason: (reason: string) => void;
@@ -62,6 +66,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const setBoardLiked = useRoommateBoardLikeActions();
   const { deleteBoard, reportBoard } = useRoommateBoardWriteActions();
   const { report, blockUser, isPostBlocked, blockPost } = useModeration();
+  const bottomPadding = useSafeBottomPadding(12, 12);
 
   const [reportOpen, setReportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,8 +79,11 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     : post?.thumbnailUrl
       ? [post.thumbnailUrl]
       : [];
+  const currentMemberId = getAccessTokenMemberId() ?? session?.user.id;
   const isOwner =
-    !!post && (session?.user.id === post.author.id || session?.user.name === post.author.name);
+    !!post &&
+    ((currentMemberId != null && String(currentMemberId) === String(post.author.id)) ||
+      session?.user.name === post.author.name);
   const blocked = post ? isPostBlocked(post.id) : false;
 
   useEffect(() => {
@@ -96,6 +104,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     photoIndex,
     descExpanded,
     lifestyleExpanded,
+    bottomPadding,
     setReportOpen,
     setMenuOpen,
     setPhotoIndex,
@@ -133,6 +142,13 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     onAuthorPress: () => {
       if (!post) return;
       goRoommateDetail(router, post.author.id);
+    },
+    onShare: () => {
+      if (!post) return;
+      void Share.share({
+        title: post.title,
+        message: `${post.title}\nknockinrn://room/${post.id}`,
+      }).catch(() => Alert.alert('공유 실패', '공유 화면을 열지 못했어요.'));
     },
     onLike: () =>
       requireLogin(() => {

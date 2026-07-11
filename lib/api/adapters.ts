@@ -99,7 +99,7 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
 
 /** 게시글 상세 응답 → RoomPost. */
 export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
-  const liked = 'isLike' in data ? bool(data.isLike as boolean | string | undefined) : false;
+  const liked = bool(data.interested ?? data.isLike);
   const region =
     data.region !== undefined
       ? typeof data.region === 'number'
@@ -109,10 +109,15 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
   const id = String(data.boardId ?? '');
   const writer = data.writer ?? data.memberName ?? '익명';
   const photoUrls = (data.images ?? []).map(imageUrl).filter(Boolean);
-  const options =
+  const optionsFromIds =
     data.roomOption
       ?.map(roomOptionFromBackendId)
       .filter((option): option is NonNullable<typeof option> => option !== null) ?? [];
+  const options = optionsFromIds.length
+    ? optionsFromIds
+    : (data.roomExtraOptionNames ?? [])
+        .map(roomOptionFromLabel)
+        .filter((option): option is NonNullable<typeof option> => option !== null);
 
   return {
     id,
@@ -131,7 +136,10 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
         : new Date(),
     status: 'open',
     author: minimalUser(writer, region, {
-      id: writer,
+      id: String(data.memberId ?? writer),
+      age: data.memberAge ?? 0,
+      avatarUrl: data.memberProfileImageUrl,
+      gender: data.gender === 'FEMALE' ? 'female' : data.gender === 'MALE' ? 'male' : 'other',
       badges: [
         ...(data.isAuthStudent || hasAuthentication(data.authentications, 'STUDENT')
           ? [{ kind: 'school' as const, label: '학생 인증', verifiedAt: new Date() }]
@@ -141,11 +149,87 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
           : []),
       ],
       importantConditions: (data.conditions ?? []).map((item) => item.name ?? '').filter(Boolean),
+      lifestyle: lifestyleFromItems(data.lifeStyles),
     }),
     description: data.contents ?? '',
     options,
+    moveInDate: data.comeableDate ? new Date(data.comeableDate) : undefined,
     liked,
+    compatibilityScore:
+      data.compatibility?.score != null ? num(data.compatibility.score) : undefined,
+    compatibilityDetails:
+      data.compatibility?.lifeStyleInfo
+        ?.map((item) => ({
+          label: item.title?.trim() || '생활 패턴',
+          score: percentNumber(item.percent),
+        }))
+        .filter((item) => item.label.length > 0) ?? [],
+    preferredRoommate: preferredRoommateFromDetail(data),
   };
+}
+
+function lifestyleFromItems(
+  items: { name?: string; value?: string; description?: string }[] | undefined,
+): Partial<UserSummary['lifestyle']> {
+  const lifestyle: Partial<UserSummary['lifestyle']> = {};
+  for (const item of items ?? []) {
+    const name = item.name?.trim() ?? '';
+    const value = item.description?.trim() || item.value?.trim() || '';
+    if (!value) continue;
+    if (name.includes('취침')) lifestyle.sleepTime = value;
+    else if (name.includes('기상')) lifestyle.wakeTime = value;
+    else if (name.includes('청결') || name.includes('청소') || name.includes('깔끔')) {
+      lifestyle.cleanliness = levelNumber(value);
+    } else if (name.includes('소음')) lifestyle.noise = levelNumber(value);
+    else if (name.includes('흡연')) lifestyle.smoking = smokingValue(value);
+    else if (name.includes('반려') || name.includes('동물')) lifestyle.pet = petValue(value);
+  }
+  return lifestyle;
+}
+
+function preferredRoommateFromDetail(data: BoardDetailData): RoomPost['preferredRoommate'] {
+  const conditions = data.conditions ?? [];
+  const gender = conditions.find((item) => item.name?.includes('성별'));
+  const smoking = conditions.find((item) => item.name?.includes('흡연'));
+  const importantConditions = (data.conditionWeights ?? [])
+    .map((item) => item.name?.trim())
+    .filter((name): name is string => Boolean(name));
+  return {
+    genderLabel: conditionDisplayValue(gender),
+    smokingLabel: conditionDisplayValue(smoking),
+    importantConditions,
+  };
+}
+
+function conditionDisplayValue(
+  condition: { value?: string; description?: string } | undefined,
+): string | undefined {
+  return condition?.description?.trim() || condition?.value?.trim() || undefined;
+}
+
+function percentNumber(value: string | number | undefined): number {
+  const parsed = typeof value === 'string' ? Number(value.replace('%', '').trim()) : Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : 0;
+}
+
+function levelNumber(value: string): 1 | 2 | 3 | 4 | 5 {
+  const parsed = Math.round(Number(value));
+  return Math.max(1, Math.min(5, Number.isFinite(parsed) ? parsed : 3)) as 1 | 2 | 3 | 4 | 5;
+}
+
+function smokingValue(value: string): string {
+  const normalized = value.toUpperCase();
+  if (normalized.includes('비흡연') || normalized === 'NO' || normalized === 'FALSE') return 'no';
+  if (normalized.includes('실외') || normalized.includes('OUTDOOR')) return 'outdoor';
+  if (normalized.includes('흡연') || normalized === 'YES' || normalized === 'TRUE') return 'yes';
+  return value;
+}
+
+function petValue(value: string): string {
+  const normalized = value.toUpperCase();
+  if (normalized.includes('불가') || normalized === 'NO' || normalized === 'FALSE') return 'no';
+  if (normalized.includes('소형') || normalized.includes('SMALL')) return 'small';
+  return value;
 }
 
 /** 매칭 리스트 항목 → RoommateCard (매칭 탭 카드용). */
@@ -205,6 +289,15 @@ function toRoomType(value: string | number | undefined): RoomType {
 function imageUrl(image: NonNullable<BoardDetailData['images']>[number] | undefined): string {
   if (!image) return '';
   return typeof image === 'string' ? image : (image.url ?? '');
+}
+
+function roomOptionFromLabel(label: string) {
+  const normalized = label.replace(/\s/g, '').toLowerCase();
+  if (normalized.includes('주차')) return 'parking' as const;
+  if (normalized.includes('풀옵션')) return 'full-option' as const;
+  if (normalized.includes('엘리베이터')) return 'elevator' as const;
+  if (normalized.includes('반려') || normalized.includes('펫')) return 'pet' as const;
+  return null;
 }
 
 function hasAuthentication(value: unknown, expected: 'STUDENT' | 'COMPANY'): boolean {

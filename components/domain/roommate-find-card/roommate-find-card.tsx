@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
 import type { RoommateMatchCardModel } from '@/lib/api';
@@ -15,17 +17,29 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
   return (
     <Pressable
       onPress={() => onPress?.(match)}
-      className="gap-3 rounded-2xl border border-neutral-200 bg-white p-4 active:opacity-90"
+      className="gap-3 rounded-md border border-[#D9DAE5] bg-white p-3 active:opacity-90"
       accessibilityRole="button"
     >
       {/* 헤더 */}
       <View className="flex-row items-center gap-3">
-        <View className="h-11 w-11 items-center justify-center rounded-full bg-neutral-100">
-          <Text className="text-base font-semibold text-neutral-500">{match.name.charAt(0)}</Text>
-        </View>
+        {match.profileImageUrl ? (
+          <Image
+            source={{ uri: match.profileImageUrl }}
+            style={{ width: 48, height: 48, borderRadius: 24 }}
+            contentFit="cover"
+          />
+        ) : (
+          <View className="h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
+            <Text className="text-base font-semibold text-neutral-500">{match.name.charAt(0)}</Text>
+          </View>
+        )}
         <View className="flex-1 gap-1">
           <View className="flex-row items-center gap-2">
-            <Text className="text-sm font-semibold text-neutral-900">{match.name}</Text>
+            <Text className="text-sm font-bold text-neutral-900">
+              {[match.name, match.age ? `${match.age}세` : null, match.genderLabel]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
             <View className="rounded bg-emerald-50 px-1.5 py-0.5">
               <Text className="text-[10px] text-emerald-700">
                 {match.hasRoom ? '방 있음' : '방 없음'}
@@ -36,16 +50,19 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
         <Pressable
           onPress={() => onLikeChange?.(match, !match.liked)}
           hitSlop={8}
-          className="h-8 w-8 items-center justify-center rounded-full bg-neutral-50"
+          className="h-8 w-8 items-center justify-center"
+          accessibilityLabel={match.liked ? '관심 해제' : '관심 등록'}
         >
-          <Text className={match.liked ? 'text-base text-red-500' : 'text-base text-neutral-400'}>
-            {match.liked ? '♥' : '♡'}
-          </Text>
+          <Ionicons
+            name={match.liked ? 'heart' : 'heart-outline'}
+            size={24}
+            color={match.liked ? '#256EF4' : '#AAAABA'}
+          />
         </Pressable>
       </View>
 
       {/* 정보 행 */}
-      <View className="gap-1.5">
+      <View className="gap-1.5 rounded-md bg-[#F8F8F4] p-3">
         <InfoRow label="보증금 / 월세" value={match.depositRentLabel} />
         <InfoRow label="입주 가능" value={match.moveInLabel} />
         <InfoRow label="방 형태" value={match.roomTypeLabel} />
@@ -75,7 +92,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
       ) : null}
 
       {/* 궁합 점수 바 */}
-      <View className="flex-row items-center gap-2 border-t border-neutral-100 pt-3">
+      <View className="flex-row items-center gap-2 pt-1">
         <Text className="text-xs text-neutral-500">궁합</Text>
         <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200">
           <View

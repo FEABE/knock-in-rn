@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,12 +32,22 @@ export function RoommateTabScreenView({
   onRoomLikeChange,
   onRoommatePress,
   onRoommateLikeChange,
+  onSearchPress,
   onCreatePress,
 }: RoommateTabScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="border-b border-neutral-100 px-5 pb-3 pt-2">
-        <Text className="text-xl font-bold text-neutral-900">룸메이트 구하기</Text>
+      <View className="h-16 flex-row items-center justify-between px-4">
+        <Text className="text-[28px] font-black tracking-[-1px] text-[#17171B]">노크인</Text>
+        <Pressable
+          onPress={onSearchPress}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="검색"
+          className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
+        >
+          <Ionicons name="search-outline" size={25} color="#17171B" />
+        </Pressable>
       </View>
 
       <PageTabs

@@ -169,8 +169,8 @@ function normalizeChatRequestItem(item: ChatRequestItem): ChatRequestItem {
 }
 
 function normalizeChatRequestDetail(data: ChatRequestDetailData): ChatRequestDetailData {
-  const requester = data.requester ?? normalizeParty(data.opponent);
-  const requestee = data.requestee ?? normalizeParty(data.me);
+  const requester = data.requester ?? normalizeParty(data.isRequester ? data.me : data.opponent);
+  const requestee = data.requestee ?? normalizeParty(data.isRequester ? data.opponent : data.me);
   return {
     ...data,
     requester,

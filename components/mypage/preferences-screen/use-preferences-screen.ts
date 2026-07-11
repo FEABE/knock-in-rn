@@ -1,15 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
-  compactNumbers,
-  CONDITION_BACKEND_IDS,
   getPreferenceAll,
   lifestyleIdsFromPatternOptions,
   lifestyleModifyItemsFromPatternOptions,
-  lifestyleSelectionsFromBackendIds,
+  lifestyleSelectionsFromProfileItems,
   savePreferenceAll,
   updatePreferenceAll,
   useLifestylePatternOptions,
@@ -19,35 +18,32 @@ import {
 import { goExplore } from '@/lib/navigation/routes';
 import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
 
-export const PREFERENCE_PRIORITIES = [
-  { id: 'sleep', name: '취침 시간', desc: '비슷한 수면 패턴', icon: '🌙' },
-  { id: 'clean', name: '청결', desc: '청결 기준이 비슷한 분', icon: '🧹' },
-  { id: 'noise', name: '소음', desc: '소음 민감도가 비슷한 분', icon: '🔇' },
-  { id: 'smoking', name: '흡연 여부', desc: '흡연 / 비흡연 여부', icon: '🚬' },
-  { id: 'pet', name: '반려동물', desc: '반려동물 유무', icon: '🐾' },
-  { id: 'visitor', name: '방문객 빈도', desc: '손님 초청 빈도', icon: '🚪' },
-  { id: 'personality', name: '성격 스타일', desc: '내향적 / 외향적', icon: '😊' },
-  { id: 'privacy', name: '개인 공간', desc: '개인 공간 중요도', icon: '🏠' },
-];
+export type PreferencePriority = {
+  id: number;
+  name: string;
+  desc: string;
+  icon: string;
+};
 
 export type PreferencesStep = 0 | 1 | 2;
 
 export type UsePreferencesScreenReturn = {
   step: PreferencesStep;
-  gender: string | null;
   scales: Record<string, number>;
   choiceValues: Record<string, string>;
   scaleOptions: LifestyleScaleOption[];
   choiceGroups: LifestyleChoiceGroup[];
-  selected: string[];
-  setGender: (next: string) => void;
+  priorities: PreferencePriority[];
+  selected: number[];
+  promptBottomPadding: number;
+  formBottomPadding: number;
   setScale: (key: string, next: number) => void;
   setChoice: (key: string, next: string) => void;
   start: () => void;
   skip: () => void;
   goBackStep: () => void;
   goPriorityStep: () => void;
-  togglePriority: (id: string) => void;
+  togglePriority: (id: number) => void;
   save: () => Promise<void>;
 };
 
@@ -56,32 +52,57 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const fromOnboarding = from === 'onboarding';
   const lifestyleOptions = useLifestylePatternOptions();
-  const [step, setStep] = useState<PreferencesStep>(0);
-  const [gender, setGender] = useState<string | null>('same');
-  const [scales, setScales] = useState<Record<string, number>>({});
-  const [choiceValues, setChoiceValues] = useState<Record<string, string>>({});
-  const [loadedLifestyles, setLoadedLifestyles] = useState<{ id?: number; lifestyleId?: number }[]>(
-    [],
+  const patternOptions = useMemo(
+    () => ({
+      scaleOptions: lifestyleOptions.scaleOptions,
+      choiceGroups: lifestyleOptions.choiceGroups,
+    }),
+    [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions],
   );
-  const [selected, setSelected] = useState<string[]>([]);
+  const priorities = useMemo<PreferencePriority[]>(
+    () => [
+      ...lifestyleOptions.scaleOptions.map((option) => ({
+        id: option.patternId,
+        name: option.label,
+        desc: `${option.label} 기준을 중요하게 반영해요`,
+        icon: priorityIcon(option.label),
+      })),
+      ...lifestyleOptions.choiceGroups.map((option) => ({
+        id: option.patternId,
+        name: option.label,
+        desc: `${option.label} 조건을 중요하게 반영해요`,
+        icon: priorityIcon(option.label),
+      })),
+    ],
+    [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions],
+  );
+  const promptBottomPadding = useSafeBottomPadding(24, 32);
+  const formBottomPadding = useSafeBottomPadding(12, 24);
+  const [state, setState] = useState<PreferencesState>({
+    step: 0,
+    scales: {},
+    choiceValues: {},
+    loadedLifestyles: [],
+    selected: [],
+  });
+  const { step, scales, choiceValues, loadedLifestyles, selected } = state;
 
   useEffect(() => {
     let mounted = true;
     getPreferenceAll().then((res) => {
       if (!mounted || res.error || res.status !== 200 || !res.data) return;
-      const conditionIds = new Set(
-        (res.data.conditions ?? []).map((condition) => condition.conditionsId),
+      const nextSelected = (res.data.conditions ?? []).flatMap((condition) =>
+        condition.conditionsId === undefined ? [] : [condition.conditionsId],
       );
-      const nextSelected = Object.entries(CONDITION_BACKEND_IDS)
-        .filter(([, id]) => conditionIds.has(id))
-        .map(([id]) => id);
-      setSelected(nextSelected.slice(0, 3));
-      setLoadedLifestyles(
-        (res.data.lifestyles ?? []).map((item) => ({
+      setState((current) => ({
+        ...current,
+        selected: nextSelected.slice(0, 3),
+        loadedLifestyles: (res.data.lifestyles ?? []).map((item) => ({
           id: item.id,
           lifestyleId: item.lifestyleId,
+          value: item.value,
         })),
-      );
+      }));
     });
     return () => {
       mounted = false;
@@ -89,18 +110,20 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   }, []);
 
   useEffect(() => {
-    const loadedLifestyleIds = loadedLifestyles.flatMap((item) =>
-      item.lifestyleId === undefined ? [] : [item.lifestyleId],
-    );
-    if (!loadedLifestyleIds.length) return;
-    const next = lifestyleSelectionsFromBackendIds(lifestyleOptions, loadedLifestyleIds);
-    if (Object.keys(next.scales).length > 0) {
-      setScales((prev) => ({ ...prev, ...next.scales }));
-    }
-    if (Object.keys(next.choices).length > 0) {
-      setChoiceValues((prev) => ({ ...prev, ...next.choices }));
-    }
-  }, [lifestyleOptions.scaleOptions, lifestyleOptions.choiceGroups, loadedLifestyles]);
+    if (!loadedLifestyles.length) return;
+    const next = lifestyleSelectionsFromProfileItems(patternOptions, loadedLifestyles);
+    setState((current) => ({
+      ...current,
+      scales:
+        Object.keys(next.scales).length > 0
+          ? { ...current.scales, ...next.scales }
+          : current.scales,
+      choiceValues:
+        Object.keys(next.choices).length > 0
+          ? { ...current.choiceValues, ...next.choices }
+          : current.choiceValues,
+    }));
+  }, [loadedLifestyles, patternOptions]);
 
   const exit = () => {
     if (fromOnboarding) goExplore(router, 'replace');
@@ -113,11 +136,14 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
       logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'priority_selection' });
   }, [step]);
 
-  const togglePriority = (id: string) => {
-    const name = PREFERENCE_PRIORITIES.find((priority) => priority.id === id)?.name ?? id;
+  const togglePriority = (id: number) => {
+    const name = priorities.find((priority) => priority.id === id)?.name ?? String(id);
     if (selected.includes(id)) {
       logEvent(AnalyticsEvent.PREFERENCE_PRIORITY_DESELECT, { condition_name: name });
-      setSelected((prev) => prev.filter((item) => item !== id));
+      setState((current) => ({
+        ...current,
+        selected: current.selected.filter((item) => item !== id),
+      }));
       return;
     }
     if (selected.length >= 3) return;
@@ -125,16 +151,16 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
       condition_name: name,
       rank: selected.length + 1,
     });
-    setSelected((prev) => [...prev, id]);
+    setState((current) => ({ ...current, selected: [...current.selected, id] }));
   };
 
   const save = async () => {
     logEvent(AnalyticsEvent.PREFERENCE_COMPLETE);
     if (ONBOARDING_WRITE_ENABLED) {
-      const lifestyles = lifestyleIdsFromPatternOptions(lifestyleOptions, scales, choiceValues);
-      const conditions = compactNumbers(selected.map((id) => CONDITION_BACKEND_IDS[id]));
+      const lifestyles = lifestyleIdsFromPatternOptions(patternOptions, scales, choiceValues);
+      const conditions = selected;
       const modifyItems = lifestyleModifyItemsFromPatternOptions(
-        lifestyleOptions,
+        patternOptions,
         loadedLifestyles,
         scales,
         choiceValues,
@@ -163,29 +189,53 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
 
   return {
     step,
-    gender,
     scales,
     choiceValues,
     scaleOptions: lifestyleOptions.scaleOptions,
     choiceGroups: lifestyleOptions.choiceGroups,
+    priorities,
     selected,
-    setGender,
-    setScale: (key, next) => setScales((prev) => ({ ...prev, [key]: next })),
-    setChoice: (key, next) => setChoiceValues((prev) => ({ ...prev, [key]: next })),
+    promptBottomPadding,
+    formBottomPadding,
+    setScale: (key, next) =>
+      setState((current) => ({
+        ...current,
+        scales: { ...current.scales, [key]: next },
+      })),
+    setChoice: (key, next) =>
+      setState((current) => ({
+        ...current,
+        choiceValues: { ...current.choiceValues, [key]: next },
+      })),
     start: () => {
       logEvent(AnalyticsEvent.PREFERENCE_PROMPT_START);
-      setStep(1);
+      setState((current) => ({ ...current, step: 1 }));
     },
     skip: () => {
       logEvent(AnalyticsEvent.PREFERENCE_PROMPT_SKIP);
       exit();
     },
-    goBackStep: () => setStep((prev) => (prev === 1 ? 0 : 1)),
+    goBackStep: () => setState((current) => ({ ...current, step: current.step === 1 ? 0 : 1 })),
     goPriorityStep: () => {
       logEvent(AnalyticsEvent.PREFERENCE_STEP_NEXT, { step: 'lifestyle_preference' });
-      setStep(2);
+      setState((current) => ({ ...current, step: 2 }));
     },
     togglePriority,
     save,
   };
+}
+
+type PreferencesState = {
+  step: PreferencesStep;
+  scales: Record<string, number>;
+  choiceValues: Record<string, string>;
+  loadedLifestyles: { id?: number; lifestyleId?: number; value?: string }[];
+  selected: number[];
+};
+
+function priorityIcon(label: string): string {
+  if (/흡연/.test(label)) return '🚭';
+  if (/청소|청결|깔끔/.test(label)) return '🧹';
+  if (/MBTI|성향/.test(label)) return '🧩';
+  return '✨';
 }

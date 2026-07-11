@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AgreementForm, TextField } from '@/components/ui/headless';
@@ -35,7 +36,7 @@ function AgreementEditView({
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
         <Pressable onPress={closeEdit} className="h-9 w-9 items-center justify-center">
-          <Text className="text-2xl text-neutral-700">‹</Text>
+          <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
         <Text className="text-base font-semibold text-neutral-900">
           {record ? '합의서 수정' : '새 합의서 작성'}
@@ -57,7 +58,12 @@ function AgreementEditView({
           canFinalize,
           submit,
         }) => (
-          <ScrollView contentContainerClassName="gap-5 p-5 pb-28">
+          <ScrollView
+            contentContainerClassName="gap-5 p-5 pb-28"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            automaticallyAdjustKeyboardInsets
+          >
             <View className="gap-2">
               <Text className="text-sm font-semibold text-neutral-800">룸메이트 이름</Text>
               <TextField
@@ -85,9 +91,9 @@ function AgreementEditView({
                 <Text className="text-sm font-semibold text-neutral-800">
                   {field.section.label}
                 </Text>
-                <TextInput
+                <TextField
                   value={field.value}
-                  onChangeText={field.onChangeText}
+                  onChangeValue={field.onChangeText}
                   placeholder={field.section.placeholder}
                   multiline
                   numberOfLines={3}
@@ -150,7 +156,7 @@ function AgreementListView({
       <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
         <View className="flex-row items-center gap-2">
           <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-            <Text className="text-2xl text-neutral-700">‹</Text>
+            <Ionicons name="chevron-back" size={24} color="#404047" />
           </Pressable>
           <Text className="text-base font-semibold text-neutral-900">공동생활 합의서</Text>
         </View>

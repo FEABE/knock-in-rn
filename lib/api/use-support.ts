@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createInquiry,
+  getBoNoticeDetail,
   getBoNotices,
   getInquiries,
   getInquiryCategories,
@@ -41,7 +42,7 @@ export type SupportInquiryListItem = {
   dateLabel: string;
   statusLabel: string;
   answered: boolean;
-  isPublic: boolean;
+  categoryLabel: string;
 };
 
 export type SupportTermsSection = {
@@ -57,13 +58,11 @@ export type SupportCategory = {
 
 export type SupportCounts = {
   faqCount: number;
-  noticeCount: number;
   inquiryCount: number;
 };
 
 export function useSupportCounts(includePrivate = true): AsyncState<SupportCounts> {
   const faqs = useApi(['support', 'faqs'], () => getFaqAll());
-  const notices = useApi(['support', 'notices'], () => getBoNotices());
   const inquiries = useApi(['support', 'inquiries'], () => getInquiries(), {
     enabled: includePrivate,
   });
@@ -71,14 +70,12 @@ export function useSupportCounts(includePrivate = true): AsyncState<SupportCount
   return {
     data: {
       faqCount: faqs.data?.faqInfoList?.length ?? 0,
-      noticeCount: notices.data?.notices?.length ?? 0,
       inquiryCount: includePrivate ? (inquiries.data?.inquiries?.length ?? 0) : 0,
     },
-    loading: faqs.loading || notices.loading || (includePrivate && inquiries.loading),
-    error: faqs.error ?? notices.error ?? (includePrivate ? inquiries.error : null),
+    loading: faqs.loading || (includePrivate && inquiries.loading),
+    error: faqs.error ?? (includePrivate ? inquiries.error : null),
     reload: () => {
       faqs.reload();
-      notices.reload();
       inquiries.reload();
     },
   };
@@ -100,19 +97,39 @@ export function useSupportFaqs(): AsyncState<SupportFaqItem[]> {
 }
 
 export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
-  const state = useApi(['support', 'notices'], () => getBoNotices());
-  const items = useMemo<SupportNoticeItem[] | null>(
-    () =>
-      state.data?.notices?.map((notice) => ({
-        id: String(notice.id ?? notice.title ?? ''),
-        title: notice.title ?? '공지',
-        body: '',
-        dateLabel: formatDateLabel(notice.createAt),
-      })) ?? null,
-    [state.data],
-  );
+  const query = useQuery({
+    queryKey: ['support', 'notices', 'with-detail'],
+    queryFn: async () => {
+      const list = await getBoNotices({ page: 0, size: 20 });
+      if (list.status !== 200 || list.error) {
+        throw new Error(list.error?.message ?? `요청 실패 (status ${list.status})`);
+      }
 
-  return { ...state, data: items };
+      return Promise.all(
+        (list.data?.notices ?? []).map(async (notice) => {
+          const id = String(notice.id ?? '');
+          const detail = id ? await getBoNoticeDetail(id) : null;
+          const detailNotice =
+            detail?.status === 200 && !detail.error ? detail.data?.notice : undefined;
+          return {
+            id,
+            title: detailNotice?.title ?? notice.title ?? '공지사항',
+            body: String(detailNotice?.contents ?? ''),
+            dateLabel: formatDateLabel(detailNotice?.createAt ?? notice.createAt),
+          };
+        }),
+      );
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading || query.isFetching,
+    error: query.error instanceof Error ? query.error.message : null,
+    reload: () => {
+      void query.refetch();
+    },
+  };
 }
 
 export function useSupportInquiries(enabled = true): AsyncState<SupportInquiryListItem[]> {
@@ -146,7 +163,7 @@ export function useSupportInquiries(enabled = true): AsyncState<SupportInquiryLi
             dateLabel: formatDateLabel(source.createAt ?? inquiry.createAt),
             statusLabel: statusLabel(source.status ?? inquiry.status),
             answered: !!firstReply || isAnswered(source.status ?? inquiry.status),
-            isPublic: source.type !== 'private',
+            categoryLabel: source.type ?? inquiry.type ?? '기타',
           };
         }),
       );
@@ -246,7 +263,7 @@ function mapInquiryItem(inquiry: InquiryItem): SupportInquiryListItem {
     dateLabel: formatDateLabel(inquiry.createAt),
     statusLabel: statusLabel(inquiry.status),
     answered: isAnswered(inquiry.status),
-    isPublic: inquiry.type !== 'private',
+    categoryLabel: inquiry.type ?? '기타',
   };
 }
 

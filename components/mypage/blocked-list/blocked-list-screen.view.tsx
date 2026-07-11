@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,7 +18,7 @@ export function BlockedListScreenView({
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
         <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-          <Text className="text-2xl text-neutral-700">‹</Text>
+          <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
         <Text className="text-base font-semibold text-neutral-900">차단 / 신고 관리</Text>
       </View>

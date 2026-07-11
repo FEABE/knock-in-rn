@@ -32,8 +32,15 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-font',
     '@react-native-firebase/app',
     'expo-secure-store',
+    [
+      'expo-image-picker',
+      {
+        photosPermission: '방 게시글에 올릴 사진을 선택하기 위해 사진 보관함 접근이 필요합니다.',
+      },
+    ],
     [
       'expo-splash-screen',
       {

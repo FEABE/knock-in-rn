@@ -21,21 +21,21 @@ export type OnboardingStep =
   | 'visibility'
   | 'preferences';
 
-/** 가입 온보딩 흐름: 약관 → 기본정보 → 생활패턴 → 방 조건 → 노출 상태 → 선호조건. */
+/** 가입 온보딩 흐름: 약관 → 기본정보 → 생활패턴 → 노출 상태 → 선호조건 → 방 조건. */
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   'terms',
   'profile-basic',
   'profile-lifestyle',
-  'roominfo',
   'visibility',
   'preferences',
+  'roominfo',
 ];
 
 export const STEP_LABELS: Record<OnboardingStep, string> = {
   terms: '약관 동의',
   'profile-basic': '기본 정보',
   'profile-lifestyle': '나의 생활패턴',
-  roominfo: '방 상태 & 조건',
+  roominfo: '방 유무 여부',
   visibility: '노출 상태',
   preferences: '매칭 조건 (선택)',
 };

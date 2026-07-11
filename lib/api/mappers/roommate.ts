@@ -10,6 +10,9 @@ import { booleanValue, definedLabels, formatDateLabel, numberValue, stringValue 
 export type RoommateMatchCardModel = {
   id: string;
   name: string;
+  profileImageUrl?: string;
+  age?: number;
+  genderLabel?: string;
   hasRoom: boolean;
   liked: boolean;
   compatibilityScore: number;
@@ -28,7 +31,7 @@ export type RoommateDetailLifestyleModel = {
 };
 
 export type RoommateDetailCompatibilityModel = {
-  score: number;
+  score?: number;
   items: {
     key: string;
     title: string;
@@ -41,6 +44,9 @@ export type RoommateMatchDetailModel = {
   id: string;
   name: string;
   initial: string;
+  profileImageUrl?: string;
+  age?: number;
+  genderLabel?: string;
   regionLabel: string;
   roomStatusLabel: string;
   isAuthStudent: boolean;
@@ -66,6 +72,9 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
   return {
     id,
     name: match.name ?? match.memberName ?? '이름 없음',
+    profileImageUrl: match.memberProfileImageUrl,
+    age: match.memberAge,
+    genderLabel: match.gender === 'FEMALE' ? '여성' : match.gender === 'MALE' ? '남성' : undefined,
     hasRoom: match.roomProfileType === 'OFFER',
     liked: booleanValue(match.isLike),
     compatibilityScore: score,
@@ -93,11 +102,59 @@ export function toRoommateMatchDetailModel(
           typeof region === 'number' ? labelForRegionId(region) : (region ?? '-')
         }`
       : '아직 방이 없어요';
+  const isOffer = data.roomProfileType === 'OFFER';
+  const roomTypeLabel = isOffer
+    ? (data.offerProfile?.roomTypeName ?? '-')
+    : data.seekerProfile?.roomTypeNames?.join(' · ') || '-';
+  const livingRows = isOffer
+    ? [
+        {
+          label: '보증금',
+          value: `${numberValue(data.offerProfile?.deposit ?? data.deposit).toLocaleString()}만원`,
+        },
+        {
+          label: '월세',
+          value: `${numberValue(
+            data.offerProfile?.monthlyRent ?? data.mounthRent,
+          ).toLocaleString()}만원`,
+        },
+        { label: '입주 가능 시기', value: formatDateLabel(data.comeableAt) },
+        { label: '방 형태', value: roomTypeLabel },
+        {
+          label: '지역',
+          value: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
+        },
+      ]
+    : [
+        {
+          label: '예산 보증금',
+          value: `${numberValue(
+            data.seekerProfile?.maxDeposit ?? data.maxDeposit,
+          ).toLocaleString()}만원 이하`,
+        },
+        {
+          label: '예산 월세',
+          value: `${numberValue(
+            data.seekerProfile?.maxMonthlyRent ?? data.maxMounthRent,
+          ).toLocaleString()}만원 이하`,
+        },
+        { label: '입주 희망 시기', value: formatDateLabel(data.comeableAt) },
+        { label: '희망 룸 형태', value: roomTypeLabel },
+        {
+          label: '희망 지역',
+          value:
+            data.seekerProfile?.regionFullNames?.join(' · ') ||
+            (typeof region === 'number' ? labelForRegionId(region) : (region ?? '-')),
+        },
+      ];
 
   return {
     id,
     name,
     initial: name.charAt(0),
+    profileImageUrl: data.memberProfileImageUrl,
+    age: data.memberAge,
+    genderLabel: data.gender === 'FEMALE' ? '여성' : data.gender === 'MALE' ? '남성' : undefined,
     regionLabel: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
     roomStatusLabel,
     isAuthStudent:
@@ -109,40 +166,34 @@ export function toRoommateMatchDetailModel(
       name: item.name ?? '-',
       value: item.value ?? '-',
     })),
-    livingRows: [
-      { label: '예산 보증금', value: `${numberValue(data.maxDeposit)}만원 이하` },
-      {
-        label: '예산 월세',
-        value: `${numberValue(data.maxMounthRent ?? data.seekerProfile?.maxMonthlyRent)}만원 이하`,
-      },
-      { label: '입주 희망 시기', value: formatDateLabel(data.comeableAt) },
-      { label: '희망 룸 형태', value: labelForRoomProfileType(data.roomProfileType) },
-      {
-        label: '희망 지역',
-        value: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
-      },
-    ],
+    livingRows,
     preferenceRows: (data.preferences ?? []).map((preference, index) => ({
       key: stringValue(preference.preferencesId, `preference-${index}`),
       label: preference.name ?? '-',
       value: preference.value ?? '-',
     })),
-    conditionText: definedLabels((data.conditions ?? []).map((condition) => condition.name)).join(
-      ' · ',
-    ),
+    conditionText: definedLabels(
+      (data.conditionWeights ?? []).map((condition) => condition.name),
+    ).join(' · '),
     compatibility: {
-      score: numberValue(data.compatibility?.score),
+      score:
+        data.compatibility?.score !== undefined ? numberValue(data.compatibility.score) : undefined,
       items: (data.compatibility?.lifeStyleInfo ?? []).map((info, index) => {
-        const percent = numberValue(info.percent);
+        const percent = percentageValue(info.percent);
         return {
           key: `${info.title ?? 'compat'}-${index}`,
           title: info.title ?? '-',
           percent,
-          label: stringValue(info.percent, '0'),
+          label: String(percent),
         };
       }),
     },
   };
+}
+
+function percentageValue(value: string | number | undefined): number {
+  const parsed = typeof value === 'string' ? Number(value.replace('%', '').trim()) : Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : 0;
 }
 
 function hasAuthentication(value: unknown, expected: 'STUDENT' | 'COMPANY'): boolean {

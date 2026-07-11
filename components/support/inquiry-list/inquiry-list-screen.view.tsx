@@ -10,7 +10,7 @@ export type InquiryListScreenViewProps = UseInquiryListScreenReturn;
 
 export function InquiryListScreenView({
   inquiries,
-  publicCount,
+  totalCount,
   loading,
   error,
   onCreatePress,
@@ -22,9 +22,7 @@ export function InquiryListScreenView({
       <ScrollView contentContainerClassName="gap-5 p-5">
         <View className="flex-row items-center justify-between">
           <View className="gap-1">
-            <Text className="text-base font-semibold text-neutral-900">
-              공개 문의 {publicCount}
-            </Text>
+            <Text className="text-base font-semibold text-neutral-900">전체 문의 {totalCount}</Text>
             <Text className="text-xs text-neutral-400">문의 상태를 확인해요</Text>
           </View>
           <Pressable
@@ -84,7 +82,7 @@ function InquiryCard({ inquiry }: { inquiry: InquiryListItem }) {
       </View>
 
       <Text className="text-xs text-neutral-500">
-        {inquiry.authorName} · {inquiry.dateLabel} · {inquiry.isPublic ? '공개' : '비공개'}
+        {inquiry.authorName} · {inquiry.dateLabel} · {inquiry.categoryLabel}
       </Text>
       <Text className="text-sm leading-5 text-neutral-700">{inquiry.body}</Text>
 

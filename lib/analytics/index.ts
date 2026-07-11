@@ -14,20 +14,17 @@ import * as Crypto from 'expo-crypto';
 // deprecation 경고를 콘솔에 찍는다. v24.1.0 에 고정돼 있어 다음 메이저 전까지 안전하므로
 // 공식 억제 플래그로 노이즈만 끈다. (screen_view 의 firebase_screen 은 예약어라 logEvent 로는
 // 보낼 수 없어, 화면명을 제대로 기록하는 logScreenView 를 계속 사용한다.)
-(globalThis as { RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS?: boolean }).RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS =
-  true;
+(
+  globalThis as { RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS?: boolean }
+).RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 
 export { AnalyticsEvent, ONBOARDING_STEP_META } from './events';
 export type { AnalyticsEventName } from './events';
-export { ScreenViewTracker } from './screen-tracker';
 
 /** 앱 실행 시 1회 생성되는 세션 고유값(UUID). 앱이 켜진 동안 동일 값 유지. */
 export const SESSION_ID = Crypto.randomUUID();
 
-export type AnalyticsParams = Record<
-  string,
-  string | number | boolean | null | undefined
->;
+export type AnalyticsParams = Record<string, string | number | boolean | null | undefined>;
 
 // 네이티브 모듈 지연 로드 (web/리빌드 전엔 null).
 let analyticsMod: any = null;

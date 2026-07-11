@@ -1,12 +1,15 @@
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 
 import { getPopularSearch, useApi } from '@/lib/api';
+import { goExploreSearch } from '@/lib/navigation/routes';
+import { readRecentSearches, writeRecentSearches } from '@/lib/search/recent-searches';
 
 export type UseRoomSearchScreenReturn = {
   query: string;
   recent: string[];
   popular: string[];
+  popularError: string | null;
   setQuery: (next: string) => void;
   clearQuery: () => void;
   clearRecent: () => void;
@@ -17,9 +20,15 @@ export type UseRoomSearchScreenReturn = {
 
 export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [recent, setRecent] = useState<string[]>([]);
-  const { data: popularData } = useApi(['search', 'popular'], () => getPopularSearch());
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [state, setState] = useState({
+    query: typeof q === 'string' ? q : '',
+    recent: [] as string[],
+  });
+  const { query, recent } = state;
+  const { data: popularData, error: popularError } = useApi(['search', 'popular'], () =>
+    getPopularSearch(),
+  );
   const popular = useMemo(
     () =>
       popularData?.rank
@@ -28,21 +37,44 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
     [popularData],
   );
 
+  useEffect(() => {
+    let active = true;
+    readRecentSearches().then((stored) => {
+      if (active) setState((current) => ({ ...current, recent: stored }));
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const submit = (term: string) => {
     const trimmed = term.trim();
     if (!trimmed) return;
-    setRecent((prev) => [trimmed, ...prev.filter((item) => item !== trimmed)].slice(0, 20));
-    router.back();
+    setState((current) => {
+      const next = [trimmed, ...current.recent.filter((item) => item !== trimmed)].slice(0, 20);
+      void writeRecentSearches(next);
+      return { ...current, recent: next };
+    });
+    goExploreSearch(router, trimmed);
   };
 
   return {
     query,
     recent,
     popular,
-    setQuery,
-    clearQuery: () => setQuery(''),
-    clearRecent: () => setRecent([]),
-    removeRecent: (term) => setRecent((prev) => prev.filter((item) => item !== term)),
+    popularError,
+    setQuery: (next) => setState((current) => ({ ...current, query: next })),
+    clearQuery: () => setState((current) => ({ ...current, query: '' })),
+    clearRecent: () => {
+      setState((current) => ({ ...current, recent: [] }));
+      void writeRecentSearches([]);
+    },
+    removeRecent: (term) =>
+      setState((current) => {
+        const next = current.recent.filter((item) => item !== term);
+        void writeRecentSearches(next);
+        return { ...current, recent: next };
+      }),
     submit,
     onCancel: () => router.back(),
   };

@@ -1,22 +1,36 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl } from '@/components/ui/headless';
-import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 
-import { PREFERENCE_PRIORITIES, type UsePreferencesScreenReturn } from './use-preferences-screen';
+import type { UsePreferencesScreenReturn } from './use-preferences-screen';
 
 export type PreferencesScreenViewProps = UsePreferencesScreenReturn;
 
 export function PreferencesScreenView(props: PreferencesScreenViewProps) {
-  if (props.step === 0) return <PromptStep onStart={props.start} onSkip={props.skip} />;
+  if (props.step === 0) {
+    return (
+      <PromptStep
+        onStart={props.start}
+        onSkip={props.skip}
+        bottomPadding={props.promptBottomPadding}
+      />
+    );
+  }
   return <PreferenceForm {...props} />;
 }
 
-function PromptStep({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
-  const bottomPadding = useSafeBottomPadding(24, 32);
-
+function PromptStep({
+  onStart,
+  onSkip,
+  bottomPadding,
+}: {
+  onStart: () => void;
+  onSkip: () => void;
+  bottomPadding: number;
+}) {
   return (
     <SafeAreaView className="flex-1 bg-neutral-100" edges={['top']}>
       <View className="flex-1 justify-end">
@@ -63,25 +77,25 @@ function PromptStep({ onStart, onSkip }: { onStart: () => void; onSkip: () => vo
 
 function PreferenceForm({
   step,
-  gender,
   scales,
   choiceValues,
   scaleOptions,
   choiceGroups,
+  priorities,
   selected,
-  setGender,
   setScale,
   setChoice,
   goBackStep,
   goPriorityStep,
   togglePriority,
   save,
+  formBottomPadding,
 }: PreferencesScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
         <Pressable onPress={goBackStep} className="h-9 w-9 items-center justify-center">
-          <Text className="text-2xl text-neutral-700">‹</Text>
+          <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
         <Text className="text-base font-semibold text-neutral-900">선호 조건</Text>
         <Text className="ml-auto text-xs text-neutral-400">{step} / 2</Text>
@@ -98,15 +112,6 @@ function PreferenceForm({
               </Text>
             </View>
 
-            <Pick
-              label="선호 룸메이트 성별"
-              options={[
-                { value: 'same', label: '동성만' },
-                { value: 'any', label: '성별 무관' },
-              ]}
-              value={gender}
-              onChange={setGender}
-            />
             {scaleOptions.map((scale) => {
               const value = scales[scale.key] ?? 3;
               return (
@@ -131,7 +136,7 @@ function PreferenceForm({
               />
             ))}
           </ScrollView>
-          <BottomBtn label="다음" onPress={goPriorityStep} />
+          <BottomBtn label="다음" onPress={goPriorityStep} bottomPadding={formBottomPadding} />
         </>
       ) : (
         <>
@@ -148,7 +153,7 @@ function PreferenceForm({
               </Text>
             </View>
 
-            {PREFERENCE_PRIORITIES.map((priority) => {
+            {priorities.map((priority) => {
               const on = selected.includes(priority.id);
               return (
                 <Pressable
@@ -174,7 +179,7 @@ function PreferenceForm({
               );
             })}
           </ScrollView>
-          <BottomBtn label="완료" onPress={save} />
+          <BottomBtn label="완료" onPress={save} bottomPadding={formBottomPadding} />
         </>
       )}
     </SafeAreaView>
@@ -218,9 +223,15 @@ function Pick({
   );
 }
 
-function BottomBtn({ label, onPress }: { label: string; onPress: () => void }) {
-  const bottomPadding = useSafeBottomPadding(12, 24);
-
+function BottomBtn({
+  label,
+  onPress,
+  bottomPadding,
+}: {
+  label: string;
+  onPress: () => void;
+  bottomPadding: number;
+}) {
   return (
     <View
       className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"

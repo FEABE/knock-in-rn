@@ -30,8 +30,11 @@ export type MyPageMenuRow = {
 export type UseMyPageHomeScreenReturn = {
   user: UserSummary | null;
   verified: boolean;
+  schoolVerified: boolean;
+  companyVerified: boolean;
   profileVisible: boolean;
   notificationEnabled: boolean;
+  notificationEditable: boolean;
   genderLabel: string;
   profileRegionLabel: string;
   roomTypeLabel: string;
@@ -44,14 +47,26 @@ export type UseMyPageHomeScreenReturn = {
 
 export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, setVisibility } = useSession();
   const profile = useMyPageProfileSummary(!!session);
   const verification = useMyVerificationSummary(!!session);
-  const { profileVisible, setProfileVisible } = useProfileVisibilityToggle();
-  const { notificationEnabled, setNotificationEnabled } = useNotificationSettingToggle(!!session);
+  const { profileVisible, setProfileVisible } = useProfileVisibilityToggle(
+    session?.visibility !== 'hidden',
+    (next) => setVisibility(next ? 'public' : 'hidden'),
+  );
+  const { notificationEnabled, notificationEditable, setNotificationEnabled } =
+    useNotificationSettingToggle(!!session);
 
   const user = session?.user ?? null;
   const verified = verification.data?.verified ?? (user?.badges.length ?? 0) > 0;
+  const schoolVerified =
+    verification.data?.schoolVerified ??
+    user?.badges.some((badge) => badge.kind === 'school') ??
+    false;
+  const companyVerified =
+    verification.data?.companyVerified ??
+    user?.badges.some((badge) => badge.kind === 'company') ??
+    false;
   const profileRegionLabel =
     profile.data?.regionLabel ??
     (user ? `${user.region.city} ${user.region.district}`.trim() : '-');
@@ -107,8 +122,11 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
   return {
     user,
     verified,
+    schoolVerified,
+    companyVerified,
     profileVisible,
     notificationEnabled,
+    notificationEditable,
     genderLabel: genderLabel(user?.gender),
     profileRegionLabel,
     roomTypeLabel,

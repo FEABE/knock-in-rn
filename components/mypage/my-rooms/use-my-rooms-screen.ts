@@ -1,14 +1,21 @@
 import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useMyRoommateBoards, useRoommateBoardWriteActions } from '@/lib/api';
 import { useSession, type RoomPost } from '@/lib/domain';
-import { goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
+import { goKakaoLogin, goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
 
 export type UseMyRoomsScreenReturn = {
   loggedIn: boolean;
   rooms: RoomPost[];
+  loading: boolean;
+  error: string | null;
+  deleting: boolean;
+  bottomPadding: number;
   onBack: () => void;
+  onLoginPress: () => void;
+  onRetry: () => void;
   onCreatePress: () => void;
   onRoomPress: (post: RoomPost) => void;
   onEditPress: (post: RoomPost) => void;
@@ -18,14 +25,21 @@ export type UseMyRoomsScreenReturn = {
 export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
   const router = useRouter();
   const { session } = useSession();
-  const { data: apiRooms } = useMyRoommateBoards(!!session);
-  const { deleteBoard } = useRoommateBoardWriteActions();
+  const { data: apiRooms, loading, error, reload } = useMyRoommateBoards(!!session);
+  const { deleteBoard, deleting } = useRoommateBoardWriteActions();
+  const bottomPadding = useSafeBottomPadding(12, 24);
   const rooms = session ? (apiRooms ?? []) : [];
 
   return {
     loggedIn: !!session,
     rooms,
+    loading,
+    error,
+    deleting,
+    bottomPadding,
     onBack: () => router.back(),
+    onLoginPress: () => goKakaoLogin(router),
+    onRetry: reload,
     onCreatePress: () => goNewRoom(router),
     onRoomPress: (post) => goRoomDetail(router, post.id),
     onEditPress: (post) => goRoomEdit(router, post.id),

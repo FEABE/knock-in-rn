@@ -4,39 +4,27 @@ import type { TextInput as RNTextInput, TextInputProps } from 'react-native';
 import { TextFieldView, type TextFieldViewProps } from './text-field.view';
 import { useTextField, type UseTextFieldProps } from './use-text-field';
 
-export type TextFieldProps = Omit<
-  TextInputProps,
-  'value' | 'onChangeText' | 'editable'
-> &
+export type TextFieldProps = Omit<TextInputProps, 'value' | 'onChangeText' | 'editable'> &
   UseTextFieldProps & {
     className?: string;
+    onChangeText?: TextInputProps['onChangeText'];
   };
 
-export const TextField = forwardRef<RNTextInput, TextFieldProps>(
-  function TextField(
-    {
-      value,
-      defaultValue,
-      onChangeValue,
-      disabled,
-      invalid,
-      onFocus,
-      onBlur,
-      ...rest
+export const TextField = forwardRef<RNTextInput, TextFieldProps>(function TextField(
+  { value, defaultValue, onChangeValue, onChangeText, disabled, invalid, onFocus, onBlur, ...rest },
+  ref,
+) {
+  const asks = useTextField({
+    value,
+    defaultValue,
+    onChangeValue: (next) => {
+      onChangeValue?.(next);
+      if (onChangeText !== onChangeValue) onChangeText?.(next);
     },
-    ref,
-  ) {
-    const asks = useTextField({
-      value,
-      defaultValue,
-      onChangeValue,
-      disabled,
-      invalid,
-      onFocus,
-      onBlur,
-    });
-    return (
-      <TextFieldView ref={ref} {...asks} {...(rest as TextFieldViewProps)} />
-    );
-  },
-);
+    disabled,
+    invalid,
+    onFocus,
+    onBlur,
+  });
+  return <TextFieldView ref={ref} {...asks} {...(rest as TextFieldViewProps)} />;
+});

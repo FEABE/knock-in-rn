@@ -1,5 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+
+import { TextField } from '@/components/ui/headless';
 
 import type {
   UseVerificationFlowScreenReturn,
@@ -22,6 +32,9 @@ export function VerificationFlowScreenView({
   statusTone,
   description,
   reviewTitle,
+  timerLabel,
+  canSend,
+  canVerify,
   setEmail,
   setCode,
   send,
@@ -29,8 +42,16 @@ export function VerificationFlowScreenView({
   completeReview,
 }: VerificationFlowScreenViewProps) {
   return (
-    <View className="flex-1 bg-white">
-      <View className="gap-7 px-4 py-6">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      className="flex-1 bg-white"
+    >
+      <ScrollView
+        contentContainerClassName="gap-7 px-4 py-6"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
         <View className="flex-row items-center gap-3">
           <View className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100">
             <Ionicons name={iconName} size={18} color="#525252" />
@@ -53,15 +74,20 @@ export function VerificationFlowScreenView({
         {step === 'entry' ? (
           <View className="gap-3">
             <FieldLabel label="이메일" />
-            <TextInput
+            <TextField
               value={email}
-              onChangeText={setEmail}
+              onChangeValue={setEmail}
               placeholder={placeholder}
               autoCapitalize="none"
               keyboardType="email-address"
               className="border-b border-neutral-300 py-2 text-base text-neutral-900"
             />
-            <PrimaryButton label="인증 코드 받기" loading={loading} onPress={send} />
+            <PrimaryButton
+              label="인증 코드 받기"
+              loading={loading}
+              disabled={!canSend}
+              onPress={send}
+            />
           </View>
         ) : null}
 
@@ -70,15 +96,15 @@ export function VerificationFlowScreenView({
             <View className="gap-2">
               <FieldLabel label="인증 코드" />
               <View className="flex-row items-center border-b border-neutral-300 py-2">
-                <TextInput
+                <TextField
                   value={code}
-                  onChangeText={setCode}
+                  onChangeValue={setCode}
                   placeholder="123456"
                   keyboardType="number-pad"
                   maxLength={6}
                   className="flex-1 text-base text-neutral-900"
                 />
-                <Text className="text-sm text-[#256EF4]">04:59</Text>
+                <Text className="text-sm text-[#256EF4]">{timerLabel}</Text>
               </View>
             </View>
 
@@ -97,7 +123,12 @@ export function VerificationFlowScreenView({
               <Bullet text="메일이 오지 않으면 스팸함을 확인해주세요" />
             </View>
 
-            <PrimaryButton label="인증 확인" loading={loading} onPress={verify} />
+            <PrimaryButton
+              label="인증 확인"
+              loading={loading}
+              disabled={!canVerify}
+              onPress={verify}
+            />
           </View>
         ) : null}
 
@@ -122,15 +153,16 @@ export function VerificationFlowScreenView({
             </View>
 
             <PrimaryButton
-              label={step === 'review' ? '완료 상태 확인' : '확인'}
+              label={step === 'review' ? '인증 상태 새로고침' : '확인'}
+              loading={loading}
               onPress={completeReview}
             />
           </View>
         ) : null}
 
         {error ? <Text className="text-sm text-rose-500">{error}</Text> : null}
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -167,17 +199,21 @@ function Bullet({ text }: { text: string }) {
 function PrimaryButton({
   label,
   loading,
+  disabled,
   onPress,
 }: {
   label: string;
   loading?: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      disabled={loading}
-      className="h-12 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90"
+      disabled={loading || disabled}
+      className={`h-12 items-center justify-center rounded-lg ${
+        loading || !disabled ? 'bg-[#256EF4] active:opacity-90' : 'bg-neutral-300'
+      }`}
     >
       {loading ? (
         <ActivityIndicator color="#ffffff" />

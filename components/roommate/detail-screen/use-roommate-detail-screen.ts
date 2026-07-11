@@ -3,6 +3,7 @@ import { Alert, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   toRoommateMatchDetailModel,
   type RoommateMatchDetailModel,
@@ -21,6 +22,7 @@ export type UseRoommateDetailScreenReturn = {
   liked: boolean;
   reportOpen: boolean;
   lifestyleExpanded: boolean;
+  bottomPadding: number;
   setReportOpen: (next: boolean) => void;
   onBack: () => void;
   onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -43,6 +45,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { requireLogin } = useRequireLogin();
+  const bottomPadding = useSafeBottomPadding(12, 12);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const compatY = useRef(0);
   const firedCompat = useRef(false);
@@ -70,6 +73,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
     liked,
     reportOpen,
     lifestyleExpanded,
+    bottomPadding,
     setReportOpen,
     onBack: () => router.back(),
     onScroll: (event) => {

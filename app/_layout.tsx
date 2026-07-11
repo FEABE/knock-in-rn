@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { ScreenViewTracker } from '@/lib/analytics';
+import { ScreenViewTracker } from '@/lib/analytics/screen-tracker';
 import { AgreementProvider, ModerationProvider, SessionProvider } from '@/lib/domain';
 
 const queryClient = new QueryClient();
@@ -42,6 +42,7 @@ export default function RootLayout() {
                 <Stack.Screen name="chat" />
                 <Stack.Screen name="mypage" />
                 <Stack.Screen name="support" />
+                <Stack.Screen name="notifications" />
               </Stack>
               <StatusBar style="auto" />
             </AgreementProvider>

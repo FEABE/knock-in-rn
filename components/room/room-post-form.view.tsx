@@ -1,49 +1,65 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import type { ReactNode } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
-import { useRegionOptions, useRoomAddOptionOptions, useRoomTypeOptions } from '@/lib/api';
+import type { RegionSelectOption } from '@/lib/api';
 import type { UserSummary } from '@/lib/domain';
 import type { Region } from '@/lib/onboarding';
 
+import { MAX_ROOM_PHOTOS } from './room-post-form.model';
 import type { UseRoomPostFormReturn } from './use-room-post-form';
-
-const MAX_PHOTOS = 10;
-const PHOTO_SLOTS = 4;
 
 export type RoomPostFormViewProps = UseRoomPostFormReturn & {
   submitLabel: string;
   mode: 'create' | 'edit';
   profile?: UserSummary;
+  submitting: boolean;
+  onEditProfile: () => void;
 };
 
 export function RoomPostFormView({
   draft,
   canSubmit,
   photoCount,
+  selectingPhotos,
   bottomPadding,
   submitLabel,
   mode,
   profile,
+  submitting,
+  onEditProfile,
+  roomTypes,
+  roomOptions,
+  regionCities,
+  regionDistricts,
+  regionNeighborhoods,
+  activeRegionCityId,
+  activeRegionDistrictId,
   setTitle,
   setDeposit,
   setRent,
   setMaintenance,
   selectRoomType,
+  selectRegionCity,
+  selectRegionDistrict,
   selectRegion,
   setMoveInDate,
-  setImageUrlsText,
+  addPhotos,
+  removePhoto,
   toggleOption,
   setDescription,
-  toggleProfileInfo,
   submit,
 }: RoomPostFormViewProps) {
-  const roomTypes = useRoomTypeOptions();
-  const roomOptions = useRoomAddOptionOptions(mode === 'edit');
-
   return (
     <>
-      <ScrollView contentContainerClassName="gap-6 p-5 pb-28">
+      <ScrollView
+        contentContainerClassName="gap-6 p-5 pb-28"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
         {mode === 'edit' ? (
           <View className="flex-row items-center gap-2 rounded-xl border border-[#256EF4]/30 bg-[#256EF4]/10 px-3 py-2.5">
             <Text className="text-base">✎</Text>
@@ -54,22 +70,25 @@ export function RoomPostFormView({
         ) : null}
 
         <Section title="사진">
-          <View className="flex-row gap-2">
-            {Array.from({ length: PHOTO_SLOTS }).map((_, i) => (
-              <PhotoSlot key={i} index={i} isAdd={i === PHOTO_SLOTS - 1} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="gap-2"
+          >
+            {photoCount < MAX_ROOM_PHOTOS ? (
+              <AddPhotoSlot onPress={addPhotos} disabled={selectingPhotos} />
+            ) : null}
+            {draft.imageUris.map((uri, index) => (
+              <PhotoSlot key={`${uri}-${index}`} uri={uri} index={index} onRemove={removePhoto} />
             ))}
-          </View>
-          <Text className="self-end text-xs text-neutral-400">
-            {photoCount} / {MAX_PHOTOS}
+            {Array.from({ length: Math.max(0, 3 - photoCount) }).map((_, index) => (
+              <EmptyPhotoSlot key={`empty-photo-${index}`} />
+            ))}
+          </ScrollView>
+          <Text className="self-end text-sm">
+            <Text className="font-semibold text-[#256EF4]">{photoCount}</Text>
+            <Text className="text-neutral-500">/{MAX_ROOM_PHOTOS}</Text>
           </Text>
-          <TextField
-            value={draft.imageUrlsText}
-            onChangeValue={setImageUrlsText}
-            placeholder="이미지 URL을 줄바꿈으로 입력 (최대 10개)"
-            multiline
-            numberOfLines={3}
-            className="min-h-[84px] rounded-xl border border-neutral-200 px-4 py-3 text-sm"
-          />
         </Section>
 
         <Section title="기본 정보">
@@ -78,29 +97,34 @@ export function RoomPostFormView({
               value={draft.title}
               onChangeValue={setTitle}
               placeholder="예) 신촌역 도보 5분, 풀옵션 원룸"
-              className="rounded-xl border border-neutral-200 px-4 py-3 text-sm"
+              className="border-b border-[#AAAABA] px-0 py-3 text-sm"
             />
+          </Field>
+
+          <Field label="게시글 내용">
+            <TextField
+              value={draft.description}
+              onChangeValue={setDescription}
+              placeholder="조용하고 깔끔한 환경 원하시는 분 환영합니다. 풀옵션 구비되어 있고 햇살이 잘 들어오는 남향 방이에요..."
+              multiline
+              numberOfLines={6}
+              maxLength={500}
+              className="min-h-[120px] border-b border-[#AAAABA] px-0 py-3 text-sm leading-6"
+            />
+            <Text className="self-end text-xs text-neutral-400">
+              {draft.description.length} / 500자
+            </Text>
           </Field>
 
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Field label="보증금" badge={mode === 'edit' ? '프로필 값' : undefined}>
-                <NumberInput
-                  value={draft.deposit}
-                  onChange={setDeposit}
-                  placeholder="1,000만"
-                  rightLabel={mode === 'edit' ? '수정' : undefined}
-                />
+                <NumberInput value={draft.deposit} onChange={setDeposit} placeholder="1,000만" />
               </Field>
             </View>
             <View className="flex-1">
               <Field label="월세" badge={mode === 'edit' ? '프로필 값' : undefined}>
-                <NumberInput
-                  value={draft.rent}
-                  onChange={setRent}
-                  placeholder="55만"
-                  rightLabel={mode === 'edit' ? '수정' : undefined}
-                />
+                <NumberInput value={draft.rent} onChange={setRent} placeholder="55만" />
               </Field>
             </View>
           </View>
@@ -116,7 +140,7 @@ export function RoomPostFormView({
 
         <Section title="룸 형태" badge={mode === 'edit' ? '프로필 값' : undefined}>
           <View className="flex-row flex-wrap gap-2">
-            {roomTypes.options.map((rt) => {
+            {roomTypes.map((rt) => {
               const selected = draft.roomType === rt.value;
               return (
                 <Pressable
@@ -140,42 +164,49 @@ export function RoomPostFormView({
         </Section>
 
         <Section title="방 위치" badge={mode === 'edit' ? '프로필 값' : undefined}>
-          <RegionTable selected={draft.regions[0] ?? null} onSelect={selectRegion} />
+          <RegionTable
+            selected={draft.regions[0] ?? null}
+            cities={regionCities}
+            districts={regionDistricts}
+            neighborhoods={regionNeighborhoods}
+            activeCityId={activeRegionCityId}
+            activeDistrictId={activeRegionDistrictId}
+            onSelectCity={selectRegionCity}
+            onSelectDistrict={selectRegionDistrict}
+            onSelect={selectRegion}
+          />
         </Section>
 
         <Section title="입주 가능 시기" badge={mode === 'edit' ? '프로필 값' : undefined}>
-          <View className="flex-row items-center gap-2 rounded-xl border border-neutral-200 px-4 py-3">
-            <TextInput
+          <View className="flex-row items-center gap-2 border-b border-[#AAAABA] py-3">
+            <TextField
               value={draft.moveInDate}
-              onChangeText={setMoveInDate}
-              placeholder="2025-06-01"
-              placeholderTextColor="#a3a3a3"
+              onChangeValue={setMoveInDate}
+              placeholder="YYYY-MM-DD"
+              keyboardType="numbers-and-punctuation"
+              maxLength={10}
               className="flex-1 text-sm text-neutral-900"
             />
             <Text className="text-base text-neutral-400">📅</Text>
           </View>
         </Section>
 
-        {mode === 'edit' && roomOptions.options.length > 0 ? (
+        {mode === 'edit' && roomOptions.length > 0 ? (
           <Section title="옵션 (복수 선택)">
             <View className="flex-row flex-wrap gap-2">
-              {roomOptions.options.map((o) => {
+              {roomOptions.map((o) => {
                 const selected = draft.options.includes(o.value);
                 return (
                   <Pressable
                     key={o.value}
                     onPress={() => toggleOption(o.value)}
                     className={`rounded-full border px-3 py-1.5 active:opacity-80 ${
-                      selected
-                        ? 'border-[#256EF4] bg-[#256EF4]/10'
-                        : 'border-neutral-200 bg-white'
+                      selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                     }`}
                   >
                     <Text
                       className={
-                        selected
-                          ? 'text-xs font-medium text-[#256EF4]'
-                          : 'text-xs text-neutral-700'
+                        selected ? 'text-xs font-medium text-[#256EF4]' : 'text-xs text-neutral-700'
                       }
                     >
                       {o.label}
@@ -187,24 +218,10 @@ export function RoomPostFormView({
           </Section>
         ) : null}
 
-        <Section title="게시글 내용">
-          <TextField
-            value={draft.description}
-            onChangeValue={setDescription}
-            placeholder="조용하고 깔끔한 환경 원하시는 분 환영합니다. 풀옵션 구비되어 있고 햇살이 잘 들어오는 남향 방이에요..."
-            multiline
-            numberOfLines={6}
-            className="min-h-[140px] rounded-xl border border-neutral-200 px-4 py-3 text-sm"
-          />
-          <Text className="self-end text-xs text-neutral-400">
-            {draft.description.length} / 500자
-          </Text>
-        </Section>
-
         <Section title="생활패턴 · 선호 룸메이트 조건">
           <View className="flex-row items-center justify-between rounded-xl bg-[#256EF4]/10 px-4 py-2.5">
             <Text className="text-xs text-[#256EF4]">프로필에서 자동으로 불러왔어요</Text>
-            <Pressable hitSlop={4}>
+            <Pressable hitSlop={4} onPress={onEditProfile}>
               <Text className="text-xs text-[#256EF4]">마이페이지에서 수정 →</Text>
             </Pressable>
           </View>
@@ -215,7 +232,7 @@ export function RoomPostFormView({
               value={
                 profile?.lifestyle?.sleepTime && profile?.lifestyle?.wakeTime
                   ? `${profile.lifestyle.sleepTime}~${profile.lifestyle.wakeTime}`
-                  : '자정~새벽 1시'
+                  : '미입력'
               }
             />
             <ProfileTile
@@ -227,7 +244,7 @@ export function RoomPostFormView({
                     : profile.lifestyle.cleanliness >= 3
                       ? '보통'
                       : '낮음'
-                  : '높음'
+                  : '미입력'
               }
             />
             <ProfileTile
@@ -239,7 +256,7 @@ export function RoomPostFormView({
                     : profile.lifestyle.noise >= 3
                       ? '보통'
                       : '낮음'
-                  : '보통'
+                  : '미입력'
               }
             />
             <ProfileTile
@@ -249,7 +266,7 @@ export function RoomPostFormView({
                   ? '비흡연'
                   : profile?.lifestyle?.smoking === 'outdoor'
                     ? '실외만'
-                    : '비흡연'
+                    : '미입력'
               }
             />
           </View>
@@ -265,23 +282,11 @@ export function RoomPostFormView({
                   : '성별 무관'
               }
             />
-            <KeyValueRow label="흡연 여부" value="비흡연자" />
             <KeyValueRow
               label="중요 조건"
-              value={profile?.importantConditions.slice(0, 2).join(' · ') || '청결 · 취침시간'}
+              value={profile?.importantConditions.slice(0, 2).join(' · ') || '미입력'}
             />
           </View>
-
-          <Pressable onPress={toggleProfileInfo} className="mt-1 flex-row items-center gap-2">
-            <View
-              className={`h-5 w-5 items-center justify-center rounded ${
-                draft.showProfileInfo ? 'bg-[#256EF4]' : 'border border-neutral-300 bg-white'
-              }`}
-            >
-              {draft.showProfileInfo ? <Text className="text-xs text-white">✓</Text> : null}
-            </View>
-            <Text className="text-xs text-neutral-700">게시글에 함께 표시해요</Text>
-          </Pressable>
         </Section>
       </ScrollView>
 
@@ -291,20 +296,24 @@ export function RoomPostFormView({
       >
         <Pressable
           onPress={submit}
-          disabled={!canSubmit}
+          disabled={!canSubmit || submitting}
           className={`h-12 items-center justify-center rounded-xl ${
-            canSubmit ? 'bg-[#256EF4]' : 'bg-neutral-300'
+            canSubmit && !submitting ? 'bg-[#256EF4]' : 'bg-neutral-300'
           }`}
         >
-          <Text
-            className={
-              canSubmit
-                ? 'text-base font-semibold text-white'
-                : 'text-base font-semibold text-neutral-500'
-            }
-          >
-            {submitLabel}
-          </Text>
+          {submitting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text
+              className={
+                canSubmit
+                  ? 'text-base font-semibold text-white'
+                  : 'text-base font-semibold text-neutral-500'
+              }
+            >
+              {submitLabel}
+            </Text>
+          )}
         </Pressable>
       </View>
     </>
@@ -355,69 +364,93 @@ function NumberInput({
   value,
   onChange,
   placeholder,
-  rightLabel,
 }: {
   value: string;
   onChange: (next: string) => void;
   placeholder?: string;
-  rightLabel?: string;
 }) {
   return (
-    <View className="flex-row items-center gap-2 rounded-xl border border-neutral-200 px-4 py-3">
-      <TextInput
+    <View className="flex-row items-center gap-2 border-b border-[#AAAABA] py-3">
+      <TextField
         value={value}
-        onChangeText={(t) => onChange(t.replace(/\D/g, ''))}
+        onChangeValue={(t) => onChange(t.replace(/\D/g, ''))}
         keyboardType="number-pad"
         placeholder={placeholder}
-        placeholderTextColor="#a3a3a3"
         className="flex-1 text-sm text-neutral-900"
       />
-      {rightLabel ? (
-        <Pressable hitSlop={4}>
-          <Text className="text-xs text-[#256EF4]">{rightLabel}</Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
 
-function PhotoSlot({ index, isAdd }: { index: number; isAdd: boolean }) {
-  if (isAdd) {
-    return (
-      <Pressable className="h-20 flex-1 items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-neutral-50">
-        <Text className="text-lg text-neutral-400">+</Text>
-        <Text className="text-[10px] text-neutral-400">사진 추가</Text>
-      </Pressable>
-    );
-  }
+function AddPhotoSlot({ onPress, disabled }: { onPress: () => void; disabled: boolean }) {
   return (
-    <View className="h-20 flex-1 items-center justify-center rounded-xl bg-neutral-100">
-      <Text className="text-xs text-neutral-400">📷</Text>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      className="h-20 w-20 items-center justify-center rounded bg-[#E4E4EE] active:opacity-70"
+    >
+      <Ionicons name="add" size={30} color="#696976" />
+      <Text className="mt-0.5 text-[10px] text-neutral-500">
+        {disabled ? '불러오는 중' : '사진 추가'}
+      </Text>
+    </Pressable>
+  );
+}
+
+function EmptyPhotoSlot() {
+  return <View className="h-20 w-20 rounded bg-[#F1F1F6]" />;
+}
+
+function PhotoSlot({
+  uri,
+  index,
+  onRemove,
+}: {
+  uri: string;
+  index: number;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <View className="relative h-20 w-20 overflow-hidden rounded bg-neutral-100">
+      <Image source={{ uri }} style={{ width: 80, height: 80 }} contentFit="cover" />
       {index === 0 ? (
-        <View className="absolute left-1 top-1 rounded bg-[#256EF4] px-1.5 py-0.5">
+        <View className="absolute bottom-1 left-1 rounded bg-[#256EF4] px-1.5 py-0.5">
           <Text className="text-[9px] font-medium text-white">대표</Text>
         </View>
       ) : null}
+      <Pressable
+        onPress={() => onRemove(index)}
+        hitSlop={6}
+        className="absolute right-1 top-1 h-5 w-5 items-center justify-center rounded-full bg-black/60"
+        accessibilityLabel={`${index + 1}번째 사진 삭제`}
+      >
+        <Ionicons name="close" size={13} color="white" />
+      </Pressable>
     </View>
   );
 }
 
 function RegionTable({
   selected,
+  cities,
+  districts,
+  neighborhoods,
+  activeCityId,
+  activeDistrictId,
+  onSelectCity,
+  onSelectDistrict,
   onSelect,
 }: {
   selected: Region | null;
+  cities: RegionSelectOption[];
+  districts: RegionSelectOption[];
+  neighborhoods: RegionSelectOption[];
+  activeCityId: string | null;
+  activeDistrictId: string | null;
+  onSelectCity: (id: string) => void;
+  onSelectDistrict: (id: string) => void;
   onSelect: (r: Region) => void;
 }) {
-  const regions = useRegionOptions();
-  const [activeCity, setActiveCity] = useState<string | null>(regions.cities[0]?.id ?? null);
-
-  useEffect(() => {
-    if (!activeCity && regions.cities[0]) setActiveCity(regions.cities[0].id);
-  }, [activeCity, regions.cities]);
-
-  const districts = activeCity ? regions.getChildren(activeCity) : [];
-
   return (
     <View className="rounded-xl border border-neutral-200">
       <View className="flex-row border-b border-neutral-100 bg-neutral-50">
@@ -433,15 +466,15 @@ function RegionTable({
       </View>
       <View className="flex-row border-b border-neutral-50">
         <View className="flex-1 py-2">
-          {regions.cities.map((city) => (
+          {cities.map((city) => (
             <Pressable
               key={city.id}
-              onPress={() => setActiveCity(city.id)}
+              onPress={() => onSelectCity(city.id)}
               className="items-center py-1.5"
             >
               <Text
                 className={
-                  activeCity === city.id
+                  activeCityId === city.id
                     ? 'text-sm font-semibold text-[#256EF4]'
                     : 'text-sm text-neutral-700'
                 }
@@ -453,24 +486,47 @@ function RegionTable({
         </View>
         <View className="flex-1 gap-1 py-2">
           {districts.map((option) => {
-            const r = option.region;
             return (
-              <Pressable key={r.id} onPress={() => onSelect(r)} className="items-center py-0.5">
+              <Pressable
+                key={option.id}
+                onPress={() => onSelectDistrict(option.id)}
+                className="items-center py-0.5"
+              >
                 <Text
                   className={
-                    selected?.id === r.id
+                    activeDistrictId === option.id
                       ? 'text-xs font-medium text-[#256EF4]'
                       : 'text-xs text-neutral-600'
                   }
                 >
-                  {r.district}
+                  {option.region.district}
                 </Text>
               </Pressable>
             );
           })}
         </View>
-        <View className="flex-1 items-center justify-center py-3">
-          <Text className="text-xs text-neutral-400">—</Text>
+        <View className="flex-1 gap-1 py-2">
+          {neighborhoods.length === 0 ? (
+            <Text className="py-1.5 text-center text-xs text-neutral-400">선택 없음</Text>
+          ) : (
+            neighborhoods.map((option) => (
+              <Pressable
+                key={option.id}
+                onPress={() => onSelect(option.region)}
+                className="items-center py-0.5"
+              >
+                <Text
+                  className={
+                    selected?.id === option.id
+                      ? 'text-xs font-medium text-[#256EF4]'
+                      : 'text-xs text-neutral-600'
+                  }
+                >
+                  {option.region.district.split(' ').at(-1)}
+                </Text>
+              </Pressable>
+            ))
+          )}
         </View>
       </View>
     </View>

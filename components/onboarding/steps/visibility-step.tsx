@@ -81,7 +81,7 @@ export function VisibilityStep() {
         />
       </ScrollView>
 
-      <OnboardingFooter canProceed={true} showBack onPress={onNext} />
+      <OnboardingFooter canProceed={true} onPress={onNext} />
     </View>
   );
 }

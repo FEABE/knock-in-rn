@@ -11,7 +11,6 @@ import { useRequireLogin } from '@/lib/auth';
 export type UseInquiryFormScreenReturn = {
   title: string;
   body: string;
-  isPublic: boolean;
   categories: SupportCategory[];
   categoryId: string;
   loadingCategories: boolean;
@@ -22,33 +21,40 @@ export type UseInquiryFormScreenReturn = {
   setCategoryId: (next: string) => void;
   setTitle: (next: string) => void;
   setBody: (next: string) => void;
-  setIsPublic: (next: boolean) => void;
   submit: () => Promise<void>;
 };
 
 export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
-  const [submitted, setSubmitted] = useState(false);
-  const [categoryId, setCategoryId] = useState('');
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [state, setState] = useState({
+    title: '',
+    body: '',
+    submitted: false,
+    categoryId: '',
+    submitError: null as string | null,
+  });
+  const { title, body, submitted, categoryId, submitError } = state;
   const { session, requireLogin } = useRequireLogin();
   const { data: categories, loading: loadingCategories } = useSupportCategories(Boolean(session));
   const { submitInquiry, submitting } = useCreateSupportInquiryAction();
   const categoryList = useMemo(() => categories ?? [], [categories]);
 
   useEffect(() => {
-    if (!categoryId && categoryList[0]?.id) setCategoryId(categoryList[0].id);
+    if (!categoryId && categoryList[0]?.id) {
+      setState((current) => ({ ...current, categoryId: categoryList[0].id }));
+    }
   }, [categoryId, categoryList]);
 
   const canSubmit =
-    Boolean(session) && title.trim().length > 0 && body.trim().length > 0 && !!categoryId && !submitting;
+    Boolean(session) &&
+    title.trim().length > 0 &&
+    body.trim().length > 0 &&
+    !!categoryId &&
+    !submitting;
 
   const submit = async () => {
     if (!session) {
       const message = '문의 접수는 로그인 후 이용할 수 있어요.';
-      setSubmitError(message);
+      setState((current) => ({ ...current, submitError: message }));
       requireLogin(() => undefined, { title: '로그인 필요', message });
       return;
     }
@@ -56,24 +62,27 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
     const numericCategoryId = Number(categoryId);
     if (!Number.isFinite(numericCategoryId)) {
       const message = '문의 유형을 다시 선택해주세요.';
-      setSubmitError(message);
+      setState((current) => ({ ...current, submitError: message }));
       Alert.alert('접수 실패', message);
       return;
     }
-    setSubmitError(null);
+    setState((current) => ({ ...current, submitError: null }));
     try {
       await submitInquiry({
         categoryId: numericCategoryId,
         title: title.trim(),
-        contents: `${body.trim()}\n\n공개 여부: ${isPublic ? '공개' : '비공개'}`,
+        contents: body.trim(),
       });
-      setSubmitted(true);
-      setTitle('');
-      setBody('');
+      setState((current) => ({
+        ...current,
+        submitted: true,
+        title: '',
+        body: '',
+      }));
       Alert.alert('접수 완료', '운영자가 확인 후 답변드릴게요.');
     } catch (error) {
       const message = error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.';
-      setSubmitError(message);
+      setState((current) => ({ ...current, submitError: message }));
       Alert.alert('접수 실패', message);
     }
   };
@@ -81,7 +90,6 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
   return {
     title,
     body,
-    isPublic,
     categories: categoryList,
     categoryId,
     loadingCategories,
@@ -89,10 +97,9 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
     canSubmit,
     submitted,
     submitting,
-    setCategoryId,
-    setTitle,
-    setBody,
-    setIsPublic,
+    setCategoryId: (next) => setState((current) => ({ ...current, categoryId: next })),
+    setTitle: (next) => setState((current) => ({ ...current, title: next })),
+    setBody: (next) => setState((current) => ({ ...current, body: next })),
     submit,
   };
 }

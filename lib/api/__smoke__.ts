@@ -57,7 +57,7 @@ async function main() {
   const conditions = pref.data.conditions ?? [];
   check('getPreferenceAll', conditions.length > 0, `conditions=${conditions.length}`);
 
-  const boards = await getRoommateBoards({ region: 4, page: 0 });
+  const boards = await getRoommateBoards({ regionIds: [4], page: 0 });
   const boardItems = boards.data.boards ?? [];
   check(
     'getRoommateBoards',

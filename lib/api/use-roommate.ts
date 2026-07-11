@@ -40,9 +40,12 @@ import {
 import { type AsyncState, useApi } from './use-async';
 
 /** 룸메이트 게시글 목록 (RoomPost[]). */
-export function useRoommateBoards(query: BoardListQuery = {}): AsyncState<RoomPost[]> {
+export function useRoommateBoards(
+  query: BoardListQuery = {},
+  enabled = true,
+): AsyncState<RoomPost[]> {
   const key = JSON.stringify(query);
-  const state = useApi(['roommate', 'boards', key], () => getRoommateBoards(query));
+  const state = useApi(['roommate', 'boards', key], () => getRoommateBoards(query), { enabled });
   const posts = useMemo(
     () => state.data?.boards?.map(boardListItemToRoomPost) ?? null,
     [state.data],
@@ -96,11 +99,9 @@ export function useRoommateBoardDetail(boardId: string): AsyncState<RoomPost> {
 
 /** 룸메이트 게시글 편집 form. */
 export function useRoommateBoardEdit(boardId: string): AsyncState<BoardEditData> {
-  return useApi(
-    ['roommate', 'boards', 'edit', boardId],
-    () => getRoommateBoardEdit(boardId),
-    { enabled: boardId.length > 0 },
-  );
+  return useApi(['roommate', 'boards', 'edit', boardId], () => getRoommateBoardEdit(boardId), {
+    enabled: boardId.length > 0,
+  });
 }
 
 /** 룸메이트 매칭 목록 (RoommateCard[]). */
@@ -120,8 +121,8 @@ export function useRoommateMatchList(): AsyncState<MatchListItem[]> {
 }
 
 /** 룸메이트 매칭 목록 (화면용 ViewModel[]). */
-export function useRoommateMatchCards(): AsyncState<RoommateMatchCardModel[]> {
-  const state = useApi(['roommate', 'matches'], () => getRoommateMatches());
+export function useRoommateMatchCards(enabled = true): AsyncState<RoommateMatchCardModel[]> {
+  const state = useApi(['roommate', 'matches'], () => getRoommateMatches(), { enabled });
   const cards = useMemo(
     () => state.data?.matches?.map(toRoommateMatchCardModel) ?? null,
     [state.data],
@@ -154,7 +155,7 @@ export function useRoommateBoardLikeActions() {
       });
       queryClient.setQueryData<BoardDetailData & { isLike?: boolean }>(
         ['roommate', 'boards', 'detail', String(boardId)],
-        (old) => (old ? { ...old, isLike: liked } : old),
+        (old) => (old ? { ...old, isLike: liked, interested: liked } : old),
       );
       mutation.mutate(boardId);
     },

@@ -21,6 +21,10 @@ export function goExplore(router: RouterLike, mode: 'push' | 'replace' = 'push')
   else push(router, '/explore');
 }
 
+export function goExploreSearch(router: RouterLike, query: string) {
+  replace(router, `/explore?q=${encodeURIComponent(query)}`);
+}
+
 export function goOnboarding(router: RouterLike, mode: 'push' | 'replace' = 'push') {
   if (mode === 'replace') replace(router, '/onboarding');
   else push(router, '/onboarding');
@@ -31,8 +35,8 @@ export function goKakaoLogin(router: RouterLike, mode: 'push' | 'replace' = 'pus
   else push(router, '/kakao-login');
 }
 
-export function goRoomSearch(router: RouterLike) {
-  push(router, '/room/search');
+export function goRoomSearch(router: RouterLike, query?: string) {
+  push(router, query ? `/room/search?q=${encodeURIComponent(query)}` : '/room/search');
 }
 
 export function goNewRoom(router: RouterLike) {
@@ -53,6 +57,14 @@ export function goRoommateDetail(router: RouterLike, userId: string | number) {
 
 export function goChatRoom(router: RouterLike, chatRoomId: string | number) {
   push(router, `/chat/${chatRoomId}`);
+}
+
+export function goChatRequest(router: RouterLike, requestId: string | number) {
+  push(router, `/chat/request/${requestId}`);
+}
+
+export function goNotifications(router: RouterLike) {
+  push(router, '/notifications');
 }
 
 export function goMypageProfile(router: RouterLike) {

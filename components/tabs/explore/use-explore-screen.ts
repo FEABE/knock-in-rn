@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 
 import type { GenderFilterValue } from '@/components/room/filters';
@@ -11,18 +11,20 @@ import {
   useRoommateBoards,
   useRoommateMatchCards,
   useRoommateMatchLikeActions,
+  useAlarms,
   type RoommateMatchCardModel,
 } from '@/lib/api';
-import { useModeration, type RoomPost } from '@/lib/domain';
+import { useModeration, useSession, type RoomPost } from '@/lib/domain';
+import { useRequireLogin } from '@/lib/auth';
 import {
-  goOnboarding,
+  goNotifications,
   goRoomDetail,
   goRoommateDetail,
   goRoomSearch,
 } from '@/lib/navigation/routes';
 import type { Region, RoomType } from '@/lib/onboarding';
 
-export type ExploreSort = 'latest' | 'views';
+export type ExploreSort = 'latest' | 'likes' | 'views';
 export type ExploreFilterKey = 'region' | 'gender' | 'budget' | 'roomType';
 
 export type ExploreFilter = {
@@ -47,22 +49,30 @@ export const INITIAL_EXPLORE_FILTER: ExploreFilter = {
 
 export const EXPLORE_SORT_OPTIONS: { value: ExploreSort; label: string }[] = [
   { value: 'latest', label: '최신순' },
-  { value: 'views', label: '조회순' },
+  { value: 'likes', label: '인기순' },
+  { value: 'views', label: '조회수순' },
 ];
 
 export type UseExploreScreenReturn = {
   sort: ExploreSort;
   filter: ExploreFilter;
+  searchQuery: string;
   openSheet: ExploreFilterKey | null;
   visiblePosts: RoomPost[];
   visibleMatches: RoommateMatchCardModel[];
   roomsLoading: boolean;
+  roomsError: string | null;
   matchesLoading: boolean;
+  matchesError: string | null;
+  hasUnreadAlarms: boolean;
+  reloadRooms: () => void;
+  reloadMatches: () => void;
   setSort: (next: ExploreSort) => void;
   setOpenSheet: (next: ExploreFilterKey | null) => void;
   handleFilterChange: (next: ExploreFilter) => void;
   onSearchPress: () => void;
-  onOnboardingPress: () => void;
+  onSearchClear: () => void;
+  onNotificationPress: () => void;
   onRoomPress: (post: RoomPost) => void;
   onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
   onRoommatePress: (match: RoommateMatchCardModel) => void;
@@ -71,26 +81,45 @@ export type UseExploreScreenReturn = {
 
 export function useExploreScreen(): UseExploreScreenReturn {
   const router = useRouter();
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const searchQuery = typeof q === 'string' ? q.trim() : '';
+  const { session } = useSession();
+  const { requireLogin } = useRequireLogin();
   const { isPostBlocked, isUserBlocked } = useModeration();
   const setBoardLiked = useRoommateBoardLikeActions();
   const setMatchLiked = useRoommateMatchLikeActions();
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
+  const { data: alarms } = useAlarms(Boolean(session));
   const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
-  const { data: posts, loading: roomsLoading } = useRoommateBoards(boardQuery);
+  const {
+    data: posts,
+    loading: roomsLoading,
+    error: roomsError,
+    reload: reloadRooms,
+  } = useRoommateBoards(boardQuery);
 
   const visiblePosts = useMemo(() => {
     const safe = (posts ?? []).filter(
       (post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
     );
-    return sortPosts(safe, sort);
-  }, [posts, isPostBlocked, isUserBlocked, sort]);
+    return sortPosts(filterRoomsBySearch(safe, searchQuery), sort);
+  }, [posts, isPostBlocked, isUserBlocked, searchQuery, sort]);
 
-  const { data: matchList, loading: matchesLoading } = useRoommateMatchCards();
+  const {
+    data: matchList,
+    loading: matchesLoading,
+    error: matchesError,
+    reload: reloadMatches,
+  } = useRoommateMatchCards();
   const visibleMatches = useMemo(
-    () => (matchList ?? []).filter((match) => !isUserBlocked(match.id)),
-    [matchList, isUserBlocked],
+    () =>
+      filterMatchesBySearch(
+        (matchList ?? []).filter((match) => !isUserBlocked(match.id)),
+        searchQuery,
+      ),
+    [matchList, isUserBlocked, searchQuery],
   );
 
   const handleFilterChange = (next: ExploreFilter) => {
@@ -101,52 +130,105 @@ export function useExploreScreen(): UseExploreScreenReturn {
   return {
     sort,
     filter,
+    searchQuery,
     openSheet,
     visiblePosts,
     visibleMatches,
     roomsLoading,
+    roomsError,
     matchesLoading,
+    matchesError,
+    hasUnreadAlarms: (alarms ?? []).some((alarm) => !alarm.isRead),
+    reloadRooms,
+    reloadMatches,
     setSort,
     setOpenSheet,
     handleFilterChange,
-    onSearchPress: () => goRoomSearch(router),
-    onOnboardingPress: () => goOnboarding(router),
+    onSearchPress: () => goRoomSearch(router, searchQuery),
+    onSearchClear: () => router.replace('/explore' as never),
+    onNotificationPress: () => goNotifications(router),
     onRoomPress: (post) => {
       logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
       goRoomDetail(router, post.id);
     },
-    onRoomLikeChange: (post, liked) => {
-      logEvent(liked ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
-        room_id: post.id,
-      });
-      setBoardLiked(post.id, liked);
-    },
+    onRoomLikeChange: (post, liked) =>
+      requireLogin(() => {
+        logEvent(liked ? AnalyticsEvent.ROOM_INTEREST_ADD : AnalyticsEvent.ROOM_INTEREST_REMOVE, {
+          room_id: post.id,
+        });
+        setBoardLiked(post.id, liked);
+      }),
     onRoommatePress: (match) => {
       logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.id });
       goRoommateDetail(router, match.id);
     },
-    onRoommateLikeChange: (match, liked) => {
-      if (liked) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: match.id });
-      setMatchLiked(match.id, liked);
-    },
+    onRoommateLikeChange: (match, liked) =>
+      requireLogin(() => {
+        if (liked) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: match.id });
+        setMatchLiked(match.id, liked);
+      }),
   };
 }
 
+function normalizeSearchValue(value: string): string {
+  return value.toLocaleLowerCase().replace(/\s+/g, '');
+}
+
+function filterRoomsBySearch(posts: RoomPost[], query: string): RoomPost[] {
+  const normalized = normalizeSearchValue(query);
+  if (!normalized) return posts;
+  return posts.filter((post) =>
+    normalizeSearchValue(
+      [
+        post.title,
+        post.description,
+        post.region.city,
+        post.region.district,
+        post.author.name,
+        post.roomType,
+      ].join(' '),
+    ).includes(normalized),
+  );
+}
+
+function filterMatchesBySearch(
+  matches: RoommateMatchCardModel[],
+  query: string,
+): RoommateMatchCardModel[] {
+  const normalized = normalizeSearchValue(query);
+  if (!normalized) return matches;
+  return matches.filter((match) =>
+    normalizeSearchValue(
+      [
+        match.name,
+        match.genderLabel,
+        match.regionLabel,
+        match.roomTypeLabel,
+        ...match.lifestyleChips,
+        ...match.conditionChips,
+      ].join(' '),
+    ).includes(normalized),
+  );
+}
+
 function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
-  void sort;
   return {
-    region: filter.regions.length ? regionBackendId(filter.regions[0]) : undefined,
+    regionIds: filter.regions.map(regionBackendId).filter((id): id is number => id !== undefined),
     gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
     minDeposit: filter.depositMin,
     maxDeposit: filter.depositMax,
     minMounthRent: filter.rentMin,
     maxMounthRent: filter.rentMax,
-    type: filter.roomTypes.length ? roomTypeBackendId(filter.roomTypes[0]) : undefined,
+    roomTypeIds: filter.roomTypes
+      .map(roomTypeBackendId)
+      .filter((id): id is number => id !== undefined),
+    sort: sort === 'views' ? 'hits,DESC' : 'createdAt,DESC',
   };
 }
 
 function sortPosts(posts: RoomPost[], sort: ExploreSort): RoomPost[] {
   const next = [...posts];
+  if (sort === 'likes') return next.sort((a, b) => b.likes - a.likes);
   if (sort === 'views') return next.sort((a, b) => b.views - a.views);
   return next.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

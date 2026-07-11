@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Alert } from 'react-native';
 
 import { roomFormValuesToBoardWriteRequest } from '@/components/room/room-post-form.api';
@@ -23,6 +24,7 @@ export type UseEditRoomScreenReturn = {
   post?: RoomPost;
   profile?: RoomPost['author'];
   initial?: Partial<RoomFormDraft>;
+  submitting: boolean;
   onBack: () => void;
   onDelete: () => void;
   onSubmit: (values: RoomFormValues) => Promise<void>;
@@ -36,14 +38,16 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
   const { data: post, loading, error } = useRoommateBoardDetail(boardId);
   const { data: editData, loading: editLoading } = useRoommateBoardEdit(boardId);
   const { updateBoard, deleteBoard } = useRoommateBoardWriteActions();
+  const [submitting, setSubmitting] = useState(false);
 
-  const state: EditRoomState = loading || editLoading
-    ? 'loading'
-    : !post || error
-      ? 'missing'
-      : session?.user.id !== post.author.id && session?.user.name !== post.author.name
-        ? 'forbidden'
-        : 'editable';
+  const state: EditRoomState =
+    loading || editLoading
+      ? 'loading'
+      : !post || error
+        ? 'missing'
+        : session?.user.id !== post.author.id && session?.user.name !== post.author.name
+          ? 'forbidden'
+          : 'editable';
 
   const onDelete = () => {
     Alert.alert('삭제', '게시글을 삭제할까요?', [
@@ -69,9 +73,10 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
   };
 
   const onSubmit = async (values: RoomFormValues) => {
-    if (!post) return;
+    if (!post || submitting) return;
     const body = roomFormValuesToBoardWriteRequest(values);
     applyEditMetadata(body, values, editData ?? undefined);
+    setSubmitting(true);
     try {
       await updateBoard(post.id, body);
     } catch (updateError) {
@@ -79,11 +84,13 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
         '수정 실패',
         updateError instanceof Error ? updateError.message : '잠시 후 다시 시도해주세요.',
       );
+      setSubmitting(false);
       return;
     }
     Alert.alert('수정 완료', '게시글이 수정되었어요.', [
       { text: '확인', onPress: () => router.back() },
     ]);
+    setSubmitting(false);
   };
 
   return {
@@ -91,6 +98,7 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
     post: post ?? undefined,
     profile: session?.user,
     initial: editData ? toInitialDraftFromEdit(editData) : post ? toInitialDraft(post) : undefined,
+    submitting,
     onBack: () => router.back(),
     onDelete,
     onSubmit,
@@ -107,12 +115,11 @@ function toInitialDraftFromEdit(edit: BoardEditData): Partial<RoomFormDraft> {
     regions: [regionFromBackendId(edit.region?.regionId ?? edit.region?.fullName)],
     description: edit.contents,
     moveInDate: edit.comeableDate ? fmtDate(new Date(edit.comeableDate)) : '',
-    imageUrlsText: edit.images?.map((image) => image.url).filter(Boolean).join('\n') ?? '',
+    imageUris: edit.images?.map((image) => image.url).filter((url): url is string => !!url) ?? [],
     options:
       edit.roomExtraOptions
         ?.map((option) => option.extraOptionId)
         .filter((option): option is number => Number.isFinite(option)) ?? [],
-    showProfileInfo: true,
   };
 }
 
@@ -153,9 +160,8 @@ function toInitialDraft(post: RoomPost): Partial<RoomFormDraft> {
     regions: [post.region],
     description: post.description,
     moveInDate: post.moveInDate ? fmtDate(post.moveInDate) : '',
-    imageUrlsText: (post.photoUrls ?? (post.thumbnailUrl ? [post.thumbnailUrl] : [])).join('\n'),
+    imageUris: post.photoUrls ?? (post.thumbnailUrl ? [post.thumbnailUrl] : []),
     options: compactNumbers(post.options?.map(roomOptionBackendId) ?? []),
-    showProfileInfo: true,
   };
 }
 

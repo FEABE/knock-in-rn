@@ -1,44 +1,51 @@
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { goExplore } from '@/lib/navigation/routes';
-import { ONBOARDING_STEPS, STEP_LABELS, useOnboarding } from '@/lib/onboarding';
+import { STEP_LABELS, useOnboarding, type OnboardingStep } from '@/lib/onboarding';
 
-/** 와이어프레임 온보딩 헤더: 우상단 닫기 + 분할 진행 바 + 단계 라벨. */
+const DESIGN_PROGRESS: Record<Exclude<OnboardingStep, 'roominfo'>, number> = {
+  terms: 1,
+  'profile-basic': 2,
+  'profile-lifestyle': 3,
+  visibility: 9,
+  preferences: 10,
+};
+
 export function OnboardingHeader() {
-  const { currentStep, currentIndex } = useOnboarding();
+  const { currentStep, isFirst, goPrev } = useOnboarding();
   const router = useRouter();
-  const total = ONBOARDING_STEPS.length;
+  const progress = currentStep === 'roominfo' ? 11 : DESIGN_PROGRESS[currentStep];
 
-  const exit = () => {
+  const goBack = () => {
+    if (!isFirst) {
+      goPrev();
+      return;
+    }
     if (router.canGoBack()) router.back();
     else goExplore(router, 'replace');
   };
 
   return (
-    <View className="gap-2 bg-white px-5 pb-3 pt-3">
-      <View className="flex-row items-center justify-end">
+    <View className="h-14 flex-row items-center justify-between bg-white px-4">
+      <View className="w-12 items-start">
         <Pressable
-          onPress={exit}
-          hitSlop={8}
-          className="h-8 w-8 items-center justify-center rounded-full active:bg-neutral-100"
+          onPress={goBack}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="이전으로"
+          className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
         >
-          <Text className="text-xl text-neutral-500">✕</Text>
+          <Ionicons name="chevron-back" size={24} color="#6B6B76" />
         </Pressable>
       </View>
-      <View className="flex-row gap-1.5">
-        {ONBOARDING_STEPS.map((step, i) => (
-          <View
-            key={step}
-            className={`h-1.5 flex-1 rounded-full ${
-              i <= currentIndex ? 'bg-[#256EF4]' : 'bg-neutral-200'
-            }`}
-          />
-        ))}
+      <View className="flex-1 items-center">
+        <Text className="text-base font-medium text-[#1E1E24]">{STEP_LABELS[currentStep]}</Text>
       </View>
-      <Text className="text-xs text-neutral-400">
-        {currentIndex + 1} / {total} — {STEP_LABELS[currentStep]}
-      </Text>
+      <View className="w-12 items-end">
+        <Text className="text-sm text-[#8B8B9B]">{progress}/15</Text>
+      </View>
     </View>
   );
 }

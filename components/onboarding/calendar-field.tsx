@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -72,13 +73,13 @@ export function CalendarField({
         <View className="gap-3">
           <View className="flex-row items-center justify-between">
             <Pressable onPress={prevMonth} hitSlop={8} className="px-4 py-1">
-              <Text className="text-2xl text-neutral-600">‹</Text>
+              <Ionicons name="chevron-back" size={22} color="#525252" />
             </Pressable>
             <Text className="text-base font-semibold text-neutral-900">
               {view.y}.{String(view.m + 1).padStart(2, '0')}
             </Text>
             <Pressable onPress={nextMonth} hitSlop={8} className="px-4 py-1">
-              <Text className="text-2xl text-neutral-600">›</Text>
+              <Ionicons name="chevron-forward" size={22} color="#525252" />
             </Pressable>
           </View>
 

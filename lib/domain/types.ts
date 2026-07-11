@@ -1,10 +1,4 @@
-import type {
-  Gender,
-  Lifestyle,
-  PreferredGender,
-  Region,
-  RoomType,
-} from '@/lib/onboarding';
+import type { Gender, Lifestyle, PreferredGender, Region, RoomType } from '@/lib/onboarding';
 
 export type VerificationKind = 'school' | 'company';
 
@@ -26,6 +20,7 @@ export type UserSummary = {
   badges: VerificationBadge[];
   lifestyle: Partial<Lifestyle>;
   importantConditions: string[];
+  compatibilityScore?: number;
 };
 
 export type RoomPostStatus = 'open' | 'matched' | 'closed';
@@ -51,6 +46,13 @@ export type RoomPost = {
   description: string;
   options?: RoomOption[];
   liked?: boolean;
+  compatibilityScore?: number;
+  compatibilityDetails?: { label: string; score: number }[];
+  preferredRoommate?: {
+    genderLabel?: string;
+    smokingLabel?: string;
+    importantConditions: string[];
+  };
 };
 
 export type RoommateCard = {
@@ -109,7 +111,14 @@ export type ChatMessage = {
   authorId: string;
   body: string;
   sentAt: Date;
-  kind?: 'text' | 'system';
+  kind?: 'text' | 'image' | 'system';
+  imageUrl?: string;
+};
+
+export type RoommateRequestState = {
+  id: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED' | 'EXPIRED';
+  role: 'requester' | 'requestee' | 'unknown';
 };
 
 export type ChatRoom = {
@@ -118,4 +127,5 @@ export type ChatRoom = {
   messages: ChatMessage[];
   matched: boolean;
   acceptedRequest: boolean;
+  roommateRequest?: RoommateRequestState;
 };

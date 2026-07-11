@@ -1,6 +1,10 @@
 import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 
 import {
+  type BoardListQuery,
+  regionBackendId,
+  roomTypeBackendId,
   useRoommateBoardLikeActions,
   useRoommateBoards,
   useRoommateMatchCards,
@@ -8,11 +12,42 @@ import {
   type RoommateMatchCardModel,
 } from '@/lib/api';
 import { useModeration, type RoomPost } from '@/lib/domain';
-import { goExplore, goRoomDetail, goRoommateDetail } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
+import {
+  goExplore,
+  goKakaoLogin,
+  goRoomDetail,
+  goRoommateDetail,
+  goRoomSearch,
+} from '@/lib/navigation/routes';
+
+import {
+  EXPLORE_SORT_OPTIONS,
+  INITIAL_EXPLORE_FILTER,
+  type ExploreFilter,
+  type ExploreFilterKey,
+  type ExploreSort,
+} from '../explore/use-explore-screen';
 
 export type UseInterestsScreenReturn = {
   rooms: RoomPost[];
   likedMatches: RoommateMatchCardModel[];
+  isLoggedIn: boolean;
+  filter: ExploreFilter;
+  sort: ExploreSort;
+  openSheet: ExploreFilterKey | null;
+  roomsLoading: boolean;
+  roomsError: string | null;
+  matchesLoading: boolean;
+  matchesError: string | null;
+  reloadRooms: () => void;
+  reloadMatches: () => void;
+  sortLabel: string;
+  setSort: (next: ExploreSort) => void;
+  setOpenSheet: (next: ExploreFilterKey | null) => void;
+  setFilter: (next: ExploreFilter) => void;
+  onSearchPress: () => void;
+  onLoginPress: () => void;
   onExplorePress: () => void;
   onRoomPress: (post: RoomPost) => void;
   onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
@@ -23,23 +58,79 @@ export type UseInterestsScreenReturn = {
 export function useInterestsScreen(): UseInterestsScreenReturn {
   const router = useRouter();
   const { isPostBlocked, isUserBlocked } = useModeration();
-  const { data: posts } = useRoommateBoards();
-  const { data: matchList } = useRoommateMatchCards();
+  const { requireLogin, isLoggedIn } = useRequireLogin();
+  const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
+  const [sort, setSort] = useState<ExploreSort>('latest');
+  const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
+  const boardQuery = useMemo(() => toBoardQuery(filter, sort), [filter, sort]);
+  const {
+    data: posts,
+    loading: roomsLoading,
+    error: roomsError,
+    reload: reloadRooms,
+  } = useRoommateBoards(boardQuery, isLoggedIn);
+  const {
+    data: matchList,
+    loading: matchesLoading,
+    error: matchesError,
+    reload: reloadMatches,
+  } = useRoommateMatchCards(isLoggedIn);
   const setBoardLiked = useRoommateBoardLikeActions();
   const setMatchLiked = useRoommateMatchLikeActions();
 
-  const rooms = (posts ?? []).filter(
-    (post) => post.liked === true && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
+  const rooms = sortPosts(
+    (posts ?? []).filter(
+      (post) => post.liked === true && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
+    ),
+    sort,
   );
   const likedMatches = (matchList ?? []).filter((match) => match.liked && !isUserBlocked(match.id));
 
   return {
     rooms,
     likedMatches,
+    isLoggedIn,
+    filter,
+    sort,
+    openSheet,
+    roomsLoading,
+    roomsError,
+    matchesLoading,
+    matchesError,
+    reloadRooms,
+    reloadMatches,
+    sortLabel: EXPLORE_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? '정렬',
+    setSort,
+    setOpenSheet,
+    setFilter,
+    onSearchPress: () => goRoomSearch(router),
+    onLoginPress: () => goKakaoLogin(router),
     onExplorePress: () => goExplore(router),
     onRoomPress: (post) => goRoomDetail(router, post.id),
-    onRoomLikeChange: (post, liked) => setBoardLiked(post.id, liked),
+    onRoomLikeChange: (post, liked) => requireLogin(() => setBoardLiked(post.id, liked)),
     onRoommatePress: (match) => goRoommateDetail(router, match.id),
-    onRoommateLikeChange: (match, liked) => setMatchLiked(match.id, liked),
+    onRoommateLikeChange: (match, liked) => requireLogin(() => setMatchLiked(match.id, liked)),
   };
+}
+
+function toBoardQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
+  return {
+    regionIds: filter.regions.map(regionBackendId).filter((id): id is number => id !== undefined),
+    gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
+    minDeposit: filter.depositMin,
+    maxDeposit: filter.depositMax,
+    minMounthRent: filter.rentMin,
+    maxMounthRent: filter.rentMax,
+    roomTypeIds: filter.roomTypes
+      .map(roomTypeBackendId)
+      .filter((id): id is number => id !== undefined),
+    sort: sort === 'views' ? 'hits,DESC' : 'createdAt,DESC',
+  };
+}
+
+function sortPosts(posts: RoomPost[], sort: ExploreSort): RoomPost[] {
+  const next = [...posts];
+  if (sort === 'likes') return next.sort((a, b) => b.likes - a.likes);
+  if (sort === 'views') return next.sort((a, b) => b.views - a.views);
+  return next.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

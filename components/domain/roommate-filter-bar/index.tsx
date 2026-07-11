@@ -31,12 +31,8 @@ export function RoommateFilterBar({ filter, onFilterChange, onOpenSheet }: Roomm
         contentContainerClassName="gap-2"
       >
         <Chip
-          label={
-            filter.rentMin !== undefined || filter.rentMax !== undefined
-              ? `월세 ${filter.rentMin ?? 0}~${filter.rentMax ?? '∞'}만원`
-              : '월세'
-          }
-          active={filter.rentMin !== undefined || filter.rentMax !== undefined}
+          label={filter.regionIds?.length ? `지역 ${filter.regionIds.length}` : '지역'}
+          active={!!filter.regionIds?.length}
           onPress={onOpenSheet}
         />
         <Chip
@@ -49,8 +45,12 @@ export function RoommateFilterBar({ filter, onFilterChange, onOpenSheet }: Roomm
           onPress={onOpenSheet}
         />
         <Chip
-          label={filter.regionIds?.length ? `지역 ${filter.regionIds.length}` : '지역'}
-          active={!!filter.regionIds?.length}
+          label={
+            filter.rentMin !== undefined || filter.rentMax !== undefined
+              ? `예산 ${filter.rentMin ?? 0}~${filter.rentMax ?? '∞'}만원`
+              : '예산'
+          }
+          active={filter.rentMin !== undefined || filter.rentMax !== undefined}
           onPress={onOpenSheet}
         />
       </ScrollView>
@@ -67,9 +67,7 @@ export function RoommateFilterBar({ filter, onFilterChange, onOpenSheet }: Roomm
             }`}
           >
             <Text
-              className={
-                selected ? 'text-xs font-medium text-white' : 'text-xs text-neutral-700'
-              }
+              className={selected ? 'text-xs font-medium text-white' : 'text-xs text-neutral-700'}
             >
               {option.label}
             </Text>

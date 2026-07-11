@@ -14,12 +14,12 @@ export type InquiryListItem = {
   dateLabel: string;
   statusLabel: string;
   answered: boolean;
-  isPublic: boolean;
+  categoryLabel: string;
 };
 
 export type UseInquiryListScreenReturn = {
   inquiries: InquiryListItem[];
-  publicCount: number;
+  totalCount: number;
   loading: boolean;
   error: string | null;
   onCreatePress: () => void;
@@ -34,7 +34,7 @@ export function useInquiryListScreen(): UseInquiryListScreenReturn {
 
   return {
     inquiries,
-    publicCount: inquiries.filter((inquiry) => inquiry.isPublic).length,
+    totalCount: inquiries.length,
     loading,
     error: session ? error : '문의내역은 로그인 후 확인할 수 있어요.',
     onCreatePress: () =>

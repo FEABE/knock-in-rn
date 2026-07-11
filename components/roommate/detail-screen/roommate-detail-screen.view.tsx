@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
 import { BottomSheet } from '@/components/ui/headless';
-import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import type { RoommateMatchDetailModel } from '@/lib/api';
 
 import {
@@ -20,6 +21,7 @@ export function RoommateDetailScreenView({
   liked,
   reportOpen,
   lifestyleExpanded,
+  bottomPadding,
   setReportOpen,
   onBack,
   onScroll,
@@ -61,7 +63,12 @@ export function RoommateDetailScreenView({
             </View>
           </ScrollView>
 
-          <BottomBar liked={liked} onLike={onLike} onRequest={onRequest} />
+          <BottomBar
+            liked={liked}
+            onLike={onLike}
+            onRequest={onRequest}
+            bottomPadding={bottomPadding}
+          />
           <BottomSheet
             open={reportOpen}
             onOpenChange={setReportOpen}
@@ -90,7 +97,7 @@ function Header({ onBack, onReport }: { onBack: () => void; onReport: () => void
   return (
     <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
       <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-        <Text className="text-2xl text-neutral-700">‹</Text>
+        <Ionicons name="chevron-back" size={24} color="#404047" />
       </Pressable>
       <Text className="text-base font-semibold text-neutral-900">룸메이트 찾기</Text>
       <Pressable onPress={onReport} className="h-9 w-9 items-center justify-center">
@@ -103,17 +110,28 @@ function Header({ onBack, onReport }: { onBack: () => void; onReport: () => void
 function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
   return (
     <View className="items-center gap-3">
-      <View className="h-24 w-24 items-center justify-center rounded-full bg-neutral-100">
-        <Text className="text-2xl font-semibold text-neutral-600">{data.initial}</Text>
-      </View>
+      {data.profileImageUrl ? (
+        <Image
+          source={{ uri: data.profileImageUrl }}
+          style={{ width: 96, height: 96, borderRadius: 48 }}
+          contentFit="cover"
+        />
+      ) : (
+        <View className="h-24 w-24 items-center justify-center rounded-full bg-neutral-100">
+          <Text className="text-2xl font-semibold text-neutral-600">{data.initial}</Text>
+        </View>
+      )}
       <View className="items-center gap-1">
-        <Text className="text-xl font-bold text-neutral-900">{data.name}</Text>
+        <Text className="text-xl font-bold text-neutral-900">
+          {[data.name, data.genderLabel, data.age ? `${data.age}세` : null]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
         <Text className="text-xs text-neutral-500">{data.regionLabel}</Text>
       </View>
       <View className="flex-row gap-2">
         {data.isAuthStudent ? <Badge label="✓ 학교 인증" tone="emerald" /> : null}
         {data.isAuthEmployee ? <Badge label="✓ 회사 인증" tone="emerald" /> : null}
-        <Badge label="신원 확인" tone="sky" />
       </View>
     </View>
   );
@@ -187,11 +205,22 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
 }
 
 function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
+  const hasScore = data.compatibility.score !== undefined;
   return (
     <Section title="나와 궁합">
       <View className="flex-row items-center gap-4 rounded-2xl border border-neutral-100 p-4">
-        <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-[#256EF4]">
-          <Text className="text-xl font-bold text-[#256EF4]">{data.compatibility.score}점</Text>
+        <View
+          className={`h-20 w-20 items-center justify-center rounded-full border-4 ${
+            hasScore ? 'border-[#256EF4]' : 'border-neutral-200'
+          }`}
+        >
+          <Text
+            className={
+              hasScore ? 'text-xl font-bold text-[#256EF4]' : 'text-xl font-bold text-neutral-400'
+            }
+          >
+            {hasScore ? `${data.compatibility.score}점` : '--점'}
+          </Text>
         </View>
         <View className="flex-1 gap-2">
           {data.compatibility.items.map((info) => (
@@ -218,13 +247,13 @@ function BottomBar({
   liked,
   onLike,
   onRequest,
+  bottomPadding,
 }: {
   liked: boolean;
   onLike: () => void;
   onRequest: () => void;
+  bottomPadding: number;
 }) {
-  const bottomPadding = useSafeBottomPadding(12, 12);
-
   return (
     <View
       className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 pt-3"

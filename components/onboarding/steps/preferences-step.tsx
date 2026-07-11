@@ -2,11 +2,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { ChipMultiSelect, RangeSlider } from '@/components/ui/headless';
 import { useRoomTypeOptions } from '@/lib/api';
-import {
-  BUDGET_BOUNDS,
-  useOnboardingPreferences,
-  type RoomType,
-} from '@/lib/onboarding';
+import { BUDGET_BOUNDS, useOnboardingPreferences, type RoomType } from '@/lib/onboarding';
 
 import { CalendarField } from '../calendar-field';
 import { OnboardingFooter } from '../onboarding-footer';
@@ -102,7 +98,7 @@ export function PreferencesStep() {
         </Field>
       </ScrollView>
 
-      <OnboardingFooter canProceed={true} primaryLabel="완료" showBack />
+      <OnboardingFooter canProceed={true} primaryLabel="다음으로" />
     </View>
   );
 }

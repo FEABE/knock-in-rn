@@ -11,6 +11,14 @@ import { useOnboarding, useOnboardingRoom, type Region, type RoomType } from '@/
 
 export const MAX_PREF_ROOM_TYPES = 3;
 export const MAX_REGIONS = 3;
+export const ROOM_INFO_STAGE_TITLES = [
+  '방 유무 여부',
+  '위치',
+  '가격',
+  '방 형태',
+  '입주 시기',
+] as const;
+export type RoomInfoStage = 0 | 1 | 2 | 3 | 4;
 
 export type RegionDraft = { sido: string | null; gugun: string | null; dong: string | null };
 
@@ -28,20 +36,24 @@ export type UseRoomInfoStepReturn = {
   dongOptions: RegionSelectOption[];
   roomTypeOptions: RoomTypeOption[];
   today: Date;
+  stage: RoomInfoStage;
+  stageTitle: (typeof ROOM_INFO_STAGE_TITLES)[RoomInfoStage];
+  stageProgress: number;
   hasRoom: boolean;
   noRoom: boolean;
   canProceed: boolean;
   toast: string | null;
   submitting: boolean;
   submitError: string | null;
-  onComplete?: () => void;
+  onBack: () => void;
+  onNext: () => void;
   setHasRoom: (next: boolean) => void;
   selectSido: (value: string) => void;
   selectGugun: (value: string) => void;
   selectDong: (value: string) => void;
   removeRegion: (id: string) => void;
-  setDeposit: (value: number) => void;
-  setMonthlyRent: (value: number) => void;
+  setDeposit: (value: number | null) => void;
+  setMonthlyRent: (value: number | null) => void;
   toggleSingleRoomType: (value: RoomType) => void;
   setMoveInDate: (value: Date | null) => void;
   setBudgetDeposit: (value: { min: number; max: number }) => void;
@@ -52,10 +64,11 @@ export type UseRoomInfoStepReturn = {
 };
 
 export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomInfoStepReturn {
-  const { goNext } = useOnboarding();
+  const { goNext, goPrev } = useOnboarding();
   const { room, patch } = useOnboardingRoom();
   const regions = useRegionOptions();
   const roomTypes = useRoomTypeOptions();
+  const [stage, setStage] = useState<RoomInfoStage>(0);
 
   useEffect(() => {
     onboardingTiming.enterStep();
@@ -80,15 +93,24 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
   const moveInValid = room.moveInDate != null && room.moveInDate >= today;
   const moveByValid = room.moveInBy != null && room.moveInBy >= today;
 
-  const canProceed = hasRoom
-    ? room.region != null &&
-      room.deposit != null &&
-      room.monthlyRent != null &&
-      room.roomType != null &&
-      moveInValid
-    : noRoom
-      ? room.regions.length > 0 && room.roomTypes.length > 0 && moveByValid
-      : false;
+  const canProceed =
+    stage === 0
+      ? hasRoom || noRoom
+      : stage === 1
+        ? hasRoom
+          ? room.region != null
+          : room.regions.length > 0
+        : stage === 2
+          ? hasRoom
+            ? room.deposit != null && room.monthlyRent != null
+            : true
+          : stage === 3
+            ? hasRoom
+              ? room.roomType != null
+              : room.roomTypes.length > 0
+            : hasRoom
+              ? moveInValid
+              : moveByValid;
 
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,9 +121,22 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     toastTimer.current = setTimeout(() => setToast(null), 2000);
   };
 
-  const saveAndProceed = async () => {
+  const onNext = () => {
+    if (!canProceed) return;
+    if (stage < 4) {
+      setStage((stage + 1) as RoomInfoStage);
+      return;
+    }
     onComplete?.();
     goNext();
+  };
+
+  const onBack = () => {
+    if (stage > 0) {
+      setStage((stage - 1) as RoomInfoStage);
+      return;
+    }
+    goPrev();
   };
 
   useEffect(
@@ -141,13 +176,17 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     dongOptions,
     roomTypeOptions: roomTypes.options,
     today,
+    stage,
+    stageTitle: ROOM_INFO_STAGE_TITLES[stage],
+    stageProgress: 11 + stage,
     hasRoom,
     noRoom,
     canProceed,
     toast,
     submitting: false,
     submitError: null,
-    onComplete: saveAndProceed,
+    onBack,
+    onNext,
     setHasRoom: (next) => patch({ hasRoom: next }),
     selectSido: (value) => commitDraft({ sido: value, gugun: null, dong: null }),
     selectGugun: (value) => commitDraft({ ...draft, gugun: value, dong: null }),

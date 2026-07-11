@@ -19,6 +19,8 @@ import {
 import type { Session, UserSummary } from './types';
 import {
   getProfileAll,
+  getAccessTokenMemberId,
+  setAuthFailureHandler,
   setAccessToken,
   socialLoginSdk,
   socialLoginWeb,
@@ -74,8 +76,13 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     let cancelled = false;
     if (__DEV__ && E2E_ACCESS_TOKEN) {
       setAccessToken(E2E_ACCESS_TOKEN);
-      loadSessionUser().then((user) => {
+      loadSessionUser().then(({ user, invalidToken }) => {
         if (cancelled) return;
+        if (invalidToken) {
+          setAccessToken(null);
+          setSession(null);
+          return;
+        }
         setSession({
           user,
           isProfileComplete: true,
@@ -90,8 +97,15 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     readStoredAuthSession().then((stored) => {
       if (cancelled || !stored) return;
       setAccessToken(stored.accessToken);
-      loadSessionUser().then((user) => {
+      loadSessionUser().then(async ({ user, invalidToken }) => {
         if (cancelled) return;
+        if (invalidToken) {
+          setAccessToken(null);
+          await clearStoredAuthSession();
+          setSession(null);
+          await queryClient.resetQueries();
+          return;
+        }
         setSession({
           user,
           isProfileComplete: stored.basicInfo,
@@ -103,13 +117,14 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     return () => {
       cancelled = true;
     };
-  }, [initial]);
+  }, [initial, queryClient]);
 
   const signIn = useCallback(async (provider: SocialProvider = 'kakao'): Promise<SignInResult> => {
     if (USE_MOCK) {
       setAccessToken('mock-access-token');
+      const { user } = await loadSessionUser();
       setSession({
-        user: await loadSessionUser(),
+        user,
         isProfileComplete: true,
         visibility: 'public',
       });
@@ -140,7 +155,17 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         preferenceInfo: res.data.preferenceInfo,
         savedAt: new Date().toISOString(),
       });
-      const user = await loadSessionUser();
+      const { user, invalidToken } = await loadSessionUser();
+      if (invalidToken) {
+        setAccessToken(null);
+        await clearStoredAuthSession();
+        return {
+          status: 'failed',
+          provider,
+          code: 'INVALID_ACCESS_TOKEN',
+          message: '로그인 토큰을 확인하지 못했습니다. 다시 시도해주세요.',
+        };
+      }
       setSession({
         user,
         isProfileComplete: res.data.basicInfo,
@@ -168,13 +193,20 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
   const signOut = useCallback(async () => {
     setAccessToken(null);
     await clearStoredAuthSession();
-    queryClient.clear();
     setSession(null);
+    await queryClient.resetQueries();
   }, [queryClient]);
 
   const setVisibility = useCallback((next: 'public' | 'hidden' | 'matched') => {
     setSession((prev) => (prev ? { ...prev, visibility: next } : prev));
   }, []);
+
+  useEffect(() => {
+    setAuthFailureHandler(() => {
+      void signOut();
+    });
+    return () => setAuthFailureHandler(null);
+  }, [signOut]);
 
   const value = useMemo<SessionContextValue>(
     () => ({ session, signIn, signOut, setVisibility }),
@@ -221,20 +253,32 @@ function classifyThrownError(code?: string, message?: string): SignInFailureKind
   return 'failed';
 }
 
-async function loadSessionUser(): Promise<UserSummary> {
+async function loadSessionUser(): Promise<{ user: UserSummary; invalidToken: boolean }> {
   try {
     const res = await getProfileAll();
-    if (res.status === 200 && !res.error) return sessionUserFromProfile(res.data);
+    if (res.status === 200 && !res.error) {
+      return { user: sessionUserFromProfile(res.data), invalidToken: false };
+    }
+    if (isInvalidTokenResponse(res.status, res.error?.code)) {
+      return { user: sessionUserFromProfile(), invalidToken: true };
+    }
   } catch {
     // 로그인 성공 후 프로필 조회가 실패해도 세션 자체는 유지한다.
   }
-  return sessionUserFromProfile();
+  return { user: sessionUserFromProfile(), invalidToken: false };
+}
+
+function isInvalidTokenResponse(status: number, code?: string): boolean {
+  const normalized = code?.toUpperCase() ?? '';
+  return (
+    status === 401 || normalized.includes('UNAUTHORIZED') || normalized.includes('TOKEN_EXPIRED')
+  );
 }
 
 function sessionUserFromProfile(profile?: ProfileAllData): UserSummary {
   const region = parseProfileRegion(profile?.region?.[0]?.region);
   return {
-    id: 'me',
+    id: getAccessTokenMemberId() ?? 'me',
     name: '사용자',
     age: 0,
     gender: 'other',

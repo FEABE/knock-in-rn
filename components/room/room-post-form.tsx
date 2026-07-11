@@ -1,4 +1,7 @@
+import { useRouter } from 'expo-router';
+
 import type { UserSummary } from '@/lib/domain';
+import { goMypageProfile } from '@/lib/navigation/routes';
 
 import { RoomPostFormView } from './room-post-form.view';
 import type { RoomFormDraft, RoomFormValues } from './room-post-form.model';
@@ -10,6 +13,7 @@ export type RoomPostFormProps = {
   submitLabel: string;
   mode?: 'create' | 'edit';
   profile?: UserSummary;
+  submitting?: boolean;
 };
 
 export function RoomPostForm({
@@ -18,10 +22,21 @@ export function RoomPostForm({
   submitLabel,
   mode = 'create',
   profile,
+  submitting = false,
 }: RoomPostFormProps) {
-  const asks = useRoomPostForm({ initial, onSubmit });
+  const router = useRouter();
+  const asks = useRoomPostForm({ initial, onSubmit, mode });
 
-  return <RoomPostFormView {...asks} submitLabel={submitLabel} mode={mode} profile={profile} />;
+  return (
+    <RoomPostFormView
+      {...asks}
+      submitLabel={submitLabel}
+      mode={mode}
+      profile={profile}
+      submitting={submitting}
+      onEditProfile={() => goMypageProfile(router)}
+    />
+  );
 }
 
 export * from './room-post-form.model';

@@ -23,14 +23,30 @@ export type TextFieldViewProps = Omit<
     className?: string;
   };
 
-export const TextFieldView = forwardRef<RNTextInput, TextFieldViewProps>(
-  function TextFieldView(
-    { focused: _focused, isDisabled: _disabled, isInvalid: _invalid, ...inputProps },
-    ref,
-  ) {
-    return <TextInput ref={ref} {...inputProps} />;
+export const TextFieldView = forwardRef<RNTextInput, TextFieldViewProps>(function TextFieldView(
+  {
+    focused: _focused,
+    isDisabled: _disabled,
+    isInvalid: _invalid,
+    placeholderTextColor = '#AAAABA',
+    selectionColor = '#256EF4',
+    multiline,
+    textAlignVertical = multiline ? 'top' : 'center',
+    ...inputProps
   },
-);
+  ref,
+) {
+  return (
+    <TextInput
+      ref={ref}
+      placeholderTextColor={placeholderTextColor}
+      selectionColor={selectionColor}
+      multiline={multiline}
+      textAlignVertical={textAlignVertical}
+      {...inputProps}
+    />
+  );
+});
 
 export type TextFieldFrameProps = ViewProps & {
   state: TextFieldState;
@@ -38,10 +54,6 @@ export type TextFieldFrameProps = ViewProps & {
   className?: string;
 };
 
-export function TextFieldFrame({
-  state: _state,
-  children,
-  ...rest
-}: TextFieldFrameProps) {
+export function TextFieldFrame({ state: _state, children, ...rest }: TextFieldFrameProps) {
   return <View {...rest}>{children}</View>;
 }

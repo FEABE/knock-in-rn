@@ -3,15 +3,14 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
+import { RoomListControls } from '@/components/domain/room-list-controls';
 import { RoomFilterSheet } from '@/components/room/filters';
+import { ErrorState } from '@/components/ui/error-state';
 import { Tabs } from '@/components/ui/headless';
 
 import {
   EXPLORE_SORT_OPTIONS,
   INITIAL_EXPLORE_FILTER,
-  type ExploreFilter,
-  type ExploreFilterKey,
-  type ExploreSort,
   type UseExploreScreenReturn,
 } from './use-explore-screen';
 
@@ -20,16 +19,23 @@ export type ExploreScreenViewProps = UseExploreScreenReturn;
 export function ExploreScreenView({
   sort,
   filter,
+  searchQuery,
   openSheet,
   visiblePosts,
   visibleMatches,
   roomsLoading,
+  roomsError,
   matchesLoading,
+  matchesError,
+  hasUnreadAlarms,
+  reloadRooms,
+  reloadMatches,
   setSort,
   setOpenSheet,
   handleFilterChange,
   onSearchPress,
-  onOnboardingPress,
+  onSearchClear,
+  onNotificationPress,
   onRoomPress,
   onRoomLikeChange,
   onRoommatePress,
@@ -37,15 +43,15 @@ export function ExploreScreenView({
 }: ExploreScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <Header onSearch={onSearchPress} onOnboarding={onOnboardingPress} />
+      <Header hasUnread={hasUnreadAlarms} onNotificationPress={onNotificationPress} />
 
       <Tabs.Root defaultValue="rooms" className="flex-1">
         <Tabs.List className="flex-row">
           {[
-            { value: 'rooms', label: '방 찾기' },
+            { value: 'rooms', label: '방 게시글' },
             { value: 'roommates', label: '룸메이트 찾기' },
           ].map((tab) => (
-            <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 py-3">
+            <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 pt-3">
               {({ selected }) => (
                 <View
                   className={`items-center border-b-2 pb-2 ${
@@ -55,8 +61,8 @@ export function ExploreScreenView({
                   <Text
                     className={
                       selected
-                        ? 'text-base font-semibold text-[#256EF4]'
-                        : 'text-base text-neutral-400'
+                        ? 'text-[17px] font-semibold text-neutral-900'
+                        : 'text-[17px] font-medium text-neutral-900'
                     }
                   >
                     {tab.label}
@@ -68,15 +74,33 @@ export function ExploreScreenView({
         </Tabs.List>
 
         <Tabs.Content value="rooms" className="flex-1">
-          <FilterRow filter={filter} onOpen={setOpenSheet} />
-          <SortRow sort={sort} onChange={setSort} count={visiblePosts.length} />
+          <RoomListControls
+            filter={filter}
+            initialFilter={INITIAL_EXPLORE_FILTER}
+            sortLabel={
+              EXPLORE_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? '정렬'
+            }
+            searchQuery={searchQuery}
+            onSearchPress={onSearchPress}
+            onSearchClear={onSearchClear}
+            onSortPress={() =>
+              setSort(sort === 'latest' ? 'likes' : sort === 'likes' ? 'views' : 'latest')
+            }
+            onFilterPress={setOpenSheet}
+          />
 
-          <ScrollView className="flex-1" contentContainerClassName="gap-3 p-5 pb-24">
+          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24 pt-1">
             {roomsLoading ? (
               <View className="items-center py-16">
                 <ActivityIndicator color="#256EF4" />
                 <Text className="mt-3 text-sm text-neutral-400">방을 불러오는 중...</Text>
               </View>
+            ) : roomsError ? (
+              <ErrorState
+                message="방 목록을 불러오지 못했어요"
+                detail={roomsError}
+                onRetry={reloadRooms}
+              />
             ) : visiblePosts.length === 0 ? (
               <EmptyBox message="조건에 맞는 방이 없어요" />
             ) : (
@@ -93,12 +117,32 @@ export function ExploreScreenView({
         </Tabs.Content>
 
         <Tabs.Content value="roommates" className="flex-1">
-          <ScrollView className="flex-1" contentContainerClassName="gap-3 p-5 pb-24">
+          <RoomListControls
+            filter={filter}
+            initialFilter={INITIAL_EXPLORE_FILTER}
+            sortLabel={
+              EXPLORE_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? '정렬'
+            }
+            searchQuery={searchQuery}
+            onSearchPress={onSearchPress}
+            onSearchClear={onSearchClear}
+            onSortPress={() =>
+              setSort(sort === 'latest' ? 'likes' : sort === 'likes' ? 'views' : 'latest')
+            }
+            onFilterPress={setOpenSheet}
+          />
+          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24 pt-4">
             {matchesLoading ? (
               <View className="items-center py-16">
                 <ActivityIndicator color="#256EF4" />
                 <Text className="mt-3 text-sm text-neutral-400">룸메이트를 불러오는 중...</Text>
               </View>
+            ) : matchesError ? (
+              <ErrorState
+                message="룸메이트 목록을 불러오지 못했어요"
+                detail={matchesError}
+                onRetry={reloadMatches}
+              />
             ) : visibleMatches.length === 0 ? (
               <EmptyBox message="매칭된 룸메이트가 없어요" />
             ) : (
@@ -127,119 +171,25 @@ export function ExploreScreenView({
   );
 }
 
-function Header({ onSearch, onOnboarding }: { onSearch: () => void; onOnboarding: () => void }) {
-  return (
-    <View className="flex-row items-center justify-between px-4 pb-3 pt-4">
-      <Text className="text-[28px] font-extrabold text-neutral-900">로고</Text>
-      <View className="flex-row items-center gap-3">
-        <Pressable
-          onPress={onOnboarding}
-          hitSlop={6}
-          className="h-9 flex-row items-center gap-1.5 rounded-full bg-[#256EF4]/10 px-3 active:opacity-80"
-        >
-          <Ionicons name="clipboard-outline" size={16} color="#256EF4" />
-          <Text className="text-xs font-semibold text-[#256EF4]">온보딩</Text>
-        </Pressable>
-        <Pressable onPress={onSearch} hitSlop={6} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="search-outline" size={24} color="#111827" />
-        </Pressable>
-        <Pressable hitSlop={6} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="notifications-outline" size={24} color="#111827" />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function FilterRow({
-  filter,
-  onOpen,
+function Header({
+  hasUnread,
+  onNotificationPress,
 }: {
-  filter: ExploreFilter;
-  onOpen: (key: ExploreFilterKey) => void;
-}) {
-  const budgetActive =
-    filter.rentMin !== INITIAL_EXPLORE_FILTER.rentMin ||
-    filter.rentMax !== INITIAL_EXPLORE_FILTER.rentMax ||
-    filter.depositMin !== INITIAL_EXPLORE_FILTER.depositMin ||
-    filter.depositMax !== INITIAL_EXPLORE_FILTER.depositMax;
-
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={{ flexGrow: 0 }}
-      contentContainerClassName="items-center gap-2 px-5 py-3"
-    >
-      <FilterChip
-        label={filter.regions.length > 0 ? `지역 ${filter.regions.length}` : '지역'}
-        active={filter.regions.length > 0}
-        onPress={() => onOpen('region')}
-      />
-      <FilterChip
-        label={filter.gender === 'any' ? '성별' : filter.gender === 'male' ? '남성만' : '여성만'}
-        active={filter.gender !== 'any'}
-        onPress={() => onOpen('gender')}
-      />
-      <FilterChip label="예산" active={budgetActive} onPress={() => onOpen('budget')} />
-      <FilterChip
-        label={filter.roomTypes.length > 0 ? `룸 형태 ${filter.roomTypes.length}` : '룸 형태'}
-        active={filter.roomTypes.length > 0}
-        onPress={() => onOpen('roomType')}
-      />
-    </ScrollView>
-  );
-}
-
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active?: boolean;
-  onPress?: () => void;
+  hasUnread: boolean;
+  onNotificationPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      className={`flex-row items-center gap-1 rounded-full border px-3 py-1.5 active:opacity-80 ${
-        active ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
-      }`}
-    >
-      <Text className={active ? 'text-xs font-medium text-[#256EF4]' : 'text-xs text-neutral-700'}>
-        {label}
-      </Text>
-      <Text className={active ? 'text-[10px] text-[#256EF4]' : 'text-[10px] text-neutral-400'}>
-        ▾
-      </Text>
-    </Pressable>
-  );
-}
-
-function SortRow({
-  sort,
-  onChange,
-  count,
-}: {
-  sort: ExploreSort;
-  onChange: (next: ExploreSort) => void;
-  count: number;
-}) {
-  const current =
-    EXPLORE_SORT_OPTIONS.find((option) => option.value === sort) ?? EXPLORE_SORT_OPTIONS[0];
-  const cycleSort = () => onChange(sort === 'latest' ? 'views' : 'latest');
-
-  return (
-    <View className="flex-row items-center justify-between px-5 py-3">
-      <Text className="text-sm text-neutral-600">게시물 {count}개</Text>
+    <View className="flex-row items-center justify-between px-4 pb-2 pt-4">
+      <Text className="text-[28px] font-extrabold text-neutral-900">탐색</Text>
       <Pressable
-        onPress={cycleSort}
+        onPress={onNotificationPress}
         hitSlop={6}
-        className="flex-row items-center gap-1 active:opacity-70"
+        className="h-9 w-9 items-center justify-center"
       >
-        <Text className="text-sm text-neutral-700">{current.label}</Text>
-        <Text className="text-[10px] text-neutral-400">▾</Text>
+        <Ionicons name="notifications-outline" size={24} color="#17171B" />
+        {hasUnread ? (
+          <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border border-white bg-[#256EF4]" />
+        ) : null}
       </Pressable>
     </View>
   );

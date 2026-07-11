@@ -74,7 +74,6 @@ export function ProfileLifestyleStepView({
       <OnboardingFooter
         canProceed={canProceed}
         primaryLabel="다음"
-        showBack
         loading={submitting}
         onPress={onNext}
       />

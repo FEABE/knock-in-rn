@@ -1,10 +1,11 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useGlobalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import {
   compactNumbers,
+  formatApiLocalDateTime,
   getAccessToken,
   lifestyleIdsFromPatternOptions,
   regionBackendId,
@@ -23,6 +24,7 @@ import {
   OnboardingProvider,
   agreedTermBackendIds,
   type OnboardingValues,
+  type OnboardingStep,
 } from '@/lib/onboarding';
 import { goExplore, goKakaoLogin } from '@/lib/navigation/routes';
 
@@ -63,7 +65,7 @@ function toRequest(
     maxDeposit: isHas ? undefined : room.budgetDeposit.max,
     minMounthRent: isHas ? undefined : seekerBudgetRent.min,
     maxMounthRent: isHas ? undefined : seekerBudgetRent.max,
-    comeEnableAt: moveDate ? moveDate.toISOString() : '',
+    comeEnableAt: moveDate ? formatApiLocalDateTime(moveDate) : '',
     region: regionIds,
     roomProfile: roomProfileIds,
     deposit: isHas ? (room.deposit ?? 0) : undefined,
@@ -159,17 +161,17 @@ function profileSaveErrorMessage(
   }
 
   if (invalid.length) {
-    return `서버에 저장할 수 없는 값이 있어요.\n\n${invalid
-      .map((item) => `- ${item}`)
-      .join('\n')}`;
+    return `서버에 저장할 수 없는 값이 있어요.\n\n${invalid.map((item) => `- ${item}`).join('\n')}`;
   }
   return '입력값 일부가 서버 형식과 맞지 않습니다. 지역, 방 형태, 입주일을 다시 확인해주세요.';
 }
 
 export default function OnboardingLayout() {
   const router = useRouter();
+  const { step } = useGlobalSearchParams<{ step?: string }>();
   const { signIn } = useSession();
   const lifestyleOptions = useLifestylePatternOptions();
+  const initialStep = __DEV__ && isOnboardingStep(step) ? step : undefined;
 
   // 온보딩 진입 시 1회: 퍼널의 분모가 되는 onboarding_start.
   const startedRef = useRef(false);
@@ -189,13 +191,13 @@ export default function OnboardingLayout() {
 
     // 마지막 스텝 "완료" 탭 = 온보딩 완료 시점.
     logEvent(AnalyticsEvent.ONBOARDING_STEP_NEXT, {
-      step_index: ONBOARDING_STEPS.length,
-      step_name: 'preferences',
+      step_index: 15,
+      step_name: 'room_status',
       time_on_step_ms: onboardingTiming.timeOnStepMs(),
     });
     logEvent(AnalyticsEvent.ONBOARDING_COMPLETE, {
       duration_ms: onboardingTiming.durationMs(),
-      total_steps: ONBOARDING_STEPS.length,
+      total_steps: 15,
     });
 
     if (ONBOARDING_WRITE_ENABLED && !getAccessToken()) {
@@ -229,7 +231,7 @@ export default function OnboardingLayout() {
   };
 
   return (
-    <OnboardingProvider onComplete={onComplete}>
+    <OnboardingProvider initialStep={initialStep} onComplete={onComplete}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -238,4 +240,8 @@ export default function OnboardingLayout() {
       />
     </OnboardingProvider>
   );
+}
+
+function isOnboardingStep(value: string | undefined): value is OnboardingStep {
+  return ONBOARDING_STEPS.includes(value as OnboardingStep);
 }

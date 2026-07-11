@@ -11,10 +11,9 @@ export type RoomFormValues = {
   moveInDate?: Date;
   imageUrls: string[];
   options: number[];
-  showProfileInfo: boolean;
 };
 
-const MAX_IMAGE_URLS = 10;
+export const MAX_ROOM_PHOTOS = 10;
 
 export type RoomFormDraft = {
   title: string;
@@ -25,9 +24,8 @@ export type RoomFormDraft = {
   regions: Region[];
   description: string;
   moveInDate: string;
-  imageUrlsText: string;
+  imageUris: string[];
   options: number[];
-  showProfileInfo: boolean;
 };
 
 export function emptyRoomFormDraft(): RoomFormDraft {
@@ -40,20 +38,22 @@ export function emptyRoomFormDraft(): RoomFormDraft {
     regions: [],
     description: '',
     moveInDate: '',
-    imageUrlsText: '',
+    imageUris: [],
     options: [],
-    showProfileInfo: true,
   };
 }
 
 export function isRoomFormDraftValid(draft: RoomFormDraft): boolean {
   return (
     draft.title.trim().length > 0 &&
+    draft.deposit.trim().length > 0 &&
     Number(draft.deposit) >= 0 &&
+    draft.rent.trim().length > 0 &&
     Number(draft.rent) > 0 &&
     draft.roomType !== null &&
     draft.regions.length > 0 &&
-    draft.description.trim().length > 0
+    draft.description.trim().length > 0 &&
+    draft.description.length <= 500
   );
 }
 
@@ -68,22 +68,17 @@ export function draftToValues(draft: RoomFormDraft): RoomFormValues | null {
     region: draft.regions[0],
     description: draft.description.trim(),
     moveInDate: parseDate(draft.moveInDate),
-    imageUrls: parseImageUrls(draft.imageUrlsText),
+    imageUrls: draft.imageUris.filter(Boolean).slice(0, MAX_ROOM_PHOTOS),
     options: draft.options,
-    showProfileInfo: draft.showProfileInfo,
   };
 }
 
 function parseDate(text: string): Date | undefined {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return undefined;
-  const d = new Date(text);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
-
-function parseImageUrls(text: string): string[] {
-  return text
-    .split(/[\n,]/)
-    .map((url) => url.trim())
-    .filter((url) => /^https?:\/\//.test(url))
-    .slice(0, MAX_IMAGE_URLS);
+  const [year, month, day] = text.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return undefined;
+  }
+  return date;
 }

@@ -59,40 +59,42 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
     onBack: () => router.back(),
     sections: [
       {
-        title: '계정 관리',
+        title: '약관 및 정책',
         rows: [
           {
-            icon: 'shield-checkmark-outline',
-            title: '차단 / 신고 관리',
-            description: `차단 ${blockedUsers?.length ?? 0}명`,
-            onPress: () => goMypageBlocked(router),
+            icon: 'document-text-outline',
+            title: '이용약관',
+            onPress: () => goSupportTerms(router),
           },
           {
-            icon: 'document-text-outline',
-            title: '약관 및 개인정보 처리방침',
-            description: '서비스 이용약관을 확인해요',
+            icon: 'lock-closed-outline',
+            title: '개인정보처리방침',
             onPress: () => goSupportTerms(router),
           },
         ],
       },
       {
-        title: '로그인',
+        title: '차단관리',
         rows: [
           {
-            icon: 'log-out-outline',
-            title: '로그아웃',
-            description: '현재 기기에서 로그아웃',
-            onPress: logout,
+            icon: 'shield-checkmark-outline',
+            title: '차단 목록',
+            description: `차단 ${blockedUsers?.length ?? 0}명`,
+            onPress: () => goMypageBlocked(router),
           },
         ],
       },
       {
-        title: '위험 구역',
+        title: '계정',
         rows: [
           {
+            icon: 'log-out-outline',
+            title: '로그아웃',
+            onPress: logout,
+          },
+          {
             icon: 'trash-outline',
-            title: '탈퇴하기',
-            description: '계정과 프로필 삭제를 요청해요',
+            title: '회원 탈퇴',
             tone: 'danger',
             onPress: () => goMypageWithdraw(router),
           },

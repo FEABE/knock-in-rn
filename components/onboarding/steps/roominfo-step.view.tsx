@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+
+import { TextField } from '@/components/ui/headless';
 
 import { CalendarField } from '../calendar-field';
 import { OnboardingFooter } from '../onboarding-footer';
@@ -19,13 +22,17 @@ export function RoomInfoStepView({
   dongOptions,
   roomTypeOptions,
   today,
+  stage,
+  stageTitle,
+  stageProgress,
   hasRoom,
   noRoom,
   canProceed,
   toast,
   submitting,
   submitError,
-  onComplete,
+  onBack,
+  onNext,
   setHasRoom,
   selectSido,
   selectGugun,
@@ -37,7 +44,6 @@ export function RoomInfoStepView({
   setMoveInDate,
   setBudgetDeposit,
   setBudgetRent,
-  setBudgetManagement,
   toggleRoomType,
   setMoveInBy,
 }: UseRoomInfoStepReturn) {
@@ -55,33 +61,72 @@ export function RoomInfoStepView({
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 py-6 pb-4">
-        <View className="gap-1">
-          <Text className="text-2xl font-bold text-neutral-900">현재 방이 있으신가요?</Text>
-          <Text className="mt-1 text-sm text-neutral-500">나중에 마이페이지에서 수정 가능해요</Text>
-        </View>
+      <View className="h-14 flex-row items-center justify-between px-4">
+        <Pressable
+          onPress={onBack}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="이전으로"
+          className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
+        >
+          <Ionicons name="chevron-back" size={24} color="#6B6B76" />
+        </Pressable>
+        <Text className="text-base font-medium text-[#1E1E24]">{stageTitle}</Text>
+        <Text className="w-14 text-right text-sm text-[#8B8B9B]">{stageProgress}/15</Text>
+      </View>
 
-        <View className="flex-row gap-3">
-          <RoomChoice
-            icon="⌂"
-            title="방 있어요"
-            desc="룸메이트를 구하고 있어요"
-            selected={hasRoom}
-            onPress={() => setHasRoom(true)}
-          />
-          <RoomChoice
-            icon="⌕"
-            title="방 없어요"
-            desc="방이랑 룸메이트 함께 찾아요"
-            selected={noRoom}
-            onPress={() => setHasRoom(false)}
-          />
-        </View>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-6 px-4 py-6 pb-4"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
+        <StageIntro stage={stage} hasRoom={hasRoom} />
 
-        {hasRoom ? (
-          <>
-            <Section label="방 위치">{regionTable}</Section>
+        {stage === 0 ? (
+          <View className="gap-4">
+            <RoomChoice
+              icon="🙋🏻‍♀️"
+              title="방이 있어요"
+              desc="룸메이트를 찾고 싶어요"
+              selected={hasRoom}
+              onPress={() => setHasRoom(true)}
+            />
+            <RoomChoice
+              icon="🙅🏻‍♀️"
+              title="방이 없어요"
+              desc="방과 룸메이트를 함께 찾고 싶어요"
+              selected={noRoom}
+              onPress={() => setHasRoom(false)}
+            />
+          </View>
+        ) : null}
 
+        {stage === 1 ? (
+          <Section label={hasRoom ? '방 위치' : `선호 방 위치 · 최대 ${MAX_REGIONS}개`}>
+            {regionTable}
+            {noRoom && room.regions.length > 0 ? (
+              <View className="flex-row flex-wrap gap-2">
+                {room.regions.map((region) => (
+                  <Pressable
+                    key={region.id}
+                    onPress={() => removeRegion(region.id)}
+                    className="flex-row items-center gap-1 rounded-full bg-[#256EF4]/10 px-3 py-1 active:opacity-80"
+                  >
+                    <Text className="text-xs text-[#256EF4]">
+                      {region.city} {region.district}
+                    </Text>
+                    <Text className="text-xs text-[#256EF4]/70">✕</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </Section>
+        ) : null}
+
+        {stage === 2 && hasRoom ? (
+          <View className="gap-5">
             <NumberField
               label="보증금"
               placeholder="예) 1000 (0 입력 가능)"
@@ -94,107 +139,69 @@ export function RoomInfoStepView({
               value={room.monthlyRent}
               onChange={setMonthlyRent}
             />
-
-            <Section label="방 형태">
-              <View className="flex-row flex-wrap gap-2">
-                {roomTypeOptions.map((t) => (
-                  <Chip
-                    key={t.value}
-                    label={t.label}
-                    selected={room.roomType === t.value}
-                    onPress={() => toggleSingleRoomType(t.value)}
-                  />
-                ))}
-              </View>
-            </Section>
-
-            <Section label="입주 가능 시기">
-              <CalendarField value={room.moveInDate} onChange={setMoveInDate} minDate={today} />
-            </Section>
-          </>
+          </View>
         ) : null}
 
-        {noRoom ? (
-          <>
-            <Section label={`선호 방 위치 (필수 · 최대 ${MAX_REGIONS}개)`}>
-              {regionTable}
-              {room.regions.length > 0 ? (
-                <View className="flex-row flex-wrap gap-2">
-                  {room.regions.map((r) => (
-                    <Pressable
-                      key={r.id}
-                      onPress={() => removeRegion(r.id)}
-                      className="flex-row items-center gap-1 rounded-full bg-[#256EF4]/10 px-3 py-1 active:opacity-80"
-                    >
-                      <Text className="text-xs text-[#256EF4]">
-                        {r.city} {r.district}
-                      </Text>
-                      <Text className="text-xs text-[#256EF4]/70">✕</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-            </Section>
+        {stage === 2 && noRoom ? (
+          <View className="gap-8">
+            <RangeField
+              label="보증금"
+              min={0}
+              max={6000}
+              step={100}
+              value={[room.budgetDeposit.min, room.budgetDeposit.max]}
+              onChange={([min, max]) => setBudgetDeposit({ min, max })}
+              minTick="최소"
+              maxTick="최대"
+              formatBubble={(lo, hi) => `${lo}~${hi}만원`}
+            />
+            <RangeField
+              label="월세"
+              min={0}
+              max={500}
+              step={10}
+              value={[room.budgetRent.min, room.budgetRent.max]}
+              onChange={([min, max]) => setBudgetRent({ min, max })}
+              minTick="최소"
+              maxTick="최대"
+              formatBubble={(lo, hi) => `${lo}~${hi}만원`}
+            />
+          </View>
+        ) : null}
 
-            <View className="gap-4">
-              <Text className="text-sm font-semibold text-neutral-800">예산 범위</Text>
-              <RangeField
-                label="보증금"
-                min={0}
-                max={6000}
-                step={100}
-                value={[room.budgetDeposit.min, room.budgetDeposit.max]}
-                onChange={([min, max]) => setBudgetDeposit({ min, max })}
-                minTick="0만"
-                maxTick="6,000만"
-                formatBubble={(lo, hi) => `${lo}~${hi}만원`}
-              />
-              <RangeField
-                label="월세"
-                min={0}
-                max={500}
-                step={10}
-                value={[room.budgetRent.min, room.budgetRent.max]}
-                onChange={([min, max]) => setBudgetRent({ min, max })}
-                minTick="0만"
-                maxTick="500만"
-                formatBubble={(lo, hi) => `${lo}~${hi}만원`}
-              />
-              <RangeField
-                label="관리비"
-                min={0}
-                max={150}
-                step={5}
-                value={[room.budgetManagement.min, room.budgetManagement.max]}
-                onChange={([min, max]) => setBudgetManagement({ min, max })}
-                minTick="0만"
-                maxTick="150만"
-                formatBubble={(lo, hi) => `${lo}~${hi}만원`}
-              />
+        {stage === 3 ? (
+          <Section label={noRoom ? `최대 ${MAX_PREF_ROOM_TYPES}개까지 선택해주세요` : '방 형태'}>
+            <View className="flex-row flex-wrap gap-3">
+              {roomTypeOptions.map((type) => {
+                const selected = hasRoom
+                  ? room.roomType === type.value
+                  : room.roomTypes.includes(type.value);
+                const disabled =
+                  noRoom && !selected && room.roomTypes.length >= MAX_PREF_ROOM_TYPES;
+                return (
+                  <RoomTypeChoice
+                    key={type.value}
+                    label={type.label}
+                    selected={selected}
+                    disabled={disabled}
+                    onPress={() =>
+                      hasRoom ? toggleSingleRoomType(type.value) : toggleRoomType(type.value)
+                    }
+                  />
+                );
+              })}
             </View>
+          </Section>
+        ) : null}
 
-            <Section label={`선호 방 형태 (복수 선택 · 최대 ${MAX_PREF_ROOM_TYPES}개)`}>
-              <View className="flex-row flex-wrap gap-2">
-                {roomTypeOptions.map((t) => {
-                  const selected = room.roomTypes.includes(t.value);
-                  const disabled = !selected && room.roomTypes.length >= MAX_PREF_ROOM_TYPES;
-                  return (
-                    <Chip
-                      key={t.value}
-                      label={t.label}
-                      selected={selected}
-                      disabled={disabled}
-                      onPress={() => toggleRoomType(t.value)}
-                    />
-                  );
-                })}
-              </View>
-            </Section>
-
-            <Section label="입주 희망 시기">
-              <CalendarField value={room.moveInBy} onChange={setMoveInBy} minDate={today} />
-            </Section>
-          </>
+        {stage === 4 ? (
+          <Section label={hasRoom ? '입주 가능 시기' : '입주 희망 시기'}>
+            <CalendarField
+              value={hasRoom ? room.moveInDate : room.moveInBy}
+              onChange={hasRoom ? setMoveInDate : setMoveInBy}
+              minDate={today}
+            />
+          </Section>
         ) : null}
       </ScrollView>
 
@@ -206,9 +213,9 @@ export function RoomInfoStepView({
 
       <OnboardingFooter
         canProceed={canProceed}
-        showBack
+        primaryLabel={stage === 4 ? '완료' : '다음으로'}
         loading={submitting}
-        onPress={onComplete}
+        onPress={onNext}
       />
 
       {toast ? (
@@ -231,7 +238,47 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Chip({
+function StageIntro({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
+  const copy =
+    stage === 0
+      ? ['현재 머물고 있는', '방이 있으신가요?', '언제든 마이페이지에서 변경할 수 있어요']
+      : stage === 1
+        ? [
+            hasRoom ? '방이 있는 지역을' : '희망하는 지역을',
+            '선택해주세요',
+            '지역은 나중에도 변경할 수 있어요',
+          ]
+        : stage === 2
+          ? [
+              hasRoom ? '현재 방의 가격을' : '희망하는 예산을',
+              '알려주세요',
+              '언제든 마이페이지에서 변경할 수 있어요',
+            ]
+          : stage === 3
+            ? [
+                hasRoom ? '현재 거주 중인' : '거주하고 싶은',
+                '방 형태를 선택해주세요',
+                '원하는 방 형태를 최대 3개까지 선택해주세요',
+              ]
+            : [
+                hasRoom ? '입주 가능한 시기를' : '입주 희망 시기를',
+                '선택해주세요',
+                '날짜는 나중에도 변경할 수 있어요',
+              ];
+
+  return (
+    <View className="gap-1">
+      <Text className="text-2xl font-bold leading-8 text-neutral-900">
+        {copy[0]}
+        {`\n`}
+        {copy[1]}
+      </Text>
+      <Text className="mt-1 text-sm text-neutral-500">{copy[2]}</Text>
+    </View>
+  );
+}
+
+function RoomTypeChoice({
   label,
   selected,
   disabled,
@@ -246,14 +293,15 @@ function Chip({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`rounded-full border px-4 py-2 ${
+      className={`min-h-24 w-[30%] flex-grow items-center justify-center gap-2 rounded-lg border px-2 py-3 ${
         selected
-          ? 'border-[#256EF4] bg-[#256EF4]/15'
+          ? 'border-[#256EF4] bg-[#EEF4FF]'
           : disabled
             ? 'border-neutral-200 bg-neutral-50'
-            : 'border-neutral-300 bg-white active:opacity-80'
+            : 'border-transparent bg-[#F7F7FA] active:opacity-80'
       }`}
     >
+      <Text className="text-2xl">{roomTypeEmoji(label)}</Text>
       <Text
         className={
           selected
@@ -267,6 +315,15 @@ function Chip({
       </Text>
     </Pressable>
   );
+}
+
+function roomTypeEmoji(label: string): string {
+  if (label.includes('오피스텔')) return '🏢';
+  if (label.includes('아파트')) return '🏬';
+  if (label.includes('빌라')) return '🏘️';
+  if (label.includes('쉐어')) return '🏠';
+  if (label.includes('투룸') || label.includes('쓰리룸')) return '🏡';
+  return '🏠';
 }
 
 function RoomChoice({
@@ -285,19 +342,17 @@ function RoomChoice({
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-1 items-center gap-2 rounded-2xl border p-4 active:opacity-90 ${
-        selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
+      className={`min-h-24 flex-row items-center gap-3 rounded-xl border px-5 py-4 active:opacity-90 ${
+        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-transparent bg-[#F7F7FA]'
       }`}
     >
-      <View
-        className={`h-10 w-10 items-center justify-center rounded-full ${
-          selected ? 'bg-[#256EF4]/30' : 'bg-neutral-100'
-        }`}
-      >
-        <Text className="text-lg text-neutral-600">{icon}</Text>
+      <Text className="text-2xl">{icon}</Text>
+      <View className="flex-1 gap-1">
+        <Text className={`text-base font-bold ${selected ? 'text-[#256EF4]' : 'text-neutral-900'}`}>
+          {title}
+        </Text>
+        <Text className="text-sm text-neutral-500">{desc}</Text>
       </View>
-      <Text className="text-sm font-bold text-neutral-900">{title}</Text>
-      <Text className="text-center text-[11px] leading-4 text-neutral-500">{desc}</Text>
     </Pressable>
   );
 }
@@ -321,8 +376,20 @@ function RegionTable({
 }) {
   return (
     <View className="flex-row overflow-hidden rounded-xl border border-neutral-200">
-      <Column title="시·도" items={cityOptions} selected={draft.sido} onPick={onSelectSido} border />
-      <Column title="구·군" items={gugunOptions} selected={draft.gugun} onPick={onSelectGugun} border />
+      <Column
+        title="시·도"
+        items={cityOptions}
+        selected={draft.sido}
+        onPick={onSelectSido}
+        border
+      />
+      <Column
+        title="구·군"
+        items={gugunOptions}
+        selected={draft.gugun}
+        onPick={onSelectGugun}
+        border
+      />
       <Column title="동" items={dongOptions} selected={draft.dong} onPick={onSelectDong} />
     </View>
   );
@@ -381,16 +448,16 @@ function NumberField({
   label: string;
   placeholder: string;
   value: number | null;
-  onChange: (n: number) => void;
+  onChange: (n: number | null) => void;
 }) {
   return (
     <View className="gap-2">
       <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      <TextInput
+      <TextField
         value={value == null ? '' : String(value)}
-        onChangeText={(t) => {
+        onChangeValue={(t) => {
           const digits = t.replace(/[^0-9]/g, '');
-          onChange(digits === '' ? 0 : Number(digits));
+          onChange(digits === '' ? null : Number(digits));
         }}
         placeholder={placeholder}
         keyboardType="number-pad"

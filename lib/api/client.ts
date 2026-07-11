@@ -45,6 +45,7 @@ export const API_BASE_URL = resolveApiBaseUrl(RAW_API_BASE_URL);
 export const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK === 'true';
 
 let accessToken: string | null = null;
+let authFailureHandler: (() => void) | null = null;
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
@@ -52,6 +53,15 @@ export function setAccessToken(token: string | null) {
 
 export function getAccessToken() {
   return accessToken;
+}
+
+export function getAccessTokenMemberId(): string | null {
+  const claims = decodeAccessToken();
+  return claims?.memberId == null ? null : String(claims.memberId);
+}
+
+export function setAuthFailureHandler(handler: (() => void) | null) {
+  authFailureHandler = handler;
 }
 
 /** mock 응답 헬퍼. 네트워크 지연을 흉내내기 위한 약간의 delay 포함. */
@@ -74,7 +84,8 @@ function resolveApiBaseUrl(rawUrl: string): string {
 
   const expoHost = getExpoDevHost();
   if (!expoHost) {
-    if (Platform.OS === 'android') return rawUrl.replace(/\/\/(127\.0\.0\.1|localhost)/i, '//10.0.2.2');
+    if (Platform.OS === 'android')
+      return rawUrl.replace(/\/\/(127\.0\.0\.1|localhost)/i, '//10.0.2.2');
     return rawUrl;
   }
 
@@ -115,14 +126,11 @@ type KnockAxiosRequestConfig = AxiosRequestConfig & {
 
 export const apiClient = create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 apiClient.interceptors.request.use((config) => {
   const skipAuth = (config as KnockAxiosRequestConfig).skipAuth;
-  if (accessToken && !skipAuth) {
+  if (accessToken && !isAccessTokenExpired() && !skipAuth) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
@@ -137,22 +145,28 @@ export async function request<T>(
   options: RequestOptions = {},
 ): Promise<ApiResponse<T>> {
   const { query, body, auth = true, headers } = options;
+  const isFormDataBody = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const config: KnockAxiosRequestConfig = {
     method,
     url: path,
     params: query,
+    paramsSerializer: { indexes: null },
     data: body,
-    headers,
+    headers: isFormDataBody ? { 'Content-Type': 'multipart/form-data', ...headers } : headers,
     skipAuth: !auth,
   };
 
   try {
     const res = await apiClient.request<ApiResponse<T>>(config);
+    if (auth && isAuthFailure(res.data, res.status)) authFailureHandler?.();
     return res.data;
   } catch (error: any) {
     // Axios wraps errors in error.response
     if (error.response?.data) {
+      if (auth && isAuthFailure(error.response.data, error.response.status)) {
+        authFailureHandler?.();
+      }
       return error.response.data as ApiResponse<T>;
     }
     return {
@@ -161,4 +175,49 @@ export async function request<T>(
       error: { code: 'NETWORK_ERROR', message: error.message },
     };
   }
+}
+
+function decodeAccessToken(): { memberId?: string | number; exp?: number } | null {
+  if (!accessToken) return null;
+  const payload = accessToken.split('.')[1];
+  if (!payload) return null;
+  try {
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const decoded =
+      typeof globalThis.atob === 'function' ? globalThis.atob(padded) : decodeBase64Ascii(padded);
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+function decodeBase64Ascii(value: string): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let bits = 0;
+  let bitCount = 0;
+  let result = '';
+  for (const char of value.replace(/=+$/, '')) {
+    const index = alphabet.indexOf(char);
+    if (index < 0) continue;
+    bits = (bits << 6) | index;
+    bitCount += 6;
+    if (bitCount >= 8) {
+      bitCount -= 8;
+      result += String.fromCharCode((bits >> bitCount) & 0xff);
+    }
+  }
+  return result;
+}
+
+function isAccessTokenExpired(): boolean {
+  const exp = decodeAccessToken()?.exp;
+  return typeof exp === 'number' && exp * 1000 <= Date.now();
+}
+
+function isAuthFailure(payload: unknown, httpStatus: number): boolean {
+  const response = payload as Partial<ApiResponse<unknown>> | null;
+  const status = response?.status ?? httpStatus;
+  const code = response?.error?.code?.toUpperCase() ?? '';
+  return status === 401 || code.includes('UNAUTHORIZED') || code.includes('TOKEN_EXPIRED');
 }

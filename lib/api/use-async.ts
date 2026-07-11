@@ -46,7 +46,7 @@ export function useApi<T>(
 
   return {
     data: query.data ?? null,
-    loading: query.isLoading || query.isFetching,
+    loading: query.isLoading,
     error: query.error instanceof Error ? query.error.message : null,
     reload,
   };

@@ -35,8 +35,7 @@ export type ChatRoomListData = {
 export type ChatRoomDetailData =
   OpenApiSchema<'org.example.knockin.dto.ChatRoomDetailDto$Response'>;
 
-export type ChatRoomImageData =
-  OpenApiSchema<'org.example.knockin.dto.ChatRoomImageDto$Response'>;
+export type ChatRoomImageData = OpenApiSchema<'org.example.knockin.dto.ChatRoomImageDto$Response'>;
 
 export type ChatImageUpload = {
   uri: string;
@@ -76,8 +75,25 @@ export function pubLeaveChat(chatId: string): string {
 
 /** 메시지 전송 페이로드. */
 export type ChatSendPayload = {
+  clientMessageId: string;
   message: string;
-  type: string;
+  type: 'TEXT' | 'IMAGE';
+  imageUrl?: string;
+};
+
+export type ChatSocketMessage = {
+  clientMessageId?: string;
+  senderId?: number;
+  type?: 'TEXT' | 'IMAGE' | 'LEFT_ROOM';
+  contents?: string;
+  imageUrl?: string;
+};
+
+export type ChatSocketEnvelope = {
+  eventType: 'USER_MESSAGE' | 'SYSTEM_MESSAGE' | 'ROOMMATE_REQUEST';
+  chatRoomId: number;
+  payload: ChatSocketMessage | Record<string, unknown>;
+  createdAt?: string;
 };
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
@@ -177,7 +193,6 @@ export function uploadChatImage(
 
   return request('POST', `/chats/${chatId}/images`, {
     body: formData,
-    headers: { 'Content-Type': 'multipart/form-data' },
   });
 }
 

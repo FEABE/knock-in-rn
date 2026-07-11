@@ -1,8 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Text, View } from 'react-native';
 
-import { ChatRoom } from '@/components/ui/headless';
-
 import { ChatRoomBlockedView, ChatRoomScreenView } from './chat-room-screen.view';
 import { useChatRoomScreen } from './use-chat-room-screen';
 
@@ -32,14 +30,7 @@ export function ChatRoomScreen() {
       {asks.blocked ? (
         <ChatRoomBlockedView peer={room.peer} onBack={asks.onBack} />
       ) : (
-        <ChatRoom
-          currentUserId={asks.currentUserId}
-          initialMessages={room.messages}
-          initialMatched={room.matched}
-          className="flex-1"
-        >
-          {(chat) => <ChatRoomScreenView {...asks} room={room} chat={chat} />}
-        </ChatRoom>
+        <ChatRoomScreenView {...asks} room={room} />
       )}
     </SafeAreaView>
   );

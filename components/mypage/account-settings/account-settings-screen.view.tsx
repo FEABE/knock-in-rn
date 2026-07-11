@@ -14,8 +14,7 @@ export function AccountSettingsScreenView({ sections, onBack }: AccountSettingsS
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <Header title="계정 설정" onBack={onBack} />
-
-      <ScrollView contentContainerClassName="gap-8 p-5">
+      <ScrollView contentContainerClassName="gap-8 px-4 pb-10 pt-5">
         {sections.map((section) => (
           <Section key={section.title} section={section} />
         ))}
@@ -26,52 +25,47 @@ export function AccountSettingsScreenView({ sections, onBack }: AccountSettingsS
 
 function Header({ title, onBack }: { title: string; onBack: () => void }) {
   return (
-    <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-      <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-        <Ionicons name="chevron-back" size={24} color="#404040" />
+    <View className="h-12 flex-row items-center px-2">
+      <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
+        <Ionicons name="chevron-back" size={24} color="#696976" />
       </Pressable>
-      <Text className="text-base font-semibold text-neutral-900">{title}</Text>
+      <Text className="flex-1 text-center text-base font-medium text-[#17171B]">{title}</Text>
+      <View className="w-10" />
     </View>
   );
 }
 
 function Section({ section }: { section: AccountSettingsSection }) {
   return (
-    <View className="gap-2">
-      <Text className="text-xs font-semibold text-neutral-400">{section.title}</Text>
-      <View>
-        {section.rows.map((row) => (
-          <Row key={row.title} row={row} />
-        ))}
-      </View>
+    <View>
+      <Text className="border-b border-[#D9DAE5] pb-3 text-base font-bold text-[#696976]">
+        {section.title}
+      </Text>
+      {section.rows.map((row) => (
+        <Row key={row.title} row={row} />
+      ))}
     </View>
   );
 }
 
 function Row({ row }: { row: AccountSettingsRow }) {
   const danger = row.tone === 'danger';
-
   return (
     <Pressable
       onPress={row.onPress}
-      className="flex-row items-center gap-3 border-b border-neutral-100 py-4 active:bg-neutral-50"
+      className="min-h-14 flex-row items-center border-b border-[#D9DAE5] px-2 py-4 active:bg-[#F6F6FA]"
     >
-      <View
-        className={`h-9 w-9 items-center justify-center rounded-full ${
-          danger ? 'bg-rose-50' : 'bg-neutral-100'
-        }`}
-      >
-        <Ionicons name={row.icon} size={20} color={danger ? '#E11D48' : '#525252'} />
-      </View>
-      <View className="flex-1 gap-0.5">
-        <Text className={`text-sm font-semibold ${danger ? 'text-rose-600' : 'text-neutral-900'}`}>
+      <View className="flex-1">
+        <Text
+          className={`text-[15px] font-semibold ${danger ? 'text-rose-500' : 'text-[#17171B]'}`}
+        >
           {row.title}
         </Text>
         {row.description ? (
-          <Text className="text-xs text-neutral-400">{row.description}</Text>
+          <Text className="mt-1 text-xs text-[#AAAABA]">{row.description}</Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#D4D4D4" />
+      <Ionicons name="chevron-forward" size={19} color="#AAAABA" />
     </Pressable>
   );
 }

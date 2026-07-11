@@ -15,24 +15,52 @@ import {
   uploadChatImage,
   type ChatImageUpload,
 } from './chat';
-import { createChatRequest, type ChatRequestCreate } from './chat-requests';
+import {
+  acceptChatRequest,
+  cancelChatRequest,
+  createChatRequest,
+  getChatRequestDetail,
+  getChatRequests,
+  rejectChatRequest,
+  type ChatRequestCreate,
+  type ChatRequestDetailData,
+  type ChatRequestItem,
+} from './chat-requests';
 import { createRoommateRequest } from './roommate';
+import { acceptRoommateRequest, cancelRoommateRequest, rejectRoommateRequest } from './roommate';
 import { type AsyncState, useApi } from './use-async';
 
 /** 채팅방 목록. (ChatRoomItem 그대로 — 명세 형태) */
-export function useChatRooms(): AsyncState<ChatRoomItem[]> {
-  const state = useApi(['chat', 'rooms'], () => getChatRooms());
+export function useChatRooms(enabled = true): AsyncState<ChatRoomItem[]> {
+  const state = useApi(['chat', 'rooms'], () => getChatRooms(), { enabled });
   return { ...state, data: state.data?.chatRooms ?? null };
 }
 
-export function useChatRoomDetail(chatRoomId: string): AsyncState<ChatRoom> {
+export function useChatRequests(enabled = true): AsyncState<ChatRequestItem[]> {
+  const state = useApi(['chat', 'requests'], () => getChatRequests(), { enabled });
+  return { ...state, data: state.data?.chatRequireds ?? null };
+}
+
+export function useChatRequestDetail(
+  requestId: string,
+  enabled = true,
+): AsyncState<ChatRequestDetailData> {
+  return useApi(['chat', 'requests', requestId], () => getChatRequestDetail(requestId), {
+    enabled: enabled && requestId.length > 0,
+  });
+}
+
+export function useChatRoomDetail(
+  chatRoomId: string,
+  currentMemberId?: string,
+): AsyncState<ChatRoom> {
   const state = useApi(['chat', 'rooms', chatRoomId], () => getChatRoomDetail(chatRoomId), {
     enabled: chatRoomId.length > 0,
   });
   const room = useMemo<ChatRoom | null>(() => {
     if (!state.data) return null;
-    return chatRoomDetailToDomainRoom(chatRoomId, state.data);
-  }, [chatRoomId, state.data]);
+    return chatRoomDetailToDomainRoom(chatRoomId, state.data, currentMemberId);
+  }, [chatRoomId, currentMemberId, state.data]);
 
   return {
     ...state,
@@ -76,10 +104,35 @@ export function useChatRoomActions() {
 }
 
 export function useRoommateRequestAction() {
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (chatRoomId: string | number) =>
       createRoommateRequest({ chatRoomId: Number(chatRoomId) }),
   });
+
+  const acceptMutation = useMutation({ mutationFn: acceptRoommateRequest });
+  const rejectMutation = useMutation({ mutationFn: rejectRoommateRequest });
+  const cancelMutation = useMutation({ mutationFn: cancelRoommateRequest });
+
+  const refreshRequests = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] }),
+      queryClient.invalidateQueries({ queryKey: ['roommate', 'requests'] }),
+    ]);
+  };
+
+  const runRequestAction = async (
+    requestId: string,
+    action: typeof acceptMutation | typeof rejectMutation | typeof cancelMutation,
+    fallbackMessage: string,
+  ) => {
+    const res = await action.mutateAsync(requestId);
+    if (res.status !== 200 || res.error) {
+      throw new Error(res.error?.message ?? fallbackMessage);
+    }
+    await refreshRequests();
+    return res.data;
+  };
 
   return {
     requestRoommate: async (chatRoomId: string | number) => {
@@ -87,9 +140,18 @@ export function useRoommateRequestAction() {
       if (res.status !== 200 || res.error) {
         throw new Error(res.error?.message ?? '룸메이트 요청에 실패했습니다.');
       }
+      await refreshRequests();
       return res.data;
     },
+    acceptRequest: (requestId: string) =>
+      runRequestAction(requestId, acceptMutation, '룸메이트 요청을 수락하지 못했습니다.'),
+    rejectRequest: (requestId: string) =>
+      runRequestAction(requestId, rejectMutation, '룸메이트 요청을 거절하지 못했습니다.'),
+    cancelRequest: (requestId: string) =>
+      runRequestAction(requestId, cancelMutation, '룸메이트 요청을 취소하지 못했습니다.'),
     requesting: mutation.isPending,
+    processingRequest:
+      acceptMutation.isPending || rejectMutation.isPending || cancelMutation.isPending,
   };
 }
 
@@ -102,6 +164,27 @@ export function useChatRequestActions() {
       await queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] });
     },
   });
+  const acceptMutation = useMutation({ mutationFn: acceptChatRequest });
+  const rejectMutation = useMutation({ mutationFn: rejectChatRequest });
+  const cancelMutation = useMutation({ mutationFn: cancelChatRequest });
+
+  const refreshChat = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['chat', 'requests'] }),
+      queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] }),
+    ]);
+  };
+
+  const runAction = async (
+    requestId: string,
+    action: typeof acceptMutation | typeof rejectMutation | typeof cancelMutation,
+    fallbackMessage: string,
+  ) => {
+    const res = await action.mutateAsync(requestId);
+    if (res.status !== 200 || res.error) throw new Error(res.error?.message ?? fallbackMessage);
+    await refreshChat();
+    return res.data;
+  };
 
   return {
     requestChat: async (body: ChatRequestCreate) => {
@@ -109,9 +192,18 @@ export function useChatRequestActions() {
       if (res.status !== 200 || res.error) {
         throw new Error(res.error?.message ?? '채팅 요청에 실패했습니다.');
       }
+      await refreshChat();
       return res.data;
     },
+    acceptChat: (requestId: string) =>
+      runAction(requestId, acceptMutation, '채팅 요청을 수락하지 못했습니다.'),
+    rejectChat: (requestId: string) =>
+      runAction(requestId, rejectMutation, '채팅 요청을 거절하지 못했습니다.'),
+    cancelChat: (requestId: string) =>
+      runAction(requestId, cancelMutation, '채팅 요청을 취소하지 못했습니다.'),
     requestingChat: createMutation.isPending,
+    processingChatRequest:
+      acceptMutation.isPending || rejectMutation.isPending || cancelMutation.isPending,
   };
 }
 
@@ -128,16 +220,39 @@ function chatRoomItemToDomainRoom(item: ChatRoomItem): ChatRoom {
   };
 }
 
-function chatRoomDetailToDomainRoom(chatRoomId: string, detail: ChatRoomDetailData): ChatRoom {
+function chatRoomDetailToDomainRoom(
+  chatRoomId: string,
+  detail: ChatRoomDetailData,
+  currentMemberId?: string,
+): ChatRoom {
   const peer = userFromChatRoomDetail(detail);
   const messages = detailMessages(detail, peer.id);
-  const matched = detail.matchingRequiredList?.some((request) => request.status === 'ACCEPTED') === true;
+  const matched =
+    detail.matchingRequiredList?.some((request) => request.status === 'ACCEPTED') === true;
+  const latestRequest = [...(detail.matchingRequiredList ?? [])]
+    .filter((request) => request.id != null && request.status != null)
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0];
+  const role = latestRequest
+    ? String(latestRequest.requesterMemberId) === currentMemberId
+      ? 'requester'
+      : String(latestRequest.requesteeMemberId) === currentMemberId
+        ? 'requestee'
+        : 'unknown'
+    : undefined;
   return {
     id: chatRoomId,
     peer,
     messages,
     matched,
     acceptedRequest: matched,
+    roommateRequest:
+      latestRequest?.id != null && latestRequest.status
+        ? {
+            id: String(latestRequest.id),
+            status: latestRequest.status,
+            role: role ?? 'unknown',
+          }
+        : undefined,
   };
 }
 
@@ -172,6 +287,7 @@ function userFromChatRoomDetail(detail: ChatRoomDetailData): UserSummary {
     preferredGender: 'any',
     bio: '',
     avatarUrl: profile?.profileImageUrl,
+    compatibilityScore: profile?.score,
     region: {
       id: 'unknown',
       city: '-',
@@ -214,7 +330,9 @@ function detailMessages(detail: ChatRoomDetailData, peerId: string): ChatMessage
       const type = message.type;
       const isSystem = type === 'LEFT_ROOM';
       return {
-        id: String(message.id ?? `${message.senderId ?? 'system'}-${message.createdAt ?? Date.now()}`),
+        id: String(
+          message.id ?? `${message.senderId ?? 'system'}-${message.createdAt ?? Date.now()}`,
+        ),
         authorId: isSystem ? 'system' : String(message.senderId ?? peerId),
         body: isSystem
           ? '채팅방을 나갔어요.'

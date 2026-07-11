@@ -12,6 +12,7 @@
  * 테스트 데이터가 필요할 때만 EXPO_PUBLIC_USE_MOCK=true 로 mock 응답을 사용한다.
  */
 export * from './client';
+export * from './date-time';
 export * from './backend-ids';
 export * from './entities';
 export * from './openapi-types';
@@ -21,7 +22,9 @@ export * from './adapters';
 export * from './mappers';
 export * from './use-async';
 export * from './use-roommate';
+export * from './use-notifications';
 export * from './use-chat';
+export * from './use-chat-socket';
 export * from './use-support';
 export * from './use-account';
 export * from './use-region-options';

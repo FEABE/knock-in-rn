@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
@@ -15,6 +16,7 @@ export function RoomCardView({
   toggleLike,
   onPress,
   priceLabel,
+  roomTypeLabel,
   regionLabel,
   badge,
   timeAgoLabel,
@@ -24,20 +26,20 @@ export function RoomCardView({
   return (
     <Pressable
       onPress={onPress}
-      className="overflow-hidden rounded-lg border border-neutral-200 bg-white active:opacity-90"
+      className="overflow-hidden rounded-md border border-[#D9DAE5] bg-white active:opacity-90"
       accessibilityRole="button"
     >
       <View className="relative">
         {post.thumbnailUrl ? (
           <Image
             source={{ uri: post.thumbnailUrl }}
-            style={{ width: '100%', height: 132 }}
+            style={{ width: '100%', height: 130 }}
             contentFit="cover"
             transition={150}
           />
         ) : (
-          <View className="h-[132px] w-full items-center justify-center bg-neutral-100">
-            <Text className="text-sm text-neutral-400">대표 썸네일</Text>
+          <View className="h-[130px] w-full items-center justify-center bg-neutral-100">
+            <Ionicons name="image-outline" size={30} color="#AAAABA" />
           </View>
         )}
 
@@ -50,26 +52,35 @@ export function RoomCardView({
         <Pressable
           onPress={toggleLike}
           hitSlop={8}
-          className="absolute right-3 top-3 h-9 w-9 items-center justify-center rounded-full bg-black/10"
+          className="absolute right-2 top-2 h-8 w-8 items-center justify-center"
+          accessibilityLabel={liked ? '관심 해제' : '관심 등록'}
         >
-          <Text className={liked ? 'text-base text-red-500' : 'text-xl text-white'}>
-            {liked ? '♥' : '♡'}
-          </Text>
+          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={25} color="white" />
         </Pressable>
       </View>
 
       <View className="gap-1.5 p-3">
-        <Text numberOfLines={1} className="text-base font-bold" style={{ color: BRAND }}>
+        <Text numberOfLines={1} className="text-base font-bold text-[#17171B]">
           {post.title}
         </Text>
-        <Text className="text-sm font-medium text-neutral-800">{priceLabel}</Text>
-        <Text className="text-xs text-neutral-500">{regionLabel}</Text>
+        <Text className="text-sm text-[#17171B]">{priceLabel}</Text>
+        <Text className="text-xs text-[#696976]">
+          {regionLabel} · {roomTypeLabel}
+        </Text>
 
         <View className="mt-2 flex-row items-center justify-between pt-2">
           <View className="flex-row items-center gap-1.5">
-            <View className="h-6 w-6 items-center justify-center rounded-full bg-neutral-100">
-              <Text className="text-[10px] text-neutral-500">{post.author.name.charAt(0)}</Text>
-            </View>
+            {post.author.avatarUrl ? (
+              <Image
+                source={{ uri: post.author.avatarUrl }}
+                style={{ width: 24, height: 24, borderRadius: 12 }}
+                contentFit="cover"
+              />
+            ) : (
+              <View className="h-6 w-6 items-center justify-center rounded-full bg-neutral-100">
+                <Text className="text-[10px] text-neutral-500">{post.author.name.charAt(0)}</Text>
+              </View>
+            )}
             <Text className="text-xs text-neutral-600">{post.author.name}</Text>
             {verified ? (
               <View
@@ -81,7 +92,10 @@ export function RoomCardView({
             ) : null}
             <Text className="text-xs text-neutral-400">· {timeAgoLabel}</Text>
           </View>
-          <Text className="text-xs text-neutral-400">{post.views.toLocaleString()}</Text>
+          <View className="flex-row items-center gap-1">
+            <Ionicons name="eye-outline" size={16} color="#AAAABA" />
+            <Text className="text-xs text-[#AAAABA]">{post.views.toLocaleString()}</Text>
+          </View>
         </View>
       </View>
     </Pressable>

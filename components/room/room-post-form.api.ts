@@ -1,5 +1,6 @@
 import {
   compactNumbers,
+  formatApiLocalDateTime,
   regionBackendId,
   roomTypeBackendId,
   type BoardWriteRequest,
@@ -25,8 +26,8 @@ export function roomFormValuesToBoardWriteRequest(values: RoomFormValues): Board
     roomTypeId: roomTypeBackendId(values.roomType),
     region: regionBackendId(values.region),
     regionId: regionBackendId(values.region),
-    comeableAt: values.moveInDate ? values.moveInDate.toISOString() : undefined,
-    comeableDate: values.moveInDate ? values.moveInDate.toISOString() : undefined,
+    comeableAt: values.moveInDate ? formatApiLocalDateTime(values.moveInDate) : undefined,
+    comeableDate: values.moveInDate ? formatApiLocalDateTime(values.moveInDate) : undefined,
   };
   if (imageUrls.length > 0) {
     body.images = imageUrls.map((image, index) => ({

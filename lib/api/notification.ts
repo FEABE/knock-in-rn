@@ -22,8 +22,7 @@ export type InquiryCreate = OpenApiSchema<'org.example.knockin.dto.InquiryDto$Re
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
-export type AlarmItem =
-  OpenApiSchema<'org.example.knockin.dto.AlarmListDto$Response$Alarm'>;
+export type AlarmItem = OpenApiSchema<'org.example.knockin.dto.AlarmListDto$Response$Alarm'>;
 
 export type AlarmListData = OpenApiSchema<'org.example.knockin.dto.AlarmListDto$Response'>;
 
@@ -35,6 +34,9 @@ export type BoNoticeItem =
   OpenApiSchema<'org.example.knockin.dto.BoNoticeListDto$Response$NoticeItem'>;
 
 export type BoNoticeListData = OpenApiSchema<'org.example.knockin.dto.BoNoticeListDto$Response'>;
+
+export type BoNoticeDetailData =
+  OpenApiSchema<'org.example.knockin.dto.BoNoticeDetailDto$Response'>;
 
 export type AlarmSetting =
   OpenApiSchema<'org.example.knockin.dto.MyNotificationSettingsDto$Response$AlarmSettingItem'>;
@@ -53,8 +55,7 @@ export type InquiryReply =
   OpenApiSchema<'org.example.knockin.dto.InquiryDetailDto$Response$InquiryDetail$Reply'>;
 
 /** 문의 상세. (inquirie 오타 유지) */
-export type InquiryDetailData =
-  OpenApiSchema<'org.example.knockin.dto.InquiryDetailDto$Response'>;
+export type InquiryDetailData = OpenApiSchema<'org.example.knockin.dto.InquiryDetailDto$Response'>;
 
 /** 문의 카테고리. (inquirieCategorys 오타 유지) */
 export type InquiryCategory =
@@ -178,6 +179,17 @@ export function updateNotificationSetting(
 export function getBoNotices(params: PageParams = {}): Promise<ApiResponse<BoNoticeListData>> {
   if (USE_MOCK) return mockOk({ notices: MOCK_NOTICES });
   return request('GET', '/bo/notices', { query: params });
+}
+
+/** GET /bo/notices/{id} — 운영 공지 상세 조회 */
+export function getBoNoticeDetail(id: string): Promise<ApiResponse<BoNoticeDetailData>> {
+  if (USE_MOCK) {
+    const notice = MOCK_NOTICES.find((item) => String(item.id) === id) ?? MOCK_NOTICES[0];
+    return mockOk({
+      notice: notice ? { ...notice, contents: '노크인 서비스 공지사항입니다.' } : undefined,
+    });
+  }
+  return request('GET', `/bo/notices/${id}`);
 }
 
 // ─── Client: 고객센터 ───────────────────────────────────────────────────────────

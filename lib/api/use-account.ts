@@ -38,7 +38,13 @@ export function useMyPageProfileSummary(enabled = true): AsyncState<MyPageProfil
         .join(', ') ?? '';
 
     return {
-      roomTypeLabel: roomTypeLabel || (state.data.type === 'SEEKER' ? '방 찾는 중' : '방 있어요'),
+      roomTypeLabel:
+        roomTypeLabel ||
+        (state.data.type === 'SEEKER'
+          ? '방 찾는 중'
+          : state.data.type === 'OFFER'
+            ? '방 있어요'
+            : '방 정보 없음'),
       regionLabel: regionLabel || '-',
     };
   }, [state.data]);
@@ -46,16 +52,26 @@ export function useMyPageProfileSummary(enabled = true): AsyncState<MyPageProfil
   return { ...state, data: summary };
 }
 
-export function useMyVerificationSummary(enabled = true): AsyncState<{ verified: boolean }> {
+export type MyVerificationSummary = {
+  verified: boolean;
+  schoolVerified: boolean;
+  companyVerified: boolean;
+};
+
+export function useMyVerificationSummary(enabled = true): AsyncState<MyVerificationSummary> {
   const state = useApi(['profile', 'verifications'], () => getVerifications(), { enabled });
   const summary = useMemo(
     () =>
       state.data
-        ? {
-            verified:
-              isAccepted(state.data.studentAuth?.isAccepted) ||
-              isAccepted(state.data.employeeAuth?.isAccepted),
-          }
+        ? (() => {
+            const schoolVerified = isAccepted(state.data.studentAuth?.isAccepted);
+            const companyVerified = isAccepted(state.data.employeeAuth?.isAccepted);
+            return {
+              verified: schoolVerified || companyVerified,
+              schoolVerified,
+              companyVerified,
+            };
+          })()
         : null,
     [state.data],
   );
@@ -71,22 +87,24 @@ export function useNotificationSettingToggle(enabled = true) {
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
 
   const settings = state.data?.alarmsSettings ?? [];
-  const serverEnabled = settings.length
-    ? settings.some((setting) => isAccepted(setting.isEnable))
-    : true;
+  const serverEnabled = settings.some((setting) => isAccepted(setting.isEnable));
   const notificationEnabled = optimistic ?? serverEnabled;
 
   const mutation = useMutation({
     mutationFn: async (next: boolean) => {
-      const targets = settings.length ? settings : [{ id: 1, name: '알림', isEnable: true }];
-      const requests = targets.flatMap((setting) => {
+      const requests = settings.flatMap((setting) => {
         const settingId = Number(setting.id);
         return Number.isFinite(settingId) ? [{ settingId, enabled: next }] : [];
       });
       if (!requests.length) {
         throw new Error('알림 설정 ID를 확인하지 못했습니다.');
       }
-      return Promise.all(requests.map(updateNotificationSetting));
+      const responses = await Promise.all(requests.map(updateNotificationSetting));
+      const failed = responses.find((response) => response.status !== 200 || response.error);
+      if (failed) {
+        throw new Error(failed.error?.message ?? '알림 설정을 저장하지 못했습니다.');
+      }
+      return responses;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile', 'notification-settings'] });
@@ -107,28 +125,38 @@ export function useNotificationSettingToggle(enabled = true) {
     notificationEnabled,
     setNotificationEnabled,
     notificationLoading: state.loading || mutation.isPending,
+    notificationEditable: settings.length > 0 && !state.loading && !mutation.isPending,
     notificationError: state.error,
     settings,
   };
 }
 
-export function useProfileVisibilityToggle() {
-  const [profileVisible, setProfileVisibleState] = useState(true);
+export function useProfileVisibilityToggle(
+  initialVisible = true,
+  onChanged?: (next: boolean) => void,
+) {
+  const [profileVisible, setProfileVisibleState] = useState(initialVisible);
   const mutation = useMutation({
-    mutationFn: (next: boolean) =>
-      updateVisibility({
+    mutationFn: async (next: boolean) => {
+      const response = await updateVisibility({
         status: next ? 'PUBLIC' : 'PRIVATE',
-      }),
+      });
+      if (response.status !== 200 || response.error) {
+        throw new Error(response.error?.message ?? '프로필 공개 설정을 저장하지 못했습니다.');
+      }
+      return response;
+    },
   });
 
   const setProfileVisible = useCallback(
     (next: boolean) => {
       setProfileVisibleState(next);
       mutation.mutate(next, {
-        onError: () => setProfileVisibleState((prev) => !prev),
+        onSuccess: () => onChanged?.(next),
+        onError: () => setProfileVisibleState(!next),
       });
     },
-    [mutation],
+    [mutation, onChanged],
   );
 
   return {
@@ -138,7 +166,9 @@ export function useProfileVisibilityToggle() {
   };
 }
 
-export function useBlockedUsers(enabled = Boolean(getAccessToken())): AsyncState<BlockedUserItem[]> {
+export function useBlockedUsers(
+  enabled = Boolean(getAccessToken()),
+): AsyncState<BlockedUserItem[]> {
   const state = useApi(['profile', 'blocks'], () => getBlocks(), { enabled });
   const users = useMemo<BlockedUserItem[] | null>(
     () =>

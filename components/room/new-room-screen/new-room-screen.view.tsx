@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,7 +8,13 @@ import type { UseNewRoomScreenReturn } from './use-new-room-screen';
 
 export type NewRoomScreenViewProps = UseNewRoomScreenReturn;
 
-export function NewRoomScreenView({ session, onBack, onSignIn, onSubmit }: NewRoomScreenViewProps) {
+export function NewRoomScreenView({
+  session,
+  submitting,
+  onBack,
+  onSignIn,
+  onSubmit,
+}: NewRoomScreenViewProps) {
   if (!session) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -23,17 +30,18 @@ export function NewRoomScreenView({ session, onBack, onSignIn, onSubmit }: NewRo
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-        <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-          <Text className="text-2xl text-neutral-700">‹</Text>
+      <View className="relative h-12 items-center justify-center px-3">
+        <Pressable onPress={onBack} className="absolute left-3 h-9 w-9 items-center justify-center">
+          <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">방 게시글 등록</Text>
+        <Text className="text-base font-semibold text-neutral-900">게시글 등록</Text>
       </View>
 
       <RoomPostForm
         mode="create"
         submitLabel="등록하기"
         profile={session.user}
+        submitting={submitting}
         onSubmit={onSubmit}
       />
     </SafeAreaView>
