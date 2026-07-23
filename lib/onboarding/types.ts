@@ -1,5 +1,7 @@
 export type Gender = 'male' | 'female' | 'other';
 
+export const PROFILE_NAME_MAX_LENGTH = 10;
+
 export type PreferredGender = 'same' | 'any';
 
 export type CleanlinessLevel = 1 | 2 | 3 | 4 | 5;
@@ -159,8 +161,11 @@ export function emptyPreferenceConditions(): PreferenceConditions {
 }
 
 export function isBasicProfileComplete(profile: BasicProfile): boolean {
+  const nameLength = profile.name.trim().length;
+
   return (
-    profile.name.trim().length > 0 &&
+    nameLength > 0 &&
+    nameLength <= PROFILE_NAME_MAX_LENGTH &&
     profile.birthDate !== null &&
     profile.gender !== null &&
     profile.preferredGender !== null &&

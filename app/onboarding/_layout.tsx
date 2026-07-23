@@ -22,6 +22,7 @@ import {
   ONBOARDING_WRITE_ENABLED,
   ONBOARDING_STEPS,
   OnboardingProvider,
+  PROFILE_NAME_MAX_LENGTH,
   agreedTermBackendIds,
   type OnboardingValues,
   type OnboardingStep,
@@ -97,6 +98,9 @@ function validateOnboarding(
 
   if (!agreedTerms.length) missing.push('약관 동의: 필수 약관');
   if (!profile.name.trim()) missing.push('기본 정보: 이름');
+  else if (profile.name.trim().length > PROFILE_NAME_MAX_LENGTH) {
+    missing.push(`기본 정보: 이름 ${PROFILE_NAME_MAX_LENGTH}자 이하`);
+  }
   if (!profile.birthDate) missing.push('기본 정보: 생년월일');
   if (profile.gender !== 'male' && profile.gender !== 'female') missing.push('기본 정보: 성별');
   if (!profile.email.trim()) {
@@ -169,7 +173,7 @@ function profileSaveErrorMessage(
 export default function OnboardingLayout() {
   const router = useRouter();
   const { step } = useGlobalSearchParams<{ step?: string }>();
-  const { signIn } = useSession();
+  const { signIn, markProfileComplete } = useSession();
   const lifestyleOptions = useLifestylePatternOptions();
   const initialStep = __DEV__ && isOnboardingStep(step) ? step : undefined;
 
@@ -218,6 +222,7 @@ export default function OnboardingLayout() {
         Alert.alert('저장 실패', profileSaveErrorMessage(res.error?.message, request));
         return;
       }
+      await markProfileComplete();
       // profile/all 명세에는 노출 상태가 없어 완료 시점에만 분리 저장한다.
       const visibilityRes = await updateVisibility({
         status: values.profile.visibility === 'public' ? 'PUBLIC' : 'PRIVATE',

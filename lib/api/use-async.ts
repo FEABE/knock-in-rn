@@ -28,9 +28,10 @@ export function useApi<T>(
   fetcher: () => Promise<ApiResponse<T>>,
   options: { enabled?: boolean } = {},
 ): AsyncState<T> {
+  const enabled = options.enabled ?? true;
   const query = useQuery({
     queryKey,
-    enabled: options.enabled ?? true,
+    enabled,
     queryFn: async () => {
       const res = await fetcher();
       if (res.status !== 200 || res.error) {
@@ -39,15 +40,17 @@ export function useApi<T>(
       return res.data;
     },
   });
+  const { refetch } = query;
 
   const reload = useCallback(() => {
-    void query.refetch();
-  }, [query]);
+    if (!enabled) return;
+    void refetch();
+  }, [enabled, refetch]);
 
   return {
     data: query.data ?? null,
-    loading: query.isLoading,
-    error: query.error instanceof Error ? query.error.message : null,
+    loading: enabled && query.isLoading,
+    error: enabled && query.error instanceof Error ? query.error.message : null,
     reload,
   };
 }

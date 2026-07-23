@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
-import { useOnboarding, useOnboardingProfile, type Gender } from '@/lib/onboarding';
+import {
+  PROFILE_NAME_MAX_LENGTH,
+  useOnboarding,
+  useOnboardingProfile,
+  type Gender,
+} from '@/lib/onboarding';
 
 export const GENDER_OPTIONS = [
   { value: 'male', label: '남성' },
@@ -50,6 +55,7 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
 
   const canProceed =
     profile.name.trim().length > 0 &&
+    profile.name.trim().length <= PROFILE_NAME_MAX_LENGTH &&
     profile.gender !== null &&
     profile.birthDate !== null &&
     EMAIL_RE.test(profile.email);
@@ -64,7 +70,7 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
     submitting: false,
     submitError: null,
     canProceed,
-    onNameChange: (value) => patch({ name: value }),
+    onNameChange: (value) => patch({ name: value.slice(0, PROFILE_NAME_MAX_LENGTH) }),
     onBirthChange,
     onGenderChange: (value) => patch({ gender: value }),
     onEmailChange: (value) => patch({ email: value }),

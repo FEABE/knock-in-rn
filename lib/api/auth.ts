@@ -60,7 +60,7 @@ export function socialLoginSdk(
   if (USE_MOCK) return mockOk(MOCK_LOGIN);
   return request<LoginDataResponse>('POST', `/sdk/oauth2/authorization/${provider}`, {
     auth: false,
-    body: { authObj, ...authObj },
+    body: { authObj },
   }).then(normalizeLoginResponse);
 }
 

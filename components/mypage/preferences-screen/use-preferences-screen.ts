@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
+import { markStoredPreferenceComplete } from '@/lib/auth/session-storage';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   getPreferenceAll,
@@ -91,23 +92,26 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     let mounted = true;
     getPreferenceAll().then((res) => {
       if (!mounted || res.error || res.status !== 200 || !res.data) return;
+      const loadedLifestyles = (res.data.lifestyles ?? []).map((item) => ({
+        id: item.id,
+        lifestyleId: item.lifestyleId,
+        value: item.value,
+      }));
       const nextSelected = (res.data.conditions ?? []).flatMap((condition) =>
         condition.conditionsId === undefined ? [] : [condition.conditionsId],
       );
+      const hasSavedPreferences = loadedLifestyles.length > 0 || nextSelected.length > 0;
       setState((current) => ({
         ...current,
+        step: !fromOnboarding && hasSavedPreferences ? 1 : current.step,
         selected: nextSelected.slice(0, 3),
-        loadedLifestyles: (res.data.lifestyles ?? []).map((item) => ({
-          id: item.id,
-          lifestyleId: item.lifestyleId,
-          value: item.value,
-        })),
+        loadedLifestyles,
       }));
     });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [fromOnboarding]);
 
   useEffect(() => {
     if (!loadedLifestyles.length) return;
@@ -179,10 +183,11 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
               lifestyles,
               conditions,
             });
-      if (res.error) {
-        Alert.alert('저장 실패', res.error.message ?? '잠시 후 다시 시도해주세요.');
+      if (res.error || res.status !== 200) {
+        Alert.alert('저장 실패', res.error?.message ?? '잠시 후 다시 시도해주세요.');
         return;
       }
+      await markStoredPreferenceComplete();
     }
     Alert.alert('저장 완료', '선호 조건이 저장되었어요.', [{ text: '확인', onPress: exit }]);
   };

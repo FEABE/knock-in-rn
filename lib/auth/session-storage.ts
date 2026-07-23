@@ -33,6 +33,26 @@ export async function writeStoredAuthSession(session: StoredAuthSession): Promis
   }
 }
 
+export async function markStoredProfileComplete(): Promise<void> {
+  const stored = await readStoredAuthSession();
+  if (!stored || stored.basicInfo) return;
+
+  await writeStoredAuthSession({
+    ...stored,
+    basicInfo: true,
+  });
+}
+
+export async function markStoredPreferenceComplete(): Promise<void> {
+  const stored = await readStoredAuthSession();
+  if (!stored || stored.preferenceInfo) return;
+
+  await writeStoredAuthSession({
+    ...stored,
+    preferenceInfo: true,
+  });
+}
+
 export async function clearStoredAuthSession(): Promise<void> {
   memoryFallback = null;
   try {

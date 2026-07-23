@@ -1,10 +1,12 @@
 import { login as kakaoLogin } from '@react-native-seoul/kakao-login';
+import { useRouter } from 'expo-router';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -12,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import {
   clearStoredAuthSession,
+  markStoredProfileComplete,
   readStoredAuthSession,
   writeStoredAuthSession,
 } from '@/lib/auth/session-storage';
@@ -28,6 +31,7 @@ import {
   type SocialProvider,
   USE_MOCK,
 } from '@/lib/api';
+import { goKakaoLogin } from '@/lib/navigation/routes';
 
 // WebBrowser.maybeCompleteAuthSession(); // 더 이상 사용하지 않음
 
@@ -53,13 +57,16 @@ export type SessionContextValue = {
   session: Session;
   signIn: (provider?: SocialProvider) => Promise<SignInResult>;
   signOut: () => Promise<void>;
+  markProfileComplete: () => Promise<void>;
   setVisibility: (next: 'public' | 'hidden' | 'matched') => void;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children, initial }: { children: ReactNode; initial?: Session }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const authFailureHandlingRef = useRef(false);
   const [session, setSession] = useState<Session>(() => {
     if (initial !== undefined) return initial;
     if (!USE_MOCK) return null;
@@ -101,9 +108,10 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         if (cancelled) return;
         if (invalidToken) {
           setAccessToken(null);
-          await clearStoredAuthSession();
           setSession(null);
-          await queryClient.resetQueries();
+          await queryClient.cancelQueries();
+          queryClient.clear();
+          await clearStoredAuthSession();
           return;
         }
         setSession({
@@ -138,6 +146,18 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
 
     try {
       const res = provider === 'kakao' ? await signInWithKakaoSdk() : await socialLoginWeb('apple');
+
+      if (__DEV__) {
+        console.info('[auth] social login exchange completed', {
+          provider,
+          status: res.status,
+          errorCode: res.error?.code,
+          errorMessage: res.error?.message,
+          hasAccessToken: Boolean(res.data?.accessToken),
+          basicInfo: res.data?.basicInfo,
+          preferenceInfo: res.data?.preferenceInfo,
+        });
+      }
 
       if (res.error || res.status !== 200 || !res.data?.accessToken) {
         return {
@@ -181,6 +201,13 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     } catch (e: any) {
       const code = typeof e?.code === 'string' ? e.code : undefined;
       const message = typeof e?.message === 'string' ? e.message : undefined;
+      if (__DEV__) {
+        console.warn('[auth] social login failed before session persistence', {
+          provider,
+          code,
+          message,
+        });
+      }
       return {
         status: classifyThrownError(code, message),
         provider,
@@ -192,10 +219,16 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
 
   const signOut = useCallback(async () => {
     setAccessToken(null);
-    await clearStoredAuthSession();
     setSession(null);
-    await queryClient.resetQueries();
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await clearStoredAuthSession();
   }, [queryClient]);
+
+  const markProfileComplete = useCallback(async () => {
+    setSession((prev) => (prev ? { ...prev, isProfileComplete: true } : prev));
+    await markStoredProfileComplete();
+  }, []);
 
   const setVisibility = useCallback((next: 'public' | 'hidden' | 'matched') => {
     setSession((prev) => (prev ? { ...prev, visibility: next } : prev));
@@ -203,14 +236,37 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
 
   useEffect(() => {
     setAuthFailureHandler(() => {
-      void signOut();
+      if (authFailureHandlingRef.current) return;
+      authFailureHandlingRef.current = true;
+
+      void (async () => {
+        try {
+          try {
+            await signOut();
+          } catch (error) {
+            if (__DEV__) {
+              console.warn('[auth] failed to clear expired session', error);
+            }
+          }
+          if (router.canDismiss()) {
+            router.dismissAll();
+          }
+          goKakaoLogin(router, 'replace');
+        } catch (error) {
+          if (__DEV__) {
+            console.warn('[auth] failed to route after session expiration', error);
+          }
+        } finally {
+          authFailureHandlingRef.current = false;
+        }
+      })();
     });
     return () => setAuthFailureHandler(null);
-  }, [signOut]);
+  }, [router, signOut]);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ session, signIn, signOut, setVisibility }),
-    [session, signIn, signOut, setVisibility],
+    () => ({ session, signIn, signOut, markProfileComplete, setVisibility }),
+    [session, signIn, signOut, markProfileComplete, setVisibility],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -225,7 +281,24 @@ export function useSession(): SessionContextValue {
 }
 
 async function signInWithKakaoSdk() {
-  const result = await kakaoLogin();
+  let result;
+  try {
+    result = await kakaoLogin();
+  } catch (error: any) {
+    if (__DEV__) {
+      console.warn('[auth] Kakao SDK login rejected', {
+        code: typeof error?.code === 'string' ? error.code : undefined,
+        message: typeof error?.message === 'string' ? error.message : undefined,
+      });
+    }
+    throw error;
+  }
+  if (__DEV__) {
+    console.info('[auth] Kakao SDK login resolved', {
+      hasAccessToken: Boolean(result.accessToken),
+      hasRefreshToken: Boolean(result.refreshToken),
+    });
+  }
   return socialLoginSdk('kakao', {
     access_token: result.accessToken,
     refresh_token: result.refreshToken,

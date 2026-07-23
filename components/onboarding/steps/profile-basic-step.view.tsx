@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { TextField, SegmentedControl } from '@/components/ui/headless';
-import type { Gender } from '@/lib/onboarding';
+import { PROFILE_NAME_MAX_LENGTH, type Gender } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import { GENDER_OPTIONS, type UseProfileBasicStepReturn } from './use-profile-basic-step';
@@ -43,6 +43,7 @@ export function ProfileBasicStepView({
             value={profile.name}
             onChangeValue={onNameChange}
             placeholder="이름을 입력해주세요"
+            maxLength={PROFILE_NAME_MAX_LENGTH}
             className={INPUT_CLS}
           />
         </Field>
