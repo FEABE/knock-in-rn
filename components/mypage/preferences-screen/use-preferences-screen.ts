@@ -23,7 +23,6 @@ export type PreferencePriority = {
   id: number;
   name: string;
   desc: string;
-  icon: string;
 };
 
 export type PreferencesStep = 0 | 1 | 2;
@@ -66,13 +65,11 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
         id: option.patternId,
         name: option.label,
         desc: `${option.label} 기준을 중요하게 반영해요`,
-        icon: priorityIcon(option.label),
       })),
       ...lifestyleOptions.choiceGroups.map((option) => ({
         id: option.patternId,
         name: option.label,
         desc: `${option.label} 조건을 중요하게 반영해요`,
-        icon: priorityIcon(option.label),
       })),
     ],
     [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions],
@@ -237,10 +234,3 @@ type PreferencesState = {
   loadedLifestyles: { id?: number; lifestyleId?: number; value?: string }[];
   selected: number[];
 };
-
-function priorityIcon(label: string): string {
-  if (/흡연/.test(label)) return '🚭';
-  if (/청소|청결|깔끔/.test(label)) return '🧹';
-  if (/MBTI|성향/.test(label)) return '🧩';
-  return '✨';
-}

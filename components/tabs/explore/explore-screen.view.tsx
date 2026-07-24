@@ -7,6 +7,7 @@ import { RoomListControls } from '@/components/domain/room-list-controls';
 import { RoomFilterSheet } from '@/components/room/filters';
 import { ErrorState } from '@/components/ui/error-state';
 import { Tabs } from '@/components/ui/headless';
+import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
 
 import {
   EXPLORE_SORT_OPTIONS,
@@ -46,23 +47,23 @@ export function ExploreScreenView({
       <Header hasUnread={hasUnreadAlarms} onNotificationPress={onNotificationPress} />
 
       <Tabs.Root defaultValue="rooms" className="flex-1">
-        <Tabs.List className="flex-row">
+        <Tabs.List className="flex-row border-b border-[#DADAE8]">
           {[
-            { value: 'rooms', label: '방 게시글' },
-            { value: 'roommates', label: '룸메이트 찾기' },
+            { value: 'rooms', label: '룸메 구해요' },
+            { value: 'roommates', label: '룸메 찾아요' },
           ].map((tab) => (
-            <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 pt-3">
+            <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1">
               {({ selected }) => (
                 <View
-                  className={`items-center border-b-2 pb-2 ${
+                  className={`-mb-px items-center border-b-2 pb-3 pt-1 ${
                     selected ? 'border-[#256EF4]' : 'border-transparent'
                   }`}
                 >
                   <Text
                     className={
                       selected
-                        ? 'text-[17px] font-semibold text-neutral-900'
-                        : 'text-[17px] font-medium text-neutral-900'
+                        ? 'text-base font-semibold text-[#17171B]'
+                        : 'text-base font-medium text-[#AAAABA]'
                     }
                   >
                     {tab.label}
@@ -89,7 +90,7 @@ export function ExploreScreenView({
             onFilterPress={setOpenSheet}
           />
 
-          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24 pt-1">
+          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24">
             {roomsLoading ? (
               <View className="items-center py-16">
                 <ActivityIndicator color="#256EF4" />
@@ -102,7 +103,7 @@ export function ExploreScreenView({
                 onRetry={reloadRooms}
               />
             ) : visiblePosts.length === 0 ? (
-              <EmptyBox message="조건에 맞는 방이 없어요" />
+              <EmptyBox message={searchQuery ? '검색 결과가 없어요' : '조건에 맞는 방이 없어요'} />
             ) : (
               visiblePosts.map((post) => (
                 <RoomCard
@@ -131,7 +132,7 @@ export function ExploreScreenView({
             }
             onFilterPress={setOpenSheet}
           />
-          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24 pt-4">
+          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24">
             {matchesLoading ? (
               <View className="items-center py-16">
                 <ActivityIndicator color="#256EF4" />
@@ -144,7 +145,7 @@ export function ExploreScreenView({
                 onRetry={reloadMatches}
               />
             ) : visibleMatches.length === 0 ? (
-              <EmptyBox message="매칭된 룸메이트가 없어요" />
+              <EmptyBox message={searchQuery ? '검색 결과가 없어요' : '매칭된 룸메이트가 없어요'} />
             ) : (
               visibleMatches.map((match) => (
                 <RoommateFindCard
@@ -179,14 +180,16 @@ function Header({
   onNotificationPress: () => void;
 }) {
   return (
-    <View className="flex-row items-center justify-between px-4 pb-2 pt-4">
-      <Text className="text-[28px] font-extrabold text-neutral-900">탐색</Text>
+    <View className="flex-row items-center justify-between px-4 pb-6 pt-7">
+      <Text className="text-xl font-bold leading-6 text-[#256EF4]" style={{ letterSpacing: 3.2 }}>
+        KNOCKIN
+      </Text>
       <Pressable
         onPress={onNotificationPress}
         hitSlop={6}
         className="h-9 w-9 items-center justify-center"
       >
-        <Ionicons name="notifications-outline" size={24} color="#17171B" />
+        <Ionicons name="notifications-outline" size={24} color="#696976" />
         {hasUnread ? (
           <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border border-white bg-[#256EF4]" />
         ) : null}
@@ -197,8 +200,10 @@ function Header({
 
 function EmptyBox({ message }: { message: string }) {
   return (
-    <View className="rounded-2xl border border-dashed border-neutral-200 p-10">
-      <Text className="text-center text-sm text-neutral-400">{message}</Text>
+    <View className="items-center gap-3 px-8 py-10">
+      <EmptyHouseArtwork size={168} />
+      <Text className="text-center text-[17px] font-semibold text-[#17171B]">{message}</Text>
+      <Text className="text-center text-sm text-[#AAAABA]">다른 조건으로 다시 찾아보세요</Text>
     </View>
   );
 }

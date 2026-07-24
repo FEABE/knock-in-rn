@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import type { Region } from '@/lib/onboarding';
@@ -56,7 +57,7 @@ export function RegionFilterBody({
                   className="flex-row items-center justify-between border-b border-neutral-50 px-4 py-3"
                 >
                   <Text className="text-sm text-neutral-800">{r.district}</Text>
-                  {selected ? <Text className="text-sm text-[#256EF4]">✓</Text> : null}
+                  {selected ? <Ionicons name="checkmark" size={16} color="#256EF4" /> : null}
                 </Pressable>
               );
             })}
@@ -83,7 +84,7 @@ export function RegionFilterBody({
                 <Text className="text-xs text-[#256EF4]">
                   {r.city} {r.district}
                 </Text>
-                <Text className="text-xs text-[#256EF4]/60">×</Text>
+                <Ionicons name="close" size={12} color="#256EF4" />
               </Pressable>
             ))}
           </View>

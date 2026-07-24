@@ -3,7 +3,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CalendarField } from '@/components/onboarding/calendar-field';
-import { RangeField } from '@/components/onboarding/range-field';
+import { RangeField } from '@/components/ui/range-field';
+import { RoomTypeArtwork } from '@/components/ui/ready-to-dev-assets';
 import { RegionFilterBody } from '@/components/room/filters';
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl, Tabs } from '@/components/ui/headless';
@@ -130,9 +131,8 @@ export function ProfileEditScreenView({
               step={100}
               value={deposit}
               onChange={setDeposit}
-              minTick="0만"
-              maxTick="6,000만"
-              formatBubble={(lo, hi) => `${lo}~${hi}만원`}
+              tickLabels={['최소', '400만', '1,200만', '최대']}
+              scaleStops={[0, 400, 1200, 6000]}
             />
             <RangeField
               label={isOffer ? '월세' : '예산 월세'}
@@ -141,9 +141,8 @@ export function ProfileEditScreenView({
               step={10}
               value={rent}
               onChange={setRent}
-              minTick="0만"
-              maxTick="500만"
-              formatBubble={(lo, hi) => `${lo}~${hi}만원`}
+              tickLabels={['최소', '125만', '250만', '최대']}
+              scaleStops={[0, 125, 250, 500]}
             />
             <View className="gap-2">
               <Text className="text-sm font-semibold text-neutral-800">
@@ -158,7 +157,7 @@ export function ProfileEditScreenView({
             </View>
             <View className="gap-2">
               <Text className="text-sm font-semibold text-neutral-800">
-                {isOffer ? '방 형태' : '선호 방 형태 (복수 선택)'}
+                {isOffer ? '방 형태' : '선호 방 형태 (최대 3개)'}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {roomTypeOptions.map((roomType) => {
@@ -166,6 +165,7 @@ export function ProfileEditScreenView({
                   return (
                     <Pressable
                       key={roomType.value}
+                      disabled={!isOffer && !selected && roomTypes.length >= 3}
                       onPress={() =>
                         setRoomTypes((prev) =>
                           isOffer
@@ -174,16 +174,25 @@ export function ProfileEditScreenView({
                               : [roomType.value]
                             : selected
                               ? prev.filter((item) => item !== roomType.value)
-                              : [...prev, roomType.value],
+                              : prev.length < 3
+                                ? [...prev, roomType.value]
+                                : prev,
                         )
                       }
-                      className={`rounded-full border px-4 py-2 ${
-                        selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
+                      className={`flex-row items-center gap-1.5 rounded-lg border py-1.5 pl-2 pr-4 ${
+                        selected
+                          ? 'border-[#256EF4] bg-[#EEF4FF]'
+                          : !isOffer && roomTypes.length >= 3
+                            ? 'border-neutral-200 bg-neutral-50 opacity-50'
+                            : 'border-neutral-300 bg-white'
                       }`}
                     >
+                      <RoomTypeArtwork label={roomType.label} size={28} />
                       <Text
                         className={
-                          selected ? 'text-sm font-medium text-white' : 'text-sm text-neutral-600'
+                          selected
+                            ? 'text-sm font-medium text-[#256EF4]'
+                            : 'text-sm text-neutral-600'
                         }
                       >
                         {roomType.label}

@@ -270,7 +270,11 @@ export default function OnboardingLayout() {
   };
 
   return (
-    <OnboardingProvider initialStep={initialStep} onComplete={onComplete}>
+    <OnboardingProvider
+      key={initialStep ?? 'onboarding'}
+      initialStep={initialStep}
+      onComplete={onComplete}
+    >
       <Stack
         screenOptions={{
           headerShown: false,

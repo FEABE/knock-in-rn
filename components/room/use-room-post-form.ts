@@ -60,11 +60,10 @@ export type UseRoomPostFormReturn = {
 export function useRoomPostForm({
   initial,
   onSubmit,
-  mode,
 }: UseRoomPostFormProps): UseRoomPostFormReturn {
   const regions = useRegionOptions();
   const roomTypeOptions = useRoomTypeOptions();
-  const roomAddOptions = useRoomAddOptionOptions(mode === 'edit');
+  const roomAddOptions = useRoomAddOptionOptions();
   const [state, setState] = useState(() => ({
     draft: {
       ...emptyRoomFormDraft(),
@@ -214,6 +213,7 @@ export function useRoomPostForm({
         },
       })),
     toggleOption: (next) => {
+      if (!draft.options.includes(next) && draft.options.length >= 4) return;
       patch({
         options: draft.options.includes(next)
           ? draft.options.filter((option) => option !== next)

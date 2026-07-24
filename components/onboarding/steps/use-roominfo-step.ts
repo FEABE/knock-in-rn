@@ -1,3 +1,4 @@
+import { useGlobalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
@@ -17,8 +18,9 @@ export const ROOM_INFO_STAGE_TITLES = [
   '가격',
   '방 형태',
   '입주 시기',
+  '완료',
 ] as const;
-export type RoomInfoStage = 0 | 1 | 2 | 3 | 4;
+export type RoomInfoStage = 0 | 1 | 2 | 3 | 4 | 5;
 
 export type RegionDraft = { sido: string | null; gugun: string | null; dong: string | null };
 
@@ -64,11 +66,20 @@ export type UseRoomInfoStepReturn = {
 };
 
 export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomInfoStepReturn {
+  const { roomStage } = useGlobalSearchParams<{ roomStage?: string }>();
   const { goNext, goPrev } = useOnboarding();
   const { room, patch } = useOnboardingRoom();
   const regions = useRegionOptions();
   const roomTypes = useRoomTypeOptions();
-  const [stage, setStage] = useState<RoomInfoStage>(0);
+  const [stage, setStage] = useState<RoomInfoStage>(() =>
+    __DEV__ ? (parseRoomInfoStage(roomStage) ?? 0) : 0,
+  );
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    const nextStage = parseRoomInfoStage(roomStage);
+    if (nextStage !== null) setStage(nextStage);
+  }, [roomStage]);
 
   useEffect(() => {
     onboardingTiming.enterStep();
@@ -108,9 +119,11 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
             ? hasRoom
               ? room.roomType != null
               : room.roomTypes.length > 0
-            : hasRoom
-              ? moveInValid
-              : moveByValid;
+            : stage === 4
+              ? hasRoom
+                ? moveInValid
+                : moveByValid
+              : true;
 
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -123,7 +136,7 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
 
   const onNext = () => {
     if (!canProceed) return;
-    if (stage < 4) {
+    if (stage < 5) {
       setStage((stage + 1) as RoomInfoStage);
       return;
     }
@@ -178,7 +191,7 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     today,
     stage,
     stageTitle: ROOM_INFO_STAGE_TITLES[stage],
-    stageProgress: 11 + stage,
+    stageProgress: Math.min(11 + stage, 15),
     hasRoom,
     noRoom,
     canProceed,
@@ -214,6 +227,11 @@ function startOfToday(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+function parseRoomInfoStage(value: string | undefined): RoomInfoStage | null {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 5 ? (parsed as RoomInfoStage) : null;
 }
 
 function regionFromDraft(

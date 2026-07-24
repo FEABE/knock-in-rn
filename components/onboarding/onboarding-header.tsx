@@ -28,7 +28,7 @@ export function OnboardingHeader() {
   };
 
   return (
-    <View className="h-14 flex-row items-center justify-between bg-white px-4">
+    <View className="h-12 flex-row items-center justify-between bg-white px-4">
       <View className="w-12 items-start">
         <Pressable
           onPress={goBack}
@@ -41,10 +41,10 @@ export function OnboardingHeader() {
         </Pressable>
       </View>
       <View className="flex-1 items-center">
-        <Text className="text-base font-medium text-[#1E1E24]">{STEP_LABELS[currentStep]}</Text>
+        <Text className="text-[18px] font-medium text-[#1E1E24]">{STEP_LABELS[currentStep]}</Text>
       </View>
       <View className="w-12 items-end">
-        <Text className="text-sm text-[#8B8B9B]">{progress}/15</Text>
+        <Text className="text-base text-[#8B8B9B]">{progress}/15</Text>
       </View>
     </View>
   );

@@ -17,41 +17,62 @@ export function RoomTypeFilterBody({
   const roomTypes = useRoomTypeOptions();
 
   const toggle = (rt: RoomType) => {
-    onChange(value.includes(rt) ? value.filter((p) => p !== rt) : [...value, rt]);
+    if (value.includes(rt)) {
+      onChange(value.filter((p) => p !== rt));
+      return;
+    }
+    if (value.length < 3) onChange([...value, rt]);
   };
 
   return (
-    <View className="gap-2">
-      <Pressable
-        onPress={() => onChange([])}
-        className={`items-center rounded-xl border py-3 active:opacity-80 ${
-          isAll ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
-        }`}
-      >
-        <Text className={isAll ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'}>
-          전체
-        </Text>
-      </Pressable>
-      {roomTypes.options.map((rt) => {
-        const selected = value.includes(rt.value);
-        return (
-          <Pressable
-            key={rt.value}
-            onPress={() => toggle(rt.value)}
-            className={`items-center rounded-xl border py-3 active:opacity-80 ${
-              selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
-            }`}
+    <View className="gap-3">
+      <Text className="text-xs text-[#AAAABA]">최대 3개 선택 가능</Text>
+      <View className="flex-row flex-wrap gap-2">
+        <Pressable
+          onPress={() => onChange([])}
+          className={`h-9 min-w-[60px] items-center justify-center rounded-full border px-3 active:opacity-80 ${
+            isAll ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
+          }`}
+        >
+          <Text
+            className={
+              isAll ? 'text-[15px] font-medium text-[#256EF4]' : 'text-[15px] text-[#696976]'
+            }
           >
-            <Text
-              className={
-                selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
-              }
+            전체
+          </Text>
+        </Pressable>
+        {roomTypes.options.map((rt) => {
+          const selected = value.includes(rt.value);
+          const disabled = !selected && value.length >= 3;
+          return (
+            <Pressable
+              key={rt.value}
+              onPress={() => toggle(rt.value)}
+              disabled={disabled}
+              className={`h-9 items-center justify-center rounded-full border px-3 active:opacity-80 ${
+                selected
+                  ? 'border-[#256EF4] bg-[#256EF4]/10'
+                  : disabled
+                    ? 'border-neutral-100 bg-neutral-50'
+                    : 'border-neutral-200 bg-white'
+              }`}
             >
-              {rt.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+              <Text
+                className={
+                  selected
+                    ? 'text-[15px] font-medium text-[#256EF4]'
+                    : disabled
+                      ? 'text-[15px] text-neutral-300'
+                      : 'text-[15px] text-[#696976]'
+                }
+              >
+                {rt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }

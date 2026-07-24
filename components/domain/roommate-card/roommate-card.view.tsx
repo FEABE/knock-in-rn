@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import type { UseRoommateCardReturn } from './use-roommate-card';
@@ -21,22 +22,17 @@ export function RoommateCardView({
     <Pressable
       onPress={onPress}
       className={
-        className ??
-        'gap-3 rounded-2xl border border-neutral-200 bg-white p-4 active:opacity-90'
+        className ?? 'gap-3 rounded-2xl border border-neutral-200 bg-white p-4 active:opacity-90'
       }
       accessibilityRole="button"
     >
       <View className="flex-row items-center gap-3">
         <View className="h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
-          <Text className="text-base font-semibold text-neutral-600">
-            {user.name.charAt(0)}
-          </Text>
+          <Text className="text-base font-semibold text-neutral-600">{user.name.charAt(0)}</Text>
         </View>
         <View className="flex-1 gap-0.5">
           <View className="flex-row items-center gap-2">
-            <Text className="text-base font-semibold text-neutral-900">
-              {user.name}
-            </Text>
+            <Text className="text-base font-semibold text-neutral-900">{user.name}</Text>
             <Text className="text-xs text-neutral-400">
               {user.age}세 · {genderLabel(user.gender)}
             </Text>
@@ -55,9 +51,11 @@ export function RoommateCardView({
           hitSlop={8}
           className="h-9 w-9 items-center justify-center rounded-full bg-neutral-50"
         >
-          <Text className={liked ? 'text-base text-red-500' : 'text-base'}>
-            {liked ? '♥' : '♡'}
-          </Text>
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={19}
+            color={liked ? '#EF4444' : '#AAAABA'}
+          />
         </Pressable>
       </View>
 
@@ -78,8 +76,7 @@ export function RoommateCardView({
         ) : null}
         {card.moveInBy ? (
           <Text className="rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-700">
-            {card.moveInBy.getFullYear()}.
-            {String(card.moveInBy.getMonth() + 1).padStart(2, '0')}
+            {card.moveInBy.getFullYear()}.{String(card.moveInBy.getMonth() + 1).padStart(2, '0')}
             입주 희망
           </Text>
         ) : null}

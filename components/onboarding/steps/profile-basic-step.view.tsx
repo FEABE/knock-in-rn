@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { TextField, SegmentedControl } from '@/components/ui/headless';
+import { IdentityVerificationArtwork } from '@/components/ui/ready-to-dev-assets';
 import { PROFILE_NAME_MAX_LENGTH, type Gender } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
@@ -23,6 +25,33 @@ export function ProfileBasicStepView({
   onEmailChange,
   onNext,
 }: ProfileBasicStepViewProps) {
+  const [started, setStarted] = useState(false);
+
+  if (!started) {
+    return (
+      <View className="flex-1 bg-white">
+        <View className="flex-1 items-center justify-center px-4 pb-8">
+          <View className="items-center gap-2">
+            <Text className="text-center text-2xl font-bold leading-9 text-[#17171B]">
+              기본 정보를 알려주세요
+            </Text>
+            <Text className="text-center text-base text-[#696976]">
+              정확한 매칭을 위해 꼭 필요한 정보예요
+            </Text>
+          </View>
+          <View className="mt-8">
+            <IdentityVerificationArtwork size={226} />
+          </View>
+        </View>
+        <OnboardingFooter
+          canProceed
+          primaryLabel="30초만에 입력하기"
+          onPress={() => setStarted(true)}
+        />
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-white">
       <ScrollView
@@ -33,8 +62,10 @@ export function ProfileBasicStepView({
         automaticallyAdjustKeyboardInsets
       >
         <View className="gap-1">
-          <Text className="text-2xl font-bold text-neutral-900">안녕하세요! 👋</Text>
-          <Text className="text-2xl font-bold text-neutral-900">기본 정보를 알려주세요</Text>
+          <Text className="text-xl font-bold leading-[30px] text-neutral-900">안녕하세요!</Text>
+          <Text className="text-xl font-bold leading-[30px] text-neutral-900">
+            기본 정보를 알려주세요
+          </Text>
           <Text className="mt-1 text-sm text-neutral-500">정확한 매칭을 위해 필요한 정보예요</Text>
         </View>
 

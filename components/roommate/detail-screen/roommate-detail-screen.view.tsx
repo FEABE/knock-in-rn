@@ -101,7 +101,7 @@ function Header({ onBack, onReport }: { onBack: () => void; onReport: () => void
       </Pressable>
       <Text className="text-base font-semibold text-neutral-900">룸메이트 찾기</Text>
       <Pressable onPress={onReport} className="h-9 w-9 items-center justify-center">
-        <Text className="text-xl text-neutral-700">⋯</Text>
+        <Ionicons name="ellipsis-horizontal" size={22} color="#404047" />
       </Pressable>
     </View>
   );
@@ -130,8 +130,12 @@ function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
         <Text className="text-xs text-neutral-500">{data.regionLabel}</Text>
       </View>
       <View className="flex-row gap-2">
-        {data.isAuthStudent ? <Badge label="✓ 학교 인증" tone="emerald" /> : null}
-        {data.isAuthEmployee ? <Badge label="✓ 회사 인증" tone="emerald" /> : null}
+        {data.isAuthStudent ? (
+          <Badge label="학교 인증" iconName="school-outline" tone="emerald" />
+        ) : null}
+        {data.isAuthEmployee ? (
+          <Badge label="회사 인증" iconName="business-outline" tone="emerald" />
+        ) : null}
       </View>
     </View>
   );
@@ -171,8 +175,9 @@ function LifestyleBlock({
         ))}
       </View>
       {data.lifeStyles.length > 4 ? (
-        <Pressable onPress={onToggle} className="items-center py-1">
-          <Text className="text-xs text-neutral-500">{expanded ? '접기 ⌃' : '더보기 ⌄'}</Text>
+        <Pressable onPress={onToggle} className="flex-row items-center justify-center gap-1 py-1">
+          <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
         </Pressable>
       ) : null}
     </Section>
@@ -263,9 +268,11 @@ function BottomBar({
         onPress={onLike}
         className="h-12 w-12 items-center justify-center rounded-xl border border-neutral-200"
       >
-        <Text className={liked ? 'text-xl text-red-500' : 'text-xl text-neutral-400'}>
-          {liked ? '♥' : '♡'}
-        </Text>
+        <Ionicons
+          name={liked ? 'heart' : 'heart-outline'}
+          size={23}
+          color={liked ? '#EF4444' : '#AAAABA'}
+        />
       </Pressable>
       <Pressable
         onPress={onRequest}
@@ -295,11 +302,21 @@ function KeyVal({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Badge({ label, tone }: { label: string; tone: 'emerald' | 'sky' }) {
+function Badge({
+  label,
+  iconName,
+  tone,
+}: {
+  label: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+  tone: 'emerald' | 'sky';
+}) {
   const bgClass = tone === 'emerald' ? 'bg-emerald-50' : 'bg-sky-50';
   const textClass = tone === 'emerald' ? 'text-emerald-700' : 'text-sky-700';
+  const color = tone === 'emerald' ? '#047857' : '#0369A1';
   return (
-    <View className={`rounded px-2 py-1 ${bgClass}`}>
+    <View className={`flex-row items-center gap-1 rounded px-2 py-1 ${bgClass}`}>
+      <Ionicons name={iconName} size={12} color={color} />
       <Text className={`text-[11px] ${textClass}`}>{label}</Text>
     </View>
   );

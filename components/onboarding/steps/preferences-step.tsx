@@ -1,122 +1,65 @@
 import { ScrollView, Text, View } from 'react-native';
 
-import { ChipMultiSelect, RangeSlider } from '@/components/ui/headless';
-import { useRoomTypeOptions } from '@/lib/api';
-import { BUDGET_BOUNDS, useOnboardingPreferences, type RoomType } from '@/lib/onboarding';
+import { ChipMultiSelect } from '@/components/ui/headless';
+import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
+import { useOnboardingProfile } from '@/lib/onboarding';
 
-import { CalendarField } from '../calendar-field';
 import { OnboardingFooter } from '../onboarding-footer';
 
+const PRIORITY_OPTIONS = [
+  { value: 'sleep', label: '취침시간' },
+  { value: 'cleanliness', label: '청결' },
+  { value: 'noise', label: '소음' },
+  { value: 'smoking', label: '흡연' },
+  { value: 'pet', label: '반려동물' },
+  { value: 'visitors', label: '방문객 빈도' },
+  { value: 'personality', label: '성격 스타일' },
+  { value: 'personal-space', label: '개인 공간 중요도' },
+] as const;
+
 export function PreferencesStep() {
-  const { preferences, patch } = useOnboardingPreferences();
-  const roomTypes = useRoomTypeOptions();
+  const { profile, patch: patchProfile } = useOnboardingProfile();
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView contentContainerClassName="gap-7 px-5 py-6">
+      <ScrollView contentContainerClassName="gap-6 px-5 py-6">
         <View className="gap-1">
-          <Text className="text-2xl font-bold text-neutral-900">
-            매칭 정확도를{'\n'}높여볼까요?
+          <Text className="text-xl font-bold leading-[30px] text-neutral-900">
+            룸메이트를 선택할 때{'\n'}가장 중요한 조건은 무엇인가요?
           </Text>
           <Text className="text-sm text-neutral-500">
-            선택 조건은 모두 선택이에요. 나중에 마이페이지에서 설정할 수도 있어요.
+            가장 중요한 조건을 최대 3개까지 선택해주세요
           </Text>
         </View>
 
-        <Field
-          label="예산 범위"
-          helper={
-            preferences.budget
-              ? `${preferences.budget.min}만원 ~ ${preferences.budget.max}만원`
-              : '월세 기준 (만원)'
-          }
-        >
-          <RangeSlider
-            min={BUDGET_BOUNDS.min}
-            max={BUDGET_BOUNDS.max}
-            step={BUDGET_BOUNDS.step}
-            value={preferences.budget ? [preferences.budget.min, preferences.budget.max] : [30, 80]}
-            onValueChange={([min, max]) => patch({ budget: { min, max } })}
-          >
-            {({ percents, value, min, max }) => (
-              <View className="gap-3">
-                <View className="relative h-2 w-full rounded-full bg-neutral-200">
-                  <View
-                    style={{
-                      left: `${percents[0]}%`,
-                      width: `${percents[1] - percents[0]}%`,
-                    }}
-                    className="absolute h-2 rounded-full bg-[#256EF4]"
-                  />
-                </View>
-                <View className="flex-row justify-between">
-                  <Text className="text-xs text-neutral-500">{min}만원</Text>
-                  <Text className="text-xs text-neutral-900">
-                    {value[0]}만원 ~ {value[1]}만원
-                  </Text>
-                  <Text className="text-xs text-neutral-500">{max}만원</Text>
-                </View>
-              </View>
-            )}
-          </RangeSlider>
-        </Field>
-
-        <Field label="입주 희망 시기">
-          <CalendarField
-            value={preferences.moveInBy}
-            onChange={(v) => patch({ moveInBy: v })}
-            placeholder="입주 희망일 선택"
-            minDate={new Date()}
-          />
-        </Field>
-
-        <Field label="원하는 방 형태 (복수 선택)">
-          <ChipMultiSelect<RoomType>
-            options={roomTypes.options.map((r) => ({
-              value: r.value,
-              label: r.label,
-            }))}
-            value={preferences.roomTypes}
-            onValueChange={(v) => patch({ roomTypes: v })}
-            className="flex-row flex-wrap gap-2"
-            renderItem={({ option, selected }) => (
-              <View
-                className={`rounded-full border px-4 py-2 ${
-                  selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-200 bg-white'
-                }`}
+        <ChipMultiSelect<string>
+          options={PRIORITY_OPTIONS.map((option) => ({ ...option }))}
+          value={profile.importantConditionIds}
+          onValueChange={(importantConditionIds) => patchProfile({ importantConditionIds })}
+          max={3}
+          className="flex-row flex-wrap gap-2"
+          renderItem={({ option, selected }) => (
+            <View
+              className={`h-[42px] flex-row items-center gap-2 rounded-lg border px-3 ${
+                selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-[#DADAE8] bg-white'
+              }`}
+            >
+              <PriorityArtwork label={option.label} size={22} />
+              <Text
+                className={
+                  selected
+                    ? 'text-base font-medium text-[#256EF4]'
+                    : 'text-base font-medium text-[#696976]'
+                }
               >
-                <Text
-                  className={
-                    selected ? 'text-sm font-medium text-white' : 'text-sm text-neutral-700'
-                  }
-                >
-                  {option.label}
-                </Text>
-              </View>
-            )}
-          />
-        </Field>
+                {option.label}
+              </Text>
+            </View>
+          )}
+        />
       </ScrollView>
 
       <OnboardingFooter canProceed={true} primaryLabel="다음으로" />
-    </View>
-  );
-}
-
-function Field({
-  label,
-  helper,
-  children,
-}: {
-  label: string;
-  helper?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      {helper ? <Text className="text-xs text-neutral-500">{helper}</Text> : null}
-      {children}
     </View>
   );
 }

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Linking, ScrollView, Text, View } from 'react-native';
 import { useMemo } from 'react';
 
@@ -20,8 +21,7 @@ export function TermsStep() {
     );
   }, [data?.terms]);
   const requiredTerms = renderTerms.filter((term) => term.required);
-  const canProceed =
-    requiredTerms.length > 0 && requiredTerms.every((term) => !!terms[term.key]);
+  const canProceed = requiredTerms.length > 0 && requiredTerms.every((term) => !!terms[term.key]);
 
   return (
     <View className="flex-1 bg-white">
@@ -51,7 +51,7 @@ export function TermsStep() {
                     checked ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
                   }`}
                 >
-                  {checked ? <Text className="text-xs font-bold text-white">✓</Text> : null}
+                  {checked ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}
                 </View>
                 <Text className="text-base font-semibold text-neutral-900">전체 동의</Text>
               </>
@@ -73,7 +73,7 @@ export function TermsStep() {
                       checked ? 'bg-[#256EF4]' : 'bg-neutral-200'
                     }`}
                   >
-                    {checked ? <Text className="text-xs font-bold text-white">✓</Text> : null}
+                    {checked ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
                   </View>
                   <View className="flex-1">
                     <Text className="text-sm text-neutral-800">

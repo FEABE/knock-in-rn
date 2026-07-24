@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/ui/headless';
+import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
 import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
 import { ROOM_REPORT_REASONS, type UseRoomDetailScreenReturn } from './use-room-detail-screen';
@@ -30,13 +31,6 @@ const OPTION_LABEL: Record<RoomOption, string> = {
   'full-option': '풀옵션',
   elevator: '엘리베이터',
   pet: '반려동물 가능',
-};
-
-const OPTION_ICON: Record<RoomOption, keyof typeof Ionicons.glyphMap> = {
-  parking: 'car-outline',
-  'full-option': 'sparkles-outline',
-  elevator: 'business-outline',
-  pet: 'paw-outline',
 };
 
 const SMOKING_LABEL: Record<string, string> = {
@@ -175,13 +169,13 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
           {props.isOwner ? (
             <>
               <MenuRow
-                icon="✎"
+                iconName="create-outline"
                 title="게시글 수정"
                 description="내용을 수정할 수 있어요"
                 onPress={props.onEdit}
               />
               <MenuRow
-                icon="🗑"
+                iconName="trash-outline"
                 title="게시글 삭제"
                 description="삭제 후 복구할 수 없어요"
                 danger
@@ -190,7 +184,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
             </>
           ) : (
             <MenuRow
-              icon="⚠"
+              iconName="warning-outline"
               title="신고하기"
               description="허위 정보나 부적절한 게시글을 신고해요"
               warning
@@ -262,10 +256,10 @@ function Header({
           accessibilityLabel="게시글 공유"
           className="h-9 w-9 items-center justify-center"
         >
-          <Text className="text-base text-neutral-700">↑</Text>
+          <Ionicons name="share-outline" size={21} color="#404047" />
         </Pressable>
         <Pressable onPress={onMenu} className="h-9 w-9 items-center justify-center">
-          <Text className="text-xl text-neutral-700">⋯</Text>
+          <Ionicons name="ellipsis-horizontal" size={22} color="#404047" />
         </Pressable>
       </View>
     </View>
@@ -338,11 +332,17 @@ function TitleBlock({ post }: { post: RoomPost }) {
         {ROOM_TYPE_LABEL[post.roomType] ?? post.roomType}
       </Text>
       <View className="flex-row items-center gap-3">
-        <Text className="text-xs text-neutral-500">
-          📍 {post.region.city} {post.region.district}
-        </Text>
+        <View className="flex-row items-center gap-1">
+          <Ionicons name="location-outline" size={13} color="#696976" />
+          <Text className="text-xs text-neutral-500">
+            {post.region.city} {post.region.district}
+          </Text>
+        </View>
         <Text className="text-xs text-neutral-400">{fmtDate(post.createdAt)}</Text>
-        <Text className="text-xs text-neutral-400">ⓘ {post.views.toLocaleString()}</Text>
+        <View className="flex-row items-center gap-1">
+          <Ionicons name="information-circle-outline" size={13} color="#AAAABA" />
+          <Text className="text-xs text-neutral-400">{post.views.toLocaleString()}</Text>
+        </View>
       </View>
     </View>
   );
@@ -390,8 +390,9 @@ function LifestyleBlock({
           </Text>
         </View>
       ) : null}
-      <Pressable onPress={onToggle} className="items-center py-1">
-        <Text className="text-xs text-neutral-500">{expanded ? '접기 ⌃' : '더보기 ⌄'}</Text>
+      <Pressable onPress={onToggle} className="flex-row items-center justify-center gap-1 py-1">
+        <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
       </Pressable>
     </View>
   );
@@ -404,7 +405,7 @@ function OptionsBlock({ options }: { options: RoomOption[] }) {
       <View className="flex-row justify-around gap-2 py-2">
         {options.map((option) => (
           <View key={option} className="flex-1 items-center gap-2">
-            <Ionicons name={OPTION_ICON[option]} size={30} color="#696976" />
+            <RoomOptionArtwork label={OPTION_LABEL[option]} size={30} />
             <Text className="text-center text-xs text-neutral-700">{OPTION_LABEL[option]}</Text>
           </View>
         ))}
@@ -460,8 +461,9 @@ function DescriptionBlock({
       <Text numberOfLines={expanded ? undefined : 3} className="text-sm leading-6 text-neutral-700">
         {description}
       </Text>
-      <Pressable onPress={onToggle}>
-        <Text className="text-xs text-neutral-500">{expanded ? '접기 ⌃' : '더보기 ⌄'}</Text>
+      <Pressable onPress={onToggle} className="flex-row items-center gap-1">
+        <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
       </Pressable>
     </View>
   );
@@ -583,15 +585,23 @@ function AuthorBlock({ author, onPress }: { author: UserSummary; onPress: () => 
           </Text>
           <View className="flex-row flex-wrap gap-1.5">
             {author.badges.map((badge) => (
-              <View key={badge.kind} className="rounded bg-emerald-50 px-2 py-0.5">
+              <View
+                key={badge.kind}
+                className="flex-row items-center gap-1 rounded bg-emerald-50 px-2 py-0.5"
+              >
+                <Ionicons
+                  name={badge.kind === 'school' ? 'school-outline' : 'business-outline'}
+                  size={11}
+                  color="#047857"
+                />
                 <Text className="text-[10px] text-emerald-700">
-                  {badge.kind === 'school' ? '🎓 학교 인증' : '🏢 회사 인증'}
+                  {badge.kind === 'school' ? '학교 인증' : '회사 인증'}
                 </Text>
               </View>
             ))}
           </View>
         </View>
-        <Text className="text-neutral-300">›</Text>
+        <Ionicons name="chevron-forward" size={18} color="#DADAE8" />
       </Pressable>
     </View>
   );
@@ -622,9 +632,11 @@ function BottomBar({
           onPress={onLike}
           className="h-12 w-12 items-center justify-center rounded-xl border border-neutral-200"
         >
-          <Text className={liked ? 'text-xl text-red-500' : 'text-xl text-neutral-400'}>
-            {liked ? '♥' : '♡'}
-          </Text>
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={23}
+            color={liked ? '#EF4444' : '#AAAABA'}
+          />
         </Pressable>
       ) : null}
       <Pressable
@@ -640,14 +652,14 @@ function BottomBar({
 }
 
 function MenuRow({
-  icon,
+  iconName,
   title,
   description,
   onPress,
   danger,
   warning,
 }: {
-  icon: string;
+  iconName: keyof typeof Ionicons.glyphMap;
   title: string;
   description?: string;
   onPress: () => void;
@@ -660,7 +672,11 @@ function MenuRow({
       onPress={onPress}
       className="flex-row items-center gap-3 rounded-xl px-3 py-3 active:bg-neutral-50"
     >
-      <Text className={`text-xl ${titleColor}`}>{icon}</Text>
+      <Ionicons
+        name={iconName}
+        size={21}
+        color={danger ? '#E11D48' : warning ? '#D97706' : '#404047'}
+      />
       <View className="flex-1">
         <Text className={`text-sm font-semibold ${titleColor}`}>{title}</Text>
         {description ? (

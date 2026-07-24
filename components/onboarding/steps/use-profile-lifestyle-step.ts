@@ -6,11 +6,7 @@ import {
   type LifestyleScaleOption,
   useLifestylePatternOptions,
 } from '@/lib/api';
-import {
-  useOnboarding,
-  useOnboardingProfile,
-  type LifestyleScaleKey,
-} from '@/lib/onboarding';
+import { useOnboarding, useOnboardingProfile, type LifestyleScaleKey } from '@/lib/onboarding';
 
 export type UseProfileLifestyleStepReturn = {
   scales: ReturnType<typeof useOnboardingProfile>['profile']['scales'];
@@ -23,11 +19,12 @@ export type UseProfileLifestyleStepReturn = {
   setScale: (key: LifestyleScaleKey, value: number) => void;
   setChoice: (key: string, value: string) => void;
   onScaleComplete: (key: LifestyleScaleKey, value: number) => void;
+  onBack: () => void;
   onNext: () => Promise<void>;
 };
 
 export function useProfileLifestyleStep(): UseProfileLifestyleStepReturn {
-  const { goNext } = useOnboarding();
+  const { goNext, goPrev } = useOnboarding();
   const { profile, patch } = useOnboardingProfile();
   const lifestyleOptions = useLifestylePatternOptions();
   const scales = profile.scales;
@@ -37,18 +34,6 @@ export function useProfileLifestyleStep(): UseProfileLifestyleStepReturn {
     onboardingTiming.enterStep();
     logEvent(AnalyticsEvent.ONBOARDING_STEP_VIEW, { step_index: 2, step_name: 'lifestyle' });
   }, []);
-
-  useEffect(() => {
-    const nextScales = { ...scales };
-    let changed = false;
-    for (const scale of lifestyleOptions.scaleOptions) {
-      if (nextScales[scale.key] === undefined) {
-        nextScales[scale.key] = 3;
-        changed = true;
-      }
-    }
-    if (changed) patch({ scales: nextScales });
-  }, [lifestyleOptions.scaleOptions, patch, scales]);
 
   const setScale = (key: LifestyleScaleKey, value: number) =>
     patch({ scales: { ...scales, [key]: value } });
@@ -93,6 +78,7 @@ export function useProfileLifestyleStep(): UseProfileLifestyleStepReturn {
         scale_name: key,
         value,
       }),
+    onBack: goPrev,
     onNext,
   };
 }

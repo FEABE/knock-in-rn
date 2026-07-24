@@ -1,14 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
-import { RoomListControls } from '@/components/domain/room-list-controls';
-import { RoomFilterSheet } from '@/components/room/filters';
 import { ErrorState } from '@/components/ui/error-state';
 import { Tabs } from '@/components/ui/headless';
-
-import { INITIAL_EXPLORE_FILTER } from '../explore/use-explore-screen';
+import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
 
 import type { UseInterestsScreenReturn } from './use-interests-screen';
 
@@ -18,20 +16,12 @@ export function InterestsScreenView({
   rooms,
   likedMatches,
   isLoggedIn,
-  filter,
-  sort,
-  openSheet,
   roomsLoading,
   roomsError,
   matchesLoading,
   matchesError,
   reloadRooms,
   reloadMatches,
-  sortLabel,
-  setSort,
-  setOpenSheet,
-  setFilter,
-  onSearchPress,
   onLoginPress,
   onExplorePress,
   onRoomPress,
@@ -41,8 +31,8 @@ export function InterestsScreenView({
 }: InterestsScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="px-4 pb-2 pt-4">
-        <Text className="text-[28px] font-extrabold text-neutral-900">관심</Text>
+      <View className="px-4 pb-5 pt-4">
+        <Text className="text-[26px] font-bold leading-[39px] text-neutral-900">관심</Text>
       </View>
 
       {!isLoggedIn ? (
@@ -57,8 +47,8 @@ export function InterestsScreenView({
         <Tabs.Root defaultValue="rooms" className="flex-1">
           <Tabs.List className="flex-row">
             {[
-              { value: 'rooms', label: '방 게시글' },
-              { value: 'roommates', label: '룸메이트 찾기' },
+              { value: 'rooms', label: '룸메 구해요' },
+              { value: 'roommates', label: '룸메 찾아요' },
             ].map((tab) => (
               <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 pt-3">
                 {({ selected }) => (
@@ -83,16 +73,6 @@ export function InterestsScreenView({
           </Tabs.List>
 
           <Tabs.Content value="rooms" className="flex-1">
-            <RoomListControls
-              filter={filter}
-              initialFilter={INITIAL_EXPLORE_FILTER}
-              sortLabel={sortLabel}
-              onSearchPress={onSearchPress}
-              onSortPress={() =>
-                setSort(sort === 'latest' ? 'likes' : sort === 'likes' ? 'views' : 'latest')
-              }
-              onFilterPress={setOpenSheet}
-            />
             {roomsLoading ? (
               <Loading label="관심 방을 불러오는 중..." />
             ) : roomsError ? (
@@ -102,7 +82,12 @@ export function InterestsScreenView({
                 onRetry={reloadRooms}
               />
             ) : rooms.length === 0 ? (
-              <Empty title="관심 표시한 방이 없어요" onExplore={onExplorePress} />
+              <Empty
+                title="관심 표시한 방이 없어요"
+                description="마음에 드는 방을 찾아보세요"
+                actionLabel="방 보러가기"
+                onExplore={onExplorePress}
+              />
             ) : (
               <ScrollView contentContainerClassName="gap-5 px-4 pb-24 pt-1">
                 {rooms.map((post) => (
@@ -118,16 +103,6 @@ export function InterestsScreenView({
           </Tabs.Content>
 
           <Tabs.Content value="roommates" className="flex-1">
-            <RoomListControls
-              filter={filter}
-              initialFilter={INITIAL_EXPLORE_FILTER}
-              sortLabel={sortLabel}
-              onSearchPress={onSearchPress}
-              onSortPress={() =>
-                setSort(sort === 'latest' ? 'likes' : sort === 'likes' ? 'views' : 'latest')
-              }
-              onFilterPress={setOpenSheet}
-            />
             {matchesLoading ? (
               <Loading label="관심 룸메이트를 불러오는 중..." />
             ) : matchesError ? (
@@ -137,7 +112,12 @@ export function InterestsScreenView({
                 onRetry={reloadMatches}
               />
             ) : likedMatches.length === 0 ? (
-              <Empty title="관심 표시한 룸메이트가 없어요" onExplore={onExplorePress} />
+              <Empty
+                title="관심 표시한 룸메이트가 없어요"
+                description="마음에 드는 룸메이트를 찾아보세요"
+                actionLabel="룸메이트 보러가기"
+                onExplore={onExplorePress}
+              />
             ) : (
               <ScrollView contentContainerClassName="gap-4 p-5">
                 {likedMatches.map((match) => (
@@ -153,17 +133,6 @@ export function InterestsScreenView({
           </Tabs.Content>
         </Tabs.Root>
       )}
-
-      {isLoggedIn ? (
-        <RoomFilterSheet
-          open={openSheet !== null}
-          onOpenChange={(open) => setOpenSheet(open ? openSheet : null)}
-          defaultTab={openSheet ?? 'region'}
-          value={filter}
-          onChange={setFilter}
-          initial={INITIAL_EXPLORE_FILTER}
-        />
-      ) : null}
     </SafeAreaView>
   );
 }
@@ -177,19 +146,34 @@ function Loading({ label }: { label: string }) {
   );
 }
 
-function Empty({ title, onExplore }: { title: string; onExplore: () => void }) {
+function Empty({
+  title,
+  description,
+  actionLabel,
+  onExplore,
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onExplore: () => void;
+}) {
   return (
-    <View className="flex-1 items-center justify-center gap-3 p-10">
-      <Text className="text-4xl text-neutral-300">♡</Text>
-      <Text className="text-base font-semibold text-neutral-800">{title}</Text>
-      <Text className="text-center text-sm text-neutral-400">
-        마음에 드는 방에 하트를 눌러{'\n'}관심 목록에 저장해 보세요
-      </Text>
+    <View className="flex-1 items-center justify-center gap-4 px-8 pb-16">
+      <View className="items-center gap-6">
+        <EmptyHouseArtwork size={172} />
+        <View className="items-center gap-1">
+          <Text className="text-[17px] font-semibold leading-[26px] text-[#17171B]">{title}</Text>
+          <Text className="max-w-[280px] text-center text-sm leading-[21px] text-[#AAAABA]">
+            {description}
+          </Text>
+        </View>
+      </View>
       <Pressable
         onPress={onExplore}
-        className="mt-2 rounded-full border border-[#256EF4] px-5 py-2.5 active:opacity-80"
+        className="h-11 min-w-[139px] flex-row items-center justify-center gap-2 rounded-full border-[1.5px] border-[#256EF4] px-4 active:opacity-80"
       >
-        <Text className="text-sm font-medium text-[#256EF4]">방 살펴보러 가기</Text>
+        <Text className="text-base font-medium text-[#256EF4]">{actionLabel}</Text>
+        <Ionicons name="chevron-forward" size={16} color="#256EF4" />
       </Pressable>
     </View>
   );

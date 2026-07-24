@@ -36,11 +36,11 @@ export function RoomListControls({
     <>
       <Pressable
         onPress={onSearchPress}
-        className="mx-4 mt-4 h-8 flex-row items-center gap-1 rounded border border-[#ECECF3] bg-[#F6F6FA] px-2 active:opacity-80"
+        className="mx-4 mt-[19px] h-[38px] flex-row items-center gap-1.5 rounded bg-[#F6F6FA] px-3 active:opacity-80"
       >
-        <Ionicons name="search-outline" size={16} color="#AAAABA" />
+        <Ionicons name="search-outline" size={18} color="#AAAABA" />
         <Text className={`flex-1 text-sm ${searchQuery ? 'text-[#3F3F47]' : 'text-[#AAAABA]'}`}>
-          {searchQuery || '검색'}
+          {searchQuery || '지역, 동 이름 검색'}
         </Text>
         {searchQuery && onSearchClear ? (
           <Pressable
@@ -59,9 +59,9 @@ export function RoomListControls({
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        contentContainerClassName="items-center gap-2 px-4 py-4"
+        contentContainerClassName="items-center gap-2 px-4 pb-5 pt-3"
       >
-        <FilterChip label={sortLabel} onPress={onSortPress} />
+        <FilterChip label={sortLabel} outlined onPress={onSortPress} />
         <FilterChip
           label={filter.regions.length > 0 ? `지역 ${filter.regions.length}` : '지역'}
           active={filter.regions.length > 0}
@@ -86,25 +86,29 @@ export function RoomListControls({
 function FilterChip({
   label,
   active,
+  outlined,
   onPress,
 }: {
   label: string;
   active?: boolean;
+  outlined?: boolean;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className={`h-8 flex-row items-center gap-1 rounded-full border px-3 active:opacity-80 ${
-        active ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-[#AAAABA] bg-white'
+      className={`h-[38px] flex-row items-center gap-1 rounded-full border px-3.5 active:opacity-80 ${
+        active
+          ? 'border-[#4C87F6] bg-[#EEF4FF]'
+          : outlined
+            ? 'border-[#DADAE8] bg-white'
+            : 'border-transparent bg-[#F6F6FA]'
       }`}
     >
-      <Text
-        className={active ? 'text-[15px] font-medium text-[#256EF4]' : 'text-[15px] text-[#AAAABA]'}
-      >
+      <Text className={active ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-[#696976]'}>
         {label}
       </Text>
-      <Ionicons name="chevron-down" size={14} color={active ? '#256EF4' : '#AAAABA'} />
+      <Ionicons name="chevron-down" size={14} color={active ? '#256EF4' : '#696976'} />
     </Pressable>
   );
 }

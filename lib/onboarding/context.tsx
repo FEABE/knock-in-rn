@@ -34,10 +34,10 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
 export const STEP_LABELS: Record<OnboardingStep, string> = {
   terms: '약관 동의',
   'profile-basic': '기본 정보',
-  'profile-lifestyle': '나의 생활패턴',
+  'profile-lifestyle': '생활패턴',
   roominfo: '방 유무 여부',
   visibility: '노출 상태',
-  preferences: '매칭 조건 (선택)',
+  preferences: '우선순위 선택',
 };
 
 function emptyTerms(): TermsAgreement {

@@ -3,10 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
+import { RangeField } from '@/components/ui/range-field';
+import {
+  OnboardingCompleteArtwork,
+  RoomPresenceArtwork,
+  RoomTypeArtwork,
+} from '@/components/ui/ready-to-dev-assets';
 
 import { CalendarField } from '../calendar-field';
 import { OnboardingFooter } from '../onboarding-footer';
-import { RangeField } from '../range-field';
 import {
   MAX_PREF_ROOM_TYPES,
   MAX_REGIONS,
@@ -47,6 +52,43 @@ export function RoomInfoStepView({
   toggleRoomType,
   setMoveInBy,
 }: UseRoomInfoStepReturn) {
+  if (stage === 5) {
+    return (
+      <View className="flex-1 bg-white">
+        <View className="h-12 justify-center px-4">
+          <Pressable
+            onPress={onBack}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="이전으로"
+            className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
+          >
+            <Ionicons name="chevron-back" size={24} color="#6B6B76" />
+          </Pressable>
+        </View>
+        <View className="flex-1 items-center px-4 pt-14">
+          <View className="items-center gap-2">
+            <Text className="text-center text-2xl font-bold leading-9 text-[#17171B]">
+              모든 준비가 끝났어요!
+            </Text>
+            <Text className="text-center text-base text-[#696976]">
+              지금부터 나와 맞는 룸메이트를 만나보세요
+            </Text>
+          </View>
+          <View className="mt-8">
+            <OnboardingCompleteArtwork size={256} />
+          </View>
+        </View>
+        <OnboardingFooter
+          canProceed={canProceed}
+          primaryLabel="시작하기"
+          loading={submitting}
+          onPress={onNext}
+        />
+      </View>
+    );
+  }
+
   const regionTable = (
     <RegionTable
       draft={draft}
@@ -61,7 +103,7 @@ export function RoomInfoStepView({
 
   return (
     <View className="flex-1 bg-white">
-      <View className="h-14 flex-row items-center justify-between px-4">
+      <View className="h-12 flex-row items-center justify-between px-4">
         <Pressable
           onPress={onBack}
           hitSlop={12}
@@ -71,8 +113,8 @@ export function RoomInfoStepView({
         >
           <Ionicons name="chevron-back" size={24} color="#6B6B76" />
         </Pressable>
-        <Text className="text-base font-medium text-[#1E1E24]">{stageTitle}</Text>
-        <Text className="w-14 text-right text-sm text-[#8B8B9B]">{stageProgress}/15</Text>
+        <Text className="text-[18px] font-medium text-[#1E1E24]">{stageTitle}</Text>
+        <Text className="w-14 text-right text-base text-[#8B8B9B]">{stageProgress}/15</Text>
       </View>
 
       <ScrollView
@@ -87,14 +129,14 @@ export function RoomInfoStepView({
         {stage === 0 ? (
           <View className="gap-4">
             <RoomChoice
-              icon="🙋🏻‍♀️"
+              hasRoom
               title="방이 있어요"
               desc="룸메이트를 찾고 싶어요"
               selected={hasRoom}
               onPress={() => setHasRoom(true)}
             />
             <RoomChoice
-              icon="🙅🏻‍♀️"
+              hasRoom={false}
               title="방이 없어요"
               desc="방과 룸메이트를 함께 찾고 싶어요"
               selected={noRoom}
@@ -117,7 +159,7 @@ export function RoomInfoStepView({
                     <Text className="text-xs text-[#256EF4]">
                       {region.city} {region.district}
                     </Text>
-                    <Text className="text-xs text-[#256EF4]/70">✕</Text>
+                    <Ionicons name="close" size={12} color="#256EF4" />
                   </Pressable>
                 ))}
               </View>
@@ -151,9 +193,8 @@ export function RoomInfoStepView({
               step={100}
               value={[room.budgetDeposit.min, room.budgetDeposit.max]}
               onChange={([min, max]) => setBudgetDeposit({ min, max })}
-              minTick="최소"
-              maxTick="최대"
-              formatBubble={(lo, hi) => `${lo}~${hi}만원`}
+              tickLabels={['최소', '400만', '1,200만', '최대']}
+              scaleStops={[0, 400, 1200, 6000]}
             />
             <RangeField
               label="월세"
@@ -162,36 +203,32 @@ export function RoomInfoStepView({
               step={10}
               value={[room.budgetRent.min, room.budgetRent.max]}
               onChange={([min, max]) => setBudgetRent({ min, max })}
-              minTick="최소"
-              maxTick="최대"
-              formatBubble={(lo, hi) => `${lo}~${hi}만원`}
+              tickLabels={['최소', '125만', '250만', '최대']}
+              scaleStops={[0, 125, 250, 500]}
             />
           </View>
         ) : null}
 
         {stage === 3 ? (
-          <Section label={noRoom ? `최대 ${MAX_PREF_ROOM_TYPES}개까지 선택해주세요` : '방 형태'}>
-            <View className="flex-row flex-wrap gap-3">
-              {roomTypeOptions.map((type) => {
-                const selected = hasRoom
-                  ? room.roomType === type.value
-                  : room.roomTypes.includes(type.value);
-                const disabled =
-                  noRoom && !selected && room.roomTypes.length >= MAX_PREF_ROOM_TYPES;
-                return (
-                  <RoomTypeChoice
-                    key={type.value}
-                    label={type.label}
-                    selected={selected}
-                    disabled={disabled}
-                    onPress={() =>
-                      hasRoom ? toggleSingleRoomType(type.value) : toggleRoomType(type.value)
-                    }
-                  />
-                );
-              })}
-            </View>
-          </Section>
+          <View className="flex-row flex-wrap gap-3">
+            {roomTypeOptions.map((type) => {
+              const selected = hasRoom
+                ? room.roomType === type.value
+                : room.roomTypes.includes(type.value);
+              const disabled = noRoom && !selected && room.roomTypes.length >= MAX_PREF_ROOM_TYPES;
+              return (
+                <RoomTypeChoice
+                  key={type.value}
+                  label={type.label}
+                  selected={selected}
+                  disabled={disabled}
+                  onPress={() =>
+                    hasRoom ? toggleSingleRoomType(type.value) : toggleRoomType(type.value)
+                  }
+                />
+              );
+            })}
+          </View>
         ) : null}
 
         {stage === 4 ? (
@@ -213,7 +250,7 @@ export function RoomInfoStepView({
 
       <OnboardingFooter
         canProceed={canProceed}
-        primaryLabel={stage === 4 ? '완료' : '다음으로'}
+        primaryLabel="다음으로"
         loading={submitting}
         onPress={onNext}
       />
@@ -251,14 +288,16 @@ function StageIntro({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
         : stage === 2
           ? [
               hasRoom ? '현재 방의 가격을' : '희망하는 예산을',
-              '알려주세요',
+              hasRoom ? '알려주세요' : '선택해주세요',
               '언제든 마이페이지에서 변경할 수 있어요',
             ]
           : stage === 3
             ? [
                 hasRoom ? '현재 거주 중인' : '거주하고 싶은',
                 '방 형태를 선택해주세요',
-                '원하는 방 형태를 최대 3개까지 선택해주세요',
+                hasRoom
+                  ? '현재 거주 중인 방 형태를 선택해주세요'
+                  : '원하는 방 형태를 최대 3개까지 선택해주세요',
               ]
             : [
                 hasRoom ? '입주 가능한 시기를' : '입주 희망 시기를',
@@ -268,7 +307,7 @@ function StageIntro({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
 
   return (
     <View className="gap-1">
-      <Text className="text-2xl font-bold leading-8 text-neutral-900">
+      <Text className="text-xl font-bold leading-[30px] text-neutral-900">
         {copy[0]}
         {`\n`}
         {copy[1]}
@@ -293,15 +332,15 @@ function RoomTypeChoice({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`min-h-24 w-[30%] flex-grow items-center justify-center gap-2 rounded-lg border px-2 py-3 ${
+      className={`h-[108px] w-[31%] items-center justify-center gap-1 rounded-[4px] border px-2 py-2 ${
         selected
           ? 'border-[#256EF4] bg-[#EEF4FF]'
           : disabled
             ? 'border-neutral-200 bg-neutral-50'
-            : 'border-transparent bg-[#F7F7FA] active:opacity-80'
+            : 'border-[#DADAE8] bg-white active:opacity-80'
       }`}
     >
-      <Text className="text-2xl">{roomTypeEmoji(label)}</Text>
+      <RoomTypeArtwork label={label} size={66} />
       <Text
         className={
           selected
@@ -317,23 +356,14 @@ function RoomTypeChoice({
   );
 }
 
-function roomTypeEmoji(label: string): string {
-  if (label.includes('오피스텔')) return '🏢';
-  if (label.includes('아파트')) return '🏬';
-  if (label.includes('빌라')) return '🏘️';
-  if (label.includes('쉐어')) return '🏠';
-  if (label.includes('투룸') || label.includes('쓰리룸')) return '🏡';
-  return '🏠';
-}
-
 function RoomChoice({
-  icon,
+  hasRoom,
   title,
   desc,
   selected,
   onPress,
 }: {
-  icon: string;
+  hasRoom: boolean;
   title: string;
   desc: string;
   selected: boolean;
@@ -342,11 +372,11 @@ function RoomChoice({
   return (
     <Pressable
       onPress={onPress}
-      className={`min-h-24 flex-row items-center gap-3 rounded-xl border px-5 py-4 active:opacity-90 ${
-        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-transparent bg-[#F7F7FA]'
+      className={`min-h-24 flex-row items-center gap-3 rounded-[4px] border px-5 py-4 active:opacity-90 ${
+        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-[#DADAE8] bg-white'
       }`}
     >
-      <Text className="text-2xl">{icon}</Text>
+      <RoomPresenceArtwork hasRoom={hasRoom} size={28} />
       <View className="flex-1 gap-1">
         <Text className={`text-base font-bold ${selected ? 'text-[#256EF4]' : 'text-neutral-900'}`}>
           {title}

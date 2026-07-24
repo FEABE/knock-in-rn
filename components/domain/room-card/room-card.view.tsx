@@ -24,51 +24,43 @@ export function RoomCardView({
   const verified = post.author.badges.length > 0;
 
   return (
-    <Pressable
-      onPress={onPress}
-      className="overflow-hidden rounded-md border border-[#D9DAE5] bg-white active:opacity-90"
-      accessibilityRole="button"
-    >
-      <View className="relative">
+    <Pressable onPress={onPress} className="bg-white active:opacity-90" accessibilityRole="button">
+      <View className="relative overflow-hidden rounded">
         {post.thumbnailUrl ? (
           <Image
             source={{ uri: post.thumbnailUrl }}
-            style={{ width: '100%', height: 130 }}
+            style={{ width: '100%', height: 165 }}
             contentFit="cover"
             transition={150}
           />
         ) : (
-          <View className="h-[130px] w-full items-center justify-center bg-neutral-100">
+          <View className="h-[165px] w-full items-center justify-center bg-neutral-100">
             <Ionicons name="image-outline" size={30} color="#AAAABA" />
           </View>
         )}
 
-        {badge ? (
-          <View className="absolute left-3 top-3">
-            <BadgePill kind={badge} />
-          </View>
-        ) : null}
+        <View className="absolute left-2.5 top-3 flex-row gap-1">
+          {badge ? <BadgePill kind={badge} /> : null}
+          <RoomTypePill label={roomTypeLabel} />
+        </View>
 
         <Pressable
           onPress={toggleLike}
           hitSlop={8}
-          className="absolute right-2 top-2 h-8 w-8 items-center justify-center"
+          className="absolute right-2.5 top-2.5 h-9 w-9 items-center justify-center rounded-full bg-black/30"
           accessibilityLabel={liked ? '관심 해제' : '관심 등록'}
         >
           <Ionicons name={liked ? 'heart' : 'heart-outline'} size={25} color="white" />
         </Pressable>
       </View>
 
-      <View className="gap-1.5 p-3">
-        <Text numberOfLines={1} className="text-base font-bold text-[#17171B]">
+      <View className="gap-1 pt-3">
+        <Text numberOfLines={1} className="text-[17px] font-bold leading-6 text-[#17171B]">
           {post.title}
         </Text>
-        <Text className="text-sm text-[#17171B]">{priceLabel}</Text>
-        <Text className="text-xs text-[#696976]">
-          {regionLabel} · {roomTypeLabel}
-        </Text>
+        <Text className="text-[13px] leading-[19px] text-[#696976]">{regionLabel}</Text>
 
-        <View className="mt-2 flex-row items-center justify-between pt-2">
+        <View className="mt-2 flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
             {post.author.avatarUrl ? (
               <Image
@@ -82,20 +74,10 @@ export function RoomCardView({
               </View>
             )}
             <Text className="text-xs text-neutral-600">{post.author.name}</Text>
-            {verified ? (
-              <View
-                className="h-4 w-4 items-center justify-center rounded-full"
-                style={{ backgroundColor: BRAND }}
-              >
-                <Text className="text-[9px] font-bold text-white">✓</Text>
-              </View>
-            ) : null}
+            {verified ? <Ionicons name="checkmark-circle" size={16} color={BRAND} /> : null}
             <Text className="text-xs text-neutral-400">· {timeAgoLabel}</Text>
           </View>
-          <View className="flex-row items-center gap-1">
-            <Ionicons name="eye-outline" size={16} color="#AAAABA" />
-            <Text className="text-xs text-[#AAAABA]">{post.views.toLocaleString()}</Text>
-          </View>
+          <Text className="text-sm font-semibold text-[#17171B]">{priceLabel}</Text>
         </View>
       </View>
     </Pressable>
@@ -105,16 +87,22 @@ export function RoomCardView({
 function BadgePill({ kind }: { kind: NonNullable<RoomCardBadge> }) {
   if (kind === 'new') {
     return (
-      <View className="rounded px-2 py-0.5" style={{ backgroundColor: `${BRAND}1A` }}>
-        <Text className="text-[11px] font-semibold" style={{ color: BRAND }}>
-          NEW
-        </Text>
+      <View className="rounded bg-[#256EF4] px-2 py-1">
+        <Text className="text-[11px] font-semibold text-white">NEW</Text>
       </View>
     );
   }
   return (
     <View className="rounded bg-rose-100 px-2 py-0.5">
       <Text className="text-[11px] font-semibold text-rose-600">인기</Text>
+    </View>
+  );
+}
+
+function RoomTypePill({ label }: { label: string }) {
+  return (
+    <View className="rounded bg-[#EEF4FF] px-2 py-1">
+      <Text className="text-[11px] font-medium text-[#256EF4]">{label}</Text>
     </View>
   );
 }

@@ -66,7 +66,7 @@ export function CalendarField({
         <Text className={value ? 'text-base text-neutral-900' : 'text-base text-neutral-400'}>
           {value ? fmt(value) : placeholder}
         </Text>
-        <Text className="text-base text-neutral-400">📅</Text>
+        <Ionicons name="calendar-outline" size={20} color="#AAAABA" />
       </Pressable>
 
       <BottomSheet open={open} onOpenChange={setOpen}>

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, Text, View } from 'react-native';
 
 import { SegmentedControl } from '@/components/ui/headless';
@@ -67,7 +68,7 @@ export function VisibilityStep() {
                       selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
                     }`}
                   >
-                    {selected ? <Text className="text-xs font-bold text-white">✓</Text> : null}
+                    {selected ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
                   </View>
                 </View>
                 <Text

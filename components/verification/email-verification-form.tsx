@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import {
@@ -104,7 +105,10 @@ export function EmailVerificationForm({
                     인증코드 ({codeLength}자리)
                   </Text>
                   {isVerified ? (
-                    <Text className="text-xs text-emerald-600">✓ 인증 완료</Text>
+                    <View className="flex-row items-center gap-1">
+                      <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                      <Text className="text-xs text-emerald-600">인증 완료</Text>
+                    </View>
                   ) : cooldown > 0 ? (
                     <Text className="text-xs text-neutral-400">{cooldown}초 후 재전송 가능</Text>
                   ) : null}

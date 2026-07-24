@@ -107,7 +107,7 @@ export function RoommateTabScreenView({
             onPress={onCreatePress}
             className="absolute bottom-6 right-5 h-14 w-14 items-center justify-center rounded-full bg-[#256EF4] active:opacity-90 shadow-sm"
           >
-            <Text className="text-2xl font-semibold text-white">+</Text>
+            <Ionicons name="add" size={26} color="#FFFFFF" />
           </Pressable>
         </Tabs.Content>
 

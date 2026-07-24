@@ -16,7 +16,9 @@ export type OnboardingScreenViewProps = UseOnboardingScreenReturn;
 export function OnboardingScreenView({ currentStep }: OnboardingScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      {currentStep !== 'roominfo' ? <OnboardingHeader /> : null}
+      {currentStep !== 'roominfo' && currentStep !== 'profile-lifestyle' ? (
+        <OnboardingHeader />
+      ) : null}
       <View className="flex-1">
         {currentStep === 'terms' ? <TermsStep /> : null}
         {currentStep === 'profile-basic' ? <ProfileBasicStep /> : null}

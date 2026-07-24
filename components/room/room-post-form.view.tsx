@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
+import { RoomOptionArtwork, RoomTypeArtwork } from '@/components/ui/ready-to-dev-assets';
 import type { RegionSelectOption } from '@/lib/api';
 import type { UserSummary } from '@/lib/domain';
 import type { Region } from '@/lib/onboarding';
@@ -62,7 +63,7 @@ export function RoomPostFormView({
       >
         {mode === 'edit' ? (
           <View className="flex-row items-center gap-2 rounded-xl border border-[#256EF4]/30 bg-[#256EF4]/10 px-3 py-2.5">
-            <Text className="text-base">✎</Text>
+            <Ionicons name="create-outline" size={18} color="#256EF4" />
             <Text className="flex-1 text-xs text-[#256EF4]">
               기존 게시글을 수정하고 있어요. 수정 완료 후 저장해주세요
             </Text>
@@ -146,10 +147,11 @@ export function RoomPostFormView({
                 <Pressable
                   key={rt.value}
                   onPress={() => selectRoomType(rt.value)}
-                  className={`rounded-full border px-4 py-2 active:opacity-80 ${
+                  className={`flex-row items-center gap-1.5 rounded-lg border py-1.5 pl-2 pr-4 active:opacity-80 ${
                     selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                   }`}
                 >
+                  <RoomTypeArtwork label={rt.label} size={28} />
                   <Text
                     className={
                       selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
@@ -187,12 +189,12 @@ export function RoomPostFormView({
               maxLength={10}
               className="flex-1 text-sm text-neutral-900"
             />
-            <Text className="text-base text-neutral-400">📅</Text>
+            <Ionicons name="calendar-outline" size={20} color="#AAAABA" />
           </View>
         </Section>
 
-        {mode === 'edit' && roomOptions.length > 0 ? (
-          <Section title="옵션 (복수 선택)">
+        {roomOptions.length > 0 ? (
+          <Section title="방 옵션" badge="최대 4개">
             <View className="flex-row flex-wrap gap-2">
               {roomOptions.map((o) => {
                 const selected = draft.options.includes(o.value);
@@ -200,13 +202,16 @@ export function RoomPostFormView({
                   <Pressable
                     key={o.value}
                     onPress={() => toggleOption(o.value)}
-                    className={`rounded-full border px-3 py-1.5 active:opacity-80 ${
+                    className={`h-[42px] flex-row items-center gap-1.5 rounded-lg border px-3 active:opacity-80 ${
                       selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                     }`}
                   >
+                    <RoomOptionArtwork label={o.label} size={22} />
                     <Text
                       className={
-                        selected ? 'text-xs font-medium text-[#256EF4]' : 'text-xs text-neutral-700'
+                        selected
+                          ? 'text-base font-medium text-[#256EF4]'
+                          : 'text-base font-medium text-[#696976]'
                       }
                     >
                       {o.label}
@@ -221,8 +226,13 @@ export function RoomPostFormView({
         <Section title="생활패턴 · 선호 룸메이트 조건">
           <View className="flex-row items-center justify-between rounded-xl bg-[#256EF4]/10 px-4 py-2.5">
             <Text className="text-xs text-[#256EF4]">프로필에서 자동으로 불러왔어요</Text>
-            <Pressable hitSlop={4} onPress={onEditProfile}>
-              <Text className="text-xs text-[#256EF4]">마이페이지에서 수정 →</Text>
+            <Pressable
+              hitSlop={4}
+              onPress={onEditProfile}
+              className="flex-row items-center gap-0.5"
+            >
+              <Text className="text-xs text-[#256EF4]">마이페이지에서 수정</Text>
+              <Ionicons name="chevron-forward" size={13} color="#256EF4" />
             </Pressable>
           </View>
 

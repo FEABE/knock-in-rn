@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScaleSlider } from '@/components/onboarding/scale-slider';
 import { SegmentedControl } from '@/components/ui/headless';
+import { LifestyleIntroArtwork, PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 
 import type { UsePreferencesScreenReturn } from './use-preferences-screen';
 
@@ -38,7 +39,7 @@ function PromptStep({
           className="items-center gap-3 rounded-t-3xl bg-white px-5 pt-6"
           style={{ paddingBottom: bottomPadding }}
         >
-          <Text className="text-4xl">🎯</Text>
+          <LifestyleIntroArtwork size={180} />
           <Text className="text-xl font-bold text-neutral-900">매칭 정확도를 높여볼까요?</Text>
           <Text className="text-center text-sm text-neutral-500">
             원하는 룸메이트 조건을 설정하면{'\n'}
@@ -140,44 +141,52 @@ function PreferenceForm({
         </>
       ) : (
         <>
-          <ScrollView className="flex-1" contentContainerClassName="gap-4 p-5 pb-28">
+          <ScrollView className="flex-1" contentContainerClassName="gap-5 p-5 pb-28">
             <View className="gap-1">
-              <Text className="text-2xl font-bold text-neutral-900">가장 중요한 조건을</Text>
-              <Text className="text-2xl font-bold text-neutral-900">골라주세요</Text>
-              <Text className="mt-1 text-sm text-neutral-500">최대 3개까지 선택할 수 있어요</Text>
-            </View>
-
-            <View className="rounded-xl bg-[#256EF4]/10 px-3 py-2">
-              <Text className="text-xs text-[#256EF4]">
-                {selected.length} / 3 선택됨 · 선택한 항목에 궁합 가중치가 높아져요
+              <Text className="text-xl font-bold leading-[30px] text-neutral-900">
+                룸메이트를 선택할 때{'\n'}가장 중요한 조건은 무엇인가요?
+              </Text>
+              <Text className="mt-1 text-sm text-neutral-500">
+                가장 중요한 조건을 최대 3개까지 선택해주세요
               </Text>
             </View>
 
-            {priorities.map((priority) => {
-              const on = selected.includes(priority.id);
-              return (
-                <Pressable
-                  key={priority.id}
-                  onPress={() => togglePriority(priority.id)}
-                  className={`flex-row items-center gap-3 rounded-2xl border p-4 ${
-                    on ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200'
-                  }`}
-                >
-                  <Text className="text-xl">{priority.icon}</Text>
-                  <View className="flex-1">
-                    <Text className="text-sm font-semibold text-neutral-900">{priority.name}</Text>
-                    <Text className="text-xs text-neutral-400">{priority.desc}</Text>
-                  </View>
-                  <View
-                    className={`h-6 w-6 items-center justify-center rounded-full ${
-                      on ? 'bg-[#256EF4]' : 'border border-neutral-300'
-                    }`}
+            <View className="flex-row flex-wrap gap-2">
+              {priorities.map((priority) => {
+                const on = selected.includes(priority.id);
+                const disabled = !on && selected.length >= 3;
+                return (
+                  <Pressable
+                    key={priority.id}
+                    disabled={disabled}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on, disabled }}
+                    onPress={() => togglePriority(priority.id)}
+                    className={`h-[42px] flex-row items-center gap-2 rounded-lg border px-3 ${
+                      on ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-[#DADAE8] bg-white'
+                    } ${disabled ? 'opacity-40' : ''}`}
                   >
-                    {on ? <Text className="text-xs font-bold text-white">✓</Text> : null}
-                  </View>
-                </Pressable>
-              );
-            })}
+                    <PriorityArtwork label={priority.name} size={22} />
+                    <Text
+                      className={
+                        on
+                          ? 'text-base font-medium text-[#256EF4]'
+                          : 'text-base font-medium text-[#696976]'
+                      }
+                    >
+                      {priority.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View className="rounded-lg bg-[#F7F8FA] px-3 py-2.5">
+              <Text className="text-xs text-[#696976]">
+                {selected.length} / 3 선택됨
+                {selected.length > 0 ? ' · 선택한 항목은 궁합 점수에 더 중요하게 반영돼요' : ''}
+              </Text>
+            </View>
           </ScrollView>
           <BottomBtn label="완료" onPress={save} bottomPadding={formBottomPadding} />
         </>
