@@ -7,6 +7,7 @@ import {
   compactNumbers,
   formatApiLocalDateTime,
   getAccessToken,
+  getProfileAll,
   lifestyleIdsFromPatternOptions,
   regionBackendId,
   roomTypeBackendId,
@@ -173,9 +174,10 @@ function profileSaveErrorMessage(
 export default function OnboardingLayout() {
   const router = useRouter();
   const { step } = useGlobalSearchParams<{ step?: string }>();
-  const { signIn, markProfileComplete } = useSession();
+  const { session, signIn, markProfileComplete } = useSession();
   const lifestyleOptions = useLifestylePatternOptions();
   const initialStep = __DEV__ && isOnboardingStep(step) ? step : undefined;
+  const completingRef = useRef(false);
 
   // 온보딩 진입 시 1회: 퍼널의 분모가 되는 onboarding_start.
   const startedRef = useRef(false);
@@ -186,7 +188,7 @@ export default function OnboardingLayout() {
     logEvent(AnalyticsEvent.ONBOARDING_START);
   }, []);
 
-  const onComplete = async (values: OnboardingValues) => {
+  const completeOnboarding = async (values: OnboardingValues) => {
     const missing = validateOnboarding(values, lifestyleOptions);
     if (missing.length) {
       Alert.alert('입력 확인 필요', validationMessage(missing));
@@ -204,6 +206,7 @@ export default function OnboardingLayout() {
       total_steps: 15,
     });
 
+    let profileAlreadyComplete = session?.isProfileComplete === true;
     if (ONBOARDING_WRITE_ENABLED && !getAccessToken()) {
       const signInResult = await signIn();
       if (signInResult.status !== 'success') {
@@ -213,16 +216,37 @@ export default function OnboardingLayout() {
         ]);
         return;
       }
+      profileAlreadyComplete = signInResult.isProfileComplete;
     }
 
     if (ONBOARDING_WRITE_ENABLED) {
       const request = toRequest(values, lifestyleOptions);
-      const res = await saveProfileAll(request);
-      if (res.error || res.status !== 200) {
-        Alert.alert('저장 실패', profileSaveErrorMessage(res.error?.message, request));
-        return;
+      if (!profileAlreadyComplete) {
+        const profileRes = await getProfileAll();
+        if (profileRes.status === 200 && !profileRes.error) {
+          profileAlreadyComplete = hasSavedProfile(profileRes.data);
+        } else if (profileRes.status !== 404) {
+          Alert.alert(
+            '프로필 확인 실패',
+            profileRes.error?.message ??
+              '기존 프로필 상태를 확인하지 못했습니다. 중복 저장을 막기 위해 잠시 후 다시 시도해주세요.',
+          );
+          return;
+        }
       }
-      await markProfileComplete();
+
+      if (!profileAlreadyComplete) {
+        const res = await saveProfileAll(request);
+        if (res.error || res.status !== 200) {
+          Alert.alert('저장 실패', profileSaveErrorMessage(res.error?.message, request));
+          return;
+        }
+      }
+      await markProfileComplete({
+        name: request.name,
+        birth: request.birth,
+        gender: request.gender,
+      });
       // profile/all 명세에는 노출 상태가 없어 완료 시점에만 분리 저장한다.
       const visibilityRes = await updateVisibility({
         status: values.profile.visibility === 'public' ? 'PUBLIC' : 'PRIVATE',
@@ -233,6 +257,16 @@ export default function OnboardingLayout() {
       }
     }
     goExplore(router, 'replace');
+  };
+
+  const onComplete = async (values: OnboardingValues) => {
+    if (completingRef.current) return;
+    completingRef.current = true;
+    try {
+      await completeOnboarding(values);
+    } finally {
+      completingRef.current = false;
+    }
   };
 
   return (
@@ -249,4 +283,13 @@ export default function OnboardingLayout() {
 
 function isOnboardingStep(value: string | undefined): value is OnboardingStep {
   return ONBOARDING_STEPS.includes(value as OnboardingStep);
+}
+
+function hasSavedProfile(profile: Awaited<ReturnType<typeof getProfileAll>>['data']): boolean {
+  return Boolean(
+    profile?.type ||
+    profile?.lifestyles?.length ||
+    profile?.region?.length ||
+    profile?.roomProfile?.length,
+  );
 }

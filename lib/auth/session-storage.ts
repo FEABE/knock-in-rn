@@ -2,11 +2,20 @@ import * as SecureStore from 'expo-secure-store';
 
 const AUTH_SESSION_KEY = 'knock-in.auth-session';
 
+export type StoredAuthIdentity = {
+  name?: string;
+  birth?: string;
+  age?: number;
+  gender?: 'MALE' | 'FEMALE';
+  profileImageUrl?: string;
+};
+
 export type StoredAuthSession = {
   accessToken: string;
   basicInfo: boolean;
   preferenceInfo: boolean;
   savedAt: string;
+  identity?: StoredAuthIdentity;
 };
 
 let memoryFallback: StoredAuthSession | null = null;
@@ -33,13 +42,18 @@ export async function writeStoredAuthSession(session: StoredAuthSession): Promis
   }
 }
 
-export async function markStoredProfileComplete(): Promise<void> {
+export async function markStoredProfileComplete(identity?: StoredAuthIdentity): Promise<void> {
   const stored = await readStoredAuthSession();
-  if (!stored || stored.basicInfo) return;
+  if (!stored) return;
+  if (stored.basicInfo && !identity) return;
 
   await writeStoredAuthSession({
     ...stored,
     basicInfo: true,
+    identity: {
+      ...stored.identity,
+      ...identity,
+    },
   });
 }
 
@@ -73,8 +87,23 @@ function parseStoredAuthSession(raw: string): StoredAuthSession | null {
       basicInfo: parsed.basicInfo === true,
       preferenceInfo: parsed.preferenceInfo === true,
       savedAt: parsed.savedAt ?? new Date().toISOString(),
+      identity: parseIdentity(parsed.identity),
     };
   } catch {
     return null;
   }
+}
+
+function parseIdentity(value: unknown): StoredAuthIdentity | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const identity = value as StoredAuthIdentity;
+  return {
+    name: typeof identity.name === 'string' ? identity.name : undefined,
+    birth: typeof identity.birth === 'string' ? identity.birth : undefined,
+    age: typeof identity.age === 'number' ? identity.age : undefined,
+    gender:
+      identity.gender === 'MALE' || identity.gender === 'FEMALE' ? identity.gender : undefined,
+    profileImageUrl:
+      typeof identity.profileImageUrl === 'string' ? identity.profileImageUrl : undefined,
+  };
 }

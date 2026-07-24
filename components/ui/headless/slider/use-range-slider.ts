@@ -48,7 +48,7 @@ export function useRangeSlider({
     defaultValue: defaultValue ?? [min, max],
     onChange: onValueChange,
   });
-  const current: RangeValue = internal ?? [min, max];
+  const current = useMemo<RangeValue>(() => internal ?? [min, max], [internal, min, max]);
 
   const setValue = useCallback(
     (next: RangeValue) => {
@@ -64,8 +64,9 @@ export function useRangeSlider({
   const setStart = useCallback(
     (next: number) => {
       const snapped = snap(next, min, max, step);
-      const upper = Math.max(snapped + minDistance, current[1]);
-      setInternal([Math.min(snapped, current[1] - minDistance), upper]);
+      // 시작 손잡이가 끝 손잡이를 넘어가도 둘의 역할을 바꾸지 않고 그 자리에서 멈춘다.
+      const nextStart = Math.max(min, Math.min(snapped, current[1] - minDistance));
+      setInternal([nextStart, current[1]]);
     },
     [setInternal, min, max, step, minDistance, current],
   );
@@ -73,18 +74,16 @@ export function useRangeSlider({
   const setEnd = useCallback(
     (next: number) => {
       const snapped = snap(next, min, max, step);
-      const lower = Math.min(current[0], snapped - minDistance);
-      setInternal([lower, Math.max(snapped, current[0] + minDistance)]);
+      // 끝 손잡이도 시작 손잡이를 밀어내지 않고 현재 범위 안에서만 움직인다.
+      const nextEnd = Math.min(max, Math.max(snapped, current[0] + minDistance));
+      setInternal([current[0], nextEnd]);
     },
     [setInternal, min, max, step, minDistance, current],
   );
 
   const percents = useMemo<[number, number]>(() => {
     if (max === min) return [0, 0];
-    return [
-      ((current[0] - min) / (max - min)) * 100,
-      ((current[1] - min) / (max - min)) * 100,
-    ];
+    return [((current[0] - min) / (max - min)) * 100, ((current[1] - min) / (max - min)) * 100];
   }, [current, min, max]);
 
   return {

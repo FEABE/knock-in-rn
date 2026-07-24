@@ -26,10 +26,6 @@ export type AlarmItem = OpenApiSchema<'org.example.knockin.dto.AlarmListDto$Resp
 
 export type AlarmListData = OpenApiSchema<'org.example.knockin.dto.AlarmListDto$Response'>;
 
-export type AlarmSubscribeData = {
-  sseEmitter?: unknown;
-};
-
 export type BoNoticeItem =
   OpenApiSchema<'org.example.knockin.dto.BoNoticeListDto$Response$NoticeItem'>;
 
@@ -153,12 +149,6 @@ export function readAlarm(id: string): Promise<ApiResponse<UpdatedAt>> {
 export function readAllAlarms(): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PATCH', '/alarms/read-all');
-}
-
-/** GET /alarms/subscribe — 알림 구독 처리 */
-export function subscribeAlarms(): Promise<ApiResponse<AlarmSubscribeData>> {
-  if (USE_MOCK) return mockOk({});
-  return request('GET', '/alarms/subscribe');
 }
 
 /** GET /users/me/notification-settings — 알림 설정 조회 */

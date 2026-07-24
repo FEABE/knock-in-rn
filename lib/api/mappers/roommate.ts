@@ -59,6 +59,11 @@ export type RoommateMatchDetailModel = {
 };
 
 export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCardModel {
+  const runtimeMatch = match as MatchListItem & {
+    interested?: boolean;
+    minMonthlyRent?: number;
+    maxMonthlyRent?: number;
+  };
   const id = stringValue(match.userId ?? match.memberId, '');
   const score = numberValue(match.score);
   const roomTypes = match.roomType ?? match.seekerProfile?.roomTypeNames ?? [];
@@ -68,6 +73,19 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     .join(', ');
   const region =
     match.region ?? match.offerProfile?.regionFullName ?? match.seekerProfile?.regionFullNames?.[0];
+  const isOffer = match.roomProfileType === 'OFFER';
+  const depositLabel = isOffer
+    ? formatMoneyValue(match.deposit ?? match.offerProfile?.deposit)
+    : formatMoneyRange(
+        match.minDeposit ?? match.seekerProfile?.minDeposit,
+        match.maxDeposit ?? match.seekerProfile?.maxDeposit,
+      );
+  const monthlyRentLabel = isOffer
+    ? formatMoneyValue(match.mounthRent ?? match.offerProfile?.monthlyRent)
+    : formatMoneyRange(
+        runtimeMatch.minMonthlyRent ?? match.minMounthRent ?? match.seekerProfile?.minMonthlyRent,
+        runtimeMatch.maxMonthlyRent ?? match.maxMounthRent ?? match.seekerProfile?.maxMonthlyRent,
+      );
 
   return {
     id,
@@ -75,12 +93,10 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     profileImageUrl: match.memberProfileImageUrl,
     age: match.memberAge,
     genderLabel: match.gender === 'FEMALE' ? '여성' : match.gender === 'MALE' ? '남성' : undefined,
-    hasRoom: match.roomProfileType === 'OFFER',
-    liked: booleanValue(match.isLike),
+    hasRoom: isOffer,
+    liked: booleanValue(runtimeMatch.interested ?? match.isLike),
     compatibilityScore: score,
-    depositRentLabel: `${numberValue(match.deposit ?? match.offerProfile?.deposit)} / ${numberValue(
-      match.mounthRent ?? match.offerProfile?.monthlyRent,
-    )}`,
+    depositRentLabel: `${depositLabel} / ${monthlyRentLabel}`,
     moveInLabel: formatDateLabel(match.comeableAt),
     roomTypeLabel: roomTypeLabel || '-',
     regionLabel: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
@@ -93,6 +109,16 @@ export function toRoommateMatchDetailModel(
   data: MatchDetailData,
   id: string,
 ): RoommateMatchDetailModel {
+  const compatibility = data.compatibility as
+    | (NonNullable<MatchDetailData['compatibility']> & {
+        totalScore?: number;
+        lifeStyleInfo?: (NonNullable<
+          NonNullable<MatchDetailData['compatibility']>['lifeStyleInfo']
+        >[number] & {
+          name?: string;
+        })[];
+      })
+    | undefined;
   const name = data.name ?? data.memberName ?? '이름 없음';
   const region =
     data.region ?? data.offerProfile?.regionFullName ?? data.seekerProfile?.regionFullNames?.[0];
@@ -177,18 +203,35 @@ export function toRoommateMatchDetailModel(
     ).join(' · '),
     compatibility: {
       score:
-        data.compatibility?.score !== undefined ? numberValue(data.compatibility.score) : undefined,
-      items: (data.compatibility?.lifeStyleInfo ?? []).map((info, index) => {
+        compatibility?.totalScore !== undefined
+          ? numberValue(compatibility.totalScore)
+          : compatibility?.score !== undefined
+            ? numberValue(compatibility.score)
+            : undefined,
+      items: (compatibility?.lifeStyleInfo ?? []).map((info, index) => {
         const percent = percentageValue(info.percent);
+        const runtimeInfo = info as typeof info & { name?: string };
+        const title = runtimeInfo.name ?? info.title ?? '-';
         return {
-          key: `${info.title ?? 'compat'}-${index}`,
-          title: info.title ?? '-',
+          key: `${title}-${index}`,
+          title,
           percent,
           label: String(percent),
         };
       }),
     },
   };
+}
+
+function formatMoneyValue(value: number | undefined): string {
+  return numberValue(value).toLocaleString();
+}
+
+function formatMoneyRange(min: number | undefined, max: number | undefined): string {
+  const normalizedMin = numberValue(min);
+  const normalizedMax = numberValue(max);
+  if (normalizedMin === normalizedMax) return normalizedMin.toLocaleString();
+  return `${normalizedMin.toLocaleString()}~${normalizedMax.toLocaleString()}`;
 }
 
 function percentageValue(value: string | number | undefined): number {

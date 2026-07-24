@@ -50,6 +50,10 @@ export type ChatRequestDetailData =
 
 export type MatchScoreData = OpenApiSchema<'org.example.knockin.dto.MatchScoreDto$Response'>;
 
+export type ChatRequestActionData = Partial<UpdatedAt> & {
+  chatRoomId?: number | string;
+};
+
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
 const MOCK_LIFESTYLES: NonNullable<ChatRequestParty['lifeStyles']> = [
@@ -136,7 +140,7 @@ export function createChatRequest(body: ChatRequestCreate): Promise<ApiResponse<
 }
 
 /** POST /chat-requests/{requestId}/accept — 채팅 요청 수락 */
-export function acceptChatRequest(requestId: string): Promise<ApiResponse<UpdatedAt>> {
+export function acceptChatRequest(requestId: string): Promise<ApiResponse<ChatRequestActionData>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('POST', `/chat-requests/${requestId}/accept`);
 }

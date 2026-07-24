@@ -19,7 +19,17 @@ export type AuthObj = {
 };
 
 /** 로그인/회원가입 공통 응답 data. */
-export type LoginData = {
+export type LoginIdentity = {
+  name?: string;
+  memberName?: string;
+  birth?: string;
+  memberAge?: number;
+  gender?: 'MALE' | 'FEMALE';
+  profileImageUrl?: string;
+  memberProfileImageUrl?: string;
+};
+
+export type LoginData = LoginIdentity & {
   accessToken: string;
   /** 기본정보(온보딩 1~3단계) 입력 완료 여부. */
   basicInfo: boolean;

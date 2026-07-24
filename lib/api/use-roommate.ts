@@ -247,10 +247,16 @@ export function useRoommateMatchLikeActions() {
         return {
           ...old,
           matches: old.matches.map((match) =>
-            String(match.userId ?? '') === String(userId) ? { ...match, isLike: liked } : match,
+            String(match.userId ?? match.memberId ?? '') === String(userId)
+              ? { ...match, isLike: liked, interested: liked }
+              : match,
           ),
         };
       });
+      queryClient.setQueryData<MatchDetailData & { interested?: boolean }>(
+        ['roommate', 'matches', String(userId)],
+        (old) => (old ? { ...old, isLike: liked, interested: liked } : old),
+      );
       mutation.mutate(userId);
     },
     [mutation, queryClient],

@@ -12,7 +12,11 @@ import { type AsyncState, useApi } from './use-async';
 const ALARM_QUERY_KEY = ['alarms'] as const;
 
 export function useAlarms(enabled = true): AsyncState<AlarmItem[]> {
-  const state = useApi(ALARM_QUERY_KEY, () => getAlarms(), { enabled });
+  const state = useApi(ALARM_QUERY_KEY, () => getAlarms(), {
+    enabled,
+    // 백엔드 SSE가 연결되지 않아도 알림 배지와 목록이 오래된 상태로 남지 않게 한다.
+    refetchInterval: enabled ? 15_000 : false,
+  });
   return { ...state, data: state.data?.alarms ?? null };
 }
 

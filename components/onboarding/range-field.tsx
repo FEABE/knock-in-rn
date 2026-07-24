@@ -40,8 +40,15 @@ export function RangeField({
 }: RangeFieldProps) {
   const [width, setWidth] = useState(0);
   const activeThumb = useRef<0 | 1>(0);
+  const trackRef = useRef<View>(null);
+  const trackLeft = useRef(0);
 
-  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
+  const onLayout = (e: LayoutChangeEvent) => {
+    setWidth(e.nativeEvent.layout.width);
+    trackRef.current?.measureInWindow((x) => {
+      trackLeft.current = x;
+    });
+  };
 
   return (
     <RangeSlider
@@ -53,22 +60,27 @@ export function RangeField({
       className="gap-2"
     >
       {({ value: v, percents, setStart, setEnd }) => {
-        const valueAt = (locationX: number) => {
-          const r = Math.max(0, Math.min(1, locationX / (width || 1)));
+        const THUMB = 16;
+        const usable = Math.max(1, width - THUMB);
+        const valueAt = (pageX: number) => {
+          // 터치 위치와 손잡이 중심을 같은 좌표계로 맞춰 양 끝값도 정확히 잡힌다.
+          const localX = pageX - trackLeft.current;
+          const r = Math.max(0, Math.min(1, (localX - THUMB / 2) / usable));
           return Math.round((min + r * (max - min)) / step) * step;
         };
         const responder = PanResponder.create({
           onStartShouldSetPanResponder: () => true,
           onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > Math.abs(g.dy),
           onPanResponderGrant: (e: GestureResponderEvent) => {
-            const next = valueAt(e.nativeEvent.locationX);
+            // locationX는 눌린 자식 뷰 기준이라 파란 구간을 누르면 값이 틀어진다.
+            const next = valueAt(e.nativeEvent.pageX);
             // 더 가까운 썸을 활성화
             activeThumb.current = Math.abs(next - v[0]) <= Math.abs(next - v[1]) ? 0 : 1;
             if (activeThumb.current === 0) setStart(next);
             else setEnd(next);
           },
           onPanResponderMove: (e: GestureResponderEvent) => {
-            const next = valueAt(e.nativeEvent.locationX);
+            const next = valueAt(e.nativeEvent.pageX);
             if (activeThumb.current === 0) setStart(next);
             else setEnd(next);
           },
@@ -76,8 +88,6 @@ export function RangeField({
 
         // 트랙은 글자와 동일한 전체폭. 썸은 [0, width-THUMB] 범위에서만 이동해
         // 양 끝에서도 컨테이너를 벗어나지 않는다. (px 기반)
-        const THUMB = 16;
-        const usable = Math.max(0, width - THUMB);
         // percents 는 0~100 스케일.
         const loX = (percents[0] / 100) * usable;
         const hiX = (percents[1] / 100) * usable;
@@ -103,7 +113,12 @@ export function RangeField({
             </View>
 
             {/* 트랙 */}
-            <View className="py-2" onLayout={onLayout} {...responder.panHandlers}>
+            <View
+              ref={trackRef}
+              className="h-11 justify-center"
+              onLayout={onLayout}
+              {...responder.panHandlers}
+            >
               <View className="h-1 rounded-full bg-neutral-200">
                 <View
                   style={{ left: loCenter, width: Math.max(0, hiCenter - loCenter) }}
@@ -128,8 +143,8 @@ export function RangeField({
 function Thumb({ x }: { x: number }) {
   return (
     <View
-      style={{ left: x }}
-      className="absolute top-1 h-4 w-4 rounded-full border-2 border-[#256EF4] bg-white"
+      style={{ left: x, top: 14 }}
+      className="absolute h-4 w-4 rounded-full border-2 border-[#256EF4] bg-white"
     />
   );
 }

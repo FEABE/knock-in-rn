@@ -17,6 +17,7 @@ import {
   markStoredProfileComplete,
   readStoredAuthSession,
   writeStoredAuthSession,
+  type StoredAuthIdentity,
 } from '@/lib/auth/session-storage';
 
 import type { Session, UserSummary } from './types';
@@ -27,6 +28,7 @@ import {
   setAccessToken,
   socialLoginSdk,
   socialLoginWeb,
+  type LoginData,
   type ProfileAllData,
   type SocialProvider,
   USE_MOCK,
@@ -57,7 +59,7 @@ export type SessionContextValue = {
   session: Session;
   signIn: (provider?: SocialProvider) => Promise<SignInResult>;
   signOut: () => Promise<void>;
-  markProfileComplete: () => Promise<void>;
+  markProfileComplete: (identity?: StoredAuthIdentity) => Promise<void>;
   setVisibility: (next: 'public' | 'hidden' | 'matched') => void;
 };
 
@@ -104,7 +106,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     readStoredAuthSession().then((stored) => {
       if (cancelled || !stored) return;
       setAccessToken(stored.accessToken);
-      loadSessionUser().then(async ({ user, invalidToken }) => {
+      loadSessionUser(stored.identity).then(async ({ user, invalidToken, profileComplete }) => {
         if (cancelled) return;
         if (invalidToken) {
           setAccessToken(null);
@@ -116,7 +118,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         }
         setSession({
           user,
-          isProfileComplete: stored.basicInfo,
+          isProfileComplete: stored.basicInfo || profileComplete === true,
           visibility: 'public',
         });
       });
@@ -169,13 +171,8 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       }
 
       setAccessToken(res.data.accessToken);
-      await writeStoredAuthSession({
-        accessToken: res.data.accessToken,
-        basicInfo: res.data.basicInfo,
-        preferenceInfo: res.data.preferenceInfo,
-        savedAt: new Date().toISOString(),
-      });
-      const { user, invalidToken } = await loadSessionUser();
+      const identity = identityFromLogin(res.data);
+      const { user, invalidToken, profileComplete } = await loadSessionUser(identity);
       if (invalidToken) {
         setAccessToken(null);
         await clearStoredAuthSession();
@@ -186,16 +183,24 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
           message: '로그인 토큰을 확인하지 못했습니다. 다시 시도해주세요.',
         };
       }
+      const isProfileComplete = res.data.basicInfo || profileComplete === true;
+      await writeStoredAuthSession({
+        accessToken: res.data.accessToken,
+        basicInfo: isProfileComplete,
+        preferenceInfo: res.data.preferenceInfo,
+        savedAt: new Date().toISOString(),
+        identity,
+      });
       setSession({
         user,
-        isProfileComplete: res.data.basicInfo,
+        isProfileComplete,
         visibility: 'public',
       });
 
       return {
         status: 'success',
         provider,
-        isProfileComplete: res.data.basicInfo,
+        isProfileComplete,
         preferenceInfo: res.data.preferenceInfo,
       };
     } catch (e: any) {
@@ -225,9 +230,17 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     await clearStoredAuthSession();
   }, [queryClient]);
 
-  const markProfileComplete = useCallback(async () => {
-    setSession((prev) => (prev ? { ...prev, isProfileComplete: true } : prev));
-    await markStoredProfileComplete();
+  const markProfileComplete = useCallback(async (identity?: StoredAuthIdentity) => {
+    setSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            user: applyIdentity(prev.user, identity),
+            isProfileComplete: true,
+          }
+        : prev,
+    );
+    await markStoredProfileComplete(identity);
   }, []);
 
   const setVisibility = useCallback((next: 'public' | 'hidden' | 'matched') => {
@@ -326,19 +339,35 @@ function classifyThrownError(code?: string, message?: string): SignInFailureKind
   return 'failed';
 }
 
-async function loadSessionUser(): Promise<{ user: UserSummary; invalidToken: boolean }> {
+async function loadSessionUser(identity?: StoredAuthIdentity): Promise<{
+  user: UserSummary;
+  invalidToken: boolean;
+  profileComplete: boolean | null;
+}> {
   try {
     const res = await getProfileAll();
     if (res.status === 200 && !res.error) {
-      return { user: sessionUserFromProfile(res.data), invalidToken: false };
+      return {
+        user: sessionUserFromProfile(res.data, identity),
+        invalidToken: false,
+        profileComplete: isProfilePayloadComplete(res.data),
+      };
     }
     if (isInvalidTokenResponse(res.status, res.error?.code)) {
-      return { user: sessionUserFromProfile(), invalidToken: true };
+      return {
+        user: sessionUserFromProfile(undefined, identity),
+        invalidToken: true,
+        profileComplete: null,
+      };
     }
   } catch {
     // 로그인 성공 후 프로필 조회가 실패해도 세션 자체는 유지한다.
   }
-  return { user: sessionUserFromProfile(), invalidToken: false };
+  return {
+    user: sessionUserFromProfile(undefined, identity),
+    invalidToken: false,
+    profileComplete: null,
+  };
 }
 
 function isInvalidTokenResponse(status: number, code?: string): boolean {
@@ -348,21 +377,98 @@ function isInvalidTokenResponse(status: number, code?: string): boolean {
   );
 }
 
-function sessionUserFromProfile(profile?: ProfileAllData): UserSummary {
+type ProfileIdentityData = ProfileAllData &
+  Partial<{
+    memberId: number;
+    name: string;
+    memberName: string;
+    birth: string;
+    age: number;
+    memberAge: number;
+    gender: 'MALE' | 'FEMALE';
+    profileImageUrl: string;
+    memberProfileImageUrl: string;
+  }>;
+
+function sessionUserFromProfile(
+  profile?: ProfileAllData,
+  fallback?: StoredAuthIdentity,
+): UserSummary {
+  const identity = profile as ProfileIdentityData | undefined;
   const region = parseProfileRegion(profile?.region?.[0]?.region);
   return {
-    id: getAccessTokenMemberId() ?? 'me',
-    name: '사용자',
-    age: 0,
-    gender: 'other',
+    id: String(identity?.memberId ?? getAccessTokenMemberId() ?? 'me'),
+    name: identity?.name ?? identity?.memberName ?? fallback?.name ?? '사용자',
+    age:
+      identity?.age ??
+      identity?.memberAge ??
+      fallback?.age ??
+      ageFromBirth(identity?.birth ?? fallback?.birth),
+    gender: domainGender(identity?.gender ?? fallback?.gender),
     preferredGender: 'any',
     bio: '',
+    avatarUrl:
+      identity?.profileImageUrl ?? identity?.memberProfileImageUrl ?? fallback?.profileImageUrl,
     region,
     badges: [],
     lifestyle: {},
     importantConditions:
       profile?.lifestyles?.map((item) => item.description ?? item.name ?? '') ?? [],
   };
+}
+
+function identityFromLogin(data: LoginData): StoredAuthIdentity | undefined {
+  const name = data.name ?? data.memberName;
+  const profileImageUrl = data.profileImageUrl ?? data.memberProfileImageUrl;
+  if (!name && !data.birth && data.memberAge == null && !data.gender && !profileImageUrl) {
+    return undefined;
+  }
+  return {
+    name,
+    birth: data.birth,
+    age: data.memberAge,
+    gender: data.gender,
+    profileImageUrl,
+  };
+}
+
+function applyIdentity(user: UserSummary, identity?: StoredAuthIdentity): UserSummary {
+  if (!identity) return user;
+  return {
+    ...user,
+    name: identity.name ?? user.name,
+    age: identity.age ?? (ageFromBirth(identity.birth) || user.age),
+    gender: identity.gender ? domainGender(identity.gender) : user.gender,
+    avatarUrl: identity.profileImageUrl ?? user.avatarUrl,
+  };
+}
+
+function isProfilePayloadComplete(profile?: ProfileAllData): boolean {
+  return Boolean(
+    profile?.type ||
+    profile?.lifestyles?.length ||
+    profile?.region?.length ||
+    profile?.roomProfile?.length,
+  );
+}
+
+function domainGender(value?: 'MALE' | 'FEMALE'): UserSummary['gender'] {
+  if (value === 'MALE') return 'male';
+  if (value === 'FEMALE') return 'female';
+  return 'other';
+}
+
+function ageFromBirth(value?: string): number {
+  if (!value) return 0;
+  const birth = new Date(value);
+  if (Number.isNaN(birth.getTime())) return 0;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const birthdayPassed =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!birthdayPassed) age -= 1;
+  return Math.max(0, age);
 }
 
 function parseProfileRegion(value?: string) {

@@ -2,7 +2,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Alert } from 'react-native';
 
-import { type ChatRequestParty, useChatRequestActions, useChatRequestDetail } from '@/lib/api';
+import {
+  type ChatRequestActionData,
+  type ChatRequestParty,
+  useChatRequestActions,
+  useChatRequestDetail,
+} from '@/lib/api';
 
 export type UseChatRequestScreenReturn = {
   requestId: string;
@@ -32,10 +37,17 @@ export function useChatRequestScreen(): UseChatRequestScreenReturn {
     [data?.requestee, data?.requester, isRequester],
   );
 
-  const runAction = async (action: () => Promise<unknown>) => {
+  const runAction = async (
+    action: () => Promise<ChatRequestActionData>,
+    navigateToAcceptedRoom = false,
+  ) => {
     try {
-      await action();
-      router.back();
+      const result = await action();
+      if (navigateToAcceptedRoom && result?.chatRoomId != null) {
+        router.replace(`/chat/${result.chatRoomId}` as never);
+      } else {
+        router.back();
+      }
     } catch (actionError) {
       Alert.alert(
         '요청 처리 실패',
@@ -72,7 +84,7 @@ export function useChatRequestScreen(): UseChatRequestScreenReturn {
     processing: processingChatRequest,
     onBack: () => router.back(),
     onRetry: reload,
-    onAccept: () => void runAction(() => acceptChat(requestId)),
+    onAccept: () => void runAction(() => acceptChat(requestId), true),
     onReject: () => confirmDestructive('reject'),
     onCancel: () => confirmDestructive('cancel'),
   };
