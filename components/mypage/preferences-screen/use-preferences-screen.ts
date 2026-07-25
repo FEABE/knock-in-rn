@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { markStoredPreferenceComplete } from '@/lib/auth/session-storage';
+import {
+  EMBEDDED_PREFERENCE_PRIORITIES,
+  embeddedPriorityIdFromLabel,
+  type EmbeddedPreferencePriorityId,
+} from '@/lib/domain/preference-priorities';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   getPreferenceAll,
@@ -20,9 +25,10 @@ import { goExplore } from '@/lib/navigation/routes';
 import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
 
 export type PreferencePriority = {
-  id: number;
+  id: EmbeddedPreferencePriorityId;
   name: string;
   desc: string;
+  backendId?: number;
 };
 
 export type PreferencesStep = 0 | 1 | 2;
@@ -34,7 +40,7 @@ export type UsePreferencesScreenReturn = {
   scaleOptions: LifestyleScaleOption[];
   choiceGroups: LifestyleChoiceGroup[];
   priorities: PreferencePriority[];
-  selected: number[];
+  selected: EmbeddedPreferencePriorityId[];
   promptBottomPadding: number;
   formBottomPadding: number;
   setScale: (key: string, next: number) => void;
@@ -43,7 +49,7 @@ export type UsePreferencesScreenReturn = {
   skip: () => void;
   goBackStep: () => void;
   goPriorityStep: () => void;
-  togglePriority: (id: number) => void;
+  togglePriority: (id: EmbeddedPreferencePriorityId) => void;
   save: () => Promise<void>;
 };
 
@@ -59,21 +65,20 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     }),
     [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions],
   );
-  const priorities = useMemo<PreferencePriority[]>(
-    () => [
-      ...lifestyleOptions.scaleOptions.map((option) => ({
-        id: option.patternId,
-        name: option.label,
-        desc: `${option.label} 기준을 중요하게 반영해요`,
-      })),
-      ...lifestyleOptions.choiceGroups.map((option) => ({
-        id: option.patternId,
-        name: option.label,
-        desc: `${option.label} 조건을 중요하게 반영해요`,
-      })),
-    ],
-    [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions],
-  );
+  const priorities = useMemo<PreferencePriority[]>(() => {
+    const backendIdByEmbeddedId = new Map<EmbeddedPreferencePriorityId, number>();
+    [...lifestyleOptions.scaleOptions, ...lifestyleOptions.choiceGroups].forEach((option) => {
+      const embeddedId = embeddedPriorityIdFromLabel(option.label);
+      if (embeddedId) backendIdByEmbeddedId.set(embeddedId, option.patternId);
+    });
+
+    return EMBEDDED_PREFERENCE_PRIORITIES.map((option) => ({
+      id: option.value,
+      name: option.label,
+      desc: option.description,
+      backendId: backendIdByEmbeddedId.get(option.value),
+    }));
+  }, [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions]);
   const promptBottomPadding = useSafeBottomPadding(24, 32);
   const formBottomPadding = useSafeBottomPadding(12, 24);
   const [state, setState] = useState<PreferencesState>({
@@ -94,9 +99,12 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
         lifestyleId: item.lifestyleId,
         value: item.value,
       }));
-      const nextSelected = (res.data.conditions ?? []).flatMap((condition) =>
-        condition.conditionsId === undefined ? [] : [condition.conditionsId],
-      );
+      const nextSelected = (res.data.conditions ?? []).flatMap((condition) => {
+        const embeddedId =
+          embeddedPriorityIdFromLabel(condition.name) ??
+          priorities.find((priority) => priority.backendId === condition.conditionsId)?.id;
+        return embeddedId ? [embeddedId] : [];
+      });
       const hasSavedPreferences = loadedLifestyles.length > 0 || nextSelected.length > 0;
       setState((current) => ({
         ...current,
@@ -108,7 +116,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     return () => {
       mounted = false;
     };
-  }, [fromOnboarding]);
+  }, [fromOnboarding, priorities]);
 
   useEffect(() => {
     if (!loadedLifestyles.length) return;
@@ -137,7 +145,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
       logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'priority_selection' });
   }, [step]);
 
-  const togglePriority = (id: number) => {
+  const togglePriority = (id: EmbeddedPreferencePriorityId) => {
     const name = priorities.find((priority) => priority.id === id)?.name ?? String(id);
     if (selected.includes(id)) {
       logEvent(AnalyticsEvent.PREFERENCE_PRIORITY_DESELECT, { condition_name: name });
@@ -159,7 +167,21 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     logEvent(AnalyticsEvent.PREFERENCE_COMPLETE);
     if (ONBOARDING_WRITE_ENABLED) {
       const lifestyles = lifestyleIdsFromPatternOptions(patternOptions, scales, choiceValues);
-      const conditions = selected;
+      const unmappedPriorities = priorities.filter(
+        (priority) => selected.includes(priority.id) && priority.backendId === undefined,
+      );
+      if (unmappedPriorities.length) {
+        Alert.alert(
+          '저장할 수 없는 조건이 있어요',
+          `${unmappedPriorities.map((priority) => priority.name).join(', ')} 항목의 서버 기준값이 아직 준비되지 않았어요.`,
+        );
+        return;
+      }
+      const conditions = priorities.flatMap((priority) =>
+        selected.includes(priority.id) && priority.backendId !== undefined
+          ? [priority.backendId]
+          : [],
+      );
       const modifyItems = lifestyleModifyItemsFromPatternOptions(
         patternOptions,
         loadedLifestyles,
@@ -232,5 +254,5 @@ type PreferencesState = {
   scales: Record<string, number>;
   choiceValues: Record<string, string>;
   loadedLifestyles: { id?: number; lifestyleId?: number; value?: string }[];
-  selected: number[];
+  selected: EmbeddedPreferencePriorityId[];
 };

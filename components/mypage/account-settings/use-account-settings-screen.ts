@@ -5,10 +5,10 @@ import { Alert } from 'react-native';
 import { useAccountActions, useBlockedUsers } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import {
-  goExplore,
   goMypageBlocked,
   goMypageWithdraw,
   goSupportTerms,
+  resetToExplore,
 } from '@/lib/navigation/routes';
 
 export type AccountSettingsRow = {
@@ -49,7 +49,7 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
           } finally {
             await signOut();
           }
-          goExplore(router, 'replace');
+          resetToExplore(router);
         },
       },
     ]);

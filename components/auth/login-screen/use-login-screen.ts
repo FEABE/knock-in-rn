@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import type { SocialProvider } from '@/lib/api';
 import { useSession, type SignInFailureKind } from '@/lib/domain';
-import { goExplore, goOnboarding } from '@/lib/navigation/routes';
+import { goExplore, resetToExplore, resetToOnboarding } from '@/lib/navigation/routes';
 
 export type LoginScreenStatus = 'idle' | 'loading' | 'success' | SignInFailureKind;
 
@@ -37,8 +37,8 @@ export function useLoginScreen(): UseLoginScreenReturn {
     (isProfileComplete: boolean) => {
       if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
       redirectTimerRef.current = setTimeout(() => {
-        if (isProfileComplete) goExplore(router, 'replace');
-        else goOnboarding(router, 'replace');
+        if (isProfileComplete) resetToExplore(router);
+        else resetToOnboarding(router);
       }, 450);
     },
     [router],
@@ -78,7 +78,7 @@ export function useLoginScreen(): UseLoginScreenReturn {
     message,
     onProviderPress: start,
     onRetry: () => start(lastProviderRef.current),
-    onSkip: () => goExplore(router, 'replace'),
+    onSkip: () => resetToExplore(router),
     onBack: () => {
       if (router.canGoBack()) router.back();
       else goExplore(router, 'replace');

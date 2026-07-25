@@ -2,20 +2,10 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { ChipMultiSelect } from '@/components/ui/headless';
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
+import { EMBEDDED_PREFERENCE_PRIORITIES } from '@/lib/domain/preference-priorities';
 import { useOnboardingProfile } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
-
-const PRIORITY_OPTIONS = [
-  { value: 'sleep', label: '취침시간' },
-  { value: 'cleanliness', label: '청결' },
-  { value: 'noise', label: '소음' },
-  { value: 'smoking', label: '흡연' },
-  { value: 'pet', label: '반려동물' },
-  { value: 'visitors', label: '방문객 빈도' },
-  { value: 'personality', label: '성격 스타일' },
-  { value: 'personal-space', label: '개인 공간 중요도' },
-] as const;
 
 export function PreferencesStep() {
   const { profile, patch: patchProfile } = useOnboardingProfile();
@@ -33,7 +23,7 @@ export function PreferencesStep() {
         </View>
 
         <ChipMultiSelect<string>
-          options={PRIORITY_OPTIONS.map((option) => ({ ...option }))}
+          options={EMBEDDED_PREFERENCE_PRIORITIES.map(({ value, label }) => ({ value, label }))}
           value={profile.importantConditionIds}
           onValueChange={(importantConditionIds) => patchProfile({ importantConditionIds })}
           max={3}

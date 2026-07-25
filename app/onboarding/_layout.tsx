@@ -28,7 +28,7 @@ import {
   type OnboardingValues,
   type OnboardingStep,
 } from '@/lib/onboarding';
-import { goExplore, goKakaoLogin } from '@/lib/navigation/routes';
+import { goExplore, goKakaoLogin, resetToExplore } from '@/lib/navigation/routes';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -256,7 +256,7 @@ export default function OnboardingLayout() {
         return;
       }
     }
-    goExplore(router, 'replace');
+    resetToExplore(router);
   };
 
   const onComplete = async (values: OnboardingValues) => {

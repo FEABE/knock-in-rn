@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -367,6 +368,8 @@ function LifestyleBlock({
   onToggle: () => void;
 }) {
   const lifestyle = author.lifestyle ?? {};
+  const hasHiddenLifestyle = lifestyle.pet !== undefined;
+
   return (
     <View className="gap-2">
       <Text className="text-sm font-semibold text-neutral-800">생활패턴</Text>
@@ -382,7 +385,7 @@ function LifestyleBlock({
           value={lifestyle.smoking ? SMOKING_LABEL[lifestyle.smoking] : '미입력'}
         />
       </View>
-      {expanded ? (
+      {expanded && hasHiddenLifestyle ? (
         <View className="rounded-2xl bg-neutral-50 px-4 py-3">
           <Text className="text-xs text-neutral-600">
             반려동물:{' '}
@@ -390,10 +393,12 @@ function LifestyleBlock({
           </Text>
         </View>
       ) : null}
-      <Pressable onPress={onToggle} className="flex-row items-center justify-center gap-1 py-1">
-        <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
-        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
-      </Pressable>
+      {hasHiddenLifestyle ? (
+        <Pressable onPress={onToggle} className="flex-row items-center justify-center gap-1 py-1">
+          <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -455,16 +460,32 @@ function DescriptionBlock({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const [hasOverflow, setHasOverflow] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setHasOverflow(null);
+  }, [description]);
+
   return (
     <View className="gap-2">
       <Text className="text-sm font-semibold text-neutral-800">게시글 내용</Text>
-      <Text numberOfLines={expanded ? undefined : 3} className="text-sm leading-6 text-neutral-700">
+      <Text
+        numberOfLines={!expanded && hasOverflow === true ? 3 : undefined}
+        onTextLayout={(event) => {
+          if (hasOverflow === null) {
+            setHasOverflow(event.nativeEvent.lines.length > 3);
+          }
+        }}
+        className="text-sm leading-6 text-neutral-700"
+      >
         {description}
       </Text>
-      <Pressable onPress={onToggle} className="flex-row items-center gap-1">
-        <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
-        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
-      </Pressable>
+      {hasOverflow === true ? (
+        <Pressable onPress={onToggle} className="flex-row items-center gap-1">
+          <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

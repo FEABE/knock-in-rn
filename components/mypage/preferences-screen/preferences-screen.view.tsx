@@ -94,12 +94,14 @@ function PreferenceForm({
 }: PreferencesScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
+      <View className="h-14 flex-row items-center px-4">
         <Pressable onPress={goBackStep} className="h-9 w-9 items-center justify-center">
           <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">선호 조건</Text>
-        <Text className="ml-auto text-xs text-neutral-400">{step} / 2</Text>
+        <Text className="pointer-events-none absolute left-0 right-0 text-center text-base font-medium text-[#242429]">
+          {step === 1 ? '선호 조건' : '우선 순위'}
+        </Text>
+        <View className="ml-auto h-9 w-9" />
       </View>
 
       {step === 1 ? (
@@ -141,54 +143,44 @@ function PreferenceForm({
         </>
       ) : (
         <>
-          <ScrollView className="flex-1" contentContainerClassName="gap-5 p-5 pb-28">
-            <View className="gap-1">
-              <Text className="text-xl font-bold leading-[30px] text-neutral-900">
-                룸메이트를 선택할 때{'\n'}가장 중요한 조건은 무엇인가요?
-              </Text>
-              <Text className="mt-1 text-sm text-neutral-500">
-                가장 중요한 조건을 최대 3개까지 선택해주세요
-              </Text>
-            </View>
-
-            <View className="flex-row flex-wrap gap-2">
-              {priorities.map((priority) => {
-                const on = selected.includes(priority.id);
-                const disabled = !on && selected.length >= 3;
-                return (
-                  <Pressable
-                    key={priority.id}
-                    disabled={disabled}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: on, disabled }}
-                    onPress={() => togglePriority(priority.id)}
-                    className={`h-[42px] flex-row items-center gap-2 rounded-lg border px-3 ${
-                      on ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-[#DADAE8] bg-white'
-                    } ${disabled ? 'opacity-40' : ''}`}
-                  >
-                    <PriorityArtwork label={priority.name} size={22} />
-                    <Text
-                      className={
-                        on
-                          ? 'text-base font-medium text-[#256EF4]'
-                          : 'text-base font-medium text-[#696976]'
-                      }
-                    >
+          <ScrollView
+            className="flex-1"
+            contentContainerClassName="gap-4 px-4 pb-6 pt-3"
+            showsVerticalScrollIndicator={false}
+          >
+            {priorities.map((priority) => {
+              const on = selected.includes(priority.id);
+              const disabled = !on && selected.length >= 3;
+              return (
+                <Pressable
+                  key={priority.id}
+                  disabled={disabled}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on, disabled }}
+                  onPress={() => togglePriority(priority.id)}
+                  className={`h-[90px] flex-row items-center rounded border px-5 ${
+                    on ? 'border-[#2F71F5] bg-[#EDF3FF]' : 'border-transparent bg-[#F7F7FA]'
+                  }`}
+                >
+                  <PriorityArtwork label={priority.name} size={50} />
+                  <View className="ml-4 flex-1 gap-1">
+                    <Text className="text-[17px] font-semibold leading-6 text-[#242429]">
                       {priority.name}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View className="rounded-lg bg-[#F7F8FA] px-3 py-2.5">
-              <Text className="text-xs text-[#696976]">
-                {selected.length} / 3 선택됨
-                {selected.length > 0 ? ' · 선택한 항목은 궁합 점수에 더 중요하게 반영돼요' : ''}
-              </Text>
-            </View>
+                    <Text className="text-[13px] leading-5 text-[#8A8A98]">{priority.desc}</Text>
+                  </View>
+                  <View
+                    className={`h-6 w-6 items-center justify-center rounded-full border ${
+                      on ? 'border-[#2F71F5] bg-[#2F71F5]' : 'border-[#AEB0BE] bg-transparent'
+                    }`}
+                  >
+                    {on ? <Ionicons name="checkmark" size={17} color="#FFFFFF" /> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
           </ScrollView>
-          <BottomBtn label="완료" onPress={save} bottomPadding={formBottomPadding} />
+          <BottomBtn label="저장하기" onPress={save} bottomPadding={formBottomPadding} />
         </>
       )}
     </SafeAreaView>

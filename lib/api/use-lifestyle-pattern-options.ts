@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 
+import { embeddedPriorityIdFromLabel } from '@/lib/domain/preference-priorities';
+
 import { getLifestylePatterns, type LifestylePattern } from './meta';
 import { useApi } from './use-async';
 
@@ -218,8 +220,7 @@ function buildLifestylePatternOptions(patterns: LifestylePattern[]): LifestylePa
 
 function patternKey(pattern: LifestylePattern): string {
   const name = pattern.name ?? '';
-  if (name.includes('청소') || name.includes('청결')) return 'cleanliness';
-  if (name.includes('흡연')) return 'smoking';
-  if (name.includes('MBTI') || name.includes('성향')) return 'personality';
+  const embeddedPriorityId = embeddedPriorityIdFromLabel(name);
+  if (embeddedPriorityId) return embeddedPriorityId;
   return pattern.id ? `pattern-${pattern.id}` : name;
 }
