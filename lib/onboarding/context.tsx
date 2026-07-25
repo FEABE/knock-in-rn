@@ -13,30 +13,20 @@ import {
   type TermsAgreement,
 } from './types';
 
-export type OnboardingStep =
-  | 'terms'
-  | 'profile-basic'
-  | 'profile-lifestyle'
-  | 'roominfo'
-  | 'visibility'
-  | 'preferences';
+export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo' | 'preferences';
 
-/** 가입 온보딩 흐름: 약관 → 기본정보 → 생활패턴 → 노출 상태 → 선호조건 → 방 조건. */
+/** 가입 온보딩 흐름: 기본정보·약관 → 생활패턴 → 방 조건 → 선호조건. */
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
-  'terms',
   'profile-basic',
   'profile-lifestyle',
-  'visibility',
-  'preferences',
   'roominfo',
+  'preferences',
 ];
 
 export const STEP_LABELS: Record<OnboardingStep, string> = {
-  terms: '약관 동의',
   'profile-basic': '기본 정보',
   'profile-lifestyle': '생활패턴',
   roominfo: '방 유무 여부',
-  visibility: '노출 상태',
   preferences: '우선순위 선택',
 };
 
@@ -82,7 +72,7 @@ export type OnboardingProviderProps = {
 
 export function OnboardingProvider({
   children,
-  initialStep = 'terms',
+  initialStep = 'profile-basic',
   initialValues,
   onComplete,
 }: OnboardingProviderProps) {
@@ -151,7 +141,7 @@ export function OnboardingProvider({
       room: emptyRoomCondition(),
       preferences: emptyPreferenceConditions(),
     });
-    setCurrentStep('terms');
+    setCurrentStep('profile-basic');
     setSavedSignatures({});
   }, []);
 

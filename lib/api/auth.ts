@@ -12,11 +12,19 @@ import {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-/** OAuth SDK 방식 로그인 시 클라이언트가 보내는 토큰 묶음. */
-export type AuthObj = {
+/** 카카오 SDK 인증 후 백엔드에 전달하는 토큰 묶음. */
+export type KakaoAuthObj = {
   access_token: string;
   refresh_token: string;
 };
+
+/** Apple SDK 인증 후 백엔드에서 검증할 자격 증명. */
+export type AppleAuthObj = {
+  identity_token: string;
+  authorization_code?: string;
+};
+
+export type AuthObj = KakaoAuthObj | AppleAuthObj;
 
 /** 로그인/회원가입 공통 응답 data. */
 export type LoginIdentity = {
@@ -62,7 +70,7 @@ export function socialLoginWeb(provider: SocialProvider): Promise<ApiResponse<Lo
   }).then(normalizeLoginResponse);
 }
 
-/** 카카오/애플 로그인·회원가입 (SDK 방식) — POST /sdk/oauth2/authorization/{provider} */
+/** 카카오/Apple 로그인·회원가입 (SDK 방식) — POST /sdk/oauth2/authorization/{provider} */
 export function socialLoginSdk(
   provider: SocialProvider,
   authObj: AuthObj,

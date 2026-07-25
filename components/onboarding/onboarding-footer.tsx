@@ -28,7 +28,7 @@ export function OnboardingFooter({
   const handlePress = onPress ?? goNext;
   const label = primaryLabel ?? (isLast ? '완료' : '다음으로');
   const disabled = !canProceed || loading;
-  const bottomPadding = useSafeBottomPadding(12, 24);
+  const bottomPadding = useSafeBottomPadding(12, 16);
 
   // 뒤로가기 탭: 어느 질문에서 망설임이 많은지 파악.
   const handleBack = () => {
@@ -42,7 +42,7 @@ export function OnboardingFooter({
 
   return (
     <View
-      className="gap-2 border-t border-neutral-100 bg-white px-5 pt-4"
+      className="gap-2 border-t border-[#ECECF3] bg-white px-4 pt-4"
       style={{ paddingBottom: bottomPadding }}
     >
       {helper ? <Text className="text-xs text-neutral-500">{helper}</Text> : null}
@@ -50,7 +50,7 @@ export function OnboardingFooter({
         {showBack ? (
           <Button
             onPress={handleBack}
-            className="h-12 flex-1 items-center justify-center rounded-xl border border-neutral-200 bg-white active:bg-neutral-50"
+            className="h-12 flex-1 items-center justify-center rounded-lg border border-neutral-200 bg-white active:bg-neutral-50"
           >
             <Text className="text-base font-semibold text-neutral-500">이전으로</Text>
           </Button>
@@ -58,16 +58,14 @@ export function OnboardingFooter({
         <Button
           disabled={disabled}
           onPress={handlePress}
-          className={`h-12 items-center justify-center rounded-xl ${
+          className={`h-12 items-center justify-center rounded-lg ${
             showBack ? 'flex-1' : 'w-full'
-          } ${canProceed ? 'bg-[#256EF4] active:bg-[#256EF4]' : 'bg-neutral-300'}`}
+          } ${canProceed ? 'bg-[#256EF4] active:bg-[#256EF4]' : 'bg-[#ECECF3]'}`}
         >
           {loading ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text
-              className={`text-base font-semibold ${canProceed ? 'text-white' : 'text-neutral-500'}`}
-            >
+            <Text className={`text-base font-bold ${canProceed ? 'text-white' : 'text-[#AAAABA]'}`}>
               {label}
             </Text>
           )}

@@ -6,10 +6,8 @@ import { goExplore } from '@/lib/navigation/routes';
 import { STEP_LABELS, useOnboarding, type OnboardingStep } from '@/lib/onboarding';
 
 const DESIGN_PROGRESS: Record<Exclude<OnboardingStep, 'roominfo'>, number> = {
-  terms: 1,
-  'profile-basic': 2,
+  'profile-basic': 1,
   'profile-lifestyle': 3,
-  visibility: 9,
   preferences: 10,
 };
 

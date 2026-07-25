@@ -7,11 +7,13 @@ import {
   compactNumbers,
   formatApiLocalDateTime,
   getAccessToken,
+  getPreferenceAll,
   getProfileAll,
   lifestyleIdsFromPatternOptions,
   regionBackendId,
   roomTypeBackendId,
   saveProfileAll,
+  savePreferenceAll,
   updateVisibility,
   withComeableAtNegotiable,
   type ProfileAllRuntimeRequest,
@@ -23,14 +25,13 @@ import {
   ONBOARDING_WRITE_ENABLED,
   ONBOARDING_STEPS,
   OnboardingProvider,
-  PROFILE_NAME_MAX_LENGTH,
   agreedTermBackendIds,
+  isValidProfileEmail,
+  isValidProfileName,
   type OnboardingValues,
   type OnboardingStep,
 } from '@/lib/onboarding';
 import { goExplore, goKakaoLogin, resetToExplore } from '@/lib/navigation/routes';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function toRequest(
   values: OnboardingValues,
@@ -45,6 +46,7 @@ function toRequest(
     : '';
   const isHas = room.hasRoom === true;
   const moveDate = isHas ? room.moveInDate : (preferences.moveInBy ?? room.moveInBy);
+  const isMoveDateNegotiable = moveDate == null;
   const seekerRoomTypes = preferences.roomTypes.length ? preferences.roomTypes : room.roomTypes;
   const seekerBudgetRent = preferences.budget ?? room.budgetRent;
   const regionIds = selectedRegionIds(values);
@@ -67,12 +69,12 @@ function toRequest(
     maxDeposit: isHas ? undefined : room.budgetDeposit.max,
     minMounthRent: isHas ? undefined : seekerBudgetRent.min,
     maxMounthRent: isHas ? undefined : seekerBudgetRent.max,
-    comeEnableAt: moveDate ? formatApiLocalDateTime(moveDate) : '',
+    comeEnableAt: moveDate ? formatApiLocalDateTime(moveDate) : undefined,
     region: regionIds,
     roomProfile: roomProfileIds,
     deposit: isHas ? (room.deposit ?? 0) : undefined,
     mounthRent: isHas ? (room.monthlyRent ?? 0) : undefined,
-    comeableAtNegotiable: false,
+    comeableAtNegotiable: isMoveDateNegotiable,
   });
 }
 
@@ -98,15 +100,12 @@ function validateOnboarding(
     .map((group) => group.label);
 
   if (!agreedTerms.length) missing.push('약관 동의: 필수 약관');
-  if (!profile.name.trim()) missing.push('기본 정보: 이름');
-  else if (profile.name.trim().length > PROFILE_NAME_MAX_LENGTH) {
-    missing.push(`기본 정보: 이름 ${PROFILE_NAME_MAX_LENGTH}자 이하`);
-  }
+  if (!isValidProfileName(profile.name)) missing.push('기본 정보: 한글 이름 2~10자');
   if (!profile.birthDate) missing.push('기본 정보: 생년월일');
   if (profile.gender !== 'male' && profile.gender !== 'female') missing.push('기본 정보: 성별');
   if (!profile.email.trim()) {
     missing.push('기본 정보: 이메일');
-  } else if (!EMAIL_RE.test(profile.email.trim())) {
+  } else if (!isValidProfileEmail(profile.email)) {
     missing.push('기본 정보: 올바른 이메일 형식');
   }
   if (lifestyleOptions.scaleOptions.length + lifestyleOptions.choiceGroups.length === 0) {
@@ -114,10 +113,14 @@ function validateOnboarding(
   }
   if (missingScales.length) missing.push(`생활 패턴: ${missingScales.join(', ')}`);
   if (missingChoices.length) missing.push(`생활 패턴: ${missingChoices.join(', ')}`);
+  if (!profile.preferredGender) missing.push('룸메이트 조건: 성별');
+  if (Object.keys(preferences.lifestyleSelections).length < 5) {
+    missing.push('룸메이트 조건: 생활패턴');
+  }
+  if (!profile.importantConditionIds.length) missing.push('룸메이트 조건: 우선순위');
 
   const hasRoom = room.hasRoom === true;
   const noRoom = room.hasRoom === false;
-  const moveDate = hasRoom ? room.moveInDate : (preferences.moveInBy ?? room.moveInBy);
   const seekerRoomTypes = preferences.roomTypes.length ? preferences.roomTypes : room.roomTypes;
   const regionIds = selectedRegionIds(values);
   const roomProfileIds = compactNumbers(
@@ -133,13 +136,11 @@ function validateOnboarding(
     if (room.monthlyRent == null) missing.push('방 정보: 월세');
     if (!room.roomType) missing.push('방 정보: 방 형태');
     else if (!roomProfileIds.length) missing.push('방 정보: 저장 가능한 방 형태');
-    if (!moveDate) missing.push('방 정보: 입주 가능 시기');
   } else {
     if (!room.regions.length) missing.push('방 정보: 선호 방 위치');
     else if (!regionIds.length) missing.push('방 정보: 저장 가능한 선호 방 위치');
     if (!seekerRoomTypes.length) missing.push('방 정보: 선호 방 형태');
     else if (!roomProfileIds.length) missing.push('방 정보: 저장 가능한 선호 방 형태');
-    if (!moveDate) missing.push('방 정보: 입주 희망 시기');
   }
 
   return missing;
@@ -160,7 +161,13 @@ function profileSaveErrorMessage(
   if (!request.lifestyles?.length) invalid.push('생활 패턴');
   if (!request.region?.length) invalid.push('방 위치');
   if (!request.roomProfile?.length) invalid.push('방 형태');
-  if (!request.comeEnableAt) invalid.push('입주 가능/희망 시기');
+  if (
+    !request.comeEnableAt &&
+    request.comeableAtNegotiable !== true &&
+    request.isComeableAtNegotiable !== true
+  ) {
+    invalid.push('입주 가능/희망 시기 또는 협의 가능 여부');
+  }
   if (request.comeableAtNegotiable == null && request.isComeableAtNegotiable == null) {
     invalid.push('입주일 협의 여부');
   }
@@ -242,14 +249,46 @@ export default function OnboardingLayout() {
           return;
         }
       }
+      const preferenceLifestyleIds = [
+        ...new Set(
+          Object.values(values.preferences.lifestyleSelections).filter(
+            (value): value is number => typeof value === 'number',
+          ),
+        ),
+      ];
+      const preferenceRes = await getPreferenceAll();
+      const preferencesAlreadySaved =
+        preferenceRes.status === 200 &&
+        !preferenceRes.error &&
+        hasSavedPreferences(preferenceRes.data);
+      if (preferenceRes.error && preferenceRes.status !== 404) {
+        Alert.alert(
+          '선호 조건 확인 실패',
+          preferenceRes.error.message ??
+            '기존 선호 조건을 확인하지 못했습니다. 중복 저장을 막기 위해 잠시 후 다시 시도해주세요.',
+        );
+        return;
+      }
+      if (!preferencesAlreadySaved) {
+        const savePreferenceRes = await savePreferenceAll({
+          lifestyles: preferenceLifestyleIds,
+        });
+        if (savePreferenceRes.error || savePreferenceRes.status !== 200) {
+          Alert.alert(
+            '선호 조건 저장 실패',
+            savePreferenceRes.error?.message ?? '잠시 후 다시 시도해주세요.',
+          );
+          return;
+        }
+      }
       await markProfileComplete({
         name: request.name,
         birth: request.birth,
         gender: request.gender,
       });
-      // profile/all 명세에는 노출 상태가 없어 완료 시점에만 분리 저장한다.
+      // 신규 온보딩은 공개 상태로 시작하고, 이후 변경은 마이페이지에서만 받는다.
       const visibilityRes = await updateVisibility({
-        status: values.profile.visibility === 'public' ? 'PUBLIC' : 'PRIVATE',
+        status: 'PUBLIC',
       });
       if (visibilityRes.error || visibilityRes.status !== 200) {
         Alert.alert('저장 실패', visibilityRes.error?.message ?? '잠시 후 다시 시도해주세요.');
@@ -296,4 +335,10 @@ function hasSavedProfile(profile: Awaited<ReturnType<typeof getProfileAll>>['dat
     profile?.region?.length ||
     profile?.roomProfile?.length,
   );
+}
+
+function hasSavedPreferences(
+  preferences: Awaited<ReturnType<typeof getPreferenceAll>>['data'],
+): boolean {
+  return Boolean(preferences?.lifestyles?.length || preferences?.conditions?.length);
 }

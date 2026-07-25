@@ -1,6 +1,22 @@
 export type Gender = 'male' | 'female' | 'other';
 
+export const PROFILE_NAME_MIN_LENGTH = 2;
 export const PROFILE_NAME_MAX_LENGTH = 10;
+export const PROFILE_EMAIL_PATTERN =
+  /^[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*@[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*(?:\.[A-Za-z]{2,})+$/;
+
+export function isValidProfileName(value: string): boolean {
+  const name = value.trim();
+  return (
+    name.length >= PROFILE_NAME_MIN_LENGTH &&
+    name.length <= PROFILE_NAME_MAX_LENGTH &&
+    /^[가-힣]+$/.test(name)
+  );
+}
+
+export function isValidProfileEmail(value: string): boolean {
+  return PROFILE_EMAIL_PATTERN.test(value.trim());
+}
 
 export type PreferredGender = 'same' | 'any';
 
@@ -18,8 +34,6 @@ export type Lifestyle = {
   smoking: Smoking;
   pet: PetPolicy;
 };
-
-export type ProfileVisibility = 'public' | 'hidden' | 'matched';
 
 export type RoomType = string;
 
@@ -61,7 +75,6 @@ export type BasicProfile = {
   lifestyleChoices: Record<string, string>;
   importantConditionIds: string[];
   dealbreaker: string;
-  visibility: ProfileVisibility;
 };
 
 export type BudgetRange = {
@@ -106,6 +119,8 @@ export type PreferenceConditions = {
   budget: BudgetRange | null;
   moveInBy: Date | null;
   roomTypes: RoomType[];
+  /** 룸메이트 선호 생활패턴 카테고리별 선택값. 숫자는 서버 lifestyle 상세 ID다. */
+  lifestyleSelections: Record<string, number | 'any'>;
 };
 
 export type TermsAgreement = Record<string, boolean>;
@@ -131,7 +146,6 @@ export function emptyBasicProfile(): BasicProfile {
     lifestyleChoices: {},
     importantConditionIds: [],
     dealbreaker: '',
-    visibility: 'public',
   };
 }
 
@@ -157,15 +171,14 @@ export function emptyPreferenceConditions(): PreferenceConditions {
     budget: null,
     moveInBy: null,
     roomTypes: [],
+    lifestyleSelections: {},
   };
 }
 
 export function isBasicProfileComplete(profile: BasicProfile): boolean {
-  const nameLength = profile.name.trim().length;
-
   return (
-    nameLength > 0 &&
-    nameLength <= PROFILE_NAME_MAX_LENGTH &&
+    isValidProfileName(profile.name) &&
+    isValidProfileEmail(profile.email) &&
     profile.birthDate !== null &&
     profile.gender !== null &&
     profile.preferredGender !== null &&

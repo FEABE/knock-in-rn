@@ -18,6 +18,7 @@ import { useModeration, useSession, type RoomPost } from '@/lib/domain';
 import { useRequireLogin } from '@/lib/auth';
 import {
   goNotifications,
+  goNewRoom,
   goRoomDetail,
   goRoommateDetail,
   goRoomSearch,
@@ -73,6 +74,7 @@ export type UseExploreScreenReturn = {
   onSearchPress: () => void;
   onSearchClear: () => void;
   onNotificationPress: () => void;
+  onCreatePress: () => void;
   onRoomPress: (post: RoomPost) => void;
   onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
   onRoommatePress: (match: RoommateMatchCardModel) => void;
@@ -147,6 +149,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     onSearchPress: () => goRoomSearch(router, searchQuery),
     onSearchClear: () => router.replace('/explore' as never),
     onNotificationPress: () => goNotifications(router),
+    onCreatePress: () => requireLogin(() => goNewRoom(router)),
     onRoomPress: (post) => {
       logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
       goRoomDetail(router, post.id);

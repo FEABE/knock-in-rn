@@ -55,6 +55,8 @@ export function ChatRoomScreenView({
       <RequestBanner
         matched={room.matched}
         request={room.roommateRequest}
+        peerName={room.peer.name}
+        compatibilityScore={room.peer.compatibilityScore}
         processing={processingRequest}
         onOpenRequestSheet={openRequestSheet}
         onAccept={acceptRequest}
@@ -209,6 +211,8 @@ function ChatHeader({
 function RequestBanner({
   matched,
   request,
+  peerName,
+  compatibilityScore,
   processing,
   onOpenRequestSheet,
   onAccept,
@@ -217,75 +221,132 @@ function RequestBanner({
 }: {
   matched: boolean;
   request: DomainChatRoom['roommateRequest'];
+  peerName: string;
+  compatibilityScore?: number;
   processing: boolean;
   onOpenRequestSheet: () => void;
   onAccept: () => void;
   onReject: () => void;
   onCancel: () => void;
 }) {
-  if (matched) {
+  if (matched || request?.status === 'ACCEPTED') {
     return (
-      <View className="border-b border-emerald-100 bg-emerald-50 px-4 py-3">
-        <Text className="text-sm font-medium text-emerald-700">룸메이트가 확정되었어요</Text>
-        <Text className="mt-0.5 text-xs text-emerald-600">함께하는 새로운 시작을 응원해요.</Text>
+      <View className="border-b-8 border-[#F6F6FA] bg-white px-4 py-4">
+        <Text className="text-sm font-bold text-[#17171B]">룸메이트가 되었어요 🎉</Text>
+        <Text className="mt-1 text-xs text-[#696976]">함께하는 새로운 시작을 응원해요</Text>
       </View>
     );
   }
 
   if (request?.status === 'PENDING' && request.role === 'requestee') {
     return (
-      <View className="flex-row items-center gap-3 border-b border-[#256EF4]/15 bg-[#256EF4]/10 px-4 py-3">
-        <View className="flex-1">
-          <Text className="text-sm font-medium text-[#256EF4]">룸메이트 요청이 도착했어요</Text>
-          <Text className="text-xs text-[#256EF4]">수락하면 룸메이트 매칭이 완료돼요</Text>
+      <View className="gap-3 border-b-8 border-[#F6F6FA] bg-white px-4 py-4">
+        <Text className="text-xs font-semibold text-[#256EF4]">룸메이트 요청</Text>
+        <View className="gap-1">
+          <Text className="text-base font-bold text-[#17171B]">
+            {peerName}님이 룸메이트를 요청했어요!
+          </Text>
+          <Text className="text-xs leading-5 text-[#AAAABA]">
+            *채팅방 생성 시점의 궁합 점수
+            {compatibilityScore != null ? ` ${compatibilityScore}점` : ''}으로, 이후 프로필 변경으로
+            실제 궁합과 달라질 수 있어요
+          </Text>
         </View>
-        <Pressable
-          onPress={onReject}
-          disabled={processing}
-          className="rounded-full border border-[#256EF4] px-3 py-2"
-        >
-          <Text className="text-xs font-semibold text-[#256EF4]">거절</Text>
-        </Pressable>
-        <Pressable
-          onPress={onAccept}
-          disabled={processing}
-          className="rounded-full bg-[#256EF4] px-3 py-2"
-        >
-          <Text className="text-xs font-semibold text-white">수락</Text>
-        </Pressable>
+        <View className="flex-row gap-2">
+          <Pressable
+            onPress={onReject}
+            disabled={processing}
+            className="h-10 flex-1 items-center justify-center rounded-lg border border-[#DADAE8]"
+          >
+            <Text className="text-sm font-semibold text-[#696976]">거절하기</Text>
+          </Pressable>
+          <Pressable
+            onPress={onAccept}
+            disabled={processing}
+            className="h-10 flex-1 items-center justify-center rounded-lg bg-[#256EF4]"
+          >
+            <Text className="text-sm font-semibold text-white">수락하기</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
 
   if (request?.status === 'PENDING') {
     return (
-      <View className="flex-row items-center gap-3 border-b border-[#256EF4]/15 bg-[#256EF4]/10 px-4 py-3">
-        <View className="flex-1">
-          <Text className="text-sm font-medium text-[#256EF4]">룸메이트 요청을 보냈어요</Text>
-          <Text className="text-xs text-[#256EF4]">상대가 수락하면 매칭이 완료돼요</Text>
+      <View className="gap-3 border-b-8 border-[#F6F6FA] bg-white px-4 py-4">
+        <Text className="text-xs font-semibold text-[#256EF4]">룸메이트 요청</Text>
+        <View className="gap-1">
+          <Text className="text-base font-bold text-[#17171B]">룸메이트를 요청했어요!</Text>
+          <Text className="text-xs leading-5 text-[#AAAABA]">
+            *채팅방 생성 시점의 궁합 점수
+            {compatibilityScore != null ? ` ${compatibilityScore}점` : ''}으로, 이후 프로필 변경으로
+            실제 궁합과 달라질 수 있어요
+          </Text>
         </View>
         <Pressable
           onPress={onCancel}
           disabled={processing || request.role === 'unknown'}
-          className="rounded-full border border-[#256EF4] px-3 py-2"
+          className="h-10 items-center justify-center rounded-lg border border-[#DADAE8]"
         >
-          <Text className="text-xs font-semibold text-[#256EF4]">요청 취소</Text>
+          <Text className="text-sm font-semibold text-[#696976]">요청 취소하기</Text>
         </Pressable>
       </View>
     );
   }
 
+  if (request?.status === 'EXPIRED') {
+    return (
+      <View className="border-b-8 border-[#F6F6FA] bg-white px-4 py-4">
+        <Text className="text-sm font-bold text-[#17171B]">
+          상대방이 다른 분과 룸메이트가 되었어요
+        </Text>
+        <Text className="mt-1 text-xs text-[#696976]">나와 잘 맞는 다른 룸메이트를 찾아보세요</Text>
+      </View>
+    );
+  }
+
+  if (request?.status === 'REJECTED' || request?.status === 'CANCELED') {
+    const result =
+      request.status === 'CANCELED'
+        ? '룸메이트 요청을 취소했어요'
+        : request.role === 'requestee'
+          ? '요청을 거절했어요'
+          : '상대방이 요청을 거절했어요';
+    return (
+      <View className="gap-3 border-b-8 border-[#F6F6FA] bg-white px-4 py-4">
+        <Text className="text-sm font-semibold text-[#696976]">{result}</Text>
+        <View className="flex-row items-center gap-3 rounded-lg bg-[#F6F6FA] p-3">
+          <View className="flex-1">
+            <Text className="text-sm font-bold text-[#17171B]">룸메이트를 요청할까요?</Text>
+            <Text className="mt-0.5 text-xs text-[#696976]">
+              대화가 잘 통했다면 룸메이트를 요청해보세요
+            </Text>
+          </View>
+          <Pressable
+            onPress={onOpenRequestSheet}
+            className="rounded-lg bg-[#256EF4] px-4 py-2.5 active:opacity-90"
+          >
+            <Text className="text-xs font-semibold text-white">요청하기</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-row items-center gap-3 border-b border-[#256EF4]/15 bg-[#256EF4]/10 px-4 py-3">
+    <View className="flex-row items-center gap-3 border-b-8 border-[#F6F6FA] bg-white px-4 py-4">
       <View className="flex-1">
-        <Text className="text-sm font-medium text-[#256EF4]">룸메이트로 확정할까요?</Text>
-        <Text className="text-xs text-[#256EF4]">대화가 잘 됐다면 매칭을 완료해보세요</Text>
+        <Text className="text-sm font-bold text-[#17171B]">룸메이트를 요청할까요?</Text>
+        <Text className="mt-0.5 text-xs text-[#696976]">
+          대화가 잘 통했다면 룸메이트를 요청해보세요
+        </Text>
       </View>
       <Pressable
         onPress={onOpenRequestSheet}
-        className="rounded-full bg-[#256EF4] px-4 py-2 active:opacity-90"
+        className="rounded-lg bg-[#256EF4] px-4 py-2.5 active:opacity-90"
       >
-        <Text className="text-xs font-semibold text-white">룸메이트 제안</Text>
+        <Text className="text-xs font-semibold text-white">요청하기</Text>
       </Pressable>
     </View>
   );
@@ -327,7 +388,7 @@ function MessageInput({
       <TextField
         value={draft}
         onChangeValue={setDraft}
-        placeholder="메시지 보내기"
+        placeholder="메세지 보내기"
         multiline
         className="max-h-24 min-h-10 flex-1 rounded-2xl bg-neutral-100 px-4 py-2 text-sm"
       />

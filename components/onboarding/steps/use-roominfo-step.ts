@@ -12,15 +12,8 @@ import { useOnboarding, useOnboardingRoom, type Region, type RoomType } from '@/
 
 export const MAX_PREF_ROOM_TYPES = 3;
 export const MAX_REGIONS = 3;
-export const ROOM_INFO_STAGE_TITLES = [
-  '방 유무 여부',
-  '위치',
-  '가격',
-  '방 형태',
-  '입주 시기',
-  '완료',
-] as const;
-export type RoomInfoStage = 0 | 1 | 2 | 3 | 4 | 5;
+export const ROOM_INFO_STAGE_TITLES = ['방 유무 여부', '위치', '가격', '방 형태'] as const;
+export type RoomInfoStage = 0 | 1 | 2 | 3;
 
 export type RegionDraft = { sido: string | null; gugun: string | null; dong: string | null };
 
@@ -37,7 +30,6 @@ export type UseRoomInfoStepReturn = {
   gugunOptions: RegionSelectOption[];
   dongOptions: RegionSelectOption[];
   roomTypeOptions: RoomTypeOption[];
-  today: Date;
   stage: RoomInfoStage;
   stageTitle: (typeof ROOM_INFO_STAGE_TITLES)[RoomInfoStage];
   stageProgress: number;
@@ -57,12 +49,10 @@ export type UseRoomInfoStepReturn = {
   setDeposit: (value: number | null) => void;
   setMonthlyRent: (value: number | null) => void;
   toggleSingleRoomType: (value: RoomType) => void;
-  setMoveInDate: (value: Date | null) => void;
   setBudgetDeposit: (value: { min: number; max: number }) => void;
   setBudgetRent: (value: { min: number; max: number }) => void;
   setBudgetManagement: (value: { min: number; max: number }) => void;
   toggleRoomType: (value: RoomType) => void;
-  setMoveInBy: (value: Date | null) => void;
 };
 
 export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomInfoStepReturn {
@@ -100,10 +90,6 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
   const selectedGugun = draft.gugun ? regions.getOption(draft.gugun) : undefined;
   const dongOptions = selectedGugun ? [selectedGugun, ...childDongOptions] : [];
 
-  const today = startOfToday();
-  const moveInValid = room.moveInDate != null && room.moveInDate >= today;
-  const moveByValid = room.moveInBy != null && room.moveInBy >= today;
-
   const canProceed =
     stage === 0
       ? hasRoom || noRoom
@@ -119,11 +105,7 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
             ? hasRoom
               ? room.roomType != null
               : room.roomTypes.length > 0
-            : stage === 4
-              ? hasRoom
-                ? moveInValid
-                : moveByValid
-              : true;
+            : true;
 
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -136,7 +118,7 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
 
   const onNext = () => {
     if (!canProceed) return;
-    if (stage < 5) {
+    if (stage < 3) {
       setStage((stage + 1) as RoomInfoStage);
       return;
     }
@@ -188,7 +170,6 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     gugunOptions,
     dongOptions,
     roomTypeOptions: roomTypes.options,
-    today,
     stage,
     stageTitle: ROOM_INFO_STAGE_TITLES[stage],
     stageProgress: Math.min(11 + stage, 15),
@@ -208,7 +189,6 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     setDeposit: (value) => patch({ deposit: value }),
     setMonthlyRent: (value) => patch({ monthlyRent: value }),
     toggleSingleRoomType: (value) => patch({ roomType: room.roomType === value ? null : value }),
-    setMoveInDate: (value) => patch({ moveInDate: value }),
     setBudgetDeposit: (value) => patch({ budgetDeposit: value }),
     setBudgetRent: (value) => patch({ budgetRent: value }),
     setBudgetManagement: (value) => patch({ budgetManagement: value }),
@@ -219,19 +199,12 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
         patch({ roomTypes: [...room.roomTypes, value] });
       }
     },
-    setMoveInBy: (value) => patch({ moveInBy: value }),
   };
-}
-
-function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
 }
 
 function parseRoomInfoStage(value: string | undefined): RoomInfoStage | null {
   const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 5 ? (parsed as RoomInfoStage) : null;
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 3 ? (parsed as RoomInfoStage) : null;
 }
 
 function regionFromDraft(

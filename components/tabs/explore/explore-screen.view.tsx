@@ -37,6 +37,7 @@ export function ExploreScreenView({
   onSearchPress,
   onSearchClear,
   onNotificationPress,
+  onCreatePress,
   onRoomPress,
   onRoomLikeChange,
   onRoommatePress,
@@ -115,6 +116,15 @@ export function ExploreScreenView({
               ))
             )}
           </ScrollView>
+
+          <Pressable
+            onPress={onCreatePress}
+            accessibilityRole="button"
+            accessibilityLabel="룸메이트 게시글 등록"
+            className="absolute bottom-5 right-4 h-11 w-11 items-center justify-center rounded-full bg-[#256EF4] shadow-md active:opacity-90"
+          >
+            <Ionicons name="add" size={22} color="#FFFFFF" />
+          </Pressable>
         </Tabs.Content>
 
         <Tabs.Content value="roommates" className="flex-1">

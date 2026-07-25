@@ -20,6 +20,8 @@ export type ChatRequestRow = {
   name: string;
   meta: string;
   scoreLabel: string;
+  preview: string;
+  timeLabel: string;
   onPress: () => void;
 };
 
@@ -71,21 +73,26 @@ export function useChatListScreen(): UseChatListScreenReturn {
     () =>
       (requests ?? [])
         .filter((request) => request.status === 'PENDING')
-        .map((request) => ({
-          request,
-          name: request.name ?? request.memberName ?? '사용자',
-          meta: [
-            request.memberAge ? `${request.memberAge}세` : null,
-            request.gender === 'FEMALE' ? '여성' : request.gender === 'MALE' ? '남성' : null,
-          ]
-            .filter(Boolean)
-            .join(' · '),
-          scoreLabel: request.score != null ? `궁합 ${request.score}점` : '채팅 요청',
-          onPress: () => {
-            const requestId = request.chatReqId ?? request.requiredId;
-            if (requestId != null) goChatRequest(router, requestId);
-          },
-        })),
+        .map((request) => {
+          const name = request.name ?? request.memberName ?? '사용자';
+          return {
+            request,
+            name,
+            meta: [
+              request.memberAge ? `${request.memberAge}세` : null,
+              request.gender === 'FEMALE' ? '여성' : request.gender === 'MALE' ? '남성' : null,
+            ]
+              .filter(Boolean)
+              .join(' · '),
+            scoreLabel: request.score != null ? `궁합 ${request.score}점` : '채팅 요청',
+            preview: `${name}님이 룸메이트를 요청했어요!`,
+            timeLabel: formatChatTime(request.createdAt),
+            onPress: () => {
+              const requestId = request.chatReqId ?? request.requiredId;
+              if (requestId != null) goChatRequest(router, requestId);
+            },
+          };
+        }),
     [requests, router],
   );
 

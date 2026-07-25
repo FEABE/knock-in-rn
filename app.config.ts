@@ -12,7 +12,9 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.knockin',
+    appleTeamId: '2VW85FYXV8',
     googleServicesFile: './GoogleService-Info.plist',
+    usesAppleSignIn: true,
   },
   android: {
     package: 'com.knockin',
@@ -35,6 +37,7 @@ const config: ExpoConfig = {
     'expo-font',
     '@react-native-firebase/app',
     'expo-secure-store',
+    'expo-apple-authentication',
     [
       'expo-image-picker',
       {

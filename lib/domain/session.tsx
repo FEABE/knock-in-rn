@@ -19,6 +19,7 @@ import {
   writeStoredAuthSession,
   type StoredAuthIdentity,
 } from '@/lib/auth/session-storage';
+import { signInWithAppleSdk } from '@/lib/auth/apple-native';
 
 import type { Session, UserSummary } from './types';
 import {
@@ -27,7 +28,6 @@ import {
   setAuthFailureHandler,
   setAccessToken,
   socialLoginSdk,
-  socialLoginWeb,
   type LoginData,
   type ProfileAllData,
   type SocialProvider,
@@ -147,7 +147,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     }
 
     try {
-      const res = provider === 'kakao' ? await signInWithKakaoSdk() : await socialLoginWeb('apple');
+      const res = provider === 'kakao' ? await signInWithKakaoSdk() : await signInWithAppleSdk();
 
       if (__DEV__) {
         console.info('[auth] social login exchange completed', {

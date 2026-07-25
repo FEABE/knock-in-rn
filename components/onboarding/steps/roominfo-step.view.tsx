@@ -4,13 +4,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
 import { RangeField } from '@/components/ui/range-field';
-import {
-  OnboardingCompleteArtwork,
-  RoomPresenceArtwork,
-  RoomTypeArtwork,
-} from '@/components/ui/ready-to-dev-assets';
+import { RoomPresenceArtwork, RoomTypeArtwork } from '@/components/ui/ready-to-dev-assets';
 
-import { CalendarField } from '../calendar-field';
 import { OnboardingFooter } from '../onboarding-footer';
 import {
   MAX_PREF_ROOM_TYPES,
@@ -26,7 +21,6 @@ export function RoomInfoStepView({
   gugunOptions,
   dongOptions,
   roomTypeOptions,
-  today,
   stage,
   stageTitle,
   stageProgress,
@@ -46,49 +40,10 @@ export function RoomInfoStepView({
   setDeposit,
   setMonthlyRent,
   toggleSingleRoomType,
-  setMoveInDate,
   setBudgetDeposit,
   setBudgetRent,
   toggleRoomType,
-  setMoveInBy,
 }: UseRoomInfoStepReturn) {
-  if (stage === 5) {
-    return (
-      <View className="flex-1 bg-white">
-        <View className="h-12 justify-center px-4">
-          <Pressable
-            onPress={onBack}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="이전으로"
-            className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
-          >
-            <Ionicons name="chevron-back" size={24} color="#6B6B76" />
-          </Pressable>
-        </View>
-        <View className="flex-1 items-center px-4 pt-14">
-          <View className="items-center gap-2">
-            <Text className="text-center text-2xl font-bold leading-9 text-[#17171B]">
-              모든 준비가 끝났어요!
-            </Text>
-            <Text className="text-center text-base text-[#696976]">
-              지금부터 나와 맞는 룸메이트를 만나보세요
-            </Text>
-          </View>
-          <View className="mt-8">
-            <OnboardingCompleteArtwork size={256} />
-          </View>
-        </View>
-        <OnboardingFooter
-          canProceed={canProceed}
-          primaryLabel="시작하기"
-          loading={submitting}
-          onPress={onNext}
-        />
-      </View>
-    );
-  }
-
   const regionTable = (
     <RegionTable
       draft={draft}
@@ -230,16 +185,6 @@ export function RoomInfoStepView({
             })}
           </View>
         ) : null}
-
-        {stage === 4 ? (
-          <Section label={hasRoom ? '입주 가능 시기' : '입주 희망 시기'}>
-            <CalendarField
-              value={hasRoom ? room.moveInDate : room.moveInBy}
-              onChange={hasRoom ? setMoveInDate : setMoveInBy}
-              minDate={today}
-            />
-          </Section>
-        ) : null}
       </ScrollView>
 
       {submitError ? (
@@ -275,7 +220,7 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function StageIntro({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
+function StageIntro({ stage, hasRoom }: { stage: 0 | 1 | 2 | 3; hasRoom: boolean }) {
   const copy =
     stage === 0
       ? ['현재 머물고 있는', '방이 있으신가요?', '언제든 마이페이지에서 변경할 수 있어요']
@@ -291,19 +236,13 @@ function StageIntro({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
               hasRoom ? '알려주세요' : '선택해주세요',
               '언제든 마이페이지에서 변경할 수 있어요',
             ]
-          : stage === 3
-            ? [
-                hasRoom ? '현재 거주 중인' : '거주하고 싶은',
-                '방 형태를 선택해주세요',
-                hasRoom
-                  ? '현재 거주 중인 방 형태를 선택해주세요'
-                  : '원하는 방 형태를 최대 3개까지 선택해주세요',
-              ]
-            : [
-                hasRoom ? '입주 가능한 시기를' : '입주 희망 시기를',
-                '선택해주세요',
-                '날짜는 나중에도 변경할 수 있어요',
-              ];
+          : [
+              hasRoom ? '현재 거주 중인' : '거주하고 싶은',
+              '방 형태를 선택해주세요',
+              hasRoom
+                ? '현재 거주 중인 방 형태를 선택해주세요'
+                : '원하는 방 형태를 최대 3개까지 선택해주세요',
+            ];
 
   return (
     <View className="gap-1">
@@ -332,7 +271,7 @@ function RoomTypeChoice({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`h-[108px] w-[31%] items-center justify-center gap-1 rounded-[4px] border px-2 py-2 ${
+      className={`h-[108px] w-[31%] items-center justify-center gap-1 rounded-lg border px-2 py-2 ${
         selected
           ? 'border-[#256EF4] bg-[#EEF4FF]'
           : disabled
@@ -372,8 +311,8 @@ function RoomChoice({
   return (
     <Pressable
       onPress={onPress}
-      className={`min-h-24 flex-row items-center gap-3 rounded-[4px] border px-5 py-4 active:opacity-90 ${
-        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-[#DADAE8] bg-white'
+      className={`min-h-24 flex-row items-center gap-3 rounded-lg border px-5 py-4 active:opacity-90 ${
+        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-transparent bg-[#F6F6FA]'
       }`}
     >
       <RoomPresenceArtwork hasRoom={hasRoom} size={28} />
