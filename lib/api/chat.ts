@@ -53,12 +53,7 @@ export function wsChatUrl(): string {
   return `${API_BASE_URL.replace(/^http/, 'ws')}${WS_CHAT_ENDPOINT}`;
 }
 
-/** SUB: 룸메이트 요청 수신 토픽. */
-export function subRoommateRequests(chatId: string): string {
-  return `/sub/chats/roommate-requests/${chatId}`;
-}
-
-/** SUB: 채팅방 실시간 메시지 토픽. */
+/** SUB: 채팅 메시지와 룸메이트 요청 이벤트를 함께 받는 토픽. */
 export function subChatRoom(chatId: string): string {
   return `/sub/chats/${chatId}`;
 }

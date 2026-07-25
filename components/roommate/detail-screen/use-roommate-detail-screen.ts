@@ -8,12 +8,14 @@ import {
   toRoommateMatchDetailModel,
   type RoommateMatchDetailModel,
   useChatRequestActions,
+  useAccountActions,
   useRoommateMatchCards,
   useRoommateMatchDetail,
   useRoommateMatchLikeActions,
   useRoommateMatchReportActions,
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
+import { useModeration } from '@/lib/domain';
 
 export type UseRoommateDetailScreenReturn = {
   data: RoommateMatchDetailModel | null;
@@ -30,6 +32,7 @@ export type UseRoommateDetailScreenReturn = {
   toggleLifestyle: () => void;
   onLike: () => void;
   onRequest: () => void;
+  onBlock: () => void;
   onReportReason: (reason: string) => void;
 };
 
@@ -55,6 +58,8 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const setMatchLiked = useRoommateMatchLikeActions();
   const { reportMatch } = useRoommateMatchReportActions();
   const { requestChat } = useChatRequestActions();
+  const { requestBlock } = useAccountActions();
+  const { blockUser } = useModeration();
   const liked = matchCards?.find((match) => match.id === matchId)?.liked ?? false;
   const [reportOpen, setReportOpen] = useState(false);
   const data = useMemo(
@@ -117,6 +122,35 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
                   requestError instanceof Error
                     ? requestError.message
                     : '잠시 후 다시 시도해주세요.',
+                );
+              }
+            },
+          },
+        ]);
+      }),
+    onBlock: () =>
+      requireLogin(() => {
+        if (!data) return;
+        Alert.alert('차단', `${data.name}님을 차단할까요? 서로의 목록에서 보이지 않게 돼요.`, [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '차단',
+            style: 'destructive',
+            onPress: async () => {
+              const userId = Number(data.id);
+              if (!Number.isFinite(userId)) {
+                Alert.alert('차단 실패', '상대 사용자 정보를 확인하지 못했습니다.');
+                return;
+              }
+              try {
+                await requestBlock(userId);
+                blockUser(String(userId));
+                setReportOpen(false);
+                router.back();
+              } catch (blockError) {
+                Alert.alert(
+                  '차단 실패',
+                  blockError instanceof Error ? blockError.message : '잠시 후 다시 시도해주세요.',
                 );
               }
             },

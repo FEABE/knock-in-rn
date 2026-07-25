@@ -29,6 +29,7 @@ export function RoommateDetailScreenView({
   toggleLifestyle,
   onLike,
   onRequest,
+  onBlock,
   onReportReason,
 }: RoommateDetailScreenViewProps) {
   return (
@@ -74,7 +75,14 @@ export function RoommateDetailScreenView({
             onOpenChange={setReportOpen}
             contentClassName="rounded-t-2xl bg-white px-5 pb-8 pt-3"
           >
-            <Text className="mb-3 text-base font-semibold text-neutral-900">사용자 신고</Text>
+            <Text className="mb-3 text-base font-semibold text-neutral-900">신고 및 차단</Text>
+            <Pressable
+              onPress={onBlock}
+              className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 active:bg-red-100"
+            >
+              <Text className="text-sm font-semibold text-red-600">이 사용자 차단</Text>
+            </Pressable>
+            <Text className="mb-2 text-xs font-medium text-neutral-400">신고 사유</Text>
             <View className="gap-2">
               {ROOMMATE_REPORT_REASONS.map((reason) => (
                 <Pressable

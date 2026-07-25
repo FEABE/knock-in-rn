@@ -62,7 +62,7 @@ export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
       {
         icon: 'megaphone-outline',
         title: '공지사항',
-        description: '서비스 준비 중',
+        description: '새로운 소식을 확인해요',
         onPress: () => goSupportNotice(router),
       },
     ],

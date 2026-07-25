@@ -15,6 +15,7 @@ import {
   goMypageMyRooms,
   goMypagePreferences,
   goMypageProfile,
+  goMypageRoommate,
   goSupport,
   goVerification,
 } from '@/lib/navigation/routes';
@@ -91,6 +92,12 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
         label: '내 방 관리',
         sub: '방 게시글 등록 · 수정',
         onPress: () => goMypageMyRooms(router),
+      },
+      {
+        icon: 'people-outline',
+        label: '내 룸메이트',
+        sub: '공동생활 합의서 · 캘린더',
+        onPress: () => goMypageRoommate(router),
       },
     ],
     [router],

@@ -79,6 +79,14 @@ export function goMypageMyRooms(router: RouterLike) {
   push(router, '/mypage/my-rooms');
 }
 
+export function goMypageRoommate(router: RouterLike) {
+  push(router, '/mypage/roommate');
+}
+
+export function goMypageAgreement(router: RouterLike) {
+  push(router, '/mypage/agreement');
+}
+
 export function goVerification(router: RouterLike) {
   push(router, '/verification');
 }

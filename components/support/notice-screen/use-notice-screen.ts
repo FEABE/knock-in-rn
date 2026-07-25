@@ -1,3 +1,5 @@
+import { useSupportNotices } from '@/lib/api';
+
 export type NoticeListItem = {
   id: string;
   title: string;
@@ -13,11 +15,11 @@ export type UseNoticeScreenReturn = {
 };
 
 export function useNoticeScreen(): UseNoticeScreenReturn {
+  const state = useSupportNotices();
   return {
-    notices: [],
-    loading: false,
-    error: null,
-    // Swagger currently exposes notices only through the admin (/bo) API.
-    unavailable: true,
+    notices: state.data ?? [],
+    loading: state.loading,
+    error: state.error,
+    unavailable: false,
   };
 }

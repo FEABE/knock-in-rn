@@ -9,8 +9,8 @@ import {
   type VerificationStatus,
 } from '@/lib/api';
 
-export type VerificationFlowStep = 'entry' | 'code' | 'review' | 'complete';
-export type VerificationStatusTone = 'idle' | 'review' | 'complete';
+export type VerificationFlowStep = 'entry' | 'code' | 'review' | 'complete' | 'rejected';
+export type VerificationStatusTone = 'idle' | 'review' | 'complete' | 'error';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -67,7 +67,7 @@ export function useVerificationFlowScreen(
       setState((current) => ({
         ...current,
         email: status.email ?? current.email,
-        step: status.isAccepted ? 'complete' : 'review',
+        step: verificationStep(status),
       }));
     });
     return () => {
@@ -93,9 +93,22 @@ export function useVerificationFlowScreen(
     return () => clearInterval(timer);
   }, [expiresAt, step]);
 
-  const statusLabel = step === 'complete' ? '인증 완료' : step === 'review' ? '검토중' : '미인증';
+  const statusLabel =
+    step === 'complete'
+      ? '인증 완료'
+      : step === 'review'
+        ? '검토중'
+        : step === 'rejected'
+          ? '반려'
+          : '미인증';
   const statusTone: VerificationStatusTone =
-    step === 'complete' ? 'complete' : step === 'review' ? 'review' : 'idle';
+    step === 'complete'
+      ? 'complete'
+      : step === 'review'
+        ? 'review'
+        : step === 'rejected'
+          ? 'error'
+          : 'idle';
   const description =
     step === 'entry'
       ? `사용 중인 ${props.label}을 입력하면 인증 코드를 보내드려요.`
@@ -103,9 +116,15 @@ export function useVerificationFlowScreen(
         ? '입력하신 이메일로 인증 코드를 발송했어요. 코드를 입력해주세요.'
         : step === 'review'
           ? '신청하신 이메일을 검토하는 중이에요. 완료되면 알림으로 알려드릴게요.'
-          : `이제 프로필에 ${props.label} 인증 배지가 표시돼요.`;
+          : step === 'rejected'
+            ? '인증이 반려됐어요. 이메일을 다시 확인한 뒤 재신청해주세요.'
+            : `이제 프로필에 ${props.label} 인증 배지가 표시돼요.`;
   const reviewTitle =
-    step === 'complete' ? `${props.label} 인증이 완료됐어요` : '인증 신청이 접수됐어요';
+    step === 'complete'
+      ? `${props.label} 인증이 완료됐어요`
+      : step === 'rejected'
+        ? '인증 신청이 반려됐어요'
+        : '인증 신청이 접수됐어요';
   const timerLabel = `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(
     remainingSeconds % 60,
   ).padStart(2, '0')}`;
@@ -169,7 +188,7 @@ export function useVerificationFlowScreen(
         : undefined;
     setState((current) => ({
       ...current,
-      step: status?.isAccepted ? 'complete' : 'review',
+      step: verificationStep(status),
       loading: false,
       error: null,
       expiresAt: null,
@@ -178,6 +197,17 @@ export function useVerificationFlowScreen(
   };
 
   const completeReview = async () => {
+    if (step === 'rejected') {
+      setState((current) => ({
+        ...current,
+        step: 'entry',
+        code: '',
+        error: null,
+        expiresAt: null,
+        remainingSeconds: 0,
+      }));
+      return;
+    }
     if (step === 'complete') {
       props.onDone();
       return;
@@ -188,7 +218,7 @@ export function useVerificationFlowScreen(
       res.status === 200 && !res.error ? verificationForKind(props.kind, res.data) : null;
     setState((current) => ({
       ...current,
-      step: status?.isAccepted ? 'complete' : 'review',
+      step: verificationStep(status),
       loading: false,
       error: status?.isAccepted
         ? null
@@ -238,4 +268,10 @@ function verificationForKind(
   data: { studentAuth?: VerificationStatus; employeeAuth?: VerificationStatus },
 ) {
   return kind === 'student' ? data.studentAuth : data.employeeAuth;
+}
+
+function verificationStep(status?: VerificationStatus | null): VerificationFlowStep {
+  if (status?.status === 'REJECT') return 'rejected';
+  if (status?.isAccepted || status?.status === 'ACCEPTED') return 'complete';
+  return 'review';
 }

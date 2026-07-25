@@ -13,9 +13,13 @@ export type TermDetail = OpenApiSchema<'org.example.knockin.dto.TermsDetailDto$R
 export type PopularKeyword =
   OpenApiSchema<'org.example.knockin.dto.PopularSearchDto$Response$RankItem'>;
 
-/** 생활패턴 항목 (메타). details 의 values 는 명세 그대로 단수형. */
-export type LifestylePattern =
+type LifestylePatternBase =
   OpenApiSchema<'org.example.knockin.dto.MetaLifestylePatternsDto$Response$PatternItem'>;
+
+/** 생활패턴 상세 ID는 프로필 저장 시 서버에 그대로 보내야 한다. */
+export type LifestylePattern = Omit<LifestylePatternBase, 'details'> & {
+  details?: (NonNullable<LifestylePatternBase['details']>[number] & { id?: number })[];
+};
 
 export type RoomTypeMeta =
   OpenApiSchema<'org.example.knockin.dto.MetaRoomTypesDto$Response$RoomTypeItem'>;
@@ -28,15 +32,17 @@ export type RoomAddOption =
   OpenApiSchema<'org.example.knockin.dto.MetaRoomAddOptionsDto$Response$RoomAddOptionItem'>;
 
 export type AppVersionData = OpenApiSchema<'org.example.knockin.dto.AppVersionDto$Response'>;
-export type AuthEmailListData =
-  OpenApiSchema<'org.example.knockin.dto.AuthEmailListDto$Response'>;
+export type AuthEmailListData = OpenApiSchema<'org.example.knockin.dto.AuthEmailListDto$Response'>;
 export type FaqListData = OpenApiSchema<'org.example.knockin.dto.FaqListDto$Response'>;
 export type FaqAllListData = OpenApiSchema<'org.example.knockin.dto.FaqAllListDto$Response'>;
 export type FaqDetail = OpenApiSchema<'org.example.knockin.dto.FaqDto$Response'>;
 export type TermsListData = OpenApiSchema<'org.example.knockin.dto.TermsListDto$Response'>;
 export type PopularSearchData = OpenApiSchema<'org.example.knockin.dto.PopularSearchDto$Response'>;
-export type LifestylePatternsData =
+type LifestylePatternsDataBase =
   OpenApiSchema<'org.example.knockin.dto.MetaLifestylePatternsDto$Response'>;
+export type LifestylePatternsData = Omit<LifestylePatternsDataBase, 'patterns'> & {
+  patterns?: LifestylePattern[];
+};
 export type RoomTypesData = OpenApiSchema<'org.example.knockin.dto.MetaRoomTypesDto$Response'>;
 export type RegionsData = OpenApiSchema<'org.example.knockin.dto.MetaRegionsDto$Response'>;
 export type RoomAddOptionsData =
@@ -63,11 +69,11 @@ const MOCK_LIFESTYLE_PATTERNS: LifestylePattern[] = [
     name: '청소 깔끔도',
     type: 'SCALE',
     details: [
-      { values: '1', description: '자주 안함' },
-      { values: '2', description: '종종 안함' },
-      { values: '3', description: '보통' },
-      { values: '4', description: '깔끔함' },
-      { values: '5', description: '매우 깔끔함' },
+      { id: 1, values: '1', description: '자주 안함' },
+      { id: 2, values: '2', description: '종종 안함' },
+      { id: 3, values: '3', description: '보통' },
+      { id: 4, values: '4', description: '깔끔함' },
+      { id: 5, values: '5', description: '매우 깔끔함' },
     ],
   },
   {
@@ -75,8 +81,8 @@ const MOCK_LIFESTYLE_PATTERNS: LifestylePattern[] = [
     name: '흡연 여부',
     type: 'SINGLE_CHOICE',
     details: [
-      { values: '1', description: '흡연자' },
-      { values: '2', description: '비흡연자' },
+      { id: 6, values: '1', description: '흡연자' },
+      { id: 7, values: '2', description: '비흡연자' },
     ],
   },
   {
@@ -84,8 +90,8 @@ const MOCK_LIFESTYLE_PATTERNS: LifestylePattern[] = [
     name: 'MBTI 성향',
     type: 'SINGLE_CHOICE',
     details: [
-      { values: '1', description: '내향형' },
-      { values: '2', description: '외향형' },
+      { id: 8, values: '1', description: '내향형' },
+      { id: 9, values: '2', description: '외향형' },
     ],
   },
 ];

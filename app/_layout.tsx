@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ScreenViewTracker } from '@/lib/analytics/screen-tracker';
+import { AlarmRealtimeBridge } from '@/components/notifications/alarm-realtime-bridge';
 import { AgreementProvider, ModerationProvider, SessionProvider } from '@/lib/domain';
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <SessionProvider>
+          <AlarmRealtimeBridge />
           <ModerationProvider>
             <AgreementProvider>
               {/* 화면 체류 시간 자동 수집 (Firebase screen_view) */}

@@ -167,16 +167,13 @@ function lifestyleKeyByBackendId(options: LifestylePatternOptions): Map<number, 
 }
 
 function buildLifestylePatternOptions(patterns: LifestylePattern[]): LifestylePatternOptions {
-  let nextBackendId = 1;
   const scaleOptions: LifestyleScaleOption[] = [];
   const choiceGroups: LifestyleChoiceGroup[] = [];
 
   for (const pattern of patterns) {
     const details = (pattern.details ?? []).flatMap((detail) => {
-      if (!detail.description || !detail.values) return [];
-      const backendId = nextBackendId;
-      nextBackendId += 1;
-      return [{ ...detail, backendId }];
+      if (!detail.id || !detail.description || !detail.values) return [];
+      return [{ ...detail, backendId: detail.id }];
     });
     if (!pattern.id || !pattern.name || !details.length) continue;
 

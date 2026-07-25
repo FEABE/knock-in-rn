@@ -31,6 +31,8 @@ function AgreementEditView({
   closeEdit,
   saveDraft,
   finalizeDraft,
+  saving,
+  partnerName,
 }: AgreementScreenViewProps & { record?: AgreementRecord }) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -45,7 +47,7 @@ function AgreementEditView({
 
       <AgreementForm
         initial={record?.values}
-        initialPartnerName={record?.partnerName ?? ''}
+        initialPartnerName={record?.partnerName ?? partnerName}
         onSubmit={({ partnerName, values }) => saveDraft({ partnerName, values, record })}
       >
         {({
@@ -104,15 +106,16 @@ function AgreementEditView({
 
             <View className="flex-row gap-2 pb-4">
               <Pressable
-                onPress={submit}
+                onPress={() => void submit()}
+                disabled={saving}
                 className="flex-1 items-center justify-center rounded-xl border border-[#256EF4] py-3"
               >
                 <Text className="text-sm font-semibold text-[#256EF4]">초안 저장</Text>
               </Pressable>
               <Pressable
                 onPress={() => {
-                  if (!canFinalize) return;
-                  finalizeDraft({
+                  if (!canFinalize || saving) return;
+                  void finalizeDraft({
                     partnerName,
                     values: fields.reduce<AgreementValues>((acc, field) => {
                       acc[field.section.key] = field.value;
@@ -121,7 +124,7 @@ function AgreementEditView({
                     record,
                   });
                 }}
-                disabled={!canFinalize}
+                disabled={!canFinalize || saving}
                 className={`flex-1 items-center justify-center rounded-xl py-3 ${
                   canFinalize ? 'bg-[#256EF4]' : 'bg-neutral-300'
                 }`}
@@ -146,6 +149,10 @@ function AgreementEditView({
 
 function AgreementListView({
   agreements,
+  hasRoommate,
+  loading,
+  error,
+  saving,
   onBack,
   openNew,
   openEdit,
@@ -160,8 +167,16 @@ function AgreementListView({
           </Pressable>
           <Text className="text-base font-semibold text-neutral-900">공동생활 합의서</Text>
         </View>
-        <Pressable onPress={openNew} className="rounded-full bg-[#256EF4] px-3 py-1.5">
-          <Text className="text-xs font-semibold text-white">+ 새 작성</Text>
+        <Pressable
+          onPress={openNew}
+          disabled={saving || !hasRoommate}
+          className={`rounded-full px-3 py-1.5 ${hasRoommate ? 'bg-[#256EF4]' : 'bg-neutral-200'}`}
+        >
+          <Text
+            className={`text-xs font-semibold ${hasRoommate ? 'text-white' : 'text-neutral-400'}`}
+          >
+            + 새 작성
+          </Text>
         </Pressable>
       </View>
 
@@ -173,10 +188,20 @@ function AgreementListView({
           </Text>
         </View>
 
-        {agreements.length === 0 ? (
+        {loading ? (
+          <View className="rounded-2xl border border-neutral-200 p-10">
+            <Text className="text-center text-sm text-neutral-400">합의서를 불러오는 중이에요</Text>
+          </View>
+        ) : error ? (
+          <View className="rounded-2xl border border-red-100 bg-red-50 p-5">
+            <Text className="text-center text-sm text-red-500">{error}</Text>
+          </View>
+        ) : agreements.length === 0 ? (
           <View className="rounded-2xl border border-dashed border-neutral-200 p-10">
             <Text className="text-center text-sm text-neutral-400">
-              아직 작성된 합의서가 없어요
+              {hasRoommate
+                ? '아직 작성된 합의서가 없어요'
+                : '룸메이트 연결 후 합의서를 작성할 수 있어요'}
             </Text>
           </View>
         ) : (

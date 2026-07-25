@@ -132,18 +132,30 @@ export function VerificationFlowScreenView({
           </View>
         ) : null}
 
-        {step === 'review' || step === 'complete' ? (
+        {step === 'review' || step === 'complete' || step === 'rejected' ? (
           <View className="gap-5">
             <View className="flex-row items-center gap-4 rounded-lg bg-neutral-50 px-4 py-3">
               <View
                 className={`h-10 w-10 items-center justify-center rounded-full ${
-                  step === 'complete' ? 'bg-emerald-100' : 'bg-amber-100'
+                  step === 'complete'
+                    ? 'bg-emerald-100'
+                    : step === 'rejected'
+                      ? 'bg-rose-100'
+                      : 'bg-amber-100'
                 }`}
               >
                 <Ionicons
-                  name={step === 'complete' ? 'checkmark' : 'time-outline'}
+                  name={
+                    step === 'complete'
+                      ? 'checkmark'
+                      : step === 'rejected'
+                        ? 'close'
+                        : 'time-outline'
+                  }
                   size={20}
-                  color={step === 'complete' ? '#047857' : '#B45309'}
+                  color={
+                    step === 'complete' ? '#047857' : step === 'rejected' ? '#BE123C' : '#B45309'
+                  }
                 />
               </View>
               <View className="flex-1">
@@ -153,7 +165,13 @@ export function VerificationFlowScreenView({
             </View>
 
             <PrimaryButton
-              label={step === 'review' ? '인증 상태 새로고침' : '확인'}
+              label={
+                step === 'review'
+                  ? '인증 상태 새로고침'
+                  : step === 'rejected'
+                    ? '다시 인증하기'
+                    : '확인'
+              }
               loading={loading}
               onPress={completeReview}
             />
@@ -168,13 +186,21 @@ export function VerificationFlowScreenView({
 
 function StatusPill({ label, tone }: { label: string; tone: VerificationStatusTone }) {
   const bgClass =
-    tone === 'complete' ? 'bg-emerald-50' : tone === 'review' ? 'bg-amber-50' : 'bg-neutral-100';
+    tone === 'complete'
+      ? 'bg-emerald-50'
+      : tone === 'review'
+        ? 'bg-amber-50'
+        : tone === 'error'
+          ? 'bg-rose-50'
+          : 'bg-neutral-100';
   const textClass =
     tone === 'complete'
       ? 'text-emerald-700'
       : tone === 'review'
         ? 'text-amber-700'
-        : 'text-neutral-500';
+        : tone === 'error'
+          ? 'text-rose-700'
+          : 'text-neutral-500';
 
   return (
     <View className={`rounded-full px-3 py-1 ${bgClass}`}>

@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
 export type AgreementSectionKey =
   | 'cleaning'
@@ -63,6 +56,7 @@ export type AgreementRecord = {
   status: 'draft' | 'finalized';
   createdAt: Date;
   finalizedAt?: Date;
+  serverRuleIds?: Partial<Record<AgreementSectionKey, string>>;
 };
 
 function emptyValues(): AgreementValues {
@@ -89,10 +83,7 @@ const AgreementContext = createContext<AgreementContextValue | null>(null);
 export function AgreementProvider({ children }: { children: ReactNode }) {
   const [agreements, setAgreements] = useState<AgreementRecord[]>([]);
 
-  const getById = useCallback(
-    (id: string) => agreements.find((a) => a.id === id),
-    [agreements],
-  );
+  const getById = useCallback((id: string) => agreements.find((a) => a.id === id), [agreements]);
 
   const upsertDraft = useCallback(
     ({
@@ -130,9 +121,7 @@ export function AgreementProvider({ children }: { children: ReactNode }) {
 
   const finalize = useCallback((id: string) => {
     setAgreements((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, status: 'finalized', finalizedAt: new Date() } : a,
-      ),
+      prev.map((a) => (a.id === id ? { ...a, status: 'finalized', finalizedAt: new Date() } : a)),
     );
   }, []);
 
@@ -145,19 +134,13 @@ export function AgreementProvider({ children }: { children: ReactNode }) {
     [agreements, getById, upsertDraft, finalize, remove],
   );
 
-  return (
-    <AgreementContext.Provider value={value}>
-      {children}
-    </AgreementContext.Provider>
-  );
+  return <AgreementContext.Provider value={value}>{children}</AgreementContext.Provider>;
 }
 
 export function useAgreementStore(): AgreementContextValue {
   const ctx = useContext(AgreementContext);
   if (!ctx) {
-    throw new Error(
-      'useAgreementStore must be used inside <AgreementProvider>',
-    );
+    throw new Error('useAgreementStore must be used inside <AgreementProvider>');
   }
   return ctx;
 }

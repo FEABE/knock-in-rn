@@ -8,7 +8,12 @@ import { getAccessToken } from './client';
 import { logout, withdraw } from './auth';
 import { getProfileAll, updateVisibility } from './profile';
 import { getNotificationSettings, updateNotificationSetting } from './notification';
-import { getBlocks, getVerifications, unblockUser as unblockUserRequest } from './verification';
+import {
+  blockUser as blockUserRequest,
+  getBlocks,
+  getVerifications,
+  unblockUser as unblockUserRequest,
+} from './verification';
 import type { AsyncState } from './use-async';
 import { useApi } from './use-async';
 
@@ -19,6 +24,7 @@ export type MyPageProfileSummary = {
 
 export type BlockedUserItem = {
   id: string;
+  userId: string;
   name: string;
   dateLabel: string;
 };
@@ -173,7 +179,8 @@ export function useBlockedUsers(
   const users = useMemo<BlockedUserItem[] | null>(
     () =>
       state.data?.blocks?.map((block) => ({
-        id: String(block.userId ?? ''),
+        id: String(block.blockId ?? ''),
+        userId: String(block.userId ?? ''),
         name: block.name ?? '사용자',
         dateLabel: formatDateLabel(block.createAt),
       })) ?? null,
@@ -197,9 +204,19 @@ export function useAccountActions() {
     mutationFn: () => withdraw(),
   });
   const unblockMutation = useMutation({
-    mutationFn: (userId: string) => unblockUserRequest(userId),
+    mutationFn: (blockId: string) => unblockUserRequest(blockId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['profile', 'blocks'] });
+      await queryClient.invalidateQueries({ queryKey: ['roommate', 'matches'] });
+      await queryClient.invalidateQueries({ queryKey: ['roommate', 'boards'] });
+    },
+  });
+  const blockMutation = useMutation({
+    mutationFn: (userId: number) => blockUserRequest({ userId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profile', 'blocks'] });
+      await queryClient.invalidateQueries({ queryKey: ['roommate', 'matches'] });
+      await queryClient.invalidateQueries({ queryKey: ['roommate', 'boards'] });
     },
   });
 
@@ -216,14 +233,21 @@ export function useAccountActions() {
         throw new Error(res.error?.message ?? '탈퇴 처리에 실패했습니다.');
       }
     },
-    requestUnblock: async (userId: string) => {
-      const res = await unblockMutation.mutateAsync(userId);
+    requestBlock: async (userId: number) => {
+      const res = await blockMutation.mutateAsync(userId);
+      if (res.status !== 200 || res.error) {
+        throw new Error(res.error?.message ?? '차단에 실패했습니다.');
+      }
+    },
+    requestUnblock: async (blockId: string) => {
+      const res = await unblockMutation.mutateAsync(blockId);
       if (res.status !== 200 || res.error) {
         throw new Error(res.error?.message ?? '차단 해제에 실패했습니다.');
       }
     },
     loggingOut: logoutMutation.isPending,
     withdrawing: withdrawMutation.isPending,
+    blocking: blockMutation.isPending,
     unblocking: unblockMutation.isPending,
   };
 }

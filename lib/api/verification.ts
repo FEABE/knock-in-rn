@@ -18,23 +18,45 @@ export type VerificationKind = 'student' | 'company';
 
 export type VerifySendRequest = OpenApiSchema<'org.example.knockin.dto.EmailSendDto$Request'>;
 
-export type VerifyConfirmRequest =
-  OpenApiSchema<'org.example.knockin.dto.EmailConfirmDto$Request'>;
+export type VerifyConfirmRequest = OpenApiSchema<'org.example.knockin.dto.EmailConfirmDto$Request'>;
 
 export type BlockRequest = OpenApiSchema<'org.example.knockin.dto.BlockDto$Request'>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 export type VerificationStatus =
-  OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response$AuthInfo'>;
+  OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response$AuthInfo'> & {
+    status?: 'PENDING' | 'ACCEPTED' | 'REJECT';
+  };
 
-export type VerificationsData =
+type VerificationsDataBase =
   OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response'>;
 
-export type BlockItem = OpenApiSchema<'org.example.knockin.dto.BlockListDto$Response$Block'>;
+export type VerificationsData = Omit<VerificationsDataBase, 'studentAuth' | 'employeeAuth'> & {
+  studentAuth?: VerificationStatus;
+  employeeAuth?: VerificationStatus;
+};
+
+export type BlockItem = OpenApiSchema<'org.example.knockin.dto.BlockListDto$Response$Block'> & {
+  blockId?: number;
+};
 
 export type BlockListData = {
   blocks: BlockItem[];
+};
+
+export type MyReportItem = {
+  id?: number;
+  type?: 'MEMBER' | 'BOARD';
+  targetId?: number;
+  title?: string;
+  reason?: string;
+  status?: 'PENDING' | 'NOACTION' | 'SUSPENDED' | 'HIDDEN';
+  createdAt?: string;
+};
+
+export type MyReportListData = {
+  reports?: MyReportItem[];
 };
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
@@ -102,4 +124,24 @@ export function getBlocks(params: PageParams = {}): Promise<ApiResponse<BlockLis
 export function unblockUser(blockId: string): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('DELETE', `/blocks/${blockId}`);
+}
+
+/** GET /users/me/reports — 내가 접수한 신고 내역 */
+export function getMyReports(): Promise<ApiResponse<MyReportListData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      reports: [
+        {
+          id: 1,
+          type: 'MEMBER',
+          targetId: 9,
+          title: '차단된사용자 신고',
+          reason: '부적절한 대화',
+          status: 'PENDING',
+          createdAt: '2026-05-01T09:00:00Z',
+        },
+      ],
+    });
+  }
+  return request('GET', '/users/me/reports');
 }

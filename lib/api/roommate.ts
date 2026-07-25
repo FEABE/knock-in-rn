@@ -18,7 +18,23 @@ export type RoommateRequestCreate =
   OpenApiSchema<'org.example.knockin.dto.RoommateRequestDto$Request'>;
 
 /** 달력 등록/수정 본문. */
-export type CalendarWriteRequest = OpenApiSchema<'org.example.knockin.dto.CalendarDto$Request'>;
+export type CalendarWriteRequest = {
+  calendar: {
+    myRoommateId: number;
+    title: string;
+    contents: string;
+    startDate: string;
+    endDate: string;
+  };
+  categoryName: string;
+  memberIds: number[];
+};
+
+export type HouseRuleWriteRequest = {
+  title: string;
+  contents: string;
+  finalized: boolean;
+};
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 
@@ -42,20 +58,72 @@ export type RoommateRequestListData = Partial<RoommateRequestPageData> & {
 };
 
 /** 내 룸메이트 조회. */
-export type MyRoommateData = OpenApiSchema<'org.example.knockin.dto.MyRoommateDto$Response'>;
+export type MyRoommateData = {
+  id?: number;
+  myRoommateInfo?: {
+    memberId?: number;
+    memberName?: string;
+    memberAge?: number;
+    gender?: 'MALE' | 'FEMALE';
+    memberProfileImageUrl?: string;
+  };
+  chatRoomId?: number;
+  score?: number;
+};
 
-export type CalendarItem =
-  OpenApiSchema<'org.example.knockin.dto.MyRoommateCalendarListDto$Response$Calendar'>;
+export type HouseRuleItem = {
+  id?: number;
+  title?: string;
+  contents?: string;
+  finalized?: boolean;
+  createdAt?: string;
+};
 
-export type CalendarListData =
-  OpenApiSchema<'org.example.knockin.dto.MyRoommateCalendarListDto$Response'>;
+export type CalendarMonthData = {
+  targetMonth?: string;
+  calendarDays?: { targetDate?: string; exists?: boolean }[];
+};
 
-export type CalendarDetailData =
-  OpenApiSchema<'org.example.knockin.dto.MyRoommateCalendarDetailDto$Response'>;
+export type CalendarMember = {
+  memberId?: number;
+  name?: string;
+};
 
-export type CalendarType = OpenApiSchema<'org.example.knockin.dto.CalendarTypesDto$Response$Type'>;
+export type CalendarDayItem = {
+  calendarBasicInfo?: {
+    calendarId?: number;
+    canEdit?: boolean;
+    title?: string;
+    contents?: string;
+    isAllDay?: boolean;
+    startDate?: string;
+    endDate?: string;
+    categoryName?: string;
+    repeatType?: 'WEEKLY' | 'BI_WEEKLY' | 'MONTHLY';
+  };
+  calendarMembers?: CalendarMember[];
+};
 
-export type CalendarTypesData = OpenApiSchema<'org.example.knockin.dto.CalendarTypesDto$Response'>;
+export type CalendarDayData = {
+  targetDay?: string;
+  calendars?: CalendarDayItem[];
+};
+
+export type CalendarDetailData = {
+  id?: number;
+  title?: string;
+  contents?: string;
+  startDate?: string;
+  endDate?: string;
+  categoryName?: string;
+  memberIds?: number[];
+};
+
+export type CalendarEditData = {
+  repeatType?: ('WEEKLY' | 'BI_WEEKLY' | 'MONTHLY')[];
+  members?: (CalendarMember & { isMe?: boolean })[];
+  categoryNames?: string[];
+};
 
 export type CalendarQuery = {
   year?: number;
@@ -75,58 +143,74 @@ const MOCK_REQUESTS: RoommateRequestItem[] = [
 ];
 
 const MOCK_MY_ROOMMATE: MyRoommateData = {
-  userId: 2,
-  userName: '하준',
-  compatibility: {
-    score: 85,
-    lifeStyleInfo: [
-      { title: '생활 리듬', percent: '88' },
-      { title: '청결', percent: '82' },
-    ],
+  id: 1,
+  myRoommateInfo: {
+    memberId: 2,
+    memberName: '하준',
+    memberAge: 27,
+    gender: 'MALE',
   },
-  preferences: [
+  chatRoomId: 1,
+  score: 85,
+};
+
+const MOCK_HOUSE_RULES: HouseRuleItem[] = [
+  {
+    id: 1,
+    title: '청소 / 위생',
+    contents: '공용 공간 청소는 격주 토요일에 교대해요.',
+    finalized: true,
+    createdAt: '2026-05-28T09:00:00Z',
+  },
+];
+
+const MOCK_CALENDAR_MONTH: CalendarMonthData = {
+  targetMonth: '2026-06',
+  calendarDays: Array.from({ length: 30 }, (_, index) => ({
+    targetDate: `2026-06-${String(index + 1).padStart(2, '0')}`,
+    exists: index === 4 || index === 9,
+  })),
+};
+
+const MOCK_CALENDAR_DAY: CalendarDayData = {
+  targetDay: '2026-06-05',
+  calendars: [
     {
-      lifestyleId: 1,
-      name: '조용함 선호',
-      value: '5',
-      description: '소음에 민감해요',
-      type: 'SCALE',
+      calendarBasicInfo: {
+        calendarId: 1,
+        canEdit: true,
+        title: '대청소',
+        contents: '오전에 거실과 주방을 같이 청소해요.',
+        startDate: '2026-06-05T09:00:00',
+        endDate: '2026-06-05T10:00:00',
+        categoryName: '청소',
+      },
+      calendarMembers: [
+        { memberId: 1, name: '지민' },
+        { memberId: 2, name: '하준' },
+      ],
     },
   ],
 };
-
-const MOCK_CALENDARS: CalendarItem[] = [
-  {
-    calendarId: 1,
-    writer: '지민',
-    startDt: '2026-06-05',
-    endDt: '2026-06-05',
-    createAt: '2026-05-28T09:00:00Z',
-    type: 'cleaning',
-    title: '대청소',
-  },
-  {
-    calendarId: 2,
-    writer: '하준',
-    startDt: '2026-06-10',
-    endDt: '2026-06-10',
-    createAt: '2026-05-28T09:00:00Z',
-    type: 'bill',
-    title: '관리비 정산',
-  },
-];
 
 const MOCK_CALENDAR_DETAIL: CalendarDetailData = {
   id: 1,
   title: '대청소',
   contents: '오전에 거실/주방 같이 청소해요.',
+  startDate: '2026-06-05T09:00:00',
+  endDate: '2026-06-05T10:00:00',
+  categoryName: '청소',
+  memberIds: [1, 2],
 };
 
-const MOCK_CALENDAR_TYPES: CalendarType[] = [
-  { id: 1, name: '청소' },
-  { id: 2, name: '정산' },
-  { id: 3, name: '일정' },
-];
+const MOCK_CALENDAR_EDIT: CalendarEditData = {
+  repeatType: ['WEEKLY', 'BI_WEEKLY', 'MONTHLY'],
+  members: [
+    { memberId: 1, name: '지민', isMe: true },
+    { memberId: 2, name: '하준', isMe: false },
+  ],
+  categoryNames: ['청소', '공과금', '기타'],
+};
 
 // ─── Client: 요청 ──────────────────────────────────────────────────────────────
 
@@ -149,7 +233,9 @@ export function createRoommateRequest(
 }
 
 /** POST /roommate-requests/{requestId}/accept */
-export function acceptRoommateRequest(requestId: string): Promise<ApiResponse<RoommateRequestData>> {
+export function acceptRoommateRequest(
+  requestId: string,
+): Promise<ApiResponse<RoommateRequestData>> {
   if (USE_MOCK) {
     return mockOk({
       roommateMatchingRequiredInfo: {
@@ -163,7 +249,9 @@ export function acceptRoommateRequest(requestId: string): Promise<ApiResponse<Ro
 }
 
 /** POST /roommate-requests/{requestId}/reject */
-export function rejectRoommateRequest(requestId: string): Promise<ApiResponse<RoommateRequestData>> {
+export function rejectRoommateRequest(
+  requestId: string,
+): Promise<ApiResponse<RoommateRequestData>> {
   if (USE_MOCK) {
     return mockOk({
       roommateMatchingRequiredInfo: {
@@ -177,7 +265,9 @@ export function rejectRoommateRequest(requestId: string): Promise<ApiResponse<Ro
 }
 
 /** POST /roommate-requests/{requestId}/cancel */
-export function cancelRoommateRequest(requestId: string): Promise<ApiResponse<RoommateRequestData>> {
+export function cancelRoommateRequest(
+  requestId: string,
+): Promise<ApiResponse<RoommateRequestData>> {
   if (USE_MOCK) {
     return mockOk({
       roommateMatchingRequiredInfo: {
@@ -229,11 +319,50 @@ export function removeRoommate(roommateId: string): Promise<ApiResponse<UpdatedA
   return request('DELETE', `/roommates/me/${roommateId}`);
 }
 
+// ─── Client: 공동생활 합의서 ─────────────────────────────────────────────────
+
+/** GET /roommates/me/house-rule — 공동생활 규칙 목록 */
+export function getHouseRules(): Promise<ApiResponse<HouseRuleItem[]>> {
+  if (USE_MOCK) return mockOk(MOCK_HOUSE_RULES);
+  return request('GET', '/roommates/me/house-rule');
+}
+
+/** POST /roommates/me/house-rule — 공동생활 규칙 저장 */
+export function createHouseRule(body: HouseRuleWriteRequest): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('POST', '/roommates/me/house-rule', { body });
+}
+
+/** PUT /roommates/me/house-rule/{id} — 공동생활 규칙 수정 */
+export function updateHouseRule(
+  id: string,
+  body: HouseRuleWriteRequest,
+): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('PUT', `/roommates/me/house-rule/${id}`, { body });
+}
+
+/** DELETE /roommates/me/house-rule/{id} — 공동생활 규칙 삭제 */
+export function deleteHouseRule(id: string): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('DELETE', `/roommates/me/house-rule/${id}`);
+}
+
 // ─── Client: 달력 ──────────────────────────────────────────────────────────────
 
-/** GET /roommates/me/calendar — 달력 목록 조회 */
-export function getCalendars(query: CalendarQuery = {}): Promise<ApiResponse<CalendarListData>> {
-  if (USE_MOCK) return mockOk({ calendars: MOCK_CALENDARS });
+/** GET /roommates/me/calendar — 월별 일정 존재 여부 조회 */
+export function getCalendars(query: CalendarQuery = {}): Promise<ApiResponse<CalendarMonthData>> {
+  if (USE_MOCK) return mockOk(MOCK_CALENDAR_MONTH);
+  return request('GET', '/roommates/me/calendar', { query });
+}
+
+/** GET /roommates/me/calendar?day= — 선택 날짜 일정 조회 */
+export function getDailyCalendars(query: {
+  year: number;
+  month: number;
+  day: number;
+}): Promise<ApiResponse<CalendarDayData>> {
+  if (USE_MOCK) return mockOk(MOCK_CALENDAR_DAY);
   return request('GET', '/roommates/me/calendar', { query });
 }
 
@@ -243,10 +372,16 @@ export function getCalendar(id: string): Promise<ApiResponse<CalendarDetailData>
   return request('GET', `/roommates/me/calendar/${id}`);
 }
 
-/** GET /roommates/me/calendar/types — 캘린더 타입 조회 */
-export function getCalendarTypes(): Promise<ApiResponse<CalendarTypesData>> {
-  if (USE_MOCK) return mockOk({ types: MOCK_CALENDAR_TYPES });
-  return request('GET', '/roommates/me/calendar/types');
+/** GET /roommates/me/calendar/edit — 캘린더 편집 폼 메타데이터 */
+export function getCalendarEdit(): Promise<ApiResponse<CalendarEditData>> {
+  if (USE_MOCK) return mockOk(MOCK_CALENDAR_EDIT);
+  return request('GET', '/roommates/me/calendar/edit');
+}
+
+/** GET /roommates/me/calendar/categories — 캘린더 카테고리 조회 */
+export function getCalendarTypes(): Promise<ApiResponse<{ categoryNames?: string[] }>> {
+  if (USE_MOCK) return mockOk({ categoryNames: MOCK_CALENDAR_EDIT.categoryNames });
+  return request('GET', '/roommates/me/calendar/categories');
 }
 
 /** POST /roommates/me/calendar — 달력 등록 */

@@ -44,7 +44,7 @@ export function ModerationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!apiBlockedUsers) return;
-    setBlockedUserIds(new Set(apiBlockedUsers.map((user) => user.id)));
+    setBlockedUserIds(new Set(apiBlockedUsers.map((user) => user.userId)));
   }, [apiBlockedUsers]);
 
   const blockUser = useCallback((id: string) => {

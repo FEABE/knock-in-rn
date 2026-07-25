@@ -182,6 +182,23 @@ export function getBoNoticeDetail(id: string): Promise<ApiResponse<BoNoticeDetai
   return request('GET', `/bo/notices/${id}`);
 }
 
+/** GET /meta/notices — 사용자 공지 목록 조회 */
+export function getNotices(params: PageParams = {}): Promise<ApiResponse<BoNoticeListData>> {
+  if (USE_MOCK) return mockOk({ notices: MOCK_NOTICES });
+  return request('GET', '/meta/notices', { query: params });
+}
+
+/** GET /meta/notices/{id} — 사용자 공지 상세 조회 */
+export function getNoticeDetail(id: string): Promise<ApiResponse<BoNoticeDetailData>> {
+  if (USE_MOCK) {
+    const notice = MOCK_NOTICES.find((item) => String(item.id) === id) ?? MOCK_NOTICES[0];
+    return mockOk({
+      notice: notice ? { ...notice, contents: '노크인 서비스 공지사항입니다.' } : undefined,
+    });
+  }
+  return request('GET', `/meta/notices/${id}`);
+}
+
 // ─── Client: 고객센터 ───────────────────────────────────────────────────────────
 
 /** POST /inquiries — 문의 작성 */

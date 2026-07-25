@@ -8,8 +8,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createInquiry,
-  getBoNoticeDetail,
-  getBoNotices,
+  getNoticeDetail,
+  getNotices,
   getInquiries,
   getInquiryCategories,
   getInquiryDetail,
@@ -100,7 +100,7 @@ export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
   const query = useQuery({
     queryKey: ['support', 'notices', 'with-detail'],
     queryFn: async () => {
-      const list = await getBoNotices({ page: 0, size: 20 });
+      const list = await getNotices({ page: 0, size: 20 });
       if (list.status !== 200 || list.error) {
         throw new Error(list.error?.message ?? `요청 실패 (status ${list.status})`);
       }
@@ -108,7 +108,7 @@ export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
       return Promise.all(
         (list.data?.notices ?? []).map(async (notice) => {
           const id = String(notice.id ?? '');
-          const detail = id ? await getBoNoticeDetail(id) : null;
+          const detail = id ? await getNoticeDetail(id) : null;
           const detailNotice =
             detail?.status === 200 && !detail.error ? detail.data?.notice : undefined;
           return {

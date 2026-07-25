@@ -23,6 +23,7 @@ export * from './mappers';
 export * from './use-async';
 export * from './use-roommate';
 export * from './use-notifications';
+export * from './use-alarm-stream';
 export * from './use-chat';
 export * from './use-chat-socket';
 export * from './use-support';

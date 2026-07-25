@@ -26,13 +26,18 @@ export type AsyncState<T> = {
 export function useApi<T>(
   queryKey: QueryKey,
   fetcher: () => Promise<ApiResponse<T>>,
-  options: { enabled?: boolean; refetchInterval?: number | false } = {},
+  options: {
+    enabled?: boolean;
+    refetchInterval?: number | false;
+    retry?: boolean | number;
+  } = {},
 ): AsyncState<T> {
   const enabled = options.enabled ?? true;
   const query = useQuery({
     queryKey,
     enabled,
     refetchInterval: options.refetchInterval,
+    retry: options.retry,
     queryFn: async () => {
       const res = await fetcher();
       if (res.status !== 200 || res.error) {

@@ -114,16 +114,16 @@ async function main() {
   check('getAlarms', alarmItems.length > 0, `alarms=${alarmItems.length}`);
 
   const mate = await getMyRoommate();
-  const matePreferences = mate.data.preferences ?? [];
+  const mateName = mate.data.myRoommateInfo?.memberName;
   check(
     'getMyRoommate',
-    !!mate.data.userName && matePreferences.length > 0,
-    `userName=${mate.data.userName} prefs=${matePreferences.length}`,
+    !!mate.data.id && !!mateName,
+    `roommateId=${mate.data.id} memberName=${mateName}`,
   );
 
   const cal = await getCalendars({ year: 2026, month: 6 });
-  const calendarItems = cal.data.calendars ?? [];
-  check('getCalendars', calendarItems.length > 0, `calendars=${calendarItems.length}`);
+  const calendarDays = cal.data.calendarDays ?? [];
+  check('getCalendars', calendarDays.length > 0, `days=${calendarDays.length}`);
 
   const regions = await getRegions();
   const regionItems = regions.data.region ?? [];
