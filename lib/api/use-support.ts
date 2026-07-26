@@ -8,7 +8,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createInquiry,
-  getNoticeDetail,
   getNotices,
   getInquiries,
   getInquiryCategories,
@@ -98,27 +97,19 @@ export function useSupportFaqs(): AsyncState<SupportFaqItem[]> {
 
 export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
   const query = useQuery({
-    queryKey: ['support', 'notices', 'with-detail'],
+    queryKey: ['support', 'notices'],
     queryFn: async () => {
       const list = await getNotices({ page: 0, size: 20 });
       if (list.status !== 200 || list.error) {
         throw new Error(list.error?.message ?? `요청 실패 (status ${list.status})`);
       }
 
-      return Promise.all(
-        (list.data?.notices ?? []).map(async (notice) => {
-          const id = String(notice.id ?? '');
-          const detail = id ? await getNoticeDetail(id) : null;
-          const detailNotice =
-            detail?.status === 200 && !detail.error ? detail.data?.notice : undefined;
-          return {
-            id,
-            title: detailNotice?.title ?? notice.title ?? '공지사항',
-            body: String(detailNotice?.contents ?? ''),
-            dateLabel: formatDateLabel(detailNotice?.createAt ?? notice.createAt),
-          };
-        }),
-      );
+      return (list.data?.notices ?? []).map((notice) => ({
+        id: String(notice.id ?? ''),
+        title: notice.title ?? '공지사항',
+        body: '',
+        dateLabel: formatDateLabel(notice.createAt),
+      }));
     },
   });
 

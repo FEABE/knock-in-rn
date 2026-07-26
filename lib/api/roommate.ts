@@ -308,9 +308,13 @@ function normalizeRoommateRequestItem(item: RoommateRequestItem): RoommateReques
 // ─── Client: 내 룸메이트 ────────────────────────────────────────────────────────
 
 /** GET /roommates/me — 내 룸메이트 조회 */
-export function getMyRoommate(): Promise<ApiResponse<MyRoommateData>> {
+export async function getMyRoommate(): Promise<ApiResponse<MyRoommateData>> {
   if (USE_MOCK) return mockOk(MOCK_MY_ROOMMATE);
-  return request('GET', '/roommates/me');
+  const response = await request<MyRoommateData>('GET', '/roommates/me');
+  if (response.status === 404 && response.error?.code === 'NOT_FOUND') {
+    return { status: 200, data: {} as MyRoommateData, error: null };
+  }
+  return response;
 }
 
 /** DELETE /roommates/me/{roommateId} — 룸메이트 해제 */

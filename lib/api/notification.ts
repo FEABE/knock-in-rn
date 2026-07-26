@@ -34,6 +34,14 @@ export type BoNoticeListData = OpenApiSchema<'org.example.knockin.dto.BoNoticeLi
 export type BoNoticeDetailData =
   OpenApiSchema<'org.example.knockin.dto.BoNoticeDetailDto$Response'>;
 
+// 현재 포함된 OpenAPI 스냅샷에는 사용자용 NoticeListDto가 빠져 있어,
+// 백엔드 DTO와 같은 목록 구조를 직접 정의합니다.
+export type NoticeItem = BoNoticeItem;
+
+export type NoticeListData = {
+  notices?: NoticeItem[];
+};
+
 export type AlarmSetting =
   OpenApiSchema<'org.example.knockin.dto.MyNotificationSettingsDto$Response$AlarmSettingItem'>;
 
@@ -59,6 +67,17 @@ export type InquiryCategory =
 
 export type InquiryCategoriesData =
   OpenApiSchema<'org.example.knockin.dto.InquiryCategoryListDto$Response'>;
+
+export type DevicePlatform = 'ANDROID' | 'IOS';
+
+/** 로그인 직후 백엔드에 저장하는 설치 기기 정보. */
+export type DeviceRegistrationRequest = {
+  /** 앱 설치별 UUID. 백엔드 제한: 50자. */
+  deviceId: string;
+  /** Firebase Messaging이 발급한 실제 토큰. 백엔드 제한: 512자. */
+  fcmToken: string;
+  platform: DevicePlatform;
+};
 
 // ─── Mock ─────────────────────────────────────────────────────────────────────
 
@@ -165,6 +184,12 @@ export function updateNotificationSetting(
   return request('PATCH', '/users/me/notification-settings', { body });
 }
 
+/** POST /users/me/devices — 로그인한 회원의 FCM 기기 정보 저장 */
+export function registerMyDevice(body: DeviceRegistrationRequest): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('POST', '/users/me/devices', { body });
+}
+
 /** GET /bo/notices — 운영 공지 목록 조회 */
 export function getBoNotices(params: PageParams = {}): Promise<ApiResponse<BoNoticeListData>> {
   if (USE_MOCK) return mockOk({ notices: MOCK_NOTICES });
@@ -182,21 +207,10 @@ export function getBoNoticeDetail(id: string): Promise<ApiResponse<BoNoticeDetai
   return request('GET', `/bo/notices/${id}`);
 }
 
-/** GET /meta/notices — 사용자 공지 목록 조회 */
-export function getNotices(params: PageParams = {}): Promise<ApiResponse<BoNoticeListData>> {
+/** GET /users/me/notices — 사용자 공지 목록 조회 */
+export function getNotices(params: PageParams = {}): Promise<ApiResponse<NoticeListData>> {
   if (USE_MOCK) return mockOk({ notices: MOCK_NOTICES });
-  return request('GET', '/meta/notices', { query: params });
-}
-
-/** GET /meta/notices/{id} — 사용자 공지 상세 조회 */
-export function getNoticeDetail(id: string): Promise<ApiResponse<BoNoticeDetailData>> {
-  if (USE_MOCK) {
-    const notice = MOCK_NOTICES.find((item) => String(item.id) === id) ?? MOCK_NOTICES[0];
-    return mockOk({
-      notice: notice ? { ...notice, contents: '노크인 서비스 공지사항입니다.' } : undefined,
-    });
-  }
-  return request('GET', `/meta/notices/${id}`);
+  return request('GET', '/users/me/notices', { query: params });
 }
 
 // ─── Client: 고객센터 ───────────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import type { RoomFormValues } from './room-post-form.model';
 
 type BoardWriteRequestWithOptions = BoardWriteRequest & {
   roomOption?: number[];
+  extraOptionIds?: number[];
 };
 
 export function roomFormValuesToBoardWriteRequest(values: RoomFormValues): BoardWriteRequest {
@@ -40,6 +41,7 @@ export function roomFormValuesToBoardWriteRequest(values: RoomFormValues): Board
   }
   if (roomOption.length > 0) {
     body.roomOption = roomOption;
+    body.extraOptionIds = roomOption;
   }
   return body;
 }

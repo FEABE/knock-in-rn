@@ -59,6 +59,7 @@ export type BoardWriteRequest = Partial<BoardSaveRequest & BoardModifyRequest> &
   comeableAt?: string;
   comeableDate?: string;
   roomOption?: number[];
+  extraOptionIds?: number[];
   images?: BoardImageInput[];
   existingImages?: OpenApiSchema<'org.example.knockin.dto.BoardModifyDto$Request$ExistingFileDto'>[];
   newImages?: OpenApiSchema<'org.example.knockin.dto.BoardModifyDto$Request$NewFileDto'>[];
@@ -544,6 +545,7 @@ function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | '
           regionId: body.regionId ?? body.region ?? 0,
           comeableDateNegotiable: body.comeableDateNegotiable ?? false,
           comeableDate: body.comeableDate ?? body.comeableAt,
+          extraOptionIds: body.extraOptionIds ?? body.roomOption ?? [],
           images: files.map((entry) => ({
             fileIndex: entry.fileIndex,
             thumbnail: entry.thumbnail,

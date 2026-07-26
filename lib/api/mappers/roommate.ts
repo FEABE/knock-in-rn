@@ -12,13 +12,20 @@ export type RoommateMatchCardModel = {
   name: string;
   profileImageUrl?: string;
   age?: number;
+  gender?: 'male' | 'female';
   genderLabel?: string;
   hasRoom: boolean;
   liked: boolean;
   compatibilityScore: number;
+  minDeposit?: number;
+  maxDeposit?: number;
+  minMonthlyRent?: number;
+  maxMonthlyRent?: number;
   depositRentLabel: string;
   moveInLabel: string;
+  roomTypeLabels: string[];
   roomTypeLabel: string;
+  regionLabels: string[];
   regionLabel: string;
   lifestyleChips: string[];
   conditionChips: string[];
@@ -67,13 +74,34 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
   const id = stringValue(match.userId ?? match.memberId, '');
   const score = numberValue(match.score);
   const roomTypes = match.roomType ?? match.seekerProfile?.roomTypeNames ?? [];
-  const roomTypeLabel = roomTypes
+  const roomTypeLabels = roomTypes
     .map((type) => (typeof type === 'number' ? labelForRoomTypeId(type) : type))
-    .filter((label) => label !== '-')
-    .join(', ');
-  const region =
-    match.region ?? match.offerProfile?.regionFullName ?? match.seekerProfile?.regionFullNames?.[0];
+    .filter((label) => label !== '-');
+  const roomTypeLabel = roomTypeLabels.join(', ');
+  const regionValues = match.offerProfile
+    ? [match.region ?? match.offerProfile.regionFullName]
+    : (match.seekerProfile?.regionFullNames ?? [match.region]);
+  const regionLabels = regionValues
+    .map((region) => (typeof region === 'number' ? labelForRegionId(region) : region))
+    .filter((region): region is string => Boolean(region));
+  const region = regionLabels[0];
   const isOffer = match.roomProfileType === 'OFFER';
+  const minDeposit = optionalNumber(
+    isOffer ? (match.deposit ?? match.offerProfile?.deposit) : match.minDeposit,
+  );
+  const maxDeposit = optionalNumber(
+    isOffer ? (match.deposit ?? match.offerProfile?.deposit) : match.maxDeposit,
+  );
+  const minMonthlyRent = optionalNumber(
+    isOffer
+      ? (match.mounthRent ?? match.offerProfile?.monthlyRent)
+      : (runtimeMatch.minMonthlyRent ?? match.minMounthRent),
+  );
+  const maxMonthlyRent = optionalNumber(
+    isOffer
+      ? (match.mounthRent ?? match.offerProfile?.monthlyRent)
+      : (runtimeMatch.maxMonthlyRent ?? match.maxMounthRent),
+  );
   const depositLabel = isOffer
     ? formatMoneyValue(match.deposit ?? match.offerProfile?.deposit)
     : formatMoneyRange(
@@ -92,17 +120,30 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     name: match.name ?? match.memberName ?? '이름 없음',
     profileImageUrl: match.memberProfileImageUrl,
     age: match.memberAge,
+    gender: match.gender === 'FEMALE' ? 'female' : match.gender === 'MALE' ? 'male' : undefined,
     genderLabel: match.gender === 'FEMALE' ? '여성' : match.gender === 'MALE' ? '남성' : undefined,
     hasRoom: isOffer,
     liked: booleanValue(runtimeMatch.interested ?? match.isLike),
     compatibilityScore: score,
+    minDeposit,
+    maxDeposit,
+    minMonthlyRent,
+    maxMonthlyRent,
     depositRentLabel: `${depositLabel} / ${monthlyRentLabel}`,
     moveInLabel: formatDateLabel(match.comeableAt),
+    roomTypeLabels,
     roomTypeLabel: roomTypeLabel || '-',
-    regionLabel: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
+    regionLabels,
+    regionLabel: region ?? '-',
     lifestyleChips: definedLabels((match.lifeStyles ?? []).slice(0, 4).map((item) => item.name)),
     conditionChips: definedLabels((match.conditions ?? []).map((item) => item.name)),
   };
+}
+
+function optionalNumber(value: number | string | null | undefined): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 export function toRoommateMatchDetailModel(

@@ -23,6 +23,8 @@ export type UseBlockedListScreenReturn = {
   reports: ReportListItem[];
   loading: boolean;
   error: string | null;
+  reportsLoading: boolean;
+  reportsError: string | null;
   onBack: () => void;
   onUnblock: (user: BlockedUserItem) => void;
 };
@@ -30,7 +32,7 @@ export type UseBlockedListScreenReturn = {
 export function useBlockedListScreen(): UseBlockedListScreenReturn {
   const router = useRouter();
   const { data: users, loading, error } = useBlockedUsers();
-  const reportsState = useApi(['profile', 'reports'], () => getMyReports());
+  const reportsState = useApi(['profile', 'reports'], () => getMyReports(), { retry: false });
   const { requestUnblock } = useAccountActions();
 
   return {
@@ -44,8 +46,10 @@ export function useBlockedListScreen(): UseBlockedListScreenReturn {
         statusLabel: reportStatusLabel(report.status),
         statusTone: reportStatusTone(report.status),
       })) ?? [],
-    loading: loading || reportsState.loading,
-    error: error ?? reportsState.error,
+    loading,
+    error,
+    reportsLoading: reportsState.loading,
+    reportsError: reportsState.error,
     onBack: () => router.back(),
     onUnblock: (user) =>
       Alert.alert('차단 해제', `${user.name}님을 차단 해제할까요?`, [

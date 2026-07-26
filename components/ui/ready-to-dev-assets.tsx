@@ -202,6 +202,16 @@ export function EmptyHouseArtwork({ size = 180 }: ArtworkProps) {
   );
 }
 
+export function RoomLocationArtwork({ size = 180 }: ArtworkProps) {
+  return (
+    <Image
+      source={require('../../assets/images/figma-ready/empty-search-and-interest.png')}
+      contentFit="contain"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
 export function IdentityVerificationArtwork({ size = 226 }: ArtworkProps) {
   return (
     <Image

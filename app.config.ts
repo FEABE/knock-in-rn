@@ -15,6 +15,12 @@ const config: ExpoConfig = {
     appleTeamId: '2VW85FYXV8',
     googleServicesFile: './GoogleService-Info.plist',
     usesAppleSignIn: true,
+    entitlements: {
+      'aps-environment': 'development',
+    },
+    infoPlist: {
+      UIBackgroundModes: ['remote-notification'],
+    },
   },
   android: {
     package: 'com.knockin',
@@ -36,6 +42,7 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-font',
     '@react-native-firebase/app',
+    '@react-native-firebase/messaging',
     'expo-secure-store',
     'expo-apple-authentication',
     [

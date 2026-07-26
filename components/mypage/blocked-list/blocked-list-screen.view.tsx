@@ -11,6 +11,8 @@ export function BlockedListScreenView({
   reports,
   loading,
   error,
+  reportsLoading,
+  reportsError,
   onBack,
   onUnblock,
 }: BlockedListScreenViewProps) {
@@ -67,7 +69,14 @@ export function BlockedListScreenView({
           <Text className="text-sm font-semibold text-neutral-800">
             신고 기록 ({reports.length})
           </Text>
-          {reports.length === 0 ? (
+          {reportsLoading ? (
+            <View className="items-center gap-3 p-8">
+              <ActivityIndicator color="#256EF4" />
+              <Text className="text-sm text-neutral-400">신고 기록을 불러오는 중...</Text>
+            </View>
+          ) : reportsError ? (
+            <EmptyBox message={`신고 기록을 불러오지 못했어요: ${reportsError}`} />
+          ) : reports.length === 0 ? (
             <EmptyBox message="신고 기록이 없어요" />
           ) : (
             reports.map((report) => <ReportCard key={report.id} report={report} />)

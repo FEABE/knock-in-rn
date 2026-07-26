@@ -5,6 +5,7 @@ import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type BoardListQuery,
+  labelForRoomTypeId,
   regionBackendId,
   roomTypeBackendId,
   useRoommateBoardLikeActions,
@@ -117,11 +118,12 @@ export function useExploreScreen(): UseExploreScreenReturn {
   } = useRoommateMatchCards();
   const visibleMatches = useMemo(
     () =>
-      filterMatchesBySearch(
+      filterMatches(
         (matchList ?? []).filter((match) => !isUserBlocked(match.id)),
         searchQuery,
+        filter,
       ),
-    [matchList, isUserBlocked, searchQuery],
+    [matchList, isUserBlocked, searchQuery, filter],
   );
 
   const handleFilterChange = (next: ExploreFilter) => {
@@ -194,24 +196,86 @@ function filterRoomsBySearch(posts: RoomPost[], query: string): RoomPost[] {
   );
 }
 
-function filterMatchesBySearch(
+function filterMatches(
   matches: RoommateMatchCardModel[],
   query: string,
+  filter: ExploreFilter,
 ): RoommateMatchCardModel[] {
   const normalized = normalizeSearchValue(query);
-  if (!normalized) return matches;
-  return matches.filter((match) =>
-    normalizeSearchValue(
-      [
-        match.name,
-        match.genderLabel,
-        match.regionLabel,
-        match.roomTypeLabel,
-        ...match.lifestyleChips,
-        ...match.conditionChips,
-      ].join(' '),
-    ).includes(normalized),
-  );
+  const selectedRoomTypes = filter.roomTypes
+    .map(roomTypeBackendId)
+    .filter((id): id is number => id !== undefined)
+    .map(labelForRoomTypeId)
+    .map(normalizeSearchValue);
+  const hasBudgetFilter =
+    filter.depositMin !== INITIAL_EXPLORE_FILTER.depositMin ||
+    filter.depositMax !== INITIAL_EXPLORE_FILTER.depositMax ||
+    filter.rentMin !== INITIAL_EXPLORE_FILTER.rentMin ||
+    filter.rentMax !== INITIAL_EXPLORE_FILTER.rentMax;
+
+  return matches.filter((match) => {
+    if (
+      normalized &&
+      !normalizeSearchValue(
+        [
+          match.name,
+          match.genderLabel,
+          ...match.regionLabels,
+          ...match.roomTypeLabels,
+          ...match.lifestyleChips,
+          ...match.conditionChips,
+        ].join(' '),
+      ).includes(normalized)
+    ) {
+      return false;
+    }
+
+    if (filter.gender !== 'any' && match.gender !== filter.gender) return false;
+
+    if (filter.regions.length > 0) {
+      const matchRegions = match.regionLabels.map(normalizeRegionValue);
+      const regionMatched = filter.regions.some((region) => {
+        const selected = normalizeRegionValue(`${region.city} ${region.district}`);
+        return matchRegions.some(
+          (candidate) => candidate.includes(selected) || selected.includes(candidate),
+        );
+      });
+      if (!regionMatched) return false;
+    }
+
+    if (
+      selectedRoomTypes.length > 0 &&
+      !match.roomTypeLabels
+        .map(normalizeSearchValue)
+        .some((roomType) => selectedRoomTypes.includes(roomType))
+    ) {
+      return false;
+    }
+
+    if (
+      hasBudgetFilter &&
+      (!rangesOverlap(match.minDeposit, match.maxDeposit, filter.depositMin, filter.depositMax) ||
+        !rangesOverlap(match.minMonthlyRent, match.maxMonthlyRent, filter.rentMin, filter.rentMax))
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function normalizeRegionValue(value: string): string {
+  return normalizeSearchValue(value).replace(/특별시|광역시|특별자치시|특별자치도|도/g, '');
+}
+
+function rangesOverlap(
+  candidateMin: number | undefined,
+  candidateMax: number | undefined,
+  selectedMin: number,
+  selectedMax: number,
+): boolean {
+  if (candidateMin === undefined || candidateMax === undefined) return false;
+  return candidateMin <= selectedMax && candidateMax >= selectedMin;
 }
 
 function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {

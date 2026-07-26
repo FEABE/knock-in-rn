@@ -20,6 +20,10 @@ import {
   type StoredAuthIdentity,
 } from '@/lib/auth/session-storage';
 import { signInWithAppleSdk } from '@/lib/auth/apple-native';
+import {
+  subscribeToPushTokenRefresh,
+  syncPushDevice,
+} from '@/lib/notifications/device-registration';
 
 import type { Session, UserSummary } from './types';
 import {
@@ -276,6 +280,41 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     });
     return () => setAuthFailureHandler(null);
   }, [router, signOut]);
+
+  const sessionUserId = session?.user.id;
+
+  useEffect(() => {
+    if (!sessionUserId || USE_MOCK) return;
+
+    let cancelled = false;
+    if (__DEV__) {
+      console.info('[push] session device registration started');
+    }
+    void syncPushDevice({ requestPermission: true }).then((result) => {
+      if (cancelled || !__DEV__) return;
+      const failure = result.status === 'failed' ? result : null;
+      console.info('[push] session device registration completed', {
+        status: result.status,
+        code: failure?.code,
+        message: failure?.message,
+      });
+    });
+
+    try {
+      const unsubscribe = subscribeToPushTokenRefresh();
+      return () => {
+        cancelled = true;
+        unsubscribe();
+      };
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[push] failed to subscribe to FCM token refresh', error);
+      }
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionUserId]);
 
   const value = useMemo<SessionContextValue>(
     () => ({ session, signIn, signOut, markProfileComplete, setVisibility }),

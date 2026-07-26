@@ -179,7 +179,8 @@ export function useBlockedUsers(
   const users = useMemo<BlockedUserItem[] | null>(
     () =>
       state.data?.blocks?.map((block) => ({
-        id: String(block.blockId ?? ''),
+        // 현재 차단 해제 API는 URL의 값을 차단 레코드 ID가 아니라 상대 회원 ID로 사용한다.
+        id: String(block.blockId ?? block.userId ?? ''),
         userId: String(block.userId ?? ''),
         name: block.name ?? '사용자',
         dateLabel: formatDateLabel(block.createAt),

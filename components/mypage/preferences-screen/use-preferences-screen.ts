@@ -239,7 +239,17 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
       logEvent(AnalyticsEvent.PREFERENCE_PROMPT_SKIP);
       exit();
     },
-    goBackStep: () => setState((current) => ({ ...current, step: current.step === 1 ? 0 : 1 })),
+    goBackStep: () => {
+      if (step === 2) {
+        setState((current) => ({ ...current, step: 1 }));
+        return;
+      }
+      if (fromOnboarding) {
+        setState((current) => ({ ...current, step: 0 }));
+        return;
+      }
+      exit();
+    },
     goPriorityStep: () => {
       logEvent(AnalyticsEvent.PREFERENCE_STEP_NEXT, { step: 'lifestyle_preference' });
       setState((current) => ({ ...current, step: 2 }));

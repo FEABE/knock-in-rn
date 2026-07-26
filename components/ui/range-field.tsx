@@ -144,7 +144,7 @@ function RangeFieldControl({
         </Text>
       </View>
 
-      <View className="pr-2">
+      <View className="px-2">
         <View
           ref={trackRef}
           className="relative h-[26px]"

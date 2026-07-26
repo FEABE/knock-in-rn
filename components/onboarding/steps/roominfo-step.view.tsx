@@ -1,10 +1,13 @@
-import type { ReactNode } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
-import { TextField } from '@/components/ui/headless';
+import { BottomSheet, TextField } from '@/components/ui/headless';
 import { RangeField } from '@/components/ui/range-field';
-import { RoomPresenceArtwork, RoomTypeArtwork } from '@/components/ui/ready-to-dev-assets';
+import {
+  RoomLocationArtwork,
+  RoomPresenceArtwork,
+  RoomTypeArtwork,
+} from '@/components/ui/ready-to-dev-assets';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import {
@@ -19,8 +22,10 @@ export function RoomInfoStepView({
   draft,
   cityOptions,
   gugunOptions,
-  dongOptions,
   roomTypeOptions,
+  regionPickerOpen,
+  regionLoading,
+  regionError,
   stage,
   stageTitle,
   stageProgress,
@@ -33,9 +38,10 @@ export function RoomInfoStepView({
   onBack,
   onNext,
   setHasRoom,
+  setRegionPickerOpen,
+  reloadRegions,
   selectSido,
   selectGugun,
-  selectDong,
   removeRegion,
   setDeposit,
   setMonthlyRent,
@@ -44,18 +50,6 @@ export function RoomInfoStepView({
   setBudgetRent,
   toggleRoomType,
 }: UseRoomInfoStepReturn) {
-  const regionTable = (
-    <RegionTable
-      draft={draft}
-      cityOptions={cityOptions}
-      gugunOptions={gugunOptions}
-      dongOptions={dongOptions}
-      onSelectSido={selectSido}
-      onSelectGugun={selectGugun}
-      onSelectDong={selectDong}
-    />
-  );
-
   return (
     <View className="flex-1 bg-white">
       <View className="h-12 flex-row items-center justify-between px-4">
@@ -75,6 +69,7 @@ export function RoomInfoStepView({
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-6 px-4 py-6 pb-4"
+        contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         automaticallyAdjustKeyboardInsets
@@ -101,38 +96,37 @@ export function RoomInfoStepView({
         ) : null}
 
         {stage === 1 ? (
-          <Section label={hasRoom ? '방 위치' : `선호 방 위치 · 최대 ${MAX_REGIONS}개`}>
-            {regionTable}
+          <View className="flex-1 justify-between gap-6">
+            <RegionSelectButton
+              label={
+                hasRoom && room.region
+                  ? `${room.region.city} ${room.region.district}`.trim()
+                  : '지역 선택하기'
+              }
+              onPress={() => setRegionPickerOpen(true)}
+            />
+
+            <View className="flex-1 items-center justify-center">
+              <RoomLocationArtwork size={180} />
+            </View>
+
             {noRoom && room.regions.length > 0 ? (
-              <View className="flex-row flex-wrap gap-2">
-                {room.regions.map((region) => (
-                  <Pressable
-                    key={region.id}
-                    onPress={() => removeRegion(region.id)}
-                    className="flex-row items-center gap-1 rounded-full bg-[#256EF4]/10 px-3 py-1 active:opacity-80"
-                  >
-                    <Text className="text-xs text-[#256EF4]">
-                      {region.city} {region.district}
-                    </Text>
-                    <Ionicons name="close" size={12} color="#256EF4" />
-                  </Pressable>
-                ))}
-              </View>
+              <SelectedRegions regions={room.regions} max={MAX_REGIONS} onRemove={removeRegion} />
             ) : null}
-          </Section>
+          </View>
         ) : null}
 
         {stage === 2 && hasRoom ? (
           <View className="gap-5">
             <NumberField
               label="보증금"
-              placeholder="예) 1000 (0 입력 가능)"
+              placeholder="보증금"
               value={room.deposit}
               onChange={setDeposit}
             />
             <NumberField
               label="월세"
-              placeholder="예) 50"
+              placeholder="월세"
               value={room.monthlyRent}
               onChange={setMonthlyRent}
             />
@@ -193,11 +187,26 @@ export function RoomInfoStepView({
         </View>
       ) : null}
 
-      <OnboardingFooter
-        canProceed={canProceed}
-        primaryLabel="다음으로"
-        loading={submitting}
-        onPress={onNext}
+      {stage > 0 ? (
+        <OnboardingFooter
+          canProceed={canProceed}
+          primaryLabel="다음으로"
+          loading={submitting}
+          onPress={onNext}
+        />
+      ) : null}
+
+      <RegionPickerSheet
+        open={regionPickerOpen}
+        onOpenChange={setRegionPickerOpen}
+        draft={draft}
+        cityOptions={cityOptions}
+        districtOptions={gugunOptions}
+        loading={regionLoading}
+        error={regionError}
+        onRetry={reloadRegions}
+        onSelectCity={selectSido}
+        onSelectDistrict={selectGugun}
       />
 
       {toast ? (
@@ -211,37 +220,28 @@ export function RoomInfoStepView({
   );
 }
 
-function Section({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      {children}
-    </View>
-  );
-}
-
 function StageIntro({ stage, hasRoom }: { stage: 0 | 1 | 2 | 3; hasRoom: boolean }) {
   const copy =
     stage === 0
       ? ['현재 머물고 있는', '방이 있으신가요?', '언제든 마이페이지에서 변경할 수 있어요']
       : stage === 1
         ? [
-            hasRoom ? '방이 있는 지역을' : '희망하는 지역을',
-            '선택해주세요',
-            '지역은 나중에도 변경할 수 있어요',
+            hasRoom ? '거주하고 있는' : '거주하고 싶은',
+            '집의 주소를 선택해주세요',
+            '언제든 마이페이지에서 변경할 수 있어요',
           ]
         : stage === 2
           ? [
-              hasRoom ? '현재 방의 가격을' : '희망하는 예산을',
-              hasRoom ? '알려주세요' : '선택해주세요',
+              hasRoom ? '거주하고 있는 집의' : '희망하는 예산을',
+              hasRoom ? '예산을 선택해주세요' : '선택해주세요',
               '언제든 마이페이지에서 변경할 수 있어요',
             ]
           : [
-              hasRoom ? '현재 거주 중인' : '거주하고 싶은',
+              hasRoom ? '거주하고 있는' : '거주하고 싶은',
               '방 형태를 선택해주세요',
               hasRoom
-                ? '현재 거주 중인 방 형태를 선택해주세요'
-                : '원하는 방 형태를 최대 3개까지 선택해주세요',
+                ? '거주하고 있는 방의 형태를 선택해주세요'
+                : '원하시는 방 형태를 최대 3개까지 선택해주세요',
             ];
 
   return (
@@ -271,7 +271,7 @@ function RoomTypeChoice({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`h-[108px] w-[31%] items-center justify-center gap-1 rounded-lg border px-2 py-2 ${
+      className={`h-[108px] w-[31%] items-center justify-center gap-1 rounded border px-2 py-2 ${
         selected
           ? 'border-[#256EF4] bg-[#EEF4FF]'
           : disabled
@@ -311,100 +311,212 @@ function RoomChoice({
   return (
     <Pressable
       onPress={onPress}
-      className={`min-h-24 flex-row items-center gap-3 rounded-lg border px-5 py-4 active:opacity-90 ${
+      className={`h-24 rounded-lg border px-5 py-4 active:opacity-90 ${
         selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-transparent bg-[#F6F6FA]'
       }`}
     >
-      <RoomPresenceArtwork hasRoom={hasRoom} size={28} />
-      <View className="flex-1 gap-1">
-        <Text className={`text-base font-bold ${selected ? 'text-[#256EF4]' : 'text-neutral-900'}`}>
-          {title}
-        </Text>
+      <View className="gap-1.5">
+        <View className="flex-row items-end gap-2">
+          <RoomPresenceArtwork hasRoom={hasRoom} size={28} />
+          <Text
+            className={`text-[17px] font-bold leading-[26px] ${
+              selected ? 'text-[#256EF4]' : 'text-[#17171B]'
+            }`}
+          >
+            {title}
+          </Text>
+        </View>
         <Text className="text-sm text-neutral-500">{desc}</Text>
       </View>
     </Pressable>
   );
 }
 
-function RegionTable({
-  draft,
-  cityOptions,
-  gugunOptions,
-  dongOptions,
-  onSelectSido,
-  onSelectGugun,
-  onSelectDong,
+function RegionSelectButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, 지역 선택`}
+      className="h-[46px] flex-row items-center justify-center gap-1.5 rounded-lg border border-[#DADAE8] bg-white px-3 active:bg-[#F6F6FA]"
+    >
+      <Text className="text-[15px] font-medium text-[#696976]" numberOfLines={1}>
+        {label}
+      </Text>
+      <Ionicons name="chevron-down" size={16} color="#696976" />
+    </Pressable>
+  );
+}
+
+function SelectedRegions({
+  regions,
+  max,
+  onRemove,
 }: {
-  draft: RegionDraft;
-  cityOptions: { id: string; label: string }[];
-  gugunOptions: { id: string; label: string }[];
-  dongOptions: { id: string; label: string }[];
-  onSelectSido: (v: string) => void;
-  onSelectGugun: (v: string) => void;
-  onSelectDong: (v: string) => void;
+  regions: { id: string; city: string; district: string }[];
+  max: number;
+  onRemove: (id: string) => void;
 }) {
   return (
-    <View className="flex-row overflow-hidden rounded-xl border border-neutral-200">
-      <Column
-        title="시·도"
-        items={cityOptions}
-        selected={draft.sido}
-        onPick={onSelectSido}
-        border
-      />
-      <Column
-        title="구·군"
-        items={gugunOptions}
-        selected={draft.gugun}
-        onPick={onSelectGugun}
-        border
-      />
-      <Column title="동" items={dongOptions} selected={draft.dong} onPick={onSelectDong} />
+    <View className="gap-2">
+      <View className="flex-row items-center gap-1.5">
+        <Text className="text-[15px] font-medium text-[#696976]">선택 지역</Text>
+        <Text className="text-[15px] font-medium text-[#17171B]">
+          {regions.length}
+          <Text className="text-[#AAAABA]">/{max}</Text>
+        </Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-2 pr-4"
+      >
+        {regions.map((region) => (
+          <Pressable
+            key={region.id}
+            onPress={() => onRemove(region.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`${region.city} ${region.district} 삭제`}
+            className="h-[42px] flex-row items-center gap-0.5 rounded-full bg-[#ECF2FE] px-3 active:opacity-80"
+          >
+            <Text className="text-[15px] font-medium text-[#256EF4]">
+              {region.city} {region.district}
+            </Text>
+            <Ionicons name="close" size={17} color="#8AAFF8" />
+          </Pressable>
+        ))}
+      </ScrollView>
     </View>
   );
 }
 
-function Column({
-  title,
+function RegionPickerSheet({
+  open,
+  onOpenChange,
+  draft,
+  cityOptions,
+  districtOptions,
+  loading,
+  error,
+  onRetry,
+  onSelectCity,
+  onSelectDistrict,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  draft: RegionDraft;
+  cityOptions: { id: string; label: string }[];
+  districtOptions: { id: string; label: string }[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onSelectCity: (v: string) => void;
+  onSelectDistrict: (v: string) => void;
+}) {
+  const selectingDistrict = Boolean(draft.sido);
+
+  return (
+    <BottomSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      showHandle={false}
+      contentClassName="rounded-t-[20px] bg-white px-6 pb-6 pt-5"
+    >
+      <View className="mb-5 flex-row items-center justify-between">
+        <View className="flex-row items-center gap-2">
+          {selectingDistrict ? (
+            <Pressable
+              onPress={() => onSelectCity('')}
+              hitSlop={8}
+              accessibilityLabel="시·도 다시 선택"
+            >
+              <Ionicons name="chevron-back" size={22} color="#696976" />
+            </Pressable>
+          ) : null}
+          <Text className="text-lg font-bold text-[#17171B]">
+            {selectingDistrict ? '구·군 선택' : '지역 선택'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => onOpenChange(false)}
+          hitSlop={10}
+          accessibilityLabel="지역 선택 닫기"
+        >
+          <Ionicons name="close" size={24} color="#696976" />
+        </Pressable>
+      </View>
+
+      {loading ? (
+        <View className="h-28 items-center justify-center gap-2">
+          <ActivityIndicator color="#256EF4" />
+          <Text className="text-sm text-[#696976]">지역 정보를 불러오는 중이에요.</Text>
+        </View>
+      ) : error ? (
+        <View className="h-28 items-center justify-center gap-3">
+          <Text className="text-sm text-[#696976]">지역 정보를 불러오지 못했어요.</Text>
+          <Pressable onPress={onRetry} className="rounded-lg bg-[#ECF2FE] px-4 py-2">
+            <Text className="text-sm font-medium text-[#256EF4]">다시 시도</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <RegionOptionGrid
+          items={selectingDistrict ? districtOptions : cityOptions}
+          selected={selectingDistrict ? draft.gugun : draft.sido}
+          emptyLabel={selectingDistrict ? '선택할 구·군이 없어요.' : '선택할 지역이 없어요.'}
+          onPick={selectingDistrict ? onSelectDistrict : onSelectCity}
+        />
+      )}
+    </BottomSheet>
+  );
+}
+
+function RegionOptionGrid({
   items,
   selected,
+  emptyLabel,
   onPick,
-  border,
 }: {
-  title: string;
   items: { id: string; label: string }[];
   selected: string | null;
+  emptyLabel: string;
   onPick: (v: string) => void;
-  border?: boolean;
 }) {
-  return (
-    <View className={`flex-1 ${border ? 'border-r border-neutral-200' : ''}`}>
-      <View className="border-b border-neutral-200 bg-neutral-50 py-2">
-        <Text className="text-center text-xs text-neutral-500">{title}</Text>
+  if (items.length === 0) {
+    return (
+      <View className="h-28 items-center justify-center">
+        <Text className="text-sm text-[#AAAABA]">{emptyLabel}</Text>
       </View>
-      <ScrollView
-        style={{ maxHeight: 138 }}
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
-      >
-        {items.map((it) => {
-          const on = it.id === selected;
+    );
+  }
+
+  return (
+    <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+      <View className="flex-row flex-wrap">
+        {items.map((item) => {
+          const active = item.id === selected;
           return (
             <Pressable
-              key={it.id}
-              onPress={() => onPick(it.id)}
-              className={`py-3 ${on ? 'bg-[#256EF4]/10' : ''}`}
+              key={item.id}
+              onPress={() => onPick(item.id)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              className="h-10 items-center justify-center"
+              style={{ width: '20%' }}
             >
               <Text
-                className={`text-center text-sm ${on ? 'font-medium text-[#256EF4]' : 'text-neutral-700'}`}
+                className={`text-base ${
+                  active ? 'font-semibold text-[#256EF4]' : 'font-medium text-[#17171B]'
+                }`}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
-                {it.label}
+                {item.label}
               </Text>
             </Pressable>
           );
         })}
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -420,18 +532,21 @@ function NumberField({
   onChange: (n: number | null) => void;
 }) {
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      <TextField
-        value={value == null ? '' : String(value)}
-        onChangeValue={(t) => {
-          const digits = t.replace(/[^0-9]/g, '');
-          onChange(digits === '' ? null : Number(digits));
-        }}
-        placeholder={placeholder}
-        keyboardType="number-pad"
-        className="rounded-xl bg-neutral-100 px-4 py-3.5 text-base text-neutral-900"
-      />
+    <View className="gap-3">
+      <Text className="text-[15px] font-semibold leading-[23px] text-[#17171B]">{label}</Text>
+      <View className="h-9 flex-row items-center border-b border-[#AAAABA]">
+        <TextField
+          value={value == null ? '' : String(value)}
+          onChangeValue={(t) => {
+            const digits = t.replace(/[^0-9]/g, '');
+            onChange(digits === '' ? null : Number(digits));
+          }}
+          placeholder={placeholder}
+          keyboardType="number-pad"
+          className="h-9 flex-1 py-0 text-[15px] text-[#17171B]"
+        />
+        <Text className="text-[15px] text-[#AAAABA]">만원</Text>
+      </View>
     </View>
   );
 }
