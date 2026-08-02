@@ -30,7 +30,7 @@ export type BlockedUserItem = {
 };
 
 export function useMyPageProfileSummary(enabled = true): AsyncState<MyPageProfileSummary> {
-  const state = useApi(['profile', 'all'], () => getProfileAll(), { enabled });
+  const state = useApi(['profile', 'all'], () => getProfileAll(), { enabled, retry: false });
   const summary = useMemo<MyPageProfileSummary | null>(() => {
     if (!state.data) return null;
     const regionLabel = state.data.region
@@ -65,7 +65,10 @@ export type MyVerificationSummary = {
 };
 
 export function useMyVerificationSummary(enabled = true): AsyncState<MyVerificationSummary> {
-  const state = useApi(['profile', 'verifications'], () => getVerifications(), { enabled });
+  const state = useApi(['profile', 'verifications'], () => getVerifications(), {
+    enabled,
+    retry: false,
+  });
   const summary = useMemo(
     () =>
       state.data
@@ -89,6 +92,7 @@ export function useNotificationSettingToggle(enabled = true) {
   const queryClient = useQueryClient();
   const state = useApi(['profile', 'notification-settings'], () => getNotificationSettings(), {
     enabled,
+    retry: false,
   });
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
 
@@ -175,7 +179,7 @@ export function useProfileVisibilityToggle(
 export function useBlockedUsers(
   enabled = Boolean(getAccessToken()),
 ): AsyncState<BlockedUserItem[]> {
-  const state = useApi(['profile', 'blocks'], () => getBlocks(), { enabled });
+  const state = useApi(['profile', 'blocks'], () => getBlocks(), { enabled, retry: false });
   const users = useMemo<BlockedUserItem[] | null>(
     () =>
       state.data?.blocks?.map((block) => ({

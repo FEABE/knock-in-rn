@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
+import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 
 import type { InquiryListItem, UseInquiryListScreenReturn } from './use-inquiry-list-screen';
 
@@ -13,6 +14,7 @@ export function InquiryListScreenView({
   totalCount,
   loading,
   error,
+  retry,
   onCreatePress,
 }: InquiryListScreenViewProps) {
   return (
@@ -40,12 +42,12 @@ export function InquiryListScreenView({
             <Text className="text-sm text-neutral-400">문의내역을 불러오는 중...</Text>
           </View>
         ) : error ? (
-          <View className="items-center gap-2 rounded-lg border border-neutral-200 p-8">
-            <Text className="text-sm font-semibold text-neutral-800">
-              문의내역을 불러오지 못했어요
-            </Text>
-            <Text className="text-xs text-neutral-400">{error}</Text>
-          </View>
+          <ReadyErrorState
+            title="문의내역을 불러오지 못했어요"
+            description={error}
+            onRetry={retry}
+            compact
+          />
         ) : inquiries.length === 0 ? (
           <View className="items-center gap-2 rounded-lg border border-neutral-200 p-8">
             <Text className="text-sm font-semibold text-neutral-800">문의내역이 없어요</Text>

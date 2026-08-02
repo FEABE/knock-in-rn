@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
@@ -27,6 +27,7 @@ import {
 import type { Region } from '@/lib/onboarding';
 
 export type UseProfileEditScreenReturn = {
+  initialTab: 'lifestyle' | 'room';
   scales: Record<string, number>;
   choiceValues: Record<string, string>;
   scaleOptions: LifestyleScaleOption[];
@@ -54,6 +55,8 @@ export type UseProfileEditScreenReturn = {
 
 export function useProfileEditScreen(): UseProfileEditScreenReturn {
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initialTab = tab === 'room' ? 'room' : 'lifestyle';
   const lifestyleOptions = useLifestylePatternOptions();
   const patternOptions = useMemo(
     () => ({
@@ -198,13 +201,13 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
         type: isOffer ? 'OFFER' : 'SEEKER',
         minDeposit: isOffer ? undefined : deposit[0],
         maxDeposit: isOffer ? undefined : deposit[1],
-        minMounthRent: isOffer ? undefined : rent[0],
-        maxMounthRent: isOffer ? undefined : rent[1],
-        comeEnableAt: moveInDate ? formatApiLocalDateTime(moveInDate) : undefined,
+        minMonthlyRent: isOffer ? undefined : rent[0],
+        maxMonthlyRent: isOffer ? undefined : rent[1],
+        comeEnableAt: formatApiLocalDateTime(moveInDate ?? new Date()),
         region: isOffer ? regionIds.slice(0, 1) : regionIds,
         roomProfile: isOffer ? roomTypeIds.slice(0, 1) : roomTypeIds,
         deposit: isOffer ? deposit[0] : undefined,
-        mounthRent: isOffer ? rent[0] : undefined,
+        monthlyRent: isOffer ? rent[0] : undefined,
       }),
     );
     Alert.alert(
@@ -214,6 +217,7 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
   };
 
   return {
+    initialTab,
     scales,
     choiceValues,
     scaleOptions: lifestyleOptions.scaleOptions,

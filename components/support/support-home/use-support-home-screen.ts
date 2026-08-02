@@ -22,27 +22,42 @@ export type UseSupportHomeScreenReturn = {
   actions: SupportHomeAction[];
   faqs: SupportFaqItem[];
   faqsLoading: boolean;
+  faqsError: string | null;
+  retryFaqs: () => void;
   operatingHoursLabel: string;
 };
 
 export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
   const router = useRouter();
   const { session, requireLogin } = useRequireLogin();
-  const { data: counts, loading } = useSupportCounts(Boolean(session));
-  const { data: faqs, loading: faqsLoading } = useSupportFaqs();
+  const { data: counts, loading, error: countsError } = useSupportCounts(Boolean(session));
+  const {
+    data: faqs,
+    loading: faqsLoading,
+    error: faqsError,
+    reload: retryFaqs,
+  } = useSupportFaqs();
 
   const actions = useMemo<SupportHomeAction[]>(
     () => [
       {
         icon: 'help-circle-outline',
         title: '자주 묻는 질문',
-        description: loading ? '불러오는 중' : `${counts?.faqCount ?? 0}개 질문`,
+        description: loading
+          ? '불러오는 중'
+          : countsError
+            ? '불러오기 실패'
+            : `${counts?.faqCount ?? 0}개 질문`,
         onPress: () => goSupportFaq(router),
       },
       {
         icon: 'chatbox-ellipses-outline',
         title: '문의내역',
-        description: loading ? '불러오는 중' : `${counts?.inquiryCount ?? 0}건의 문의`,
+        description: loading
+          ? '불러오는 중'
+          : countsError
+            ? '불러오기 실패'
+            : `${counts?.inquiryCount ?? 0}건의 문의`,
         onPress: () =>
           requireLogin(() => goSupportInquiries(router), {
             title: '로그인 필요',
@@ -63,16 +78,22 @@ export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
         icon: 'megaphone-outline',
         title: '공지사항',
         description: '새로운 소식을 확인해요',
-        onPress: () => goSupportNotice(router),
+        onPress: () =>
+          requireLogin(() => goSupportNotice(router), {
+            title: '로그인 필요',
+            message: '공지사항은 로그인 후 확인할 수 있어요.',
+          }),
       },
     ],
-    [counts?.faqCount, counts?.inquiryCount, loading, requireLogin, router],
+    [counts?.faqCount, counts?.inquiryCount, countsError, loading, requireLogin, router],
   );
 
   return {
     actions,
     faqs: (faqs ?? []).slice(0, 4),
     faqsLoading,
+    faqsError,
+    retryFaqs,
     operatingHoursLabel: '평일 10:00 - 18:00 접수된 문의는 순서대로 답변드려요.',
   };
 }

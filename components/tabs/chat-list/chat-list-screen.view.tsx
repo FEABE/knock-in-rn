@@ -1,8 +1,18 @@
-import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
+import {
+  ReadyBadge,
+  ReadyDivider,
+  ReadyPageTitle,
+  ReadyProfileAvatar,
+} from '@/components/ui/ready-to-dev-components';
+import {
+  ReadyEmptyState,
+  ReadyErrorState,
+  ReadyLoadingState,
+} from '@/components/ui/ready-to-dev-feedback';
 
 import type { ChatListRow, ChatRequestRow, UseChatListScreenReturn } from './use-chat-list-screen';
 
@@ -19,9 +29,7 @@ export function ChatListScreenView({
 }: ChatListScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="px-4 pb-5 pt-5">
-        <Text className="text-2xl font-bold text-[#17171B]">채팅</Text>
-      </View>
+      <ReadyPageTitle title="채팅" />
 
       {!isLoggedIn ? (
         <View className="px-5 pt-2">
@@ -32,19 +40,14 @@ export function ChatListScreenView({
           />
         </View>
       ) : loading || requestsLoading ? (
-        <View className="flex-1 items-center justify-center gap-3">
-          <ActivityIndicator color="#256EF4" />
-          <Text className="text-sm text-neutral-400">채팅방을 불러오는 중...</Text>
-        </View>
+        <ReadyLoadingState label="채팅방을 불러오는 중..." />
       ) : error ? (
-        <View className="flex-1 items-center justify-center gap-2 p-10">
-          <Text className="text-sm text-neutral-500">채팅방을 불러오지 못했어요</Text>
-          <Text className="text-xs text-neutral-400">{error}</Text>
-        </View>
+        <ReadyErrorState title="채팅방을 불러오지 못했어요" description={error} />
       ) : rows.length === 0 && requestRows.length === 0 ? (
-        <View className="flex-1 items-center justify-center p-10">
-          <Text className="text-sm text-neutral-400">아직 채팅방이 없어요</Text>
-        </View>
+        <ReadyEmptyState
+          title="아직 채팅방이 없어요"
+          description="마음에 드는 룸메이트에게 먼저 말을 걸어보세요"
+        />
       ) : (
         <ScrollView>
           {requestRows.length ? (
@@ -55,6 +58,7 @@ export function ChatListScreenView({
                   row={row}
                 />
               ))}
+              <ReadyDivider />
             </View>
           ) : null}
           {rows.map((row) => (
@@ -70,25 +74,28 @@ function ChatRequestListRow({ row }: { row: ChatRequestRow }) {
   return (
     <Pressable
       onPress={row.onPress}
-      className="min-h-[76px] flex-row items-center gap-3 px-4 py-3 active:bg-[#F6F6FA]"
+      className="min-h-[76px] flex-row items-center gap-3 bg-[#F4F7FE] px-4 py-3 active:bg-[#E9F0FE]"
     >
-      <View className="h-12 w-12 items-center justify-center rounded-full bg-[#E9F0FE]">
-        <Text className="text-base font-semibold text-[#256EF4]">{row.name.charAt(0)}</Text>
-      </View>
+      <ReadyProfileAvatar name={row.name} />
       <View className="flex-1 gap-0.5">
         <View className="flex-row items-center gap-2">
           <Text className="text-[15px] font-bold text-[#17171B]">{row.name}</Text>
-          <View className="rounded bg-[#E9F0FE] px-2 py-0.5">
-            <Text className="text-xs font-medium text-[#256EF4]">매칭 요청</Text>
-          </View>
+          <ReadyBadge label="매칭 요청" tone="blue" />
         </View>
-        <Text numberOfLines={1} className="text-sm text-[#17171B]">
-          {row.preview}
-        </Text>
+        {row.meta ? (
+          <View className="flex-row items-center gap-1.5">
+            <ReadyBadge label={row.meta} tone="red" />
+            {row.scoreLabel ? <ReadyBadge label={row.scoreLabel} tone="blue" /> : null}
+          </View>
+        ) : (
+          <Text numberOfLines={1} className="text-sm text-[#17171B]">
+            {row.preview}
+          </Text>
+        )}
       </View>
       <View className="items-end gap-1">
         <Text className="text-xs text-[#AAAABA]">{row.timeLabel}</Text>
-        {row.scoreLabel ? (
+        {!row.meta && row.scoreLabel ? (
           <Text className="text-[11px] font-medium text-[#256EF4]">{row.scoreLabel}</Text>
         ) : null}
       </View>
@@ -103,25 +110,11 @@ function ChatRoomRow({ row }: { row: ChatListRow }) {
       onPress={row.onPress}
       className="min-h-[76px] flex-row items-center gap-3 px-4 py-3 active:bg-[#F6F6FA]"
     >
-      {row.room.memberProfileImageUrl ? (
-        <Image
-          source={{ uri: row.room.memberProfileImageUrl }}
-          style={{ width: 48, height: 48, borderRadius: 24 }}
-          contentFit="cover"
-        />
-      ) : (
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-[#ECECF3]">
-          <Text className="text-lg font-semibold text-[#696976]">{name.charAt(0)}</Text>
-        </View>
-      )}
+      <ReadyProfileAvatar name={name} imageUrl={row.room.memberProfileImageUrl} />
       <View className="flex-1 gap-0.5">
         <View className="flex-row items-center gap-2">
           <Text className="text-[17px] font-bold text-[#17171B]">{name}</Text>
-          {row.proposal ? (
-            <View className="rounded bg-[#E9F0FE] px-2 py-0.5">
-              <Text className="text-xs font-medium text-[#256EF4]">매칭 요청</Text>
-            </View>
-          ) : null}
+          {row.proposal ? <ReadyBadge label="매칭 요청" tone="blue" /> : null}
         </View>
         <Text numberOfLines={1} className="text-sm text-[#696976]">
           {row.preview}

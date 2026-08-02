@@ -3,8 +3,11 @@ import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { VerificationFlowScreen } from '@/components/verification/verification-flow-screen';
 import type { VerificationKind } from '@/lib/api';
+import { useSession } from '@/lib/domain';
+import { goKakaoLogin } from '@/lib/navigation/routes';
 
 export type VerificationEmailFlowScreenProps = {
   kind: VerificationKind;
@@ -24,19 +27,30 @@ export function VerificationEmailFlowScreen({
   placeholder,
 }: VerificationEmailFlowScreenProps) {
   const router = useRouter();
+  const { session } = useSession();
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <Header title={title} onBack={() => router.back()} />
-      <VerificationFlowScreen
-        kind={kind}
-        title={title}
-        label={label}
-        iconName={iconName}
-        defaultEmail={defaultEmail}
-        placeholder={placeholder}
-        onDone={() => router.back()}
-      />
+      {session ? (
+        <VerificationFlowScreen
+          kind={kind}
+          title={title}
+          label={label}
+          iconName={iconName}
+          defaultEmail={defaultEmail}
+          placeholder={placeholder}
+          onDone={() => router.back()}
+        />
+      ) : (
+        <View className="p-5">
+          <LoginPromptCard
+            title="로그인 후 이메일을 인증할 수 있어요"
+            description="인증 결과는 내 프로필의 신뢰 배지에 반영돼요"
+            onPress={() => goKakaoLogin(router)}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }

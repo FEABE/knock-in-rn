@@ -26,36 +26,44 @@ export function PushNotificationBridge() {
   useEffect(() => {
     if (!session) return;
 
-    const messaging = getMessaging();
     const openNotifications = () => {
       void queryClient.invalidateQueries({ queryKey: ALARM_QUERY_KEY });
       router.push('/notifications');
     };
     const refreshAlarms = () => queryClient.invalidateQueries({ queryKey: ALARM_QUERY_KEY });
+    let unsubscribeForeground = () => {};
+    let unsubscribeOpened = () => {};
 
-    const unsubscribeForeground = onMessage(messaging, (message) => {
-      void refreshAlarms();
-      const title = message.notification?.title ?? pushText(message.data?.title) ?? '새 알림';
-      const body = message.notification?.body ?? pushText(message.data?.body);
+    try {
+      const messaging = getMessaging();
+      unsubscribeForeground = onMessage(messaging, (message) => {
+        void refreshAlarms();
+        const title = message.notification?.title ?? pushText(message.data?.title) ?? '새 알림';
+        const body = message.notification?.body ?? pushText(message.data?.body);
 
-      Alert.alert(title, body, [
-        { text: '닫기', style: 'cancel' },
-        { text: '알림 보기', onPress: openNotifications },
-      ]);
-    });
-    const unsubscribeOpened = onNotificationOpenedApp(messaging, openNotifications);
+        Alert.alert(title, body, [
+          { text: '닫기', style: 'cancel' },
+          { text: '알림 보기', onPress: openNotifications },
+        ]);
+      });
+      unsubscribeOpened = onNotificationOpenedApp(messaging, openNotifications);
 
-    if (!initialMessageHandled.current) {
-      initialMessageHandled.current = true;
-      void getInitialNotification(messaging)
-        .then((message) => {
-          if (message) openNotifications();
-        })
-        .catch((error: unknown) => {
-          if (__DEV__) {
-            console.warn('[push] failed to read initial notification', pushErrorMessage(error));
-          }
-        });
+      if (!initialMessageHandled.current) {
+        initialMessageHandled.current = true;
+        void getInitialNotification(messaging)
+          .then((message) => {
+            if (message) openNotifications();
+          })
+          .catch((error: unknown) => {
+            if (__DEV__) {
+              console.warn('[push] failed to read initial notification', pushErrorMessage(error));
+            }
+          });
+      }
+    } catch (error: unknown) {
+      if (__DEV__) {
+        console.warn('[push] notification bridge is unavailable', pushErrorMessage(error));
+      }
     }
 
     return () => {

@@ -23,7 +23,7 @@ export type RegionOptionsState = {
 };
 
 export function useRegionOptions(): RegionOptionsState {
-  const state = useApi(['meta', 'regions'], () => getRegions());
+  const state = useApi(['meta', 'regions'], () => getRegions(), { retry: false });
   const metas = useMemo(() => state.data?.region ?? [], [state.data?.region]);
   const tree = useMemo(() => buildRegionTree(metas), [metas]);
 

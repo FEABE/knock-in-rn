@@ -85,8 +85,12 @@ export function goNotifications(router: RouterLike) {
   navigate(router, '/notifications');
 }
 
-export function goMypageProfile(router: RouterLike) {
-  navigate(router, '/mypage/profile');
+export function goMypageProfile(router: RouterLike, section?: 'lifestyle' | 'room') {
+  navigate(router, section ? `/mypage/profile?tab=${section}` : '/mypage/profile');
+}
+
+export function goMypageBasicProfile(router: RouterLike) {
+  navigate(router, '/mypage/profile-basic');
 }
 
 export function goMypagePreferences(router: RouterLike) {

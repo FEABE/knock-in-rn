@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
+import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseTermsScreenReturn } from './use-terms-screen';
 
@@ -13,6 +14,7 @@ export function TermsScreenView({
   active,
   loading,
   error,
+  retry,
   setActiveId,
 }: TermsScreenViewProps) {
   return (
@@ -48,10 +50,12 @@ export function TermsScreenView({
             <Text className="text-sm text-neutral-400">약관을 불러오는 중...</Text>
           </View>
         ) : error ? (
-          <View className="rounded-2xl border border-dashed border-neutral-200 p-8">
-            <Text className="text-center text-sm text-neutral-500">약관을 불러오지 못했어요</Text>
-            <Text className="mt-2 text-center text-xs text-neutral-400">{error}</Text>
-          </View>
+          <ReadyErrorState
+            title="약관을 불러오지 못했어요"
+            description={error}
+            onRetry={retry}
+            compact
+          />
         ) : active ? (
           <View className="gap-3 rounded-2xl border border-neutral-200 bg-white p-5">
             <Text className="text-base font-semibold text-neutral-900">{active.title}</Text>

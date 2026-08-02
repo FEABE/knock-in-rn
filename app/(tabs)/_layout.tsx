@@ -9,7 +9,7 @@ const TAB_ICONS: Record<
   string,
   { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
 > = {
-  explore: { active: 'search', inactive: 'search-outline' },
+  explore: { active: 'compass', inactive: 'compass-outline' },
   interests: { active: 'heart', inactive: 'heart-outline' },
   chat: { active: 'chatbubble-ellipses', inactive: 'chatbubble-ellipses-outline' },
   mypage: { active: 'person', inactive: 'person-outline' },
@@ -26,8 +26,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#256EF4',
-        tabBarInactiveTintColor: '#737373',
+        tabBarActiveTintColor: '#404047',
+        tabBarInactiveTintColor: '#AAAABA',
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
@@ -35,7 +35,7 @@ export default function TabLayout() {
           height: 60 + tabBottomPadding,
           paddingTop: 8,
           paddingBottom: tabBottomPadding,
-          borderTopColor: '#E5E7EB',
+          borderTopColor: '#ECECF3',
         },
       }}
     >

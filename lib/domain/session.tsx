@@ -64,6 +64,7 @@ export type SessionContextValue = {
   signIn: (provider?: SocialProvider) => Promise<SignInResult>;
   signOut: () => Promise<void>;
   markProfileComplete: (identity?: StoredAuthIdentity) => Promise<void>;
+  refreshSessionUser: () => Promise<void>;
   setVisibility: (next: 'public' | 'hidden' | 'matched') => void;
 };
 
@@ -166,11 +167,16 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       }
 
       if (res.error || res.status !== 200 || !res.data?.accessToken) {
+        const serverUnavailable = res.status >= 500;
         return {
-          status: classifyApiError(res.error?.code, res.error?.message),
+          status: serverUnavailable
+            ? 'network'
+            : classifyApiError(res.error?.code, res.error?.message),
           provider,
-          code: res.error?.code,
-          message: res.error?.message ?? '로그인에 실패했어요. 잠시 후 다시 시도해주세요.',
+          code: res.error?.code ?? `HTTP_${res.status}`,
+          message: serverUnavailable
+            ? '운영 서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.'
+            : (res.error?.message ?? '로그인에 실패했어요. 잠시 후 다시 시도해주세요.'),
         };
       }
 
@@ -247,6 +253,23 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     await markStoredProfileComplete(identity);
   }, []);
 
+  const refreshSessionUser = useCallback(async () => {
+    const loaded = await loadSessionUser();
+    if (loaded.invalidToken) {
+      await signOut();
+      return;
+    }
+    setSession((previous) =>
+      previous
+        ? {
+            ...previous,
+            user: loaded.user,
+            isProfileComplete: previous.isProfileComplete || loaded.profileComplete === true,
+          }
+        : previous,
+    );
+  }, [signOut]);
+
   const setVisibility = useCallback((next: 'public' | 'hidden' | 'matched') => {
     setSession((prev) => (prev ? { ...prev, visibility: next } : prev));
   }, []);
@@ -317,8 +340,15 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
   }, [sessionUserId]);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ session, signIn, signOut, markProfileComplete, setVisibility }),
-    [session, signIn, signOut, markProfileComplete, setVisibility],
+    () => ({
+      session,
+      signIn,
+      signOut,
+      markProfileComplete,
+      refreshSessionUser,
+      setVisibility,
+    }),
+    [session, signIn, signOut, markProfileComplete, refreshSessionUser, setVisibility],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
@@ -434,20 +464,25 @@ function sessionUserFromProfile(
   fallback?: StoredAuthIdentity,
 ): UserSummary {
   const identity = profile as ProfileIdentityData | undefined;
+  const userInfo = profile?.userInfo;
   const region = parseProfileRegion(profile?.region?.[0]?.region);
   return {
     id: String(identity?.memberId ?? getAccessTokenMemberId() ?? 'me'),
-    name: identity?.name ?? identity?.memberName ?? fallback?.name ?? '사용자',
+    name: userInfo?.name ?? identity?.name ?? identity?.memberName ?? fallback?.name ?? '사용자',
     age:
+      userInfo?.age ??
       identity?.age ??
       identity?.memberAge ??
       fallback?.age ??
-      ageFromBirth(identity?.birth ?? fallback?.birth),
-    gender: domainGender(identity?.gender ?? fallback?.gender),
+      ageFromBirth(userInfo?.birth ?? identity?.birth ?? fallback?.birth),
+    gender: domainGender(userInfo?.gender ?? identity?.gender ?? fallback?.gender),
     preferredGender: 'any',
     bio: '',
     avatarUrl:
-      identity?.profileImageUrl ?? identity?.memberProfileImageUrl ?? fallback?.profileImageUrl,
+      userInfo?.profile ??
+      identity?.profileImageUrl ??
+      identity?.memberProfileImageUrl ??
+      fallback?.profileImageUrl,
     region,
     badges: [],
     lifestyle: {},

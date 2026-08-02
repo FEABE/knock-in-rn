@@ -16,6 +16,7 @@ export type UseProfileLifestyleStepReturn = {
   submitting: boolean;
   submitError: string | null;
   canProceed: boolean;
+  reload: () => void;
   setScale: (key: LifestyleScaleKey, value: number) => void;
   setChoice: (key: string, value: string) => void;
   onScaleComplete: (key: LifestyleScaleKey, value: number) => void;
@@ -71,6 +72,7 @@ export function useProfileLifestyleStep(): UseProfileLifestyleStepReturn {
     submitting: lifestyleOptions.loading,
     submitError: lifestyleOptions.error,
     canProceed,
+    reload: lifestyleOptions.reload,
     setScale,
     setChoice,
     onScaleComplete: (key, value) =>

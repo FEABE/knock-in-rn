@@ -201,7 +201,8 @@ function normalizeChatRoomItem(item: ChatRoomItem): ChatRoomItem {
   return {
     ...item,
     name: item.name ?? item.memberName,
-    creatAt: item.creatAt ?? item.createdAt,
-    isAgree: item.isAgree ?? item.status === 'ACCEPTED',
+    creatAt: item.creatAt ?? item.lastMessageAt ?? item.createdAt,
+    isAgree: item.isAgree ?? item.isRoommate ?? item.roommateStatus === 'ACCEPTED',
+    unreadCount: item.unreadCount ?? item.messageCount,
   };
 }

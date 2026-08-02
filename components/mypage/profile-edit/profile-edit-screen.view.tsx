@@ -14,6 +14,7 @@ import { type UseProfileEditScreenReturn } from './use-profile-edit-screen';
 export type ProfileEditScreenViewProps = UseProfileEditScreenReturn;
 
 export function ProfileEditScreenView({
+  initialTab,
   scales,
   choiceValues,
   scaleOptions,
@@ -46,10 +47,12 @@ export function ProfileEditScreenView({
         <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
           <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">내 프로필</Text>
+        <Text className="text-base font-semibold text-neutral-900">
+          {initialTab === 'room' ? '방 조건 관리' : '생활패턴 관리'}
+        </Text>
       </View>
 
-      <Tabs.Root defaultValue="lifestyle" className="flex-1">
+      <Tabs.Root defaultValue={initialTab} className="flex-1">
         <Tabs.List className="flex-row border-b border-neutral-100">
           {[
             { value: 'lifestyle', label: '생활패턴' },

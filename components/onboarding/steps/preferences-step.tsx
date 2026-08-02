@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 
 import { ChipMultiSelect } from '@/components/ui/headless';
 import { OnboardingCompleteArtwork, PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
+import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 import {
   type LifestyleChoiceGroup,
   type LifestylePatternOptionsState,
@@ -110,7 +111,11 @@ export function PreferencesStep() {
         lifestyleOptions.loading ? (
           <LoadingState message="선호조건 항목을 불러오는 중이에요" />
         ) : lifestyleOptions.error ? (
-          <LoadingState error message={lifestyleOptions.error} />
+          <LoadingState
+            error
+            message={lifestyleOptions.error}
+            onRetry={lifestyleOptions.reload}
+          />
         ) : activeQuestion ? (
           <PreferenceQuestionView
             title={activeQuestion.title}
@@ -122,6 +127,7 @@ export function PreferencesStep() {
           <LoadingState
             error
             message={`${PREFERENCE_HEADERS[stage]} 기준값을 서버에서 찾지 못했어요.`}
+            onRetry={lifestyleOptions.reload}
           />
         )
       ) : null}
@@ -246,13 +252,29 @@ function PreferenceQuestionView<T extends string | number>({
   );
 }
 
-function LoadingState({ message, error = false }: { message: string; error?: boolean }) {
+function LoadingState({
+  message,
+  error = false,
+  onRetry,
+}: {
+  message: string;
+  error?: boolean;
+  onRetry?: () => void;
+}) {
+  if (error) {
+    return (
+      <ReadyErrorState
+        title="선호조건 항목을 불러오지 못했어요"
+        description={message}
+        onRetry={onRetry}
+      />
+    );
+  }
+
   return (
     <View className="flex-1 items-center justify-center gap-3 px-8">
-      {!error ? <ActivityIndicator color="#256EF4" /> : null}
-      <Text className={error ? 'text-center text-sm text-[#E5484D]' : 'text-sm text-[#696976]'}>
-        {message}
-      </Text>
+      <ActivityIndicator color="#256EF4" />
+      <Text className="text-sm text-[#696976]">{message}</Text>
     </View>
   );
 }

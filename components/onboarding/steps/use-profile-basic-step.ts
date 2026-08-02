@@ -84,7 +84,7 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
   const { goNext } = useOnboarding();
   const { profile, patch } = useOnboardingProfile();
   const { terms, setTerms } = useOnboardingTerms();
-  const termsQuery = useApi(['meta', 'terms'], () => getTerms());
+  const termsQuery = useApi(['meta', 'terms'], () => getTerms(), { retry: false });
   const termOptions = useMemo<Term[]>(() => {
     const requiredTerms = (termsQuery.data?.terms ?? []).flatMap((term) =>
       term.id === undefined || !term.title

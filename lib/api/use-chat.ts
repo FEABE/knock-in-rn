@@ -32,12 +32,12 @@ import { type AsyncState, useApi } from './use-async';
 
 /** 채팅방 목록. (ChatRoomItem 그대로 — 명세 형태) */
 export function useChatRooms(enabled = true): AsyncState<ChatRoomItem[]> {
-  const state = useApi(['chat', 'rooms'], () => getChatRooms(), { enabled });
+  const state = useApi(['chat', 'rooms'], () => getChatRooms(), { enabled, retry: false });
   return { ...state, data: state.data?.chatRooms ?? null };
 }
 
 export function useChatRequests(enabled = true): AsyncState<ChatRequestItem[]> {
-  const state = useApi(['chat', 'requests'], () => getChatRequests(), { enabled });
+  const state = useApi(['chat', 'requests'], () => getChatRequests(), { enabled, retry: false });
   return { ...state, data: state.data?.chatRequireds ?? null };
 }
 
@@ -47,6 +47,7 @@ export function useChatRequestDetail(
 ): AsyncState<ChatRequestDetailData> {
   return useApi(['chat', 'requests', requestId], () => getChatRequestDetail(requestId), {
     enabled: enabled && requestId.length > 0,
+    retry: false,
   });
 }
 
@@ -56,6 +57,7 @@ export function useChatRoomDetail(
 ): AsyncState<ChatRoom> {
   const state = useApi(['chat', 'rooms', chatRoomId], () => getChatRoomDetail(chatRoomId), {
     enabled: chatRoomId.length > 0,
+    retry: false,
   });
   const room = useMemo<ChatRoom | null>(() => {
     if (!state.data) return null;
@@ -230,7 +232,7 @@ function chatRoomDetailToDomainRoom(
   const matched =
     detail.matchingRequiredList?.some((request) => request.status === 'ACCEPTED') === true;
   const latestRequest = [...(detail.matchingRequiredList ?? [])]
-    .filter((request) => request.id != null && request.status != null)
+    .filter((request) => request.requiredId != null && request.status != null)
     .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0];
   const role = latestRequest
     ? String(latestRequest.requesterMemberId) === currentMemberId
@@ -246,9 +248,9 @@ function chatRoomDetailToDomainRoom(
     matched,
     acceptedRequest: matched,
     roommateRequest:
-      latestRequest?.id != null && latestRequest.status
+      latestRequest?.requiredId != null && latestRequest.status
         ? {
-            id: String(latestRequest.id),
+            id: String(latestRequest.requiredId),
             status: latestRequest.status,
             role: role ?? 'unknown',
           }
@@ -286,7 +288,7 @@ function userFromChatRoomDetail(detail: ChatRoomDetailData): UserSummary {
     gender: profile?.gender === 'FEMALE' ? 'female' : profile?.gender === 'MALE' ? 'male' : 'other',
     preferredGender: 'any',
     bio: '',
-    avatarUrl: profile?.profileImageUrl,
+    avatarUrl: profile?.memberProfileImageUrl,
     compatibilityScore: profile?.score,
     region: {
       id: 'unknown',
@@ -300,7 +302,7 @@ function userFromChatRoomDetail(detail: ChatRoomDetailData): UserSummary {
 }
 
 function initialMessagesFromChatRoom(item: ChatRoomItem, peerId: string): ChatMessage[] {
-  const createdAt = parseDate(item.creatAt);
+  const createdAt = parseDate(item.lastMessageAt ?? item.creatAt ?? item.createdAt);
   const messages: ChatMessage[] = [
     {
       id: `chat-${item.chatRoomId ?? 'new'}-system`,

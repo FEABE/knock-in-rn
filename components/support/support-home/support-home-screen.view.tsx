@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
+import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 
 import type { SupportHomeAction, UseSupportHomeScreenReturn } from './use-support-home-screen';
 
@@ -12,6 +13,8 @@ export function SupportHomeScreenView({
   actions,
   faqs,
   faqsLoading,
+  faqsError,
+  retryFaqs,
   operatingHoursLabel,
 }: SupportHomeScreenViewProps) {
   const inquiry = findAction(actions, '문의하기');
@@ -47,6 +50,14 @@ export function SupportHomeScreenView({
               <View className="rounded-md bg-[#F6F6FA] px-4 py-4">
                 <Text className="text-sm text-[#AAAABA]">질문을 불러오는 중...</Text>
               </View>
+            ) : faqsError ? (
+              <ReadyErrorState
+                title="질문을 불러오지 못했어요"
+                description={faqsError}
+                onRetry={retryFaqs}
+                compact
+                className="rounded-md bg-[#F6F6FA]"
+              />
             ) : faqs.length === 0 ? (
               <View className="rounded-md bg-[#F6F6FA] px-4 py-4">
                 <Text className="text-sm text-[#AAAABA]">등록된 질문이 없어요</Text>

@@ -2,7 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TextField } from '@/components/ui/headless';
+import { ReadySearchHeader } from '@/components/ui/ready-to-dev-components';
+import {
+  ReadyEmptyState,
+  ReadyErrorState,
+  ReadyLoadingState,
+} from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseRoomSearchScreenReturn } from './use-room-search-screen';
 
@@ -12,7 +17,9 @@ export function RoomSearchScreenView({
   query,
   recent,
   popular,
+  popularLoading,
   popularError,
+  retryPopular,
   setQuery,
   clearQuery,
   clearRecent,
@@ -22,28 +29,15 @@ export function RoomSearchScreenView({
 }: RoomSearchScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <View className="flex-row items-center gap-3 px-4 py-3">
-        <View className="h-8 flex-1 flex-row items-center gap-1 rounded border border-[#ECECF3] bg-[#F6F6FA] px-2">
-          <Ionicons name="search-outline" size={16} color="#AAAABA" />
-          <TextField
-            value={query}
-            onChangeValue={setQuery}
-            onSubmitEditing={() => submit(query)}
-            placeholder="검색"
-            placeholderTextColor="#a3a3a3"
-            returnKeyType="search"
-            className="flex-1 text-sm text-neutral-900"
-          />
-          {query.length > 0 ? (
-            <Pressable onPress={clearQuery} hitSlop={6}>
-              <Ionicons name="close" size={16} color="#AAAABA" />
-            </Pressable>
-          ) : null}
-        </View>
-        <Pressable onPress={onCancel} hitSlop={6}>
-          <Text className="text-[15px] text-[#696976]">취소</Text>
-        </Pressable>
-      </View>
+      <ReadySearchHeader
+        value={query}
+        onChangeText={setQuery}
+        onSubmit={() => submit(query)}
+        onBack={onCancel}
+        onCancel={onCancel}
+        onClear={clearQuery}
+        autoFocus
+      />
 
       <ScrollView
         contentContainerClassName="gap-8 px-4 pb-24 pt-2"
@@ -60,13 +54,17 @@ export function RoomSearchScreenView({
             ) : null}
           </View>
           {recent.length === 0 ? (
-            <Text className="text-sm text-[#AAAABA]">최근 검색어가 없어요</Text>
+            <ReadyEmptyState
+              compact
+              title="최근 검색어가 없어요"
+              description="원하는 지역이나 동을 검색해 보세요"
+            />
           ) : (
             <View className="flex-row flex-wrap gap-2">
               {recent.map((term) => (
                 <View
                   key={term}
-                  className="h-8 flex-row items-center rounded-full border border-[#AAAABA] px-3"
+                  className="h-8 flex-row items-center rounded-full border border-[#DADAE8] px-3"
                 >
                   <Pressable onPress={() => submit(term)}>
                     <Text className="text-[15px] text-[#696976]">{term}</Text>
@@ -86,8 +84,16 @@ export function RoomSearchScreenView({
             <Text className="text-[15px] text-[#696976]">전체 사용자 기준</Text>
           </View>
           <View className="flex-row flex-wrap gap-2">
-            {popularError ? (
-              <Text className="text-sm text-[#AAAABA]">인기 검색어를 불러오지 못했어요</Text>
+            {popularLoading ? (
+              <ReadyLoadingState label="인기 검색어를 불러오는 중..." compact className="w-full" />
+            ) : popularError ? (
+              <ReadyErrorState
+                title="인기 검색어를 불러오지 못했어요"
+                description={popularError}
+                onRetry={retryPopular}
+                compact
+                className="w-full"
+              />
             ) : popular.length === 0 ? (
               <Text className="text-sm text-[#AAAABA]">아직 인기 검색어가 없어요</Text>
             ) : (

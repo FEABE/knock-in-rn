@@ -9,7 +9,10 @@ export type RoomAddOptionSelectOption = {
 };
 
 export function useRoomAddOptionOptions(enabled = true) {
-  const state = useApi(['meta', 'room-add-options'], () => getRoomAddOptions(), { enabled });
+  const state = useApi(['meta', 'room-add-options'], () => getRoomAddOptions(), {
+    enabled,
+    retry: false,
+  });
   const options = useMemo<RoomAddOptionSelectOption[]>(
     () =>
       (state.data?.roomAddOption ?? []).flatMap((item) =>

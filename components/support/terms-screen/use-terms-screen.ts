@@ -8,12 +8,13 @@ export type UseTermsScreenReturn = {
   active: SupportTermsSection | null;
   loading: boolean;
   error: string | null;
+  retry: () => void;
   setActiveId: (next: string) => void;
 };
 
 export function useTermsScreen(): UseTermsScreenReturn {
   const [activeId, setActiveId] = useState('');
-  const { data, loading, error } = useSupportTerms();
+  const { data, loading, error, reload } = useSupportTerms();
   const sections = useMemo(() => data ?? [], [data]);
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export function useTermsScreen(): UseTermsScreenReturn {
     active,
     loading,
     error,
+    retry: reload,
     setActiveId,
   };
 }

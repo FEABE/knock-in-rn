@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
@@ -14,6 +14,7 @@ import {
   useRoommateMatchLikeActions,
   useAlarms,
   type RoommateMatchCardModel,
+  getPreferenceAll,
 } from '@/lib/api';
 import { useModeration, useSession, type RoomPost } from '@/lib/domain';
 import { useRequireLogin } from '@/lib/auth';
@@ -23,8 +24,13 @@ import {
   goRoomDetail,
   goRoommateDetail,
   goRoomSearch,
+  goMypagePreferences,
 } from '@/lib/navigation/routes';
 import type { Region, RoomType } from '@/lib/onboarding';
+import {
+  isPreferenceNudgeSnoozed,
+  snoozePreferenceNudgeForWeek,
+} from '@/lib/preferences/nudge-storage';
 
 export type ExploreSort = 'latest' | 'likes' | 'views';
 export type ExploreFilterKey = 'region' | 'gender' | 'budget' | 'roomType';
@@ -67,6 +73,8 @@ export type UseExploreScreenReturn = {
   matchesLoading: boolean;
   matchesError: string | null;
   hasUnreadAlarms: boolean;
+  preferenceNudgeOpen: boolean;
+  preferenceNudgeSnooze: boolean;
   reloadRooms: () => void;
   reloadMatches: () => void;
   setSort: (next: ExploreSort) => void;
@@ -75,6 +83,9 @@ export type UseExploreScreenReturn = {
   onSearchPress: () => void;
   onSearchClear: () => void;
   onNotificationPress: () => void;
+  setPreferenceNudgeSnooze: (next: boolean) => void;
+  onPreferenceNudgeClose: () => void;
+  onPreferenceSetupPress: () => void;
   onCreatePress: () => void;
   onRoomPress: (post: RoomPost) => void;
   onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
@@ -94,6 +105,8 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
+  const [preferenceNudgeOpen, setPreferenceNudgeOpen] = useState(false);
+  const [preferenceNudgeSnooze, setPreferenceNudgeSnooze] = useState(false);
   const { data: alarms } = useAlarms(Boolean(session));
   const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
   const {
@@ -131,6 +144,36 @@ export function useExploreScreen(): UseExploreScreenReturn {
     setFilter(next);
   };
 
+  useEffect(() => {
+    if (!session) {
+      setPreferenceNudgeOpen(false);
+      return;
+    }
+
+    let mounted = true;
+    Promise.all([getPreferenceAll(), isPreferenceNudgeSnoozed()]).then(
+      ([preferenceResponse, snoozed]) => {
+        if (!mounted || snoozed || preferenceResponse.status !== 200 || preferenceResponse.error) {
+          return;
+        }
+
+        const data = preferenceResponse.data;
+        const completed =
+          (data?.lifestyles?.length ?? 0) > 0 || (data?.conditions?.length ?? 0) > 0;
+        setPreferenceNudgeOpen(!completed);
+      },
+    );
+
+    return () => {
+      mounted = false;
+    };
+  }, [session]);
+
+  const closePreferenceNudge = () => {
+    setPreferenceNudgeOpen(false);
+    if (preferenceNudgeSnooze) void snoozePreferenceNudgeForWeek();
+  };
+
   return {
     sort,
     filter,
@@ -143,6 +186,8 @@ export function useExploreScreen(): UseExploreScreenReturn {
     matchesLoading,
     matchesError,
     hasUnreadAlarms: (alarms ?? []).some((alarm) => !alarm.isRead),
+    preferenceNudgeOpen,
+    preferenceNudgeSnooze,
     reloadRooms,
     reloadMatches,
     setSort,
@@ -151,6 +196,12 @@ export function useExploreScreen(): UseExploreScreenReturn {
     onSearchPress: () => goRoomSearch(router, searchQuery),
     onSearchClear: () => router.replace('/explore' as never),
     onNotificationPress: () => goNotifications(router),
+    setPreferenceNudgeSnooze,
+    onPreferenceNudgeClose: closePreferenceNudge,
+    onPreferenceSetupPress: () => {
+      setPreferenceNudgeOpen(false);
+      goMypagePreferences(router);
+    },
     onCreatePress: () => requireLogin(() => goNewRoom(router)),
     onRoomPress: (post) => {
       logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });

@@ -2,12 +2,13 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
+import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseFaqScreenReturn } from './use-faq-screen';
 
 export type FaqScreenViewProps = UseFaqScreenReturn;
 
-export function FaqScreenView({ items, loading, error, openId, toggle }: FaqScreenViewProps) {
+export function FaqScreenView({ items, loading, error, retry, openId, toggle }: FaqScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="자주 묻는 질문" />
@@ -18,10 +19,12 @@ export function FaqScreenView({ items, loading, error, openId, toggle }: FaqScre
             <Text className="text-sm text-neutral-400">질문을 불러오는 중...</Text>
           </View>
         ) : error ? (
-          <View className="rounded-2xl border border-dashed border-neutral-200 p-8">
-            <Text className="text-center text-sm text-neutral-500">질문을 불러오지 못했어요</Text>
-            <Text className="mt-2 text-center text-xs text-neutral-400">{error}</Text>
-          </View>
+          <ReadyErrorState
+            title="질문을 불러오지 못했어요"
+            description={error}
+            onRetry={retry}
+            compact
+          />
         ) : items.length === 0 ? (
           <View className="rounded-2xl border border-dashed border-neutral-200 p-8">
             <Text className="text-center text-sm text-neutral-400">등록된 질문이 없어요</Text>

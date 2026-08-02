@@ -1,6 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import {
+  ReadyErrorState,
+  ReadyLoadingState,
+} from '@/components/ui/ready-to-dev-feedback';
 import type { Region } from '@/lib/onboarding';
 
 import { FilterSheet } from './filter-sheet';
@@ -14,10 +18,28 @@ export function RegionFilterBody({
   value: Region[];
   onChange: (next: Region[]) => void;
 }) {
-  const { cities, activeCity, districts, setActiveCity, toggleRegion } = useRegionFilterBody({
-    value,
-    onChange,
-  });
+  const {
+    cities,
+    activeCity,
+    districts,
+    loading,
+    error,
+    reload,
+    setActiveCity,
+    toggleRegion,
+  } = useRegionFilterBody({ value, onChange });
+
+  if (loading) return <ReadyLoadingState label="지역을 불러오는 중..." compact />;
+  if (error) {
+    return (
+      <ReadyErrorState
+        title="지역을 불러오지 못했어요"
+        description={error}
+        onRetry={reload}
+        compact
+      />
+    );
+  }
 
   return (
     <>

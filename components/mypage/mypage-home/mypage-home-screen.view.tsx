@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
+import Constants from 'expo-constants';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { Toggle } from '@/components/ui/headless';
+import { ReadyBadge, ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
 
 import type { MyPageMenuRow, UseMyPageHomeScreenReturn } from './use-mypage-home-screen';
 
@@ -18,11 +19,12 @@ export function MyPageHomeScreenView({
   notificationEnabled,
   notificationEditable,
   genderLabel,
-  profileRegionLabel,
   roomTypeLabel,
   matchingRows,
   accountRows,
+  supportRows,
   onSignIn,
+  onProfilePress,
   setProfileVisible,
   setNotificationEnabled,
 }: MyPageHomeScreenViewProps) {
@@ -50,34 +52,28 @@ export function MyPageHomeScreenView({
       </View>
 
       <ScrollView contentContainerClassName="pb-24">
-        <View className="gap-4 px-4 pb-6 pt-2">
-          <View className="flex-row items-center gap-5">
-            {user.avatarUrl ? (
-              <Image
-                source={{ uri: user.avatarUrl }}
-                style={{ width: 82, height: 82, borderRadius: 41 }}
-                contentFit="cover"
-              />
-            ) : (
-              <View className="h-[82px] w-[82px] items-center justify-center rounded-full bg-[#ECECF3]">
-                <Text className="text-xl font-semibold text-[#696976]">{user.name.charAt(0)}</Text>
-              </View>
-            )}
-            <View className="flex-1 gap-1">
-              <Text className="text-[22px] font-bold text-[#17171B]">{user.name}</Text>
-              <Text className="text-sm text-[#696976]">
-                {user.age > 0 ? `${user.age}세 · ` : ''}
-                {genderLabel} · {profileRegionLabel}
-              </Text>
+        <Pressable
+          onPress={onProfilePress}
+          className="flex-row items-center gap-3 px-4 pb-5 pt-2 active:bg-[#F6F6FA]"
+        >
+          <ReadyProfileAvatar name={user.name} imageUrl={user.avatarUrl} />
+          <View className="flex-1 gap-1.5">
+            <View className="flex-row items-center gap-1">
+              <Text className="text-[15px] font-bold text-[#17171B]">{user.name}님</Text>
+              {(schoolVerified || companyVerified) && (
+                <Ionicons name="checkmark-circle" size={15} color="#24A96B" />
+              )}
+              <Ionicons name="bag-handle" size={14} color="#5B8EF6" />
+              <Ionicons name="chevron-forward" size={16} color="#696976" />
+            </View>
+            <View className="flex-row gap-1">
+              {user.age > 0 ? (
+                <ReadyBadge label={`${user.age}세 · ${genderLabel}`} tone="red" />
+              ) : null}
+              <ReadyBadge label={roomTypeLabel} tone="blue" icon="home" />
             </View>
           </View>
-
-          <View className="flex-row flex-wrap gap-2">
-            <Tag label={roomTypeLabel} tone="emerald" />
-            {schoolVerified ? <Tag label="학교 인증" tone="emerald" /> : null}
-            {companyVerified ? <Tag label="회사 인증" tone="blue" /> : null}
-          </View>
-        </View>
+        </Pressable>
 
         <Section title="프로필">
           <View className="flex-row items-center justify-between border-b border-[#ECECF3] px-4 py-4">
@@ -110,6 +106,18 @@ export function MyPageHomeScreenView({
           {accountRows.slice(1).map((row, index) => (
             <MenuRow key={row.label} row={row} last={index === accountRows.length - 2} />
           ))}
+        </Section>
+
+        <Section title="고객 지원">
+          {supportRows.map((row, index) => (
+            <MenuRow key={row.label} row={row} last={index === supportRows.length - 1} />
+          ))}
+          <View className="flex-row items-center border-b border-neutral-100 px-4 py-4">
+            <Text className="flex-1 text-[15px] font-medium text-[#17171B]">버전 정보</Text>
+            <Text className="text-sm text-[#696976]">
+              v{Constants.expoConfig?.version ?? '1.0.0'}
+            </Text>
+          </View>
         </Section>
       </ScrollView>
     </SafeAreaView>
@@ -170,27 +178,5 @@ function Switch({
         </View>
       )}
     </Toggle>
-  );
-}
-
-function Tag({
-  label,
-  tone = 'neutral',
-}: {
-  label: string;
-  tone?: 'neutral' | 'emerald' | 'blue';
-}) {
-  const bgClass =
-    tone === 'emerald' ? 'bg-emerald-50' : tone === 'blue' ? 'bg-blue-50' : 'bg-neutral-100';
-  const textClass =
-    tone === 'emerald'
-      ? 'text-emerald-700'
-      : tone === 'blue'
-        ? 'text-blue-600'
-        : 'text-neutral-500';
-  return (
-    <View className={`rounded px-2 py-0.5 ${bgClass}`}>
-      <Text className={`text-[10px] ${textClass}`}>{label}</Text>
-    </View>
   );
 }

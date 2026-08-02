@@ -4,7 +4,11 @@ import { useMemo } from 'react';
 
 import { getVerifications, useApi } from '@/lib/api';
 import { useSession } from '@/lib/domain';
-import { goVerificationCompany, goVerificationSchool } from '@/lib/navigation/routes';
+import {
+  goKakaoLogin,
+  goVerificationCompany,
+  goVerificationSchool,
+} from '@/lib/navigation/routes';
 
 export type VerificationHomeCard = {
   id: 'school' | 'company';
@@ -18,15 +22,25 @@ export type VerificationHomeCard = {
 
 export type UseVerificationHomeScreenReturn = {
   cards: VerificationHomeCard[];
+  isLoggedIn: boolean;
+  loading: boolean;
+  error: string | null;
   onBack: () => void;
+  onLogin: () => void;
+  onRetry: () => void;
 };
 
 export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
   const router = useRouter();
   const { session } = useSession();
-  const { data } = useApi(['profile', 'verifications'], () => getVerifications(), {
-    enabled: !!session,
-  });
+  const { data, loading, error, reload } = useApi(
+    ['profile', 'verifications'],
+    () => getVerifications(),
+    {
+      enabled: !!session,
+      retry: false,
+    },
+  );
   const schoolVerified = data?.studentAuth?.isAccepted === true;
   const companyVerified = data?.employeeAuth?.isAccepted === true;
 
@@ -59,6 +73,11 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
 
   return {
     cards,
+    isLoggedIn: Boolean(session),
+    loading,
+    error,
     onBack: () => router.back(),
+    onLogin: () => goKakaoLogin(router),
+    onRetry: reload,
   };
 }

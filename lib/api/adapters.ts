@@ -93,7 +93,7 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
     status: 'open',
     author: minimalUser(item.writer ?? item.memberName ?? '익명', region),
     description: '',
-    liked: bool(item.isLike),
+    liked: bool(item.interested ?? item.isLike),
   };
 }
 
@@ -115,8 +115,8 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
       .filter((option): option is NonNullable<typeof option> => option !== null) ?? [];
   const options = optionsFromIds.length
     ? optionsFromIds
-    : (data.roomExtraOptionNames ?? [])
-        .map(roomOptionFromLabel)
+    : (data.roomExtraOptions ?? [])
+        .map((option) => roomOptionFromLabel(option.name ?? ''))
         .filter((option): option is NonNullable<typeof option> => option !== null);
 
   return {
@@ -156,11 +156,11 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
     moveInDate: data.comeableDate ? new Date(data.comeableDate) : undefined,
     liked,
     compatibilityScore:
-      data.compatibility?.score != null ? num(data.compatibility.score) : undefined,
+      data.compatibility?.totalScore != null ? num(data.compatibility.totalScore) : undefined,
     compatibilityDetails:
       data.compatibility?.lifeStyleInfo
         ?.map((item) => ({
-          label: item.title?.trim() || '생활 패턴',
+          label: item.name?.trim() || '생활 패턴',
           score: percentNumber(item.percent),
         }))
         .filter((item) => item.label.length > 0) ?? [],
@@ -256,7 +256,7 @@ export function matchListItemToRoommateCard(item: MatchListItem): RoommateCard {
     budgetMax: num(item.maxMounthRent ?? item.seekerProfile?.maxMonthlyRent) || undefined,
     moveInBy: item.comeableAt ? new Date(item.comeableAt) : undefined,
     compatibilityScore: num(item.score) || undefined,
-    liked: bool(item.isLike),
+    liked: bool(item.interested),
   };
 }
 

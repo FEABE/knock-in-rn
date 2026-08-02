@@ -48,18 +48,25 @@ export async function syncPushDevice(options: {
  * FCM 토큰이 교체되면 로그인된 회원의 저장값도 즉시 갱신한다.
  */
 export function subscribeToPushTokenRefresh(): () => void {
-  const messaging = getMessaging();
-  return onTokenRefresh(messaging, (fcmToken) => {
-    void registerTokenWithBackend(fcmToken).then((result) => {
-      if (__DEV__ && result.status !== 'registered') {
-        console.warn('[push] refreshed FCM token was not registered', {
-          status: result.status,
-          code: result.status === 'failed' ? result.code : undefined,
-          message: result.status === 'failed' ? result.message : undefined,
-        });
-      }
+  try {
+    const messaging = getMessaging();
+    return onTokenRefresh(messaging, (fcmToken) => {
+      void registerTokenWithBackend(fcmToken).then((result) => {
+        if (__DEV__ && result.status !== 'registered') {
+          console.warn('[push] refreshed FCM token was not registered', {
+            status: result.status,
+            code: result.status === 'failed' ? result.code : undefined,
+            message: result.status === 'failed' ? result.message : undefined,
+          });
+        }
+      });
     });
-  });
+  } catch (error: unknown) {
+    if (__DEV__) {
+      console.warn('[push] token refresh subscription is unavailable', registrationFailure(error));
+    }
+    return () => {};
+  }
 }
 
 async function registerTokenWithBackend(fcmToken: string): Promise<PushDeviceSyncResult> {

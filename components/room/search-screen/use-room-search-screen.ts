@@ -9,7 +9,9 @@ export type UseRoomSearchScreenReturn = {
   query: string;
   recent: string[];
   popular: string[];
+  popularLoading: boolean;
   popularError: string | null;
+  retryPopular: () => void;
   setQuery: (next: string) => void;
   clearQuery: () => void;
   clearRecent: () => void;
@@ -26,8 +28,15 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
     recent: [] as string[],
   });
   const { query, recent } = state;
-  const { data: popularData, error: popularError } = useApi(['search', 'popular'], () =>
-    getPopularSearch(),
+  const {
+    data: popularData,
+    loading: popularLoading,
+    error: popularError,
+    reload: retryPopular,
+  } = useApi(
+    ['search', 'popular'],
+    () => getPopularSearch(),
+    { retry: false },
   );
   const popular = useMemo(
     () =>
@@ -62,7 +71,9 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
     query,
     recent,
     popular,
+    popularLoading,
     popularError,
+    retryPopular,
     setQuery: (next) => setState((current) => ({ ...current, query: next })),
     clearQuery: () => setState((current) => ({ ...current, query: '' })),
     clearRecent: () => {

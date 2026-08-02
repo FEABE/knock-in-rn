@@ -43,6 +43,7 @@ export const API_BASE_URL = resolveApiBaseUrl(RAW_API_BASE_URL);
 
 /** 기본값은 실 API 사용. 테스트 데이터가 필요할 때만 EXPO_PUBLIC_USE_MOCK=true 로 켠다. */
 export const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK === 'true';
+const API_TIMEOUT_MS = 15_000;
 
 let accessToken: string | null = null;
 let authFailureHandler: (() => void) | null = null;
@@ -126,6 +127,7 @@ type KnockAxiosRequestConfig = AxiosRequestConfig & {
 
 export const apiClient = create({
   baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT_MS,
 });
 
 apiClient.interceptors.request.use((config) => {

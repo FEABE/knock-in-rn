@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useGlobalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { LifestyleIntroArtwork } from '@/components/ui/ready-to-dev-assets';
+import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 import type { LifestyleScaleKey } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
@@ -17,86 +17,13 @@ type LifestyleQuestion =
       key: LifestyleScaleKey;
       label: string;
       levels: string[];
-      preview?: boolean;
     }
   | {
       kind: 'choice';
       key: string;
       label: string;
       options: { value: string; label: string }[];
-      preview?: boolean;
     };
-
-/**
- * Figma Ready-to-Dev 검수용 질문 세트.
- *
- * 서버에서 받은 생활패턴 ID와 섞이면 잘못된 값을 저장할 수 있으므로
- * lifestyleStage 딥링크로 진입한 개발 환경에서만 화면 미리보기에 사용한다.
- */
-const DESIGN_PREVIEW_QUESTIONS: LifestyleQuestion[] = [
-  {
-    kind: 'scale',
-    key: 'preview-sleep',
-    label: '취침 시간',
-    levels: ['매우 일찍', '일찍', '보통', '늦게', '매우 늦게'],
-    preview: true,
-  },
-  {
-    kind: 'scale',
-    key: 'preview-visitors',
-    label: '방문객 빈도',
-    levels: ['거의 안 옴', '가끔', '보통', '자주', '매우 자주'],
-    preview: true,
-  },
-  {
-    kind: 'choice',
-    key: 'preview-smoking',
-    label: '흡연 여부',
-    options: [
-      { value: 'no', label: '하지 않아요' },
-      { value: 'yes', label: '하고 있어요' },
-    ],
-    preview: true,
-  },
-  {
-    kind: 'choice',
-    key: 'preview-pet',
-    label: '반려동물 여부',
-    options: [
-      { value: 'no', label: '키우지 않아요' },
-      { value: 'yes', label: '키우고 있어요' },
-    ],
-    preview: true,
-  },
-  {
-    kind: 'scale',
-    key: 'preview-cleanliness',
-    label: '청결 민감도',
-    levels: ['전혀 민감하지 않음', '민감하지 않음', '보통', '민감함', '매우 민감함'],
-    preview: true,
-  },
-  {
-    kind: 'scale',
-    key: 'preview-noise',
-    label: '소음 민감도',
-    levels: ['전혀 민감하지 않음', '민감하지 않음', '보통', '민감함', '매우 민감함'],
-    preview: true,
-  },
-  {
-    kind: 'scale',
-    key: 'preview-personal-space',
-    label: '개인 공간 중요도',
-    levels: ['전혀 중요하지 않음', '중요하지 않음', '보통', '중요함', '매우 중요함'],
-    preview: true,
-  },
-  {
-    kind: 'scale',
-    key: 'preview-personality',
-    label: '성격 성향',
-    levels: ['매우 내향적', '내향적', '보통', '외향적', '매우 외향적'],
-    preview: true,
-  },
-];
 
 export function ProfileLifestyleStepView({
   scales,
@@ -105,13 +32,13 @@ export function ProfileLifestyleStepView({
   choiceGroups,
   submitting,
   submitError,
+  reload,
   setScale,
   setChoice,
   onScaleComplete,
   onBack,
   onNext,
 }: ProfileLifestyleStepViewProps) {
-  const { lifestyleStage } = useGlobalSearchParams<{ lifestyleStage?: string }>();
   const questions = useMemo<LifestyleQuestion[]>(
     () =>
       [
@@ -130,16 +57,7 @@ export function ProfileLifestyleStepView({
       ].sort((a, b) => questionOrder(a.label) - questionOrder(b.label)),
     [choiceGroups, scaleOptions],
   );
-  const [questionIndex, setQuestionIndex] = useState(() =>
-    __DEV__ ? parseLifestyleStage(lifestyleStage) : -1,
-  );
-  const [previewSelections, setPreviewSelections] = useState<Record<string, string | number>>({});
-  const isDesignPreview = __DEV__ && lifestyleStage !== undefined;
-
-  useEffect(() => {
-    if (!__DEV__ || lifestyleStage === undefined) return;
-    setQuestionIndex(parseLifestyleStage(lifestyleStage));
-  }, [lifestyleStage]);
+  const [questionIndex, setQuestionIndex] = useState(-1);
 
   const goBack = () => {
     if (questionIndex < 0) {
@@ -162,12 +80,22 @@ export function ProfileLifestyleStepView({
               약 1분이면 나와 잘 맞는 룸메이트를 추천받을 수 있어요
             </Text>
           </View>
-          <View className="flex-1 items-center justify-center pb-8">
-            <LifestyleIntroArtwork size={238} />
-          </View>
+          {submitError ? (
+            <ReadyErrorState
+              compact
+              title="생활패턴 항목을 불러오지 못했어요"
+              description={submitError}
+              onRetry={reload}
+              className="flex-1 pb-8"
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center pb-8">
+              <LifestyleIntroArtwork size={238} />
+            </View>
+          )}
         </View>
         <OnboardingFooter
-          canProceed={!submitting && !submitError}
+          canProceed={!submitting && !submitError && questions.length > 0}
           primaryLabel="시작하기"
           loading={submitting}
           onPress={() => setQuestionIndex(0)}
@@ -176,8 +104,7 @@ export function ProfileLifestyleStepView({
     );
   }
 
-  const activeQuestions = isDesignPreview ? DESIGN_PREVIEW_QUESTIONS : questions;
-  const question = activeQuestions[questionIndex];
+  const question = questions[questionIndex];
   if (!question) {
     return (
       <View className="flex-1 bg-white">
@@ -189,22 +116,24 @@ export function ProfileLifestyleStepView({
           >
             {submitError ?? '생활패턴 항목을 불러오는 중이에요'}
           </Text>
+          {submitError ? (
+            <Pressable onPress={reload} className="rounded-lg bg-[#ECF2FE] px-4 py-2">
+              <Text className="text-sm font-medium text-[#256EF4]">다시 시도</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     );
   }
 
-  const selectedValue = question.preview
-    ? previewSelections[question.key]
-    : question.kind === 'scale'
-      ? scales[question.key]
-      : choiceValues[question.key];
+  const selectedValue =
+    question.kind === 'scale' ? scales[question.key] : choiceValues[question.key];
   const options =
     question.kind === 'scale'
       ? question.levels.map((label, index) => ({ value: index + 1, label }))
       : question.options;
   const advance = () => {
-    if (questionIndex >= activeQuestions.length - 1) {
+    if (questionIndex >= questions.length - 1) {
       void onNext();
       return;
     }
@@ -233,12 +162,7 @@ export function ProfileLifestyleStepView({
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
                 onPress={() => {
-                  if (question.preview) {
-                    setPreviewSelections((current) => ({
-                      ...current,
-                      [question.key]: option.value,
-                    }));
-                  } else if (question.kind === 'scale') {
+                  if (question.kind === 'scale') {
                     const value = Number(option.value);
                     setScale(question.key, value);
                     onScaleComplete(question.key, value);
@@ -289,11 +213,6 @@ function LifestyleHeader({ progress, onBack }: { progress?: number; onBack: () =
       </Text>
     </View>
   );
-}
-
-function parseLifestyleStage(value: string | undefined): number {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed >= 0 ? parsed : -1;
 }
 
 function questionOrder(label: string): number {

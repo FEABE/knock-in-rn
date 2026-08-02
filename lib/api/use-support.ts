@@ -61,9 +61,10 @@ export type SupportCounts = {
 };
 
 export function useSupportCounts(includePrivate = true): AsyncState<SupportCounts> {
-  const faqs = useApi(['support', 'faqs'], () => getFaqAll());
+  const faqs = useApi(['support', 'faqs'], () => getFaqAll(), { retry: false });
   const inquiries = useApi(['support', 'inquiries'], () => getInquiries(), {
     enabled: includePrivate,
+    retry: false,
   });
 
   return {
@@ -81,7 +82,7 @@ export function useSupportCounts(includePrivate = true): AsyncState<SupportCount
 }
 
 export function useSupportFaqs(): AsyncState<SupportFaqItem[]> {
-  const state = useApi(['support', 'faqs'], () => getFaqAll());
+  const state = useApi(['support', 'faqs'], () => getFaqAll(), { retry: false });
   const items = useMemo<SupportFaqItem[] | null>(
     () =>
       state.data?.faqInfoList?.map((faq) => ({
@@ -98,6 +99,7 @@ export function useSupportFaqs(): AsyncState<SupportFaqItem[]> {
 export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
   const query = useQuery({
     queryKey: ['support', 'notices'],
+    retry: false,
     queryFn: async () => {
       const list = await getNotices({ page: 0, size: 20 });
       if (list.status !== 200 || list.error) {
@@ -127,6 +129,7 @@ export function useSupportInquiries(enabled = true): AsyncState<SupportInquiryLi
   const query = useQuery({
     queryKey: ['support', 'inquiries', 'with-detail'],
     enabled,
+    retry: false,
     queryFn: async () => {
       const list = await getInquiries();
       if (list.status !== 200 || list.error) {
@@ -176,6 +179,7 @@ export function useSupportInquiries(enabled = true): AsyncState<SupportInquiryLi
 export function useSupportTerms(): AsyncState<SupportTermsSection[]> {
   const query = useQuery({
     queryKey: ['support', 'terms', 'with-detail'],
+    retry: false,
     queryFn: async () => {
       const list = await getTerms();
       if (list.status !== 200 || list.error) {
@@ -198,7 +202,10 @@ export function useSupportTerms(): AsyncState<SupportTermsSection[]> {
 }
 
 export function useSupportCategories(enabled = true): AsyncState<SupportCategory[]> {
-  const state = useApi(['support', 'categories'], () => getInquiryCategories(), { enabled });
+  const state = useApi(['support', 'categories'], () => getInquiryCategories(), {
+    enabled,
+    retry: false,
+  });
   const categories = useMemo<SupportCategory[] | null>(
     () =>
       state.data?.inquirieCategorys?.map((category) => ({

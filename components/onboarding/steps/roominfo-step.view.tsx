@@ -23,6 +23,8 @@ export function RoomInfoStepView({
   cityOptions,
   gugunOptions,
   roomTypeOptions,
+  roomTypeLoading,
+  roomTypeError,
   regionPickerOpen,
   regionLoading,
   regionError,
@@ -40,6 +42,7 @@ export function RoomInfoStepView({
   setHasRoom,
   setRegionPickerOpen,
   reloadRegions,
+  reloadRoomTypes,
   selectSido,
   selectGugun,
   removeRegion,
@@ -159,25 +162,32 @@ export function RoomInfoStepView({
         ) : null}
 
         {stage === 3 ? (
-          <View className="flex-row flex-wrap gap-3">
-            {roomTypeOptions.map((type) => {
-              const selected = hasRoom
-                ? room.roomType === type.value
-                : room.roomTypes.includes(type.value);
-              const disabled = noRoom && !selected && room.roomTypes.length >= MAX_PREF_ROOM_TYPES;
-              return (
-                <RoomTypeChoice
-                  key={type.value}
-                  label={type.label}
-                  selected={selected}
-                  disabled={disabled}
-                  onPress={() =>
-                    hasRoom ? toggleSingleRoomType(type.value) : toggleRoomType(type.value)
-                  }
-                />
-              );
-            })}
-          </View>
+          roomTypeLoading ? (
+            <MetadataState message="방 형태를 불러오는 중이에요." loading />
+          ) : roomTypeError ? (
+            <MetadataState message="방 형태를 불러오지 못했어요." onRetry={reloadRoomTypes} />
+          ) : (
+            <View className="flex-row flex-wrap gap-3">
+              {roomTypeOptions.map((type) => {
+                const selected = hasRoom
+                  ? room.roomType === type.value
+                  : room.roomTypes.includes(type.value);
+                const disabled =
+                  noRoom && !selected && room.roomTypes.length >= MAX_PREF_ROOM_TYPES;
+                return (
+                  <RoomTypeChoice
+                    key={type.value}
+                    label={type.label}
+                    selected={selected}
+                    disabled={disabled}
+                    onPress={() =>
+                      hasRoom ? toggleSingleRoomType(type.value) : toggleRoomType(type.value)
+                    }
+                  />
+                );
+              })}
+            </View>
+          )
         ) : null}
       </ScrollView>
 
@@ -215,6 +225,28 @@ export function RoomInfoStepView({
             <Text className="text-sm text-white">{toast}</Text>
           </View>
         </View>
+      ) : null}
+    </View>
+  );
+}
+
+function MetadataState({
+  message,
+  loading,
+  onRetry,
+}: {
+  message: string;
+  loading?: boolean;
+  onRetry?: () => void;
+}) {
+  return (
+    <View className="flex-1 items-center justify-center gap-3 py-16">
+      {loading ? <ActivityIndicator color="#256EF4" /> : null}
+      <Text className="text-sm text-[#696976]">{message}</Text>
+      {onRetry ? (
+        <Pressable onPress={onRetry} className="rounded-lg bg-[#ECF2FE] px-4 py-2">
+          <Text className="text-sm font-medium text-[#256EF4]">다시 시도</Text>
+        </Pressable>
       ) : null}
     </View>
   );

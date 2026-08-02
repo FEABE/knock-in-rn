@@ -45,7 +45,10 @@ export function useRoommateBoards(
   enabled = true,
 ): AsyncState<RoomPost[]> {
   const key = JSON.stringify(query);
-  const state = useApi(['roommate', 'boards', key], () => getRoommateBoards(query), { enabled });
+  const state = useApi(['roommate', 'boards', key], () => getRoommateBoards(query), {
+    enabled,
+    retry: false,
+  });
   const posts = useMemo(
     () => state.data?.boards?.map(boardListItemToRoomPost) ?? null,
     [state.data],
@@ -59,19 +62,13 @@ export function useMyRoommateBoards(enabled = true): AsyncState<RoomPost[]> {
     ['profile', 'my-boards'],
     async () => {
       const res = await getMyBoards();
-      const boards = (res.data?.boards ?? []).map(
-        (board) =>
-          ({
-            ...board,
-            roomTypes: board.roomTypes ? [board.roomTypes] : undefined,
-          }) as BoardListItem,
-      );
+      const boards = (res.data?.boards ?? []).map((board) => board as BoardListItem);
       if (res.status !== 200 || res.error || boards.length === 0) {
         return { ...res, data: { boards } satisfies BoardListData };
       }
       return { ...res, data: { boards } satisfies BoardListData };
     },
-    { enabled },
+    { enabled, retry: false },
   );
   const posts = useMemo(
     () =>
@@ -91,7 +88,7 @@ export function useRoommateBoardDetail(boardId: string): AsyncState<RoomPost> {
   const state = useApi(
     ['roommate', 'boards', 'detail', boardId],
     () => getRoommateBoardDetail(boardId),
-    { enabled: boardId.length > 0 },
+    { enabled: boardId.length > 0, retry: false },
   );
   const post = useMemo(() => (state.data ? boardDetailToRoomPost(state.data) : null), [state.data]);
   return { ...state, data: post };
@@ -101,12 +98,13 @@ export function useRoommateBoardDetail(boardId: string): AsyncState<RoomPost> {
 export function useRoommateBoardEdit(boardId: string): AsyncState<BoardEditData> {
   return useApi(['roommate', 'boards', 'edit', boardId], () => getRoommateBoardEdit(boardId), {
     enabled: boardId.length > 0,
+    retry: false,
   });
 }
 
 /** 룸메이트 매칭 목록 (RoommateCard[]). */
 export function useRoommateMatches(): AsyncState<RoommateCard[]> {
-  const state = useApi(['roommate', 'matches'], () => getRoommateMatches());
+  const state = useApi(['roommate', 'matches'], () => getRoommateMatches(), { retry: false });
   const cards = useMemo(
     () => state.data?.matches?.map(matchListItemToRoommateCard) ?? null,
     [state.data],
@@ -116,13 +114,16 @@ export function useRoommateMatches(): AsyncState<RoommateCard[]> {
 
 /** 룸메이트 매칭 목록 (명세 원본 MatchListItem[]). 리치 카드 렌더용. */
 export function useRoommateMatchList(): AsyncState<MatchListItem[]> {
-  const state = useApi(['roommate', 'matches'], () => getRoommateMatches());
+  const state = useApi(['roommate', 'matches'], () => getRoommateMatches(), { retry: false });
   return { ...state, data: state.data?.matches ?? null };
 }
 
 /** 룸메이트 매칭 목록 (화면용 ViewModel[]). */
 export function useRoommateMatchCards(enabled = true): AsyncState<RoommateMatchCardModel[]> {
-  const state = useApi(['roommate', 'matches'], () => getRoommateMatches(), { enabled });
+  const state = useApi(['roommate', 'matches'], () => getRoommateMatches(), {
+    enabled,
+    retry: false,
+  });
   const cards = useMemo(
     () => state.data?.matches?.map(toRoommateMatchCardModel) ?? null,
     [state.data],
@@ -285,5 +286,6 @@ export function useRoommateMatchReportActions() {
 export function useRoommateMatchDetail(userId: string): AsyncState<MatchDetailData> {
   return useApi(['roommate', 'matches', userId], () => getRoommateMatchDetail(userId), {
     enabled: userId.length > 0,
+    retry: false,
   });
 }

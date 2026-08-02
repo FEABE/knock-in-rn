@@ -29,6 +29,8 @@ export type UseRoomInfoStepReturn = {
   cityOptions: RegionSelectOption[];
   gugunOptions: RegionSelectOption[];
   roomTypeOptions: RoomTypeOption[];
+  roomTypeLoading: boolean;
+  roomTypeError: string | null;
   regionPickerOpen: boolean;
   regionLoading: boolean;
   regionError: string | null;
@@ -46,6 +48,7 @@ export type UseRoomInfoStepReturn = {
   setHasRoom: (next: boolean) => void;
   setRegionPickerOpen: (open: boolean) => void;
   reloadRegions: () => void;
+  reloadRoomTypes: () => void;
   selectSido: (value: string) => void;
   selectGugun: (value: string) => void;
   removeRegion: (id: string) => void;
@@ -105,8 +108,8 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
             : true
           : stage === 3
             ? hasRoom
-              ? room.roomType != null
-              : room.roomTypes.length > 0
+              ? !roomTypes.error && room.roomType != null
+              : !roomTypes.error && room.roomTypes.length > 0
             : true;
 
   const [toast, setToast] = useState<string | null>(null);
@@ -172,6 +175,8 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     cityOptions: regions.cities,
     gugunOptions,
     roomTypeOptions: roomTypes.options,
+    roomTypeLoading: roomTypes.loading,
+    roomTypeError: roomTypes.error,
     regionPickerOpen,
     regionLoading: regions.loading,
     regionError: regions.error,
@@ -192,6 +197,7 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     },
     setRegionPickerOpen,
     reloadRegions: regions.reload,
+    reloadRoomTypes: roomTypes.reload,
     selectSido: (value) => setDraft({ sido: value || null, gugun: null }),
     selectGugun: (value) => commitDraft({ ...draft, gugun: value }),
     removeRegion: (id) => patch({ regions: room.regions.filter((r) => r.id !== id) }),

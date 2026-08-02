@@ -41,9 +41,10 @@ export type RoomProfileItem = {
 
 /** 궁합 정보. 게시글/매칭 상세, 궁합 점수 조회 등에서 공통 사용. */
 export type Compatibility = {
-  score: number;
+  totalScore: number;
   lifeStyleInfo: {
-    title: string;
-    percent: string;
+    id?: number;
+    name: string;
+    percent: number;
   }[];
 };

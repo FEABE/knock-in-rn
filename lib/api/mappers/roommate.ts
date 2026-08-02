@@ -123,7 +123,7 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     gender: match.gender === 'FEMALE' ? 'female' : match.gender === 'MALE' ? 'male' : undefined,
     genderLabel: match.gender === 'FEMALE' ? '여성' : match.gender === 'MALE' ? '남성' : undefined,
     hasRoom: isOffer,
-    liked: booleanValue(runtimeMatch.interested ?? match.isLike),
+    liked: booleanValue(match.interested),
     compatibilityScore: score,
     minDeposit,
     maxDeposit,
@@ -150,16 +150,7 @@ export function toRoommateMatchDetailModel(
   data: MatchDetailData,
   id: string,
 ): RoommateMatchDetailModel {
-  const compatibility = data.compatibility as
-    | (NonNullable<MatchDetailData['compatibility']> & {
-        totalScore?: number;
-        lifeStyleInfo?: (NonNullable<
-          NonNullable<MatchDetailData['compatibility']>['lifeStyleInfo']
-        >[number] & {
-          name?: string;
-        })[];
-      })
-    | undefined;
+  const compatibility = data.compatibility;
   const name = data.name ?? data.memberName ?? '이름 없음';
   const region =
     data.region ?? data.offerProfile?.regionFullName ?? data.seekerProfile?.regionFullNames?.[0];
@@ -244,15 +235,10 @@ export function toRoommateMatchDetailModel(
     ).join(' · '),
     compatibility: {
       score:
-        compatibility?.totalScore !== undefined
-          ? numberValue(compatibility.totalScore)
-          : compatibility?.score !== undefined
-            ? numberValue(compatibility.score)
-            : undefined,
+        compatibility?.totalScore !== undefined ? numberValue(compatibility.totalScore) : undefined,
       items: (compatibility?.lifeStyleInfo ?? []).map((info, index) => {
         const percent = percentageValue(info.percent);
-        const runtimeInfo = info as typeof info & { name?: string };
-        const title = runtimeInfo.name ?? info.title ?? '-';
+        const title = info.name ?? '-';
         return {
           key: `${title}-${index}`,
           title,

@@ -36,6 +36,10 @@ export type UseRoomPostFormReturn = {
   bottomPadding: number;
   roomTypes: RoomTypeOption[];
   roomOptions: RoomAddOptionSelectOption[];
+  roomTypesLoading: boolean;
+  roomTypesError: string | null;
+  roomOptionsLoading: boolean;
+  roomOptionsError: string | null;
   regionCities: RegionSelectOption[];
   regionDistricts: RegionSelectOption[];
   regionNeighborhoods: RegionSelectOption[];
@@ -54,6 +58,8 @@ export type UseRoomPostFormReturn = {
   removePhoto: (index: number) => void;
   toggleOption: (next: number) => void;
   setDescription: (next: string) => void;
+  reloadRoomTypes: () => void;
+  reloadRoomOptions: () => void;
   submit: () => void;
 };
 
@@ -62,6 +68,11 @@ export function useRoomPostForm({
   onSubmit,
 }: UseRoomPostFormProps): UseRoomPostFormReturn {
   const regions = useRegionOptions();
+  const {
+    cities: regionCities,
+    getChildren: getRegionChildren,
+    getOption: getRegionOption,
+  } = regions;
   const roomTypeOptions = useRoomTypeOptions();
   const roomAddOptions = useRoomAddOptionOptions();
   const [state, setState] = useState(() => ({
@@ -76,24 +87,24 @@ export function useRoomPostForm({
   const { draft, selectingPhotos, activeRegionCityId, activeRegionDistrictId } = state;
 
   useEffect(() => {
-    if (regions.cities.length === 0) return;
+    if (regionCities.length === 0) return;
     setState((current) => {
-      const selected = regions.getOption(current.draft.regions[0]?.id);
-      const selectedParent = regions.getOption(selected?.parentId);
-      const selectedGrandParent = regions.getOption(selectedParent?.parentId);
+      const selected = getRegionOption(current.draft.regions[0]?.id);
+      const selectedParent = getRegionOption(selected?.parentId);
+      const selectedGrandParent = getRegionOption(selectedParent?.parentId);
       const selectedCityId = selectedGrandParent?.id ?? selectedParent?.id ?? selected?.id;
       const selectedDistrictId = selectedGrandParent
         ? selectedParent?.id
         : selected?.parentId
           ? selected.id
           : null;
-      const activeCityStillExists = regions.cities.some(
+      const activeCityStillExists = regionCities.some(
         (city) => city.id === current.activeRegionCityId,
       );
       const nextCityId = activeCityStillExists
         ? current.activeRegionCityId
-        : (selectedCityId ?? regions.cities[0].id);
-      const districts = regions.getChildren(nextCityId);
+        : (selectedCityId ?? regionCities[0].id);
+      const districts = getRegionChildren(nextCityId);
       const activeDistrictStillExists = districts.some(
         (district) => district.id === current.activeRegionDistrictId,
       );
@@ -114,15 +125,15 @@ export function useRoomPostForm({
         activeRegionDistrictId: nextDistrictId,
       };
     });
-  }, [regions.cities, regions.getChildren, regions.getOption]);
+  }, [getRegionChildren, getRegionOption, regionCities]);
 
   const regionDistricts = useMemo(
-    () => (activeRegionCityId ? regions.getChildren(activeRegionCityId) : []),
-    [activeRegionCityId, regions.getChildren],
+    () => (activeRegionCityId ? getRegionChildren(activeRegionCityId) : []),
+    [activeRegionCityId, getRegionChildren],
   );
   const regionNeighborhoods = useMemo(
-    () => (activeRegionDistrictId ? regions.getChildren(activeRegionDistrictId) : []),
-    [activeRegionDistrictId, regions.getChildren],
+    () => (activeRegionDistrictId ? getRegionChildren(activeRegionDistrictId) : []),
+    [activeRegionDistrictId, getRegionChildren],
   );
 
   const patch = (next: Partial<RoomFormDraft>) => {
@@ -142,7 +153,11 @@ export function useRoomPostForm({
     bottomPadding,
     roomTypes: roomTypeOptions.options,
     roomOptions: roomAddOptions.options,
-    regionCities: regions.cities,
+    roomTypesLoading: roomTypeOptions.loading,
+    roomTypesError: roomTypeOptions.error,
+    roomOptionsLoading: roomAddOptions.loading,
+    roomOptionsError: roomAddOptions.error,
+    regionCities,
     regionDistricts,
     regionNeighborhoods,
     activeRegionCityId,
@@ -153,7 +168,7 @@ export function useRoomPostForm({
     setMaintenance: (next) => patch({ maintenance: next }),
     selectRoomType: (next) => patch({ roomType: next }),
     selectRegionCity: (next) => {
-      const firstDistrict = regions.getChildren(next)[0];
+      const firstDistrict = getRegionChildren(next)[0];
       setState((current) => ({
         ...current,
         activeRegionCityId: next,
@@ -161,8 +176,8 @@ export function useRoomPostForm({
       }));
     },
     selectRegionDistrict: (next) => {
-      const district = regions.getOption(next);
-      const neighborhoods = regions.getChildren(next);
+      const district = getRegionOption(next);
+      const neighborhoods = getRegionChildren(next);
       setState((current) => ({
         ...current,
         activeRegionDistrictId: next,
@@ -221,6 +236,8 @@ export function useRoomPostForm({
       });
     },
     setDescription: (next) => patch({ description: next.slice(0, 500) }),
+    reloadRoomTypes: roomTypeOptions.reload,
+    reloadRoomOptions: roomAddOptions.reload,
     submit: () => {
       const values = draftToValues(draft);
       if (values) onSubmit(values);

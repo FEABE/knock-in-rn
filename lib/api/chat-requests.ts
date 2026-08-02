@@ -101,10 +101,10 @@ const MOCK_REQUEST_DETAIL: ChatRequestDetailData = {
 
 const MOCK_SCORE: MatchScoreData = {
   compatibility: {
-    score: 82,
+    totalScore: 82,
     lifeStyleInfo: [
-      { title: '생활 리듬', percent: '90' },
-      { title: '청결', percent: '80' },
+      { name: '생활 리듬', percent: 90 },
+      { name: '청결', percent: 80 },
     ],
   },
 };

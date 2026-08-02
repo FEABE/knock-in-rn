@@ -209,11 +209,11 @@ const MOCK_CONDITIONS: ConditionItem[] = [
 ];
 
 const MOCK_COMPATIBILITY: Compatibility = {
-  score: 82,
+  totalScore: 82,
   lifeStyleInfo: [
-    { title: '생활 리듬', percent: '90' },
-    { title: '청결', percent: '80' },
-    { title: '소음', percent: '76' },
+    { name: '생활 리듬', percent: 90 },
+    { name: '청결', percent: 80 },
+    { name: '소음', percent: 76 },
   ],
 };
 
@@ -231,7 +231,7 @@ const MOCK_BOARDS: BoardListItem[] = [
     viewer: 312,
     isPopular: true,
     isNew: false,
-    isLike: false,
+    interested: false,
   },
   {
     boardId: 2,
@@ -246,7 +246,7 @@ const MOCK_BOARDS: BoardListItem[] = [
     viewer: 187,
     isPopular: false,
     isNew: false,
-    isLike: true,
+    interested: true,
   },
 ];
 
@@ -279,7 +279,7 @@ const MOCK_MATCHES: MatchListItem[] = [
   {
     userId: 2,
     name: '하준',
-    isLike: false,
+    interested: false,
     roomProfileType: 'OFFER',
     deposit: 1200,
     mounthRent: 70,
@@ -297,7 +297,7 @@ const MOCK_MATCHES: MatchListItem[] = [
   {
     userId: 3,
     name: '수아',
-    isLike: true,
+    interested: true,
     roomProfileType: 'OFFER',
     deposit: 1000,
     mounthRent: 45,
@@ -315,7 +315,7 @@ const MOCK_MATCHES: MatchListItem[] = [
   {
     userId: 4,
     name: '도윤',
-    isLike: false,
+    interested: false,
     roomProfileType: 'OFFER',
     deposit: 2000,
     mounthRent: 80,
@@ -399,12 +399,11 @@ export function getRoommateBoardEdit(boardId: string): Promise<ApiResponse<Board
 }
 
 /** GET /roommate/matches — 매칭 리스트 탐색 */
-export function getRoommateMatches(): Promise<ApiResponse<MatchListData>> {
+export async function getRoommateMatches(): Promise<ApiResponse<MatchListData>> {
   if (USE_MOCK) return mockOk({ matches: MOCK_MATCHES });
-  return request<MatchListPageData>('GET', '/roommate/matches').then((res) => ({
-    ...res,
-    data: sliceToMatchListData(res.data),
-  }));
+  const res = await request<MatchListPageData>('GET', '/roommate/matches');
+  if (res.status !== 200 || res.error || !res.data) return { ...res, data: { matches: [] } };
+  return { ...res, data: sliceToMatchListData(res.data) };
 }
 
 /** GET /roommate/matches/{userId} — 매칭 상세 조회 */

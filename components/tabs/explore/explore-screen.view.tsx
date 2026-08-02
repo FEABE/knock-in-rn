@@ -1,13 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
 import { RoomListControls } from '@/components/domain/room-list-controls';
 import { RoomFilterSheet } from '@/components/room/filters';
-import { ErrorState } from '@/components/ui/error-state';
 import { Tabs } from '@/components/ui/headless';
-import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
+import {
+  ReadyEmptyState,
+  ReadyErrorState,
+  ReadyLoadingState,
+} from '@/components/ui/ready-to-dev-feedback';
 
 import {
   EXPLORE_SORT_OPTIONS,
@@ -29,6 +33,8 @@ export function ExploreScreenView({
   matchesLoading,
   matchesError,
   hasUnreadAlarms,
+  preferenceNudgeOpen,
+  preferenceNudgeSnooze,
   reloadRooms,
   reloadMatches,
   setSort,
@@ -37,6 +43,9 @@ export function ExploreScreenView({
   onSearchPress,
   onSearchClear,
   onNotificationPress,
+  setPreferenceNudgeSnooze,
+  onPreferenceNudgeClose,
+  onPreferenceSetupPress,
   onCreatePress,
   onRoomPress,
   onRoomLikeChange,
@@ -93,18 +102,20 @@ export function ExploreScreenView({
 
           <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24">
             {roomsLoading ? (
-              <View className="items-center py-16">
-                <ActivityIndicator color="#256EF4" />
-                <Text className="mt-3 text-sm text-neutral-400">방을 불러오는 중...</Text>
-              </View>
+              <ReadyLoadingState compact label="방을 불러오는 중..." />
             ) : roomsError ? (
-              <ErrorState
-                message="방 목록을 불러오지 못했어요"
-                detail={roomsError}
+              <ReadyErrorState
+                compact
+                title="방 목록을 불러오지 못했어요"
+                description={roomsError}
                 onRetry={reloadRooms}
               />
             ) : visiblePosts.length === 0 ? (
-              <EmptyBox message={searchQuery ? '검색 결과가 없어요' : '조건에 맞는 방이 없어요'} />
+              <ReadyEmptyState
+                compact
+                title={searchQuery ? '검색 결과가 없어요' : '조건에 맞는 방이 없어요'}
+                description={searchQuery ? '다른 키워드로 검색해보세요' : '다른 조건으로 다시 찾아보세요'}
+              />
             ) : (
               visiblePosts.map((post) => (
                 <RoomCard
@@ -144,18 +155,20 @@ export function ExploreScreenView({
           />
           <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24">
             {matchesLoading ? (
-              <View className="items-center py-16">
-                <ActivityIndicator color="#256EF4" />
-                <Text className="mt-3 text-sm text-neutral-400">룸메이트를 불러오는 중...</Text>
-              </View>
+              <ReadyLoadingState compact label="룸메이트를 불러오는 중..." />
             ) : matchesError ? (
-              <ErrorState
-                message="룸메이트 목록을 불러오지 못했어요"
-                detail={matchesError}
+              <ReadyErrorState
+                compact
+                title="룸메이트 목록을 불러오지 못했어요"
+                description={matchesError}
                 onRetry={reloadMatches}
               />
             ) : visibleMatches.length === 0 ? (
-              <EmptyBox message={searchQuery ? '검색 결과가 없어요' : '매칭된 룸메이트가 없어요'} />
+              <ReadyEmptyState
+                compact
+                title={searchQuery ? '검색 결과가 없어요' : '매칭된 룸메이트가 없어요'}
+                description={searchQuery ? '다른 키워드로 검색해보세요' : '다른 조건으로 다시 찾아보세요'}
+              />
             ) : (
               visibleMatches.map((match) => (
                 <RoommateFindCard
@@ -178,7 +191,90 @@ export function ExploreScreenView({
         onChange={handleFilterChange}
         initial={INITIAL_EXPLORE_FILTER}
       />
+
+      <PreferenceNudgeModal
+        open={preferenceNudgeOpen}
+        snooze={preferenceNudgeSnooze}
+        onSnoozeChange={setPreferenceNudgeSnooze}
+        onClose={onPreferenceNudgeClose}
+        onSetup={onPreferenceSetupPress}
+      />
     </SafeAreaView>
+  );
+}
+
+function PreferenceNudgeModal({
+  open,
+  snooze,
+  onSnoozeChange,
+  onClose,
+  onSetup,
+}: {
+  open: boolean;
+  snooze: boolean;
+  onSnoozeChange: (next: boolean) => void;
+  onClose: () => void;
+  onSetup: () => void;
+}) {
+  return (
+    <Modal transparent animationType="slide" visible={open} onRequestClose={onClose}>
+      <View className="flex-1 justify-end bg-[#17171B]/40">
+        <View className="rounded-t-[20px] bg-white px-[26px] pb-5 pt-5">
+          <Pressable
+            onPress={onClose}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="닫기"
+            className="self-end"
+          >
+            <Ionicons name="close" size={26} color="#696976" />
+          </Pressable>
+
+          <View className="items-center">
+            <View className="h-[114px] w-[125px] items-center justify-end overflow-hidden pt-2.5">
+              <Image
+                source={require('../../../assets/images/figma-ready/preference-nudge.png')}
+                contentFit="fill"
+                style={{ width: 125, height: 118 }}
+              />
+            </View>
+            <Text className="mt-2 text-center text-lg font-bold leading-[27px] text-[#17171B]">
+              <Text className="text-[#256EF4]">더 잘 맞는 룸메이트</Text>를{`\n`}놓치고 있을지도
+              몰라요!
+            </Text>
+            <Text className="mt-3 text-center text-sm leading-[21px] text-[#696976]">
+              룸메 조건을 설정하면{' '}
+              <Text className="font-semibold text-[#256EF4]">궁합 점수가 더 정확해져요</Text>
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={onSetup}
+            className="mt-5 h-12 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-85"
+          >
+            <Text className="text-[15px] font-bold text-white">룸메이트 조건 설정하기</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => onSnoozeChange(!snooze)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: snooze }}
+            className="mt-4 flex-row items-center gap-2 self-start"
+          >
+            <View
+              className={`h-5 w-5 items-center justify-center rounded ${
+                snooze ? 'bg-[#256EF4]' : 'border border-[#DADAE8] bg-white'
+              }`}
+            >
+              {snooze ? <Ionicons name="checkmark" size={15} color="#FFFFFF" /> : null}
+            </View>
+            <Text className="text-xs font-medium leading-[19px] text-[#AAAABA]">
+              일주일동안 보지 않기
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -204,16 +300,6 @@ function Header({
           <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border border-white bg-[#256EF4]" />
         ) : null}
       </Pressable>
-    </View>
-  );
-}
-
-function EmptyBox({ message }: { message: string }) {
-  return (
-    <View className="items-center gap-3 px-8 py-10">
-      <EmptyHouseArtwork size={168} />
-      <Text className="text-center text-[17px] font-semibold text-[#17171B]">{message}</Text>
-      <Text className="text-center text-sm text-[#AAAABA]">다른 조건으로 다시 찾아보세요</Text>
     </View>
   );
 }

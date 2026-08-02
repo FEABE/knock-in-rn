@@ -11,7 +11,7 @@ export type RoomTypeOption = {
 };
 
 export function useRoomTypeOptions() {
-  const state = useApi(['meta', 'room-types'], () => getRoomTypes());
+  const state = useApi(['meta', 'room-types'], () => getRoomTypes(), { retry: false });
   const options = useMemo<RoomTypeOption[]>(
     () =>
       (state.data?.roomType ?? []).flatMap((item) =>

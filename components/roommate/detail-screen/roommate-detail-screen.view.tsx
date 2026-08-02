@@ -1,10 +1,20 @@
 import { useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomSheet } from '@/components/ui/headless';
+import {
+  ReadyActionRow,
+  ReadyActionSheet,
+  ReadyBadge,
+  ReadyDivider,
+  ReadyMetadataTile,
+  ReadyMoreButton,
+  ReadyProfileAvatar,
+  ReadyScreenHeader,
+  ReadySection,
+} from '@/components/ui/ready-to-dev-components';
+import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 import type { RoommateMatchDetailModel } from '@/lib/api';
 
 import {
@@ -52,7 +62,17 @@ export function RoommateDetailScreenView({
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <Header onBack={onBack} onReport={() => setReportOpen(true)} />
+      <ReadyScreenHeader
+        title="룸메 찾아요"
+        onBack={onBack}
+        actions={[
+          {
+            icon: 'ellipsis-horizontal',
+            label: '신고 및 차단',
+            onPress: () => setReportOpen(true),
+          },
+        ]}
+      />
 
       {loading ? (
         <View className="flex-1 items-center justify-center gap-3">
@@ -86,7 +106,7 @@ export function RoommateDetailScreenView({
               <CompatibilityBlock data={data} />
             </View>
 
-            <Divider />
+            <ReadyDivider />
 
             <View
               onLayout={(event) => {
@@ -96,7 +116,7 @@ export function RoommateDetailScreenView({
               <PreferredRoommateBlock data={data} />
             </View>
 
-            <Divider />
+            <ReadyDivider />
 
             <View
               onLayout={(event) => {
@@ -106,7 +126,7 @@ export function RoommateDetailScreenView({
               <RoomIntroductionBlock data={data} />
             </View>
 
-            <Divider />
+            <ReadyDivider />
             <LifestyleBlock data={data} expanded={lifestyleExpanded} onToggle={toggleLifestyle} />
           </ScrollView>
 
@@ -129,47 +149,11 @@ export function RoommateDetailScreenView({
   );
 }
 
-function Header({ onBack, onReport }: { onBack: () => void; onReport: () => void }) {
-  return (
-    <View className="h-12 flex-row items-center justify-between px-3">
-      <Pressable
-        onPress={onBack}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="이전으로"
-        className="h-10 w-10 items-center justify-center rounded-full active:bg-[#F6F6FA]"
-      >
-        <Ionicons name="chevron-back" size={22} color="#696976" />
-      </Pressable>
-      <Text className="text-base font-semibold text-[#17171B]">룸메 찾아요</Text>
-      <Pressable
-        onPress={onReport}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="신고 및 차단"
-        className="h-10 w-10 items-center justify-center rounded-full active:bg-[#F6F6FA]"
-      >
-        <Ionicons name="ellipsis-horizontal" size={20} color="#696976" />
-      </Pressable>
-    </View>
-  );
-}
-
 function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
   const roomBadge = data.roomStatusLabel.split('·')[0]?.trim();
   return (
     <View className="flex-row items-center gap-3 px-4 py-4">
-      {data.profileImageUrl ? (
-        <Image
-          source={{ uri: data.profileImageUrl }}
-          style={{ width: 48, height: 48, borderRadius: 24 }}
-          contentFit="cover"
-        />
-      ) : (
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-[#F6F6FA]">
-          <Text className="text-lg font-semibold text-[#696976]">{data.initial}</Text>
-        </View>
-      )}
+      <ReadyProfileAvatar name={data.name || data.initial} imageUrl={data.profileImageUrl} />
 
       <View className="flex-1 gap-2">
         <View className="flex-row items-center gap-1">
@@ -179,9 +163,9 @@ function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
           ) : null}
         </View>
         <View className="flex-row flex-wrap gap-1.5">
-          {data.age ? <InfoChip label={`${data.age}세`} tone="pink" /> : null}
-          {data.genderLabel ? <InfoChip label={data.genderLabel} tone="pink" /> : null}
-          {roomBadge ? <InfoChip label={roomBadge} tone="blue" icon="home" /> : null}
+          {data.age ? <ReadyBadge label={`${data.age}세`} tone="red" /> : null}
+          {data.genderLabel ? <ReadyBadge label={data.genderLabel} tone="red" /> : null}
+          {roomBadge ? <ReadyBadge label={roomBadge} tone="blue" icon="home" /> : null}
         </View>
       </View>
     </View>
@@ -227,14 +211,15 @@ function DetailTabs({ active, onPress }: { active: DetailTab; onPress: (tab: Det
 function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
   const score = data.compatibility.score;
   return (
-    <View className="px-4 py-6">
-      <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-semibold text-[#17171B]">궁합 점수</Text>
+    <ReadySection
+      title="궁합 점수"
+      accessory={
         <View className="flex-row items-center gap-1">
           <Text className="text-xs text-[#AAAABA]">프로필 완성 후 실제 점수 반영</Text>
           <Ionicons name="information-circle" size={14} color="#C8C8D4" />
         </View>
-      </View>
+      }
+    >
       <View className="items-center py-6">
         <View
           className={`h-28 w-28 items-center justify-center rounded-full border-[5px] ${
@@ -253,7 +238,7 @@ function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
           </View>
         </View>
       </View>
-    </View>
+    </ReadySection>
   );
 }
 
@@ -264,8 +249,7 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
     .filter(Boolean);
 
   return (
-    <View className="gap-4 px-4 py-6">
-      <Text className="text-sm font-semibold text-[#17171B]">선호 룸메이트 조건</Text>
+    <ReadySection title="선호 룸메이트 조건">
       {data.preferenceRows.length ? (
         <View className="flex-row flex-wrap gap-2">
           {data.preferenceRows.map((preference) => (
@@ -284,27 +268,30 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
           <Text className="text-xs font-semibold text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
             {priorities.map((priority) => (
-              <View key={priority} className="rounded bg-[#EEF4FF] px-3 py-2">
+              <View
+                key={priority}
+                className="flex-row items-center gap-1.5 rounded bg-[#EEF4FF] px-3 py-2"
+              >
+                <PriorityArtwork label={priority} size={20} />
                 <Text className="text-sm font-medium text-[#17171B]">{priority}</Text>
               </View>
             ))}
           </View>
         </View>
       ) : null}
-    </View>
+    </ReadySection>
   );
 }
 
 function RoomIntroductionBlock({ data }: { data: RoommateMatchDetailModel }) {
   return (
-    <View className="gap-4 px-4 py-6">
-      <Text className="text-sm font-semibold text-[#17171B]">방 소개</Text>
+    <ReadySection title="방 소개">
       <View className="gap-3">
         {data.livingRows.map((row) => (
           <KeyVal key={row.label} label={figmaLivingLabel(row.label)} value={row.value} />
         ))}
       </View>
-    </View>
+    </ReadySection>
   );
 }
 
@@ -319,30 +306,20 @@ function LifestyleBlock({
 }) {
   const items = expanded ? data.lifeStyles : data.lifeStyles.slice(0, 4);
   return (
-    <View className="gap-4 px-4 py-6">
-      <Text className="text-sm font-semibold text-[#17171B]">생활 패턴</Text>
+    <ReadySection title="생활 패턴">
       {items.length ? (
         <View className="flex-row flex-wrap gap-3">
           {items.map((lifestyle) => (
-            <View
-              key={lifestyle.id}
-              className="min-h-[76px] min-w-[47%] flex-1 justify-center gap-1 rounded bg-[#F6F6FA] px-4 py-3"
-            >
-              <Text className="text-xs text-[#AAAABA]">{lifestyle.name}</Text>
-              <Text className="text-sm font-semibold text-[#17171B]">{lifestyle.value}</Text>
-            </View>
+            <ReadyMetadataTile key={lifestyle.id} label={lifestyle.name} value={lifestyle.value} />
           ))}
         </View>
       ) : (
         <Text className="text-sm text-[#AAAABA]">등록된 생활 패턴이 없어요</Text>
       )}
       {data.lifeStyles.length > 4 ? (
-        <Pressable onPress={onToggle} className="flex-row items-center justify-center gap-1 py-1">
-          <Text className="text-xs text-[#AAAABA]">{expanded ? '접기' : '더보기'}</Text>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#AAAABA" />
-        </Pressable>
+        <ReadyMoreButton expanded={expanded} onPress={onToggle} />
       ) : null}
-    </View>
+    </ReadySection>
   );
 }
 
@@ -395,57 +372,50 @@ function ReportSheet({
   onBlock: () => void;
   onReportReason: (reason: string) => void;
 }) {
-  return (
-    <BottomSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      contentClassName="rounded-t-2xl bg-white px-5 pb-8 pt-3"
-    >
-      <Text className="mb-3 text-base font-semibold text-[#17171B]">신고 및 차단</Text>
-      <Pressable
-        onPress={onBlock}
-        className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 active:bg-red-100"
-      >
-        <Text className="text-sm font-semibold text-red-600">이 사용자 차단</Text>
-      </Pressable>
-      <Text className="mb-2 text-xs font-medium text-[#AAAABA]">신고 사유</Text>
-      <View className="gap-2">
-        {ROOMMATE_REPORT_REASONS.map((reason) => (
-          <Pressable
-            key={reason}
-            onPress={() => onReportReason(reason)}
-            className="rounded-xl border border-[#DADAE8] px-4 py-3 active:bg-[#F6F6FA]"
-          >
-            <Text className="text-sm text-[#17171B]">{reason}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </BottomSheet>
-  );
-}
+  const [showReasons, setShowReasons] = useState(false);
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setShowReasons(false);
+    onOpenChange(next);
+  };
 
-function InfoChip({
-  label,
-  tone,
-  icon,
-}: {
-  label: string;
-  tone: 'pink' | 'blue';
-  icon?: keyof typeof Ionicons.glyphMap;
-}) {
   return (
-    <View
-      className={`flex-row items-center gap-1 rounded px-1.5 py-1 ${
-        tone === 'pink' ? 'bg-[#FDEFEC]' : 'bg-[#E7F4FE]'
-      }`}
-    >
-      {icon ? <Ionicons name={icon} size={11} color="#256EF4" /> : null}
-      <Text
-        className={tone === 'pink' ? 'text-[11px] text-[#D63D4A]' : 'text-[11px] text-[#256EF4]'}
-      >
-        {label}
-      </Text>
-    </View>
+    <ReadyActionSheet open={open} onOpenChange={handleOpenChange}>
+      {showReasons ? (
+        <View>
+          <Pressable
+            onPress={() => setShowReasons(false)}
+            className="mb-2 h-10 flex-row items-center gap-1"
+          >
+            <Ionicons name="chevron-back" size={20} color="#696976" />
+            <Text className="text-base font-semibold text-[#17171B]">신고 사유</Text>
+          </Pressable>
+          {ROOMMATE_REPORT_REASONS.map((reason, index) => (
+            <ReadyActionRow
+              key={reason}
+              icon="alert-circle-outline"
+              label={reason}
+              divider={index < ROOMMATE_REPORT_REASONS.length - 1}
+              onPress={() => onReportReason(reason)}
+            />
+          ))}
+        </View>
+      ) : (
+        <View>
+          <ReadyActionRow
+            icon="ban-outline"
+            label="사용자 차단하기"
+            tone="danger"
+            divider
+            onPress={onBlock}
+          />
+          <ReadyActionRow
+            icon="notifications-outline"
+            label="사용자 신고하기"
+            onPress={() => setShowReasons(true)}
+          />
+        </View>
+      )}
+    </ReadyActionSheet>
   );
 }
 
@@ -464,10 +434,6 @@ function KeyVal({ label, value }: { label: string; value: string }) {
       <Text className="max-w-[65%] text-right text-sm font-semibold text-[#17171B]">{value}</Text>
     </View>
   );
-}
-
-function Divider() {
-  return <View className="h-2 bg-[#F6F6FA]" />;
 }
 
 function figmaLivingLabel(label: string): string {

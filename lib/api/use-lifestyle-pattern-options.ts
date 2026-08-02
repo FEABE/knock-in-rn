@@ -52,7 +52,9 @@ export type LifestyleModifyItem = {
 };
 
 export function useLifestylePatternOptions(): LifestylePatternOptionsState {
-  const state = useApi(['meta', 'lifestyle-patterns'], () => getLifestylePatterns());
+  const state = useApi(['meta', 'lifestyle-patterns'], () => getLifestylePatterns(), {
+    retry: false,
+  });
   const options = useMemo(
     () => buildLifestylePatternOptions(state.data?.patterns ?? []),
     [state.data?.patterns],

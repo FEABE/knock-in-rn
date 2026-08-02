@@ -31,6 +31,9 @@ export function useRegionFilterBody({ value, onChange }: UseRegionFilterBodyProp
     cities,
     activeCity,
     districts,
+    loading: regionOptions.loading,
+    error: regionOptions.error,
+    reload: regionOptions.reload,
     setActiveCity,
     toggleRegion,
   };

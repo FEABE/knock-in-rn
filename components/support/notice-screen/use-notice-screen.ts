@@ -12,6 +12,7 @@ export type UseNoticeScreenReturn = {
   loading: boolean;
   error: string | null;
   unavailable: boolean;
+  retry: () => void;
 };
 
 export function useNoticeScreen(): UseNoticeScreenReturn {
@@ -21,5 +22,6 @@ export function useNoticeScreen(): UseNoticeScreenReturn {
     loading: state.loading,
     error: state.error,
     unavailable: false,
+    retry: state.reload,
   };
 }

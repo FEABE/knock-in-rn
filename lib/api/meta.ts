@@ -1,6 +1,8 @@
 /**
  * 도메인 3. 일반/메타데이터
  */
+import { Platform } from 'react-native';
+
 import { type ApiResponse, type PageParams, mockOk, request, USE_MOCK } from './client';
 import type { OpenApiSchema } from './openapi-types';
 
@@ -207,10 +209,13 @@ export function getRoomAddOptions(): Promise<ApiResponse<RoomAddOptionsData>> {
   return request('GET', '/meta/room-add-options', { auth: false });
 }
 
-/** GET /meta/app-version — 현재 앱버전 조회 */
+/** GET /meta/app-version/{platform} — 현재 플랫폼 앱버전 조회 */
 export function getAppVersion(): Promise<ApiResponse<AppVersionData>> {
   if (USE_MOCK) return mockOk({ id: 1, version: '1.0.0' });
-  return request('GET', '/meta/app-version', { auth: false });
+  if (Platform.OS === 'ios') {
+    return request('GET', '/meta/app-version/ios', { auth: false });
+  }
+  return request('GET', '/meta/app-version/android', { auth: false });
 }
 
 /** GET /meta/auth-email — 인증 이메일 목록 조회 */

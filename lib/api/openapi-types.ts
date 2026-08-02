@@ -4,17 +4,17 @@
 export interface OpenApiComponents {
   schemas: {
     "org.example.knockin.dto.ModifyProfileRoomInfoDto$Request": {
-        "type"?: "SEEKER" | "OFFER";
+        "type": "SEEKER" | "OFFER";
         "minDeposit"?: number;
         "maxDeposit"?: number;
-        "minMounthRent"?: number;
-        "maxMounthRent"?: number;
-        "comeEnableAt"?: string;
-        "region"?: number[];
-        "roomProfile"?: number[];
+        "comeEnableAt": string;
+        "region": number[];
+        "roomProfile": number[];
         "deposit"?: number;
-        "mounthRent"?: number;
         "comeableAtNegotiable"?: boolean;
+        "minMonthlyRent"?: number;
+        "maxMonthlyRent"?: number;
+        "monthlyRent"?: number;
       };
     "org.example.knockin.dto.ModifyProfileRoomInfoDto$Response": {
         "updatedAt"?: string;
@@ -30,11 +30,11 @@ export interface OpenApiComponents {
         "message"?: string;
       };
     "org.example.knockin.dto.ModifyProfileLifeStyleDto$Request": {
-        "lifestyles"?: OpenApiComponents["schemas"]["org.example.knockin.dto.ModifyProfileLifeStyleDto$Request$LifeStyleInfo"][];
+        "lifestyles": OpenApiComponents["schemas"]["org.example.knockin.dto.ModifyProfileLifeStyleDto$Request$LifeStyleInfo"][];
       };
     "org.example.knockin.dto.ModifyProfileLifeStyleDto$Request$LifeStyleInfo": {
-        "id"?: number;
-        "lifestyleId"?: number;
+        "id": number;
+        "lifestyleId": number;
       };
     "org.example.knockin.dto.ModifyProfileLifeStyleDto$Response": {
         "updatedAt"?: string;
@@ -45,11 +45,11 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.ModifyProfileBasicDto$Request": {
-        "name"?: string;
-        "birth"?: string;
-        "gender"?: "MALE" | "FEMALE";
-        "email"?: string;
-        "terms"?: number[];
+        "name": string;
+        "birth": string;
+        "gender": "MALE" | "FEMALE";
+        "email": string;
+        "terms": number[];
       };
     "org.example.knockin.dto.ModifyProfileBasicDto$Response": {
         "updatedAt"?: string;
@@ -60,27 +60,27 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.ModifyProfileAllDto$Request": {
-        "name"?: string;
-        "birth"?: string;
-        "gender"?: "MALE" | "FEMALE";
-        "email"?: string;
-        "terms"?: number[];
-        "lifestyles"?: OpenApiComponents["schemas"]["org.example.knockin.dto.ModifyProfileAllDto$Request$LifeStyleInfo"][];
-        "type"?: "SEEKER" | "OFFER";
+        "name": string;
+        "birth": string;
+        "gender": "MALE" | "FEMALE";
+        "email": string;
+        "terms": number[];
+        "lifestyles": OpenApiComponents["schemas"]["org.example.knockin.dto.ModifyProfileAllDto$Request$LifeStyleInfo"][];
+        "type": "SEEKER" | "OFFER";
         "minDeposit"?: number;
         "maxDeposit"?: number;
-        "minMounthRent"?: number;
-        "maxMounthRent"?: number;
-        "comeEnableAt"?: string;
-        "region"?: number[];
-        "roomProfile"?: number[];
+        "comeEnableAt": string;
+        "region": number[];
+        "roomProfile": number[];
         "deposit"?: number;
-        "mounthRent"?: number;
         "comeableAtNegotiable"?: boolean;
+        "minMonthlyRent"?: number;
+        "maxMonthlyRent"?: number;
+        "monthlyRent"?: number;
       };
     "org.example.knockin.dto.ModifyProfileAllDto$Request$LifeStyleInfo": {
-        "id"?: number;
-        "lifestyleId"?: number;
+        "id": number;
+        "lifestyleId": number;
       };
     "org.example.knockin.dto.ModifyProfileAllDto$Response": {
         "updatedAt"?: string;
@@ -128,12 +128,29 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.ModifyPreferencesAllDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.HouseRuleDto$Request": {
+        "title": string;
+        "contents": string;
+      };
+    "org.example.knockin.dto.HouseRuleDto$Response": {
+        "updatedAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.HouseRuleDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.HouseRuleDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.CalendarDto$CalendarInfoDto": {
+        "myRoommateId": number;
+        "title": string;
+        "contents": string;
+        "startDate": string;
+        "endDate": string;
+      };
     "org.example.knockin.dto.CalendarDto$Request": {
-        "roommateId"?: number;
-        "title"?: string;
-        "contents"?: string;
-        "startDt"?: string;
-        "endDt"?: string;
+        "calendar"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarDto$CalendarInfoDto"];
+        "categoryName": string;
+        "memberIds": number[];
       };
     "org.example.knockin.dto.CalendarDto$Response": {
         "updatedAt"?: string;
@@ -141,6 +158,30 @@ export interface OpenApiComponents {
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.CalendarDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.RepeatCalendarDto$RepeatCalendarInfo": {
+        "endDate"?: string;
+        "repeatType": "WEEKLY" | "BI_WEEKLY" | "MONTHLY";
+      };
+    "org.example.knockin.dto.RepeatCalendarModifyDto$OriginalCalendar": {
+        "startDate": string;
+        "endDate": string;
+      };
+    "org.example.knockin.dto.RepeatCalendarModifyDto$Request": {
+        "calendar"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarDto$CalendarInfoDto"];
+        "categoryName": string;
+        "repeatInfo": OpenApiComponents["schemas"]["org.example.knockin.dto.RepeatCalendarDto$RepeatCalendarInfo"];
+        "memberIds": number[];
+        "modifyType": "THIS" | "THIS_AND_FOLLOWING" | "ALL";
+        "originalCalendar": OpenApiComponents["schemas"]["org.example.knockin.dto.RepeatCalendarModifyDto$OriginalCalendar"];
+      };
+    "org.example.knockin.dto.RepeatCalendarModifyDto$Response": {
+        "updatedAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.RepeatCalendarModifyDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.RepeatCalendarModifyDto$Response"];
         "status"?: number;
       };
     "org.example.knockin.dto.BoardModifyDto$Request": {
@@ -210,6 +251,17 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoRoomTypeDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.BoRoomAddOptionDto$Request": {
+        "name"?: string;
+      };
+    "org.example.knockin.dto.BoRoomAddOptionDto$Response": {
+        "updatedAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoRoomAddOptionDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoRoomAddOptionDto$Response"];
+        "status"?: number;
+      };
     "org.example.knockin.dto.BoNoticeDto$Request": {
         "title"?: string;
         "contents"?: string;
@@ -226,6 +278,8 @@ export interface OpenApiComponents {
         "name"?: string;
         "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
         "sort"?: number;
+        "lifePatternDescription"?: string;
+        "preferenceDescription"?: string;
         "details"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoLifeStylePatternDto$Request$DetailItem"][];
       };
     "org.example.knockin.dto.BoLifeStylePatternDto$Request$DetailItem": {
@@ -271,6 +325,9 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.AppVersionModifyDto$Request": {
         "id"?: number;
         "version"?: string;
+        "platformType"?: "IOS" | "ANDROID";
+        "updateType"?: "SELECT" | "FORCE";
+        "minVersion"?: string;
       };
     "org.example.knockin.dto.AppVersionModifyDto$Response": {
         "updatedAt"?: string;
@@ -281,17 +338,17 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.SaveProfileRoomInfoDto$Request": {
-        "type"?: "SEEKER" | "OFFER";
+        "type": "SEEKER" | "OFFER";
         "minDeposit"?: number;
         "maxDeposit"?: number;
-        "minMounthRent"?: number;
-        "maxMounthRent"?: number;
-        "comeEnableAt"?: string;
-        "region"?: number[];
-        "roomProfile"?: number[];
+        "comeEnableAt": string;
+        "region": number[];
+        "roomProfile": number[];
         "deposit"?: number;
-        "mounthRent"?: number;
         "comeableAtNegotiable"?: boolean;
+        "minMonthlyRent"?: number;
+        "maxMonthlyRent"?: number;
+        "monthlyRent"?: number;
       };
     "org.example.knockin.dto.SaveProfileRoomInfoDto$Response": {
         "updatedAt"?: string;
@@ -302,7 +359,7 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.SaveProfileLifeStyleDto$Request": {
-        "lifestyles"?: number[];
+        "lifestyles": number[];
       };
     "org.example.knockin.dto.SaveProfileLifeStyleDto$Response": {
         "updatedAt"?: string;
@@ -313,11 +370,11 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.SaveProfileBasicDto$Request": {
-        "name"?: string;
-        "birth"?: string;
-        "gender"?: "MALE" | "FEMALE";
-        "email"?: string;
-        "terms"?: number[];
+        "name": string;
+        "birth": string;
+        "gender": "MALE" | "FEMALE";
+        "email": string;
+        "terms": number[];
       };
     "org.example.knockin.dto.SaveProfileBasicDto$Response": {
         "updatedAt"?: string;
@@ -328,23 +385,23 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.SaveProfileAllDto$Request": {
-        "name"?: string;
-        "birth"?: string;
-        "gender"?: "MALE" | "FEMALE";
-        "email"?: string;
-        "terms"?: number[];
-        "lifestyles"?: number[];
-        "type"?: "SEEKER" | "OFFER";
+        "name": string;
+        "birth": string;
+        "gender": "MALE" | "FEMALE";
+        "email": string;
+        "terms": number[];
+        "lifestyles": number[];
+        "type": "SEEKER" | "OFFER";
         "minDeposit"?: number;
         "maxDeposit"?: number;
-        "minMounthRent"?: number;
-        "maxMounthRent"?: number;
-        "comeEnableAt"?: string;
-        "region"?: number[];
-        "roomProfile"?: number[];
+        "comeEnableAt": string;
+        "region": number[];
+        "roomProfile": number[];
         "deposit"?: number;
-        "mounthRent"?: number;
         "comeableAtNegotiable"?: boolean;
+        "minMonthlyRent"?: number;
+        "maxMonthlyRent"?: number;
+        "monthlyRent"?: number;
       };
     "org.example.knockin.dto.SaveProfileAllDto$Response": {
         "updatedAt"?: string;
@@ -388,6 +445,33 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.SavePreferencesAllDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.FcmDto$Request": {
+        "deviceId": string;
+        "fcmToken": string;
+        "platform": "ANDROID" | "IOS";
+      };
+    "org.example.knockin.dto.FcmDto$Response": {
+        "updatedAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.FcmDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.FcmDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.RepeatCalendarDto$Request": {
+        "calendar"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarDto$CalendarInfoDto"];
+        "categoryName": string;
+        "repeatInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.RepeatCalendarDto$RepeatCalendarInfo"];
+        "memberIds": number[];
+      };
+    "org.example.knockin.dto.RepeatCalendarDto$Response": {
+        "updatedAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.RepeatCalendarDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.RepeatCalendarDto$Response"];
+        "status"?: number;
+      };
     "org.example.knockin.dto.MemberReportDto$Request": {
         "contents": string;
       };
@@ -422,6 +506,7 @@ export interface OpenApiComponents {
         "comeableDateNegotiable"?: boolean;
         "comeableDate"?: string;
         "images"?: OpenApiComponents["schemas"]["BoardFileRequest"][];
+        "extraOptionIds"?: number[];
       };
     "BoardSaveResponse": {
         "updatedAt"?: string;
@@ -449,7 +534,7 @@ export interface OpenApiComponents {
         "roommateMatchingRequiredInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.RoommateRequestDto$RoommateMatchingRequiredInfo"];
       };
     "org.example.knockin.dto.RoommateRequestDto$RoommateMatchingRequiredInfo": {
-        "id"?: number;
+        "requiredId"?: number;
         "requesterMemberId"?: number;
         "requesteeMemberId"?: number;
         "status"?: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELED" | "EXPIRED";
@@ -597,6 +682,9 @@ export interface OpenApiComponents {
       };
     "org.example.knockin.dto.AppVersionSaveDto$Request": {
         "version"?: string;
+        "platformType"?: "IOS" | "ANDROID";
+        "updateType"?: "SELECT" | "FORCE";
+        "minVersion"?: string;
       };
     "org.example.knockin.dto.AppVersionSaveDto$Response": {
         "updatedAt"?: string;
@@ -668,6 +756,9 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.AlarmSettingDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.BoVerificationDto$Request": {
+        "rejectReason"?: string;
+      };
     "org.example.knockin.dto.BoVerificationDto$Response": {
         "updatedAt"?: string;
       };
@@ -693,6 +784,14 @@ export interface OpenApiComponents {
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoMemberAuthDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoMemberAuthDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.BoBoardDeleteDto$Response": {
+        "updatedAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoBoardDeleteDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoBoardDeleteDto$Response"];
         "status"?: number;
       };
     "org.example.knockin.dto.AlarmReadDto$Response": {
@@ -730,6 +829,20 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyVerificationListDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.MyProfileAllDto$Response$UserInfo": {
+        "gender"?: "MALE" | "FEMALE";
+        "age"?: number;
+        "email"?: string;
+        "birth"?: string;
+        "name"?: string;
+        "memberPrivacyType"?: "PUBLIC" | "PRIVATE";
+        "profile"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyProfileAllDto$Response$UserInfo": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyProfileAllDto$Response$UserInfo"];
+        "status"?: number;
+      };
     "org.example.knockin.dto.MyProfileAllDto$Response": {
         "lifestyles"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyProfileAllDto$Response$Lifestyle"][];
         "type"?: "SEEKER" | "OFFER";
@@ -742,6 +855,7 @@ export interface OpenApiComponents {
         "roomProfile"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyProfileAllDto$Response$RoomProfile"][];
         "deposit"?: number;
         "mounthRent"?: number;
+        "userInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyProfileAllDto$Response$UserInfo"];
       };
     "org.example.knockin.dto.MyProfileAllDto$Response$Lifestyle": {
         "id"?: number;
@@ -798,23 +912,55 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyNotificationSettingsDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.NoticeListDto$Response": {
+        "notices"?: OpenApiComponents["schemas"]["org.example.knockin.dto.NoticeListDto$Response$NoticeItem"][];
+      };
+    "org.example.knockin.dto.NoticeListDto$Response$NoticeItem": {
+        "id"?: number;
+        "title"?: string;
+        "writer"?: string;
+        "createAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.NoticeListDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.NoticeListDto$Response"];
+        "status"?: number;
+      };
     "org.example.knockin.dto.MyBoardListDto$Response": {
         "boards"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyBoardListDto$Response$BoardItem"][];
       };
     "org.example.knockin.dto.MyBoardListDto$Response$BoardItem": {
-        "boardId"?: number;
-        "image"?: string;
+        "id"?: number;
+        "imageUrl"?: string;
         "title"?: string;
         "deposit"?: number;
         "monthlyRent"?: number;
-        "region"?: string;
-        "createdAt"?: string;
+        "managementCost"?: number;
+        "roomTypes"?: string[];
+        "comeableDate"?: string;
+        "regionFullName"?: string;
+        "memberId"?: number;
         "memberName"?: string;
-        "roomTypes"?: string;
+        "memberProfileImageUrl"?: string;
+        "memberAge"?: number;
+        "gender"?: "MALE" | "FEMALE";
+        "authentications"?: "STUDENT" | "COMPANY"[];
+        "hits"?: number;
+        "badges"?: "NEW" | "HOT"[];
+        "interested"?: boolean;
+        "createdAt"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyBoardListDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyBoardListDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.MyAccountDto$Response": {
+        "role"?: "USER" | "ADMIN";
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyAccountDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyAccountDto$Response"];
         "status"?: number;
       };
     "org.example.knockin.dto.TermsListDto$Response": {
@@ -850,47 +996,87 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.PopularSearchDto$Response"];
         "status"?: number;
       };
-    "org.example.knockin.dto.MyRoommateDto$Response": {
-        "userId"?: number;
-        "userName"?: string;
-        "compatibility"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDto$Response$Compatibility"];
-        "preferences"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDto$Response$Lifestyle"][];
-      };
-    "org.example.knockin.dto.MyRoommateDto$Response$Compatibility": {
+    "org.example.knockin.dto.MyRoommateCardDto$Response": {
+        "id"?: number;
+        "myRoommateInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateCardDto$Response$MyRoommateInfo"];
+        "chatRoomId"?: number;
         "score"?: number;
-        "lifeStyleInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDto$Response$LifeStyleInfo"][];
       };
-    "org.example.knockin.dto.MyRoommateDto$Response$LifeStyleInfo": {
-        "title"?: string;
-        "percent"?: string;
+    "org.example.knockin.dto.MyRoommateCardDto$Response$MyRoommateInfo": {
+        "memberId"?: number;
+        "memberName"?: string;
+        "memberAge"?: number;
+        "gender"?: "MALE" | "FEMALE";
+        "memberProfileImageUrl"?: string;
       };
-    "org.example.knockin.dto.MyRoommateDto$Response$Lifestyle": {
-        "lifestyleId"?: number;
-        "name"?: string;
-        "value"?: string;
-        "description"?: string;
-        "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
-      };
-    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyRoommateDto$Response": {
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyRoommateCardDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
-        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDto$Response"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateCardDto$Response"];
         "status"?: number;
       };
-    "org.example.knockin.dto.MyRoommateCalendarListDto$Response": {
-        "calendars"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateCalendarListDto$Response$Calendar"][];
-      };
-    "org.example.knockin.dto.MyRoommateCalendarListDto$Response$Calendar": {
-        "calendarId"?: number;
-        "writer"?: string;
-        "startDt"?: string;
-        "endDt"?: string;
-        "createAt"?: string;
-        "type"?: string;
+    "org.example.knockin.dto.HouseRuleListDto$Response": {
+        "id"?: number;
         "title"?: string;
+        "contents"?: string;
       };
-    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyRoommateCalendarListDto$Response": {
+    "org.example.knockin.global.api.CommonResponseJava.util.ListOrg.example.knockin.dto.HouseRuleListDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
-        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateCalendarListDto$Response"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.HouseRuleListDto$Response"][];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.HouseRuleDetailDto$Response": {
+        "id"?: number;
+        "title"?: string;
+        "contents"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.HouseRuleDetailDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.HouseRuleDetailDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.MyRoommateDailyCalendarListDto$CalendarBasicInfo": {
+        "calendarId": number;
+        "title": string;
+        "contents": string;
+        "isAllDay": boolean;
+        "startDate": string;
+        "endDate": string;
+        "categoryName": string;
+        "repeatType"?: "WEEKLY" | "BI_WEEKLY" | "MONTHLY";
+      };
+    "org.example.knockin.dto.MyRoommateDailyCalendarListDto$CalendarItem": {
+        "calendarBasicInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDailyCalendarListDto$CalendarBasicInfo"];
+        "calendarMembers"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDailyCalendarListDto$CalendarMember"][];
+      };
+    "org.example.knockin.dto.MyRoommateDailyCalendarListDto$CalendarMember": {
+        "memberId": number;
+        "name"?: string;
+      };
+    "org.example.knockin.dto.MyRoommateDailyCalendarListDto$Response": {
+        "targetDay"?: string;
+        "calendars"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDailyCalendarListDto$CalendarItem"][];
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyRoommateDailyCalendarListDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDailyCalendarListDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.MyRoommateMonthlyCalendarListDto$CalendarDay": {
+        "targetDate"?: string;
+        "exists"?: boolean;
+      };
+    "org.example.knockin.dto.MyRoommateMonthlyCalendarListDto$Response": {
+        "targetMonth"?: {
+          "year"?: number;
+          "month"?: "JANUARY" | "FEBRUARY" | "MARCH" | "APRIL" | "MAY" | "JUNE" | "JULY" | "AUGUST" | "SEPTEMBER" | "OCTOBER" | "NOVEMBER" | "DECEMBER";
+          "monthValue"?: number;
+          "leapYear"?: boolean;
+        };
+        "calendarDays"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateMonthlyCalendarListDto$CalendarDay"][];
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyRoommateMonthlyCalendarListDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateMonthlyCalendarListDto$Response"];
         "status"?: number;
       };
     "org.example.knockin.dto.MyRoommateCalendarDetailDto$Response": {
@@ -903,30 +1089,41 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateCalendarDetailDto$Response"];
         "status"?: number;
       };
-    "org.example.knockin.dto.CalendarTypesDto$Response": {
-        "types"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarTypesDto$Response$Type"][];
-      };
-    "org.example.knockin.dto.CalendarTypesDto$Response$Type": {
-        "id"?: number;
+    "org.example.knockin.dto.CalendarEditDto$MemberInfo": {
+        "memberId"?: number;
         "name"?: string;
+        "isMe"?: boolean;
       };
-    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.CalendarTypesDto$Response": {
+    "org.example.knockin.dto.CalendarEditDto$Response": {
+        "repeatType"?: "WEEKLY" | "BI_WEEKLY" | "MONTHLY"[];
+        "members"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarEditDto$MemberInfo"][];
+        "categoryNames"?: string[];
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.CalendarEditDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
-        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarTypesDto$Response"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarEditDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.CalendarCategoryDto$Response": {
+        "categoryNames"?: string[];
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.CalendarCategoryDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.CalendarCategoryDto$Response"];
         "status"?: number;
       };
     "Pageablenull": {
-        "paged"?: boolean;
-        "pageSize"?: number;
-        "pageNumber"?: number;
-        "unpaged"?: boolean;
         "offset"?: number;
         "sort"?: OpenApiComponents["schemas"]["Sortnull"];
+        "paged"?: boolean;
+        "pageNumber"?: number;
+        "pageSize"?: number;
+        "unpaged"?: boolean;
       };
     "Sortnull": {
+        "empty"?: boolean;
         "sorted"?: boolean;
         "unsorted"?: boolean;
-        "empty"?: boolean;
       };
     "org.example.knockin.dto.MatchListDto$Condition": {
         "conditionId"?: number;
@@ -934,10 +1131,12 @@ export interface OpenApiComponents {
         "value"?: string;
         "description"?: string;
         "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
+        "imageUrl"?: string;
       };
     "org.example.knockin.dto.MatchListDto$ConditionWeight": {
         "conditionWeightId"?: number;
         "name"?: string;
+        "imageUrl"?: string;
       };
     "org.example.knockin.dto.MatchListDto$Lifestyle": {
         "lifestyleId"?: number;
@@ -945,6 +1144,7 @@ export interface OpenApiComponents {
         "value"?: string;
         "description"?: string;
         "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
+        "imageUrl"?: string;
       };
     "org.example.knockin.dto.MatchListDto$OfferProfile": {
         "deposit"?: number;
@@ -958,7 +1158,7 @@ export interface OpenApiComponents {
         "memberName"?: string;
         "memberAge"?: number;
         "gender"?: "MALE" | "FEMALE";
-        "isLike"?: boolean;
+        "interested"?: boolean;
         "roomProfileType"?: "SEEKER" | "OFFER";
         "seekerProfile"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$SeekerProfile"];
         "offerProfile"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$OfferProfile"];
@@ -966,6 +1166,7 @@ export interface OpenApiComponents {
         "lifeStyles"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$Lifestyle"][];
         "conditions"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$Condition"][];
         "conditionWeights"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$ConditionWeight"][];
+        "authentications"?: "STUDENT" | "COMPANY"[];
       };
     "org.example.knockin.dto.MatchListDto$SeekerProfile": {
         "minDeposit"?: number;
@@ -981,15 +1182,24 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.springframework.data.domain.SliceOrg.example.knockin.dto.MatchListDto$Response": {
-        "pageable"?: OpenApiComponents["schemas"]["Pageablenull"];
         "first"?: boolean;
         "last"?: boolean;
-        "numberOfElements"?: number;
         "size"?: number;
         "content"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$Response"][];
         "number"?: number;
         "sort"?: OpenApiComponents["schemas"]["Sortnull"];
+        "numberOfElements"?: number;
+        "pageable"?: OpenApiComponents["schemas"]["Pageablenull"];
         "empty"?: boolean;
+      };
+    "org.example.knockin.dto.Compatibility": {
+        "totalScore"?: number;
+        "lifeStyleInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.Compatibility$LifeStyleInfo"][];
+      };
+    "org.example.knockin.dto.Compatibility$LifeStyleInfo": {
+        "id"?: number;
+        "name"?: string;
+        "percent"?: number;
       };
     "org.example.knockin.dto.MatchDetailDto$Response": {
         "memberId"?: number;
@@ -997,7 +1207,7 @@ export interface OpenApiComponents {
         "memberName"?: string;
         "memberAge"?: number;
         "gender"?: "MALE" | "FEMALE";
-        "isLike"?: boolean;
+        "interested"?: boolean;
         "roomProfileType"?: "SEEKER" | "OFFER";
         "seekerProfile"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$SeekerProfile"];
         "offerProfile"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$OfferProfile"];
@@ -1005,15 +1215,8 @@ export interface OpenApiComponents {
         "conditions"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$Condition"][];
         "conditionWeights"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchListDto$ConditionWeight"][];
         "authentications"?: "STUDENT" | "COMPANY"[];
-        "compatibility"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchDetailDto$Response$Compatibility"];
-      };
-    "org.example.knockin.dto.MatchDetailDto$Response$Compatibility": {
-        "score"?: number;
-        "lifeStyleInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchDetailDto$Response$Compatibility$LifeStyleInfo"][];
-      };
-    "org.example.knockin.dto.MatchDetailDto$Response$Compatibility$LifeStyleInfo": {
-        "title"?: string;
-        "percent"?: string;
+        "compatibility"?: OpenApiComponents["schemas"]["org.example.knockin.dto.Compatibility"];
+        "mine"?: boolean;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MatchDetailDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1021,15 +1224,7 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.MatchScoreDto$Response": {
-        "compatibility"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchScoreDto$Response$Compatibility"];
-      };
-    "org.example.knockin.dto.MatchScoreDto$Response$Compatibility": {
-        "score"?: number;
-        "lifeStyleInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MatchScoreDto$Response$Compatibility$LifeStyleInfo"][];
-      };
-    "org.example.knockin.dto.MatchScoreDto$Response$Compatibility$LifeStyleInfo": {
-        "title"?: string;
-        "percent"?: string;
+        "compatibility"?: OpenApiComponents["schemas"]["org.example.knockin.dto.Compatibility"];
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MatchScoreDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1046,10 +1241,16 @@ export interface OpenApiComponents {
         "roomTypes"?: string[];
         "comeableDate"?: string;
         "regionFullName"?: string;
+        "memberId"?: number;
         "memberName"?: string;
+        "memberProfileImageUrl"?: string;
+        "memberAge"?: number;
+        "gender"?: "MALE" | "FEMALE";
         "authentications"?: "STUDENT" | "COMPANY"[];
         "hits"?: number;
         "badges"?: "NEW" | "HOT"[];
+        "interested"?: boolean;
+        "createdAt"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.springframework.data.domain.PageOrg.example.knockin.dto.BoardListDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1057,16 +1258,16 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.springframework.data.domain.PageOrg.example.knockin.dto.BoardListDto$Response": {
-        "totalPages"?: number;
         "totalElements"?: number;
-        "pageable"?: OpenApiComponents["schemas"]["Pageablenull"];
+        "totalPages"?: number;
         "first"?: boolean;
         "last"?: boolean;
-        "numberOfElements"?: number;
         "size"?: number;
         "content"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardListDto$Response"][];
         "number"?: number;
         "sort"?: OpenApiComponents["schemas"]["Sortnull"];
+        "numberOfElements"?: number;
+        "pageable"?: OpenApiComponents["schemas"]["Pageablenull"];
         "empty"?: boolean;
       };
     "org.example.knockin.dto.BoardDetailDto$Response": {
@@ -1083,7 +1284,7 @@ export interface OpenApiComponents {
         "createdAt"?: string;
         "hits"?: number;
         "contents"?: string;
-        "roomExtraOptionNames"?: string[];
+        "roomExtraOptions"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$RoomExtraOptionInfo"][];
         "lifeStyles"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$Lifestyle"][];
         "conditions"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$Condition"][];
         "conditionWeights"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$ConditionWeight"][];
@@ -1093,16 +1294,10 @@ export interface OpenApiComponents {
         "memberAge"?: number;
         "gender"?: "MALE" | "FEMALE";
         "authentications"?: "STUDENT" | "COMPANY"[];
-        "compatibility"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$Compatibility"];
+        "compatibility"?: OpenApiComponents["schemas"]["org.example.knockin.dto.Compatibility"];
         "interested"?: boolean;
-      };
-    "org.example.knockin.dto.BoardDetailDto$Response$Compatibility": {
-        "score"?: number;
-        "lifeStyleInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$Compatibility$LifeStyleInfo"][];
-      };
-    "org.example.knockin.dto.BoardDetailDto$Response$Compatibility$LifeStyleInfo": {
-        "title"?: string;
-        "percent"?: string;
+        "mine"?: boolean;
+        "badges"?: "NEW" | "HOT"[];
       };
     "org.example.knockin.dto.BoardDetailDto$Response$Condition": {
         "conditionId"?: number;
@@ -1110,10 +1305,12 @@ export interface OpenApiComponents {
         "value"?: string;
         "description"?: string;
         "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
+        "imageUrl"?: string;
       };
     "org.example.knockin.dto.BoardDetailDto$Response$ConditionWeight": {
         "weightConditionId"?: number;
         "name"?: string;
+        "imageUrl"?: string;
       };
     "org.example.knockin.dto.BoardDetailDto$Response$FileDetailDto": {
         "boardFileId"?: number;
@@ -1125,6 +1322,12 @@ export interface OpenApiComponents {
         "value"?: string;
         "description"?: string;
         "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
+        "imageUrl"?: string;
+      };
+    "org.example.knockin.dto.BoardDetailDto$Response$RoomExtraOptionInfo": {
+        "extraOptionId"?: number;
+        "name"?: string;
+        "imageUrl"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoardDetailDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1141,15 +1344,11 @@ export interface OpenApiComponents {
         "region": OpenApiComponents["schemas"]["org.example.knockin.dto.BoardEditDto$Response$RegionInfo"];
         "comeableDateNegotiable"?: boolean;
         "comeableDate"?: string;
-        "roomExtraOptions"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardEditDto$Response$BoardOptionInfo"][];
+        "roomExtraOptions"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$RoomExtraOptionInfo"][];
         "contents": string;
         "lifeStyles"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$Lifestyle"][];
         "conditions"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$Condition"][];
         "conditionWeights"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoardDetailDto$Response$ConditionWeight"][];
-      };
-    "org.example.knockin.dto.BoardEditDto$Response$BoardOptionInfo": {
-        "extraOptionId"?: number;
-        "name"?: string;
       };
     "org.example.knockin.dto.BoardEditDto$Response$RegionInfo": {
         "regionId"?: number;
@@ -1158,6 +1357,7 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.BoardEditDto$Response$RoomTypeInfo": {
         "roomTypeId"?: number;
         "name"?: string;
+        "imageUrl"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoardEditDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1165,7 +1365,7 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.example.knockin.dto.RoommateRequestListDto$Response": {
-        "id"?: number;
+        "requiredId"?: number;
         "requesterId"?: number;
         "requesteeId"?: number;
         "chatRoomId"?: number;
@@ -1178,16 +1378,16 @@ export interface OpenApiComponents {
         "status"?: number;
       };
     "org.springframework.data.domain.PageOrg.example.knockin.dto.RoommateRequestListDto$Response": {
-        "totalPages"?: number;
         "totalElements"?: number;
-        "pageable"?: OpenApiComponents["schemas"]["Pageablenull"];
+        "totalPages"?: number;
         "first"?: boolean;
         "last"?: boolean;
-        "numberOfElements"?: number;
         "size"?: number;
         "content"?: OpenApiComponents["schemas"]["org.example.knockin.dto.RoommateRequestListDto$Response"][];
         "number"?: number;
         "sort"?: OpenApiComponents["schemas"]["Sortnull"];
+        "numberOfElements"?: number;
+        "pageable"?: OpenApiComponents["schemas"]["Pageablenull"];
         "empty"?: boolean;
       };
     "org.example.knockin.dto.MetaRoomTypesDto$Response": {
@@ -1196,6 +1396,7 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.MetaRoomTypesDto$Response$RoomTypeItem": {
         "id"?: number;
         "name"?: string;
+        "image"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MetaRoomTypesDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1208,6 +1409,7 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.MetaRoomAddOptionsDto$Response$RoomAddOptionItem": {
         "id"?: number;
         "name"?: string;
+        "image"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MetaRoomAddOptionsDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1233,10 +1435,14 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.MetaLifestylePatternsDto$Response$PatternItem": {
         "id"?: number;
         "name"?: string;
+        "lifePatternDescription"?: string;
+        "preferenceDescription"?: string;
         "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
+        "image"?: string;
         "details"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MetaLifestylePatternsDto$Response$PatternItem$DetailItem"][];
       };
     "org.example.knockin.dto.MetaLifestylePatternsDto$Response$PatternItem$DetailItem": {
+        "id"?: number;
         "values"?: string;
         "description"?: string;
       };
@@ -1304,6 +1510,10 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.AppVersionDto$Response": {
         "id"?: number;
         "version"?: string;
+        "platformType"?: "IOS" | "ANDROID";
+        "updateType"?: "SELECT" | "FORCE";
+        "minVersion"?: string;
+        "createdAt"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.AppVersionDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1368,8 +1578,12 @@ export interface OpenApiComponents {
         "memberName"?: string;
         "memberProfileImageUrl"?: string;
         "createdAt"?: string;
-        "status"?: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELED" | "EXPIRED";
+        "roommateStatus"?: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELED" | "EXPIRED";
+        "isRoommate"?: boolean;
+        "authenticationTypes"?: "STUDENT" | "COMPANY"[];
         "lastMessage"?: string;
+        "messageCount"?: number;
+        "lastMessageAt"?: string;
       };
     "org.example.knockin.global.api.CommonResponseJava.util.ListOrg.example.knockin.dto.ChatRoomListDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1389,13 +1603,15 @@ export interface OpenApiComponents {
         "name"?: string;
         "age"?: number;
         "gender"?: "MALE" | "FEMALE";
-        "profileImageUrl"?: string;
+        "memberProfileImageUrl"?: string;
         "score"?: number;
       };
     "org.example.knockin.dto.ChatRoomDetailDto$Response": {
         "opponentProfile"?: OpenApiComponents["schemas"]["org.example.knockin.dto.ChatRoomDetailDto$ProfileInfo"];
         "messages"?: OpenApiComponents["schemas"]["org.example.knockin.dto.ChatRoomDetailDto$ChatMessage"][];
         "matchingRequiredList"?: OpenApiComponents["schemas"]["org.example.knockin.dto.RoommateRequestDto$RoommateMatchingRequiredInfo"][];
+        "blocked"?: boolean;
+        "opponentHasRoommate"?: boolean;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.ChatRoomDetailDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1438,7 +1654,7 @@ export interface OpenApiComponents {
         "memberName"?: string;
         "memberAge"?: number;
         "gender"?: "MALE" | "FEMALE";
-        "profileImageUrl"?: string;
+        "memberProfileImageUrl"?: string;
         "lifeStyles"?: OpenApiComponents["schemas"]["org.example.knockin.dto.ChatRequestDetailDto$Response$Lifestyle"][];
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.ChatRequestDetailDto$Response": {
@@ -1450,6 +1666,7 @@ export interface OpenApiComponents {
         "employeeAuth"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoVerificationWaitingListDto$Response$EmployeeAuthItem"][];
       };
     "org.example.knockin.dto.BoVerificationWaitingListDto$Response$EmployeeAuthItem": {
+        "id"?: number;
         "name"?: string;
         "type"?: "STUDENT" | "COMPANY";
         "isAccepted"?: boolean;
@@ -1479,6 +1696,7 @@ export interface OpenApiComponents {
         "employeeAuth"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoVerificationCancelListDto$Response$EmployeeAuthItem"][];
       };
     "org.example.knockin.dto.BoVerificationCancelListDto$Response$EmployeeAuthItem": {
+        "id"?: number;
         "name"?: string;
         "type"?: "STUDENT" | "COMPANY";
         "isAccepted"?: boolean;
@@ -1495,6 +1713,7 @@ export interface OpenApiComponents {
         "employeeAuth"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoVerificationApproveListDto$Response$EmployeeAuthItem"][];
       };
     "org.example.knockin.dto.BoVerificationApproveListDto$Response$EmployeeAuthItem": {
+        "id"?: number;
         "name"?: string;
         "type"?: "STUDENT" | "COMPANY";
         "isAccepted"?: boolean;
@@ -1563,10 +1782,33 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.BoRoomTypeDetailDto$Response": {
         "id"?: number;
         "name"?: string;
+        "image"?: string;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoRoomTypeDetailDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoRoomTypeDetailDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.BoRoomAddOptionListDto$Response": {
+        "roomAddOptionItem"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoRoomAddOptionListDto$Response$RoomAddOptionItem"][];
+      };
+    "org.example.knockin.dto.BoRoomAddOptionListDto$Response$RoomAddOptionItem": {
+        "id"?: number;
+        "name"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoRoomAddOptionListDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoRoomAddOptionListDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.BoRoomAddOptionDetailDto$Response": {
+        "id"?: number;
+        "name"?: string;
+        "image"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoRoomAddOptionDetailDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoRoomAddOptionDetailDto$Response"];
         "status"?: number;
       };
     "org.example.knockin.dto.BoReportWaitListDto$Response": {
@@ -1630,6 +1872,11 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoNoticeDetailDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.BoMemberListDto$Request": {
+        "searchName"?: string;
+        "searchState"?: "ACTIVE" | "INACTIVE";
+        "searchApproveType"?: "PENDING" | "ACCEPTED" | "REJECT";
+      };
     "org.example.knockin.dto.BoMemberListDto$Response": {
         "memberInfoList"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoMemberListDto$Response$MemberInfo"][];
       };
@@ -1654,7 +1901,7 @@ export interface OpenApiComponents {
         "createdAt"?: string;
         "authenticationInfoList"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoMemberDetailDto$Response$AuthenticationInfo"][];
         "role"?: "USER" | "ADMIN";
-        "state"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.State"];
+        "state"?: "ACTIVE" | "INACTIVE";
         "gender"?: "MALE" | "FEMALE";
         "birth"?: string;
         "reportCount"?: number;
@@ -1662,252 +1909,6 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.BoMemberDetailDto$Response$AuthenticationInfo": {
         "authenticationType"?: "STUDENT" | "COMPANY";
         "authenticationEmail"?: string;
-      };
-    "org.example.knockin.entity.agreement.Agreement": {
-        "createdAt"?: string;
-        "id"?: number;
-        "type"?: OpenApiComponents["schemas"]["org.example.knockin.entity.agreement.AgreementType"];
-        "title"?: string;
-        "contents"?: string;
-        "isDeleted"?: boolean;
-        "isRequired"?: boolean;
-      };
-    "org.example.knockin.entity.agreement.AgreementLog": {
-        "createdAt"?: string;
-        "id"?: number;
-        "agreement"?: OpenApiComponents["schemas"]["org.example.knockin.entity.agreement.Agreement"];
-        "isCurrent"?: boolean;
-      };
-    "org.example.knockin.entity.agreement.AgreementType": {
-        "createdAt"?: string;
-        "id"?: number;
-        "name"?: string;
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.agreement.MemberAgreement": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "agreementLog"?: OpenApiComponents["schemas"]["org.example.knockin.entity.agreement.AgreementLog"];
-        "isAgreed"?: boolean;
-      };
-    "org.example.knockin.entity.alarm.Alarm": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "title"?: string;
-        "contents"?: string;
-        "isRead"?: boolean;
-        "expiredAt"?: string;
-        "type"?: "DEFAULT" | "OFFER" | "CHATTING_REQUIRED";
-      };
-    "org.example.knockin.entity.alarm.AlarmSetting": {
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "isEnabled"?: boolean;
-        "alarmSettingType"?: "NOTIFICATION";
-      };
-    "org.example.knockin.entity.alarm.Notification": {
-        "createdAt"?: string;
-        "updatedAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "title"?: string;
-        "contents"?: string;
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.auth.Authentication": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "type"?: "STUDENT" | "COMPANY";
-        "email"?: string;
-        "code"?: string;
-        "isAccepted"?: boolean;
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.board.RoommateBoard": {
-        "createdAt"?: string;
-        "updatedAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "title"?: string;
-        "contents"?: string;
-        "deposit"?: number;
-        "monthlyRent"?: number;
-        "managementCost"?: number;
-        "roomType"?: OpenApiComponents["schemas"]["org.example.knockin.entity.room.RoomType"];
-        "region"?: OpenApiComponents["schemas"]["org.example.knockin.entity.room.Region"];
-        "comeableDateNegotiable"?: boolean;
-        "comeableDate"?: string;
-        "isDeleted"?: boolean;
-        "hits"?: number;
-        "rejectReason"?: string;
-      };
-    "org.example.knockin.entity.board.RoommateBoardDeclaration": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "roommateBoard"?: OpenApiComponents["schemas"]["org.example.knockin.entity.board.RoommateBoard"];
-        "reason"?: string;
-        "declarationType"?: "PENDING" | "NOACTION" | "SUSPENDED" | "HIDDEN";
-      };
-    "org.example.knockin.entity.board.RoommateBoardInterest": {
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "roommateBoard"?: OpenApiComponents["schemas"]["org.example.knockin.entity.board.RoommateBoard"];
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.chat.ChatRoomMember": {
-        "id"?: number;
-        "chattingRoom"?: OpenApiComponents["schemas"]["org.example.knockin.entity.chat.ChattingRoom"];
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "isLeft"?: boolean;
-      };
-    "org.example.knockin.entity.chat.ChattingRequired": {
-        "createdAt"?: string;
-        "id"?: number;
-        "requester"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "requestee"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "roommateBoard"?: OpenApiComponents["schemas"]["org.example.knockin.entity.board.RoommateBoard"];
-        "status"?: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELED" | "EXPIRED";
-        "pending"?: boolean;
-      };
-    "org.example.knockin.entity.chat.ChattingRoom": {
-        "createdAt"?: string;
-        "id"?: number;
-        "chattingRequired"?: OpenApiComponents["schemas"]["org.example.knockin.entity.chat.ChattingRequired"];
-      };
-    "org.example.knockin.entity.inquiry.Inquiry": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "inquiryCategory"?: OpenApiComponents["schemas"]["org.example.knockin.entity.inquiry.InquiryCategory"];
-        "title"?: string;
-        "contents"?: string;
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.inquiry.InquiryCategory": {
-        "createdAt"?: string;
-        "id"?: number;
-        "title"?: string;
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.inquiry.InquiryComment": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "inquiry"?: OpenApiComponents["schemas"]["org.example.knockin.entity.inquiry.Inquiry"];
-        "contents"?: string;
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.life.LifePattern": {
-        "createdAt"?: string;
-        "id"?: number;
-        "name"?: string;
-        "dtype"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
-        "isDeleted"?: boolean;
-        "sort"?: number;
-      };
-    "org.example.knockin.entity.life.LifePatternInformation": {
-        "id"?: number;
-        "lifePattern"?: OpenApiComponents["schemas"]["org.example.knockin.entity.life.LifePattern"];
-        "dvalue"?: string;
-        "description"?: string;
-      };
-    "org.example.knockin.entity.life.MemberLifePattern": {
-        "createdAt"?: string;
-        "updatedAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "lifePatternInformation"?: OpenApiComponents["schemas"]["org.example.knockin.entity.life.LifePatternInformation"];
-      };
-    "org.example.knockin.entity.life.PreferenceCondition": {
-        "createdAt"?: string;
-        "updatedAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "lifePatternInformation"?: OpenApiComponents["schemas"]["org.example.knockin.entity.life.LifePatternInformation"];
-      };
-    "org.example.knockin.entity.member.BasicInformation": {
-        "createdAt"?: string;
-        "updatedAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "name"?: string;
-        "birth"?: string;
-        "gender"?: "MALE" | "FEMALE";
-        "email"?: string;
-      };
-    "org.example.knockin.entity.member.Block": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "isDeleted"?: boolean;
-      };
-    "org.example.knockin.entity.member.Member": {
-        "createdAt"?: string;
-        "id"?: number;
-        "providerType"?: "KAKAO" | "APPLE";
-        "providerId"?: string;
-        "role"?: "USER" | "ADMIN";
-        "deletedAt"?: string;
-        "memberAgreements"?: OpenApiComponents["schemas"]["org.example.knockin.entity.agreement.MemberAgreement"][];
-        "alarms"?: OpenApiComponents["schemas"]["org.example.knockin.entity.alarm.Alarm"][];
-        "alarmSettings"?: OpenApiComponents["schemas"]["org.example.knockin.entity.alarm.AlarmSetting"][];
-        "notifications"?: OpenApiComponents["schemas"]["org.example.knockin.entity.alarm.Notification"][];
-        "authentications"?: OpenApiComponents["schemas"]["org.example.knockin.entity.auth.Authentication"][];
-        "roommateBoards"?: OpenApiComponents["schemas"]["org.example.knockin.entity.board.RoommateBoard"][];
-        "roommateBoardDeclarations"?: OpenApiComponents["schemas"]["org.example.knockin.entity.board.RoommateBoardDeclaration"][];
-        "roommateBoardInterests"?: OpenApiComponents["schemas"]["org.example.knockin.entity.board.RoommateBoardInterest"][];
-        "chatRoomMembers"?: OpenApiComponents["schemas"]["org.example.knockin.entity.chat.ChatRoomMember"][];
-        "inquiries"?: OpenApiComponents["schemas"]["org.example.knockin.entity.inquiry.Inquiry"][];
-        "inquiryComments"?: OpenApiComponents["schemas"]["org.example.knockin.entity.inquiry.InquiryComment"][];
-        "memberLifePatterns"?: OpenApiComponents["schemas"]["org.example.knockin.entity.life.MemberLifePattern"][];
-        "preferenceConditions"?: OpenApiComponents["schemas"]["org.example.knockin.entity.life.PreferenceCondition"][];
-        "basicInformations"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.BasicInformation"][];
-        "blocks"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Block"][];
-        "memberPrivacy"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.MemberPrivacy"];
-        "searches"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Search"][];
-        "states"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.State"][];
-        "roomProfiles"?: OpenApiComponents["schemas"]["org.example.knockin.entity.room.RoomProfile"][];
-        "delete"?: boolean;
-      };
-    "org.example.knockin.entity.member.MemberPrivacy": {
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "type"?: "PUBLIC" | "PRIVATE";
-      };
-    "org.example.knockin.entity.member.Search": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "keyword"?: string;
-      };
-    "org.example.knockin.entity.member.State": {
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "states"?: "ACTIVE" | "INACTIVE";
-        "rejectReason"?: string;
-      };
-    "org.example.knockin.entity.room.Region": {
-        "id"?: number;
-        "name"?: string;
-        "scope"?: number;
-        "parent"?: OpenApiComponents["schemas"]["org.example.knockin.entity.room.Region"];
-      };
-    "org.example.knockin.entity.room.RoomProfile": {
-        "createdAt"?: string;
-        "id"?: number;
-        "member"?: OpenApiComponents["schemas"]["org.example.knockin.entity.member.Member"];
-        "type"?: "SEEKER" | "OFFER";
-        "isComeableAtNegotiable"?: boolean;
-        "comeableAt"?: string;
-      };
-    "org.example.knockin.entity.room.RoomType": {
-        "id"?: number;
-        "name"?: string;
-        "isDeleted"?: boolean;
       };
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoMemberDetailDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
@@ -1935,7 +1936,10 @@ export interface OpenApiComponents {
     "org.example.knockin.dto.BoLifeStylePatternDetailDto$Response": {
         "id"?: number;
         "name"?: string;
+        "image"?: string;
         "type"?: "SCALE" | "BOOLEAN" | "SINGLE_CHOICE";
+        "lifePatternDescription"?: string;
+        "preferenceDescription"?: string;
         "details"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoLifeStylePatternDetailDto$Response$DetailItem"][];
       };
     "org.example.knockin.dto.BoLifeStylePatternDetailDto$Response$DetailItem": {
@@ -1946,6 +1950,11 @@ export interface OpenApiComponents {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoLifeStylePatternDetailDto$Response"];
         "status"?: number;
+      };
+    "org.example.knockin.dto.BoInquiryListDto$Request": {
+        "searchKeyword"?: string;
+        "isReply"?: boolean;
+        "categoryId"?: number;
       };
     "org.example.knockin.dto.BoInquiryListDto$Response": {
         "inquiries"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoInquiryListDto$Response$InquiryItem"][];
@@ -1987,6 +1996,10 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoInquiryDetailDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.BoBoardListDto$Request": {
+        "searchKeyword"?: string;
+        "isDeleted"?: boolean;
+      };
     "org.example.knockin.dto.BoBoardListDto$Response": {
         "boardInfoList"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoBoardListDto$Response$BoardInfo"][];
       };
@@ -2024,6 +2037,22 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoBoardDetailDto$Response"];
         "status"?: number;
       };
+    "org.example.knockin.dto.AppVersionListDto$Response": {
+        "versionInfo"?: OpenApiComponents["schemas"]["org.example.knockin.dto.AppVersionListDto$Response$VersionInfo"][];
+      };
+    "org.example.knockin.dto.AppVersionListDto$Response$VersionInfo": {
+        "id"?: number;
+        "version"?: string;
+        "platformType"?: "IOS" | "ANDROID";
+        "updateType"?: "SELECT" | "FORCE";
+        "minVersion"?: string;
+        "createdAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.AppVersionListDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.AppVersionListDto$Response"];
+        "status"?: number;
+      };
     "org.example.knockin.dto.BlockListDto$Response": {
         "blocks"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BlockListDto$Response$Block"][];
       };
@@ -2058,14 +2087,6 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.AlarmListDto$Response"];
         "status"?: number;
       };
-    "org.example.knockin.dto.AlarmSubscribeDto$Response": {
-        "sseEmitter"?: OpenApiComponents["schemas"]["org.springframework.web.servlet.mvc.method.annotation.SseEmitter"];
-      };
-    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.AlarmSubscribeDto$Response": {
-        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
-        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.AlarmSubscribeDto$Response"];
-        "status"?: number;
-      };
     "org.springframework.web.servlet.mvc.method.annotation.SseEmitter": {
         "timeout"?: number;
       };
@@ -2073,6 +2094,14 @@ export interface OpenApiComponents {
     "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.DeleteUserDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.DeleteUserDto$Response"];
+        "status"?: number;
+      };
+    "org.example.knockin.dto.MyRoommateDto$Response": {
+        "updatedAt"?: string;
+      };
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.MyRoommateDto$Response": {
+        "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyRoommateDto$Response"];
         "status"?: number;
       };
     "org.example.knockin.dto.FaqDeleteDto$Response": {
@@ -2083,12 +2112,15 @@ export interface OpenApiComponents {
         "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.FaqDeleteDto$Response"];
         "status"?: number;
       };
-    "org.example.knockin.dto.BoBoardDeleteDto$Response": {
+    "org.example.knockin.dto.BoBoardDeleteDto$Request": {
+        "rejectReason"?: string;
+      };
+    "org.example.knockin.dto.AuthEmailDeleteDto$Response": {
         "updatedAt"?: string;
       };
-    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.BoBoardDeleteDto$Response": {
+    "org.example.knockin.global.api.CommonResponseOrg.example.knockin.dto.AuthEmailDeleteDto$Response": {
         "error"?: OpenApiComponents["schemas"]["org.example.knockin.global.api.ErrorResponse"];
-        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.BoBoardDeleteDto$Response"];
+        "data"?: OpenApiComponents["schemas"]["org.example.knockin.dto.AuthEmailDeleteDto$Response"];
         "status"?: number;
       };
   };

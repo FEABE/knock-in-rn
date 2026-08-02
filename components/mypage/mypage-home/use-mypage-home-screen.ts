@@ -12,11 +12,13 @@ import { useSession, type UserSummary } from '@/lib/domain';
 import {
   goKakaoLogin,
   goMypageAccount,
+  goMypageBasicProfile,
   goMypageMyRooms,
   goMypagePreferences,
   goMypageProfile,
-  goMypageRoommate,
   goSupport,
+  goSupportNotice,
+  goSupportTerms,
   goVerification,
 } from '@/lib/navigation/routes';
 
@@ -37,11 +39,12 @@ export type UseMyPageHomeScreenReturn = {
   notificationEnabled: boolean;
   notificationEditable: boolean;
   genderLabel: string;
-  profileRegionLabel: string;
   roomTypeLabel: string;
   matchingRows: MyPageMenuRow[];
   accountRows: MyPageMenuRow[];
+  supportRows: MyPageMenuRow[];
   onSignIn: () => void;
+  onProfilePress: () => void;
   setProfileVisible: (next: boolean) => void;
   setNotificationEnabled: (next: boolean) => void;
 };
@@ -68,36 +71,33 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     verification.data?.companyVerified ??
     user?.badges.some((badge) => badge.kind === 'company') ??
     false;
-  const profileRegionLabel =
-    profile.data?.regionLabel ??
-    (user ? `${user.region.city} ${user.region.district}`.trim() : '-');
   const roomTypeLabel = profile.data?.roomTypeLabel ?? '방 없어요';
 
   const matchingRows = useMemo<MyPageMenuRow[]>(
     () => [
       {
-        icon: 'person-outline',
-        label: '내 프로필',
-        sub: '생활패턴 · 방 조건 수정',
-        onPress: () => goMypageProfile(router),
+        icon: 'moon-outline',
+        label: '생활패턴 관리',
+        sub: '생활패턴 수정',
+        onPress: () => goMypageProfile(router, 'lifestyle'),
+      },
+      {
+        icon: 'home-outline',
+        label: '방 조건 관리',
+        sub: '방 조건 수정',
+        onPress: () => goMypageProfile(router, 'room'),
       },
       {
         icon: 'options-outline',
-        label: '선호 조건',
+        label: '선호 룸메이트 관리',
         sub: '원하는 룸메이트 조건 설정',
         onPress: () => goMypagePreferences(router),
       },
       {
         icon: 'home-outline',
-        label: '내 방 관리',
-        sub: '방 게시글 등록 · 수정',
+        label: '게시글 관리',
+        sub: '방 게시글 등록 및 수정',
         onPress: () => goMypageMyRooms(router),
-      },
-      {
-        icon: 'people-outline',
-        label: '내 룸메이트',
-        sub: '공동생활 합의서 · 캘린더',
-        onPress: () => goMypageRoommate(router),
       },
     ],
     [router],
@@ -113,17 +113,26 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
         onPress: () => goVerification(router),
       },
       {
-        icon: 'help-circle-outline',
-        label: '고객센터',
-        onPress: () => goSupport(router),
-      },
-      {
         icon: 'settings-outline',
         label: '계정 설정',
         onPress: () => goMypageAccount(router),
       },
     ],
     [router, verified],
+  );
+
+  const supportRows = useMemo<MyPageMenuRow[]>(
+    () => [
+      { icon: 'megaphone-outline', label: '공지사항', onPress: () => goSupportNotice(router) },
+      { icon: 'help-circle-outline', label: '고객센터', onPress: () => goSupport(router) },
+      {
+        icon: 'document-text-outline',
+        label: '약관 및 정책',
+        onPress: () => goSupportTerms(router),
+      },
+      { icon: 'people-outline', label: '협업 및 제휴 제안', onPress: () => goSupport(router) },
+    ],
+    [router],
   );
 
   return {
@@ -135,18 +144,19 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     notificationEnabled,
     notificationEditable,
     genderLabel: genderLabel(user?.gender),
-    profileRegionLabel,
     roomTypeLabel,
     matchingRows,
     accountRows,
+    supportRows,
     onSignIn: () => goKakaoLogin(router),
+    onProfilePress: () => goMypageBasicProfile(router),
     setProfileVisible,
     setNotificationEnabled,
   };
 }
 
 function genderLabel(gender?: string): string {
-  if (gender === 'female') return '여성';
-  if (gender === 'male') return '남성';
+  if (gender?.toLowerCase() === 'female') return '여성';
+  if (gender?.toLowerCase() === 'male') return '남성';
   return '기타';
 }

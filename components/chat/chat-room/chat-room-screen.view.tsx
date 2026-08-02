@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -12,6 +11,15 @@ import {
 } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
+import {
+  ReadyChatComposer,
+  ReadyChatRestrictionBanner,
+} from '@/components/ui/ready-to-dev-chat';
+import {
+  ReadyActionSheet,
+  ReadyBadge,
+  ReadyProfileAvatar,
+} from '@/components/ui/ready-to-dev-components';
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
 import type { UseChatRoomScreenReturn } from './use-chat-room-screen';
@@ -94,7 +102,7 @@ export function ChatRoomScreenView({
           return (
             <View key={message.id} className={message.mine ? 'items-end' : 'items-start'}>
               <View className="max-w-[80%] flex-row items-end gap-1">
-                {!message.mine ? <AvatarInitial name={room.peer.name} size="sm" /> : null}
+                {!message.mine ? <ReadyProfileAvatar name={room.peer.name} size={28} /> : null}
                 <View className="gap-0.5">
                   {message.kind === 'image' && message.imageUrl ? (
                     <Image
@@ -154,12 +162,15 @@ export function ChatRoomBlockedView({ peer, onBack }: { peer: UserSummary; onBac
   return (
     <View className="flex-1 bg-white">
       <ChatHeader peer={peer} matched={false} onBack={onBack} onLeave={onBack} />
-      <View className="flex-1 items-center justify-center gap-3 p-10">
-        <Text className="text-base text-neutral-500">차단한 사용자에요</Text>
-        <Text className="text-center text-xs leading-5 text-neutral-400">
-          메시지 전송이 제한돼요. 마이페이지에서 차단 해제할 수 있어요.
-        </Text>
+      <ReadyChatRestrictionBanner kind="blocked" />
+      <View className="flex-1 bg-[#FAFAFC] px-4 py-5">
+        <View className="items-center rounded-lg bg-white px-4 py-3">
+          <Text className="text-center text-xs leading-5 text-[#AAAABA]">
+            차단을 해제하기 전까지 메시지 전송이 제한돼요.{`\n`}차단 관리는 마이페이지에서 할 수 있어요.
+          </Text>
+        </View>
       </View>
+      <ReadyChatComposer value="" disabled placeholder="차단한 사용자에요" />
     </View>
   );
 }
@@ -180,7 +191,7 @@ function ChatHeader({
       <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
         <Ionicons name="chevron-back" size={24} color="#404040" />
       </Pressable>
-      <AvatarInitial name={peer.name} />
+      <ReadyProfileAvatar name={peer.name} imageUrl={peer.avatarUrl} size={32} />
       <View className="flex-1 flex-row items-center gap-2">
         <Text className="text-base font-semibold text-neutral-900">{peer.name}</Text>
         {peer.age > 0 ? (
@@ -190,15 +201,14 @@ function ChatHeader({
           </Text>
         ) : null}
         {matched ? (
-          <View className="rounded bg-emerald-50 px-1.5 py-0.5">
-            <Text className="text-[10px] text-emerald-700">룸메이트 확정</Text>
-          </View>
+          <ReadyBadge label="룸메이트 확정" tone="green" />
         ) : (
-          <View className="rounded bg-[#256EF4]/10 px-1.5 py-0.5">
-            <Text className="text-[10px] text-[#256EF4]">
-              {peer.compatibilityScore != null ? `궁합 ${peer.compatibilityScore}점` : '매칭 대화'}
-            </Text>
-          </View>
+          <ReadyBadge
+            label={
+              peer.compatibilityScore != null ? `궁합 ${peer.compatibilityScore}점` : '매칭 대화'
+            }
+            tone="blue"
+          />
         )}
       </View>
       <Pressable onPress={onLeave} className="h-9 w-9 items-center justify-center">
@@ -419,53 +429,38 @@ function RoommateRequestModal({
   bottomPadding: number;
 }) {
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/30">
-        <View className="gap-5 rounded-t-2xl bg-white p-5" style={{ paddingBottom: bottomPadding }}>
-          <View className="gap-2">
-            <Text className="text-lg font-bold text-neutral-900">룸메이트 제안 보내기</Text>
-            <Text className="text-sm leading-5 text-neutral-500">
-              {peerName}님에게 룸메이트 제안을 보낼까요? 상대가 수락하면 매칭 상태로 변경돼요.
-            </Text>
-          </View>
+    <ReadyActionSheet open={visible} onOpenChange={(open) => !open && onClose()}>
+      <View className="gap-5" style={{ paddingBottom: Math.max(0, bottomPadding - 20) }}>
+        <View className="gap-2">
+          <Text className="text-lg font-bold text-[#17171B]">룸메이트 제안 보내기</Text>
+          <Text className="text-sm leading-5 text-[#696976]">
+            {peerName}님에게 룸메이트 제안을 보낼까요? 상대가 수락하면 매칭 상태로 변경돼요.
+          </Text>
+        </View>
 
-          <View className="gap-2 rounded-lg bg-[#256EF4]/10 p-4">
-            <Text className="text-sm font-semibold text-[#256EF4]">제안 후 상태</Text>
-            <Text className="text-xs leading-5 text-[#256EF4]/80">
-              채팅 상단에 요청 대기 배너가 표시되고, 상대가 수락하면 매칭 상태로 변경돼요.
-            </Text>
-          </View>
+        <View className="gap-2 rounded-lg bg-[#EEF4FF] p-4">
+          <Text className="text-sm font-semibold text-[#256EF4]">제안 후 상태</Text>
+          <Text className="text-xs leading-5 text-[#5B8EF6]">
+            채팅 상단에 요청 대기 배너가 표시되고, 상대가 수락하면 매칭 상태로 변경돼요.
+          </Text>
+        </View>
 
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={onClose}
-              className="h-12 flex-1 items-center justify-center rounded-lg bg-neutral-100"
-            >
-              <Text className="text-sm font-semibold text-neutral-700">취소</Text>
-            </Pressable>
-            <Pressable
-              onPress={onConfirm}
-              className="h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4]"
-            >
-              <Text className="text-sm font-semibold text-white">제안 보내기</Text>
-            </Pressable>
-          </View>
+        <View className="flex-row gap-2">
+          <Pressable
+            onPress={onClose}
+            className="h-12 flex-1 items-center justify-center rounded-lg bg-[#F1F1F6]"
+          >
+            <Text className="text-sm font-semibold text-[#696976]">취소</Text>
+          </Pressable>
+          <Pressable
+            onPress={onConfirm}
+            className="h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4]"
+          >
+            <Text className="text-sm font-semibold text-white">제안 보내기</Text>
+          </Pressable>
         </View>
       </View>
-    </Modal>
-  );
-}
-
-function AvatarInitial({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
-  const className =
-    size === 'sm'
-      ? 'h-7 w-7 items-center justify-center self-start rounded-full bg-[#256EF4]/15'
-      : 'h-8 w-8 items-center justify-center rounded-full bg-[#256EF4]/15';
-
-  return (
-    <View className={className}>
-      <Text className="text-xs font-semibold text-[#256EF4]">{name.charAt(0)}</Text>
-    </View>
+    </ReadyActionSheet>
   );
 }
 

@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,8 +11,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomSheet } from '@/components/ui/headless';
 import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
+import {
+  ReadyActionRow,
+  ReadyActionSheet,
+  ReadyBadge,
+  ReadyDivider,
+  ReadyMetadataTile,
+  ReadyMoreButton,
+  ReadyProfileAvatar,
+  ReadyScreenHeader,
+  ReadySection,
+} from '@/components/ui/ready-to-dev-components';
 import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
 import { ROOM_REPORT_REASONS, type UseRoomDetailScreenReturn } from './use-room-detail-screen';
@@ -53,7 +63,44 @@ const PREFERRED_GENDER_LABEL: Record<string, string> = {
 
 export type RoomDetailScreenViewProps = UseRoomDetailScreenReturn;
 
+type RoomDetailTab =
+  | 'compatibility'
+  | 'condition'
+  | 'moveIn'
+  | 'description'
+  | 'lifestyle'
+  | 'options'
+  | 'location'
+  | 'author';
+
 export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsets = useRef<Partial<Record<RoomDetailTab, number>>>({});
+  const [activeTab, setActiveTab] = useState<RoomDetailTab>('compatibility');
+  const tabs = useMemo(
+    () =>
+      ROOM_DETAIL_TABS.filter((tab) => {
+        if (tab.key === 'compatibility') return !props.isOwner;
+        if (tab.key === 'moveIn') return Boolean(props.post?.moveInDate);
+        if (tab.key === 'options') return Boolean(props.post?.options?.length);
+        return true;
+      }),
+    [props.isOwner, props.post?.moveInDate, props.post?.options?.length],
+  );
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.key === activeTab) && tabs[0]) {
+      setActiveTab(tabs[0].key);
+    }
+  }, [activeTab, tabs]);
+
+  const moveToSection = (tab: RoomDetailTab) => {
+    const y = sectionOffsets.current[tab];
+    if (y === undefined) return;
+    setActiveTab(tab);
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - 44), animated: true });
+  };
+
   if (props.loading) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -120,34 +167,99 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         onMenu={() => props.setMenuOpen(true)}
       />
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28">
+      <ScrollView
+        ref={scrollRef}
+        className="flex-1"
+        contentContainerClassName="pb-28"
+        stickyHeaderIndices={[2]}
+      >
         <PhotoCarousel
           photos={props.photos}
           index={props.photoIndex}
           onIndexChange={props.setPhotoIndex}
         />
 
-        <View className="gap-5 p-5">
-          <TitleBlock post={props.post} />
+        <TitleBlock post={props.post} />
+        <RoomDetailTabs tabs={tabs} active={activeTab} onPress={moveToSection} />
+        {!props.isOwner ? (
+          <View
+            onLayout={(event) => {
+              sectionOffsets.current.compatibility = event.nativeEvent.layout.y;
+            }}
+          >
+            <CompatibilityBlock post={props.post} isLoggedIn={props.isLoggedIn} />
+          </View>
+        ) : null}
+        <ReadyDivider />
+        <View
+          onLayout={(event) => {
+            sectionOffsets.current.condition = event.nativeEvent.layout.y;
+          }}
+        >
           <PreferredRoommateBlock post={props.post} />
-          <BasicInfoBlock post={props.post} />
+        </View>
+        {props.post.moveInDate ? (
+          <>
+            <ReadyDivider />
+            <View
+              onLayout={(event) => {
+                sectionOffsets.current.moveIn = event.nativeEvent.layout.y;
+              }}
+            >
+              <BasicInfoBlock post={props.post} />
+            </View>
+          </>
+        ) : null}
+        <ReadyDivider />
+        <View
+          onLayout={(event) => {
+            sectionOffsets.current.description = event.nativeEvent.layout.y;
+          }}
+        >
           <DescriptionBlock
             description={props.post.description}
             expanded={props.descExpanded}
             onToggle={props.toggleDescription}
           />
+        </View>
+        <ReadyDivider />
+        <View
+          onLayout={(event) => {
+            sectionOffsets.current.lifestyle = event.nativeEvent.layout.y;
+          }}
+        >
           <LifestyleBlock
             author={props.post.author}
             expanded={props.lifestyleExpanded}
             onToggle={props.toggleLifestyle}
           />
-          {props.post.options && props.post.options.length > 0 ? (
-            <OptionsBlock options={props.post.options} />
-          ) : null}
+        </View>
+        {props.post.options && props.post.options.length > 0 ? (
+          <>
+            <ReadyDivider />
+            <View
+              onLayout={(event) => {
+                sectionOffsets.current.options = event.nativeEvent.layout.y;
+              }}
+            >
+              <OptionsBlock options={props.post.options} />
+            </View>
+          </>
+        ) : null}
+        <ReadyDivider />
+        <View
+          onLayout={(event) => {
+            sectionOffsets.current.location = event.nativeEvent.layout.y;
+          }}
+        >
           <LocationBlock post={props.post} />
-          {!props.isOwner ? (
-            <CompatibilityBlock post={props.post} isLoggedIn={props.isLoggedIn} />
-          ) : null}
+        </View>
+        <ReadyDivider />
+        <View
+          onLayout={(event) => {
+            sectionOffsets.current.author = event.nativeEvent.layout.y;
+          }}
+        >
           <AuthorBlock author={props.post.author} onPress={props.onAuthorPress} />
         </View>
       </ScrollView>
@@ -161,34 +273,28 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         bottomPadding={props.bottomPadding}
       />
 
-      <BottomSheet
-        open={props.menuOpen}
-        onOpenChange={props.setMenuOpen}
-        contentClassName="rounded-t-2xl bg-white px-5 pb-8 pt-3"
-      >
-        <View className="gap-2">
+      <ReadyActionSheet open={props.menuOpen} onOpenChange={props.setMenuOpen}>
+        <View>
           {props.isOwner ? (
             <>
-              <MenuRow
-                iconName="create-outline"
-                title="게시글 수정"
-                description="내용을 수정할 수 있어요"
+              <ReadyActionRow
+                icon="create-outline"
+                label="게시글 수정"
+                divider
                 onPress={props.onEdit}
               />
-              <MenuRow
-                iconName="trash-outline"
-                title="게시글 삭제"
-                description="삭제 후 복구할 수 없어요"
-                danger
+              <ReadyActionRow
+                icon="trash-outline"
+                label="게시글 삭제"
+                tone="danger"
                 onPress={props.onDelete}
               />
             </>
           ) : (
-            <MenuRow
-              iconName="warning-outline"
-              title="신고하기"
-              description="허위 정보나 부적절한 게시글을 신고해요"
-              warning
+            <ReadyActionRow
+              icon="warning-outline"
+              label="게시글 신고하기"
+              tone="danger"
               onPress={() => {
                 props.setMenuOpen(false);
                 props.setReportOpen(true);
@@ -196,35 +302,70 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
             />
           )}
         </View>
-      </BottomSheet>
+      </ReadyActionSheet>
 
-      <BottomSheet
+      <ReportReasonSheet
         open={props.reportOpen}
         onOpenChange={props.setReportOpen}
-        contentClassName="rounded-t-2xl bg-white px-5 pb-8 pt-3"
-      >
-        <Text className="mb-3 text-base font-semibold text-neutral-900">게시글 신고</Text>
-        <View className="gap-2">
-          {ROOM_REPORT_REASONS.map((reason) => (
-            <Pressable
-              key={reason}
-              onPress={() => props.onReportReason(reason)}
-              className="rounded-xl border border-neutral-200 px-4 py-3 active:bg-neutral-50"
-            >
-              <Text className="text-sm text-neutral-800">{reason}</Text>
-            </Pressable>
-          ))}
-          {!props.isOwner ? (
-            <Pressable
-              onPress={props.onBlockAuthor}
-              className="mt-1 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 active:opacity-80"
-            >
-              <Text className="text-sm text-rose-600">작성자 차단</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      </BottomSheet>
+        onReportReason={props.onReportReason}
+      />
     </SafeAreaView>
+  );
+}
+
+const ROOM_DETAIL_TABS: { key: RoomDetailTab; label: string }[] = [
+  { key: 'compatibility', label: '궁합 점수' },
+  { key: 'condition', label: '룸메이트 조건' },
+  { key: 'moveIn', label: '입주 가능일' },
+  { key: 'description', label: '소개' },
+  { key: 'lifestyle', label: '생활 패턴' },
+  { key: 'options', label: '옵션' },
+  { key: 'location', label: '위치' },
+  { key: 'author', label: '등록자 정보' },
+];
+
+function RoomDetailTabs({
+  tabs,
+  active,
+  onPress,
+}: {
+  tabs: typeof ROOM_DETAIL_TABS;
+  active: RoomDetailTab;
+  onPress: (tab: RoomDetailTab) => void;
+}) {
+  return (
+    <View className="border-b border-[#ECECF3] bg-white">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="px-3"
+      >
+        {tabs.map((tab) => {
+          const selected = active === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => onPress(tab.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              className={`h-11 items-center justify-center border-b-2 px-3 ${
+                selected ? 'border-[#256EF4]' : 'border-transparent'
+              }`}
+            >
+              <Text
+                className={
+                  selected
+                    ? 'text-sm font-semibold text-[#17171B]'
+                    : 'text-sm font-medium text-[#AAAABA]'
+                }
+              >
+                {tab.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -240,30 +381,39 @@ function Header({
   onMenu: () => void;
 }) {
   return (
-    <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
-      <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-        <Ionicons name="chevron-back" size={24} color="#404047" />
-      </Pressable>
-      <Text
-        numberOfLines={1}
-        className="mx-2 flex-1 text-center text-base font-semibold text-neutral-900"
-      >
-        {title}
-      </Text>
-      <View className="flex-row">
-        <Pressable
-          onPress={onShare}
-          accessibilityRole="button"
-          accessibilityLabel="게시글 공유"
-          className="h-9 w-9 items-center justify-center"
-        >
-          <Ionicons name="share-outline" size={21} color="#404047" />
-        </Pressable>
-        <Pressable onPress={onMenu} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="ellipsis-horizontal" size={22} color="#404047" />
-        </Pressable>
-      </View>
-    </View>
+    <ReadyScreenHeader
+      title={title}
+      onBack={onBack}
+      actions={[
+        { icon: 'share-outline', label: '게시글 공유', onPress: onShare },
+        { icon: 'ellipsis-horizontal', label: '게시글 메뉴', onPress: onMenu },
+      ]}
+    />
+  );
+}
+
+function ReportReasonSheet({
+  open,
+  onOpenChange,
+  onReportReason,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onReportReason: (reason: string) => void;
+}) {
+  return (
+    <ReadyActionSheet open={open} onOpenChange={onOpenChange}>
+      <Text className="mb-2 text-base font-semibold text-[#17171B]">신고 사유</Text>
+      {ROOM_REPORT_REASONS.map((reason, index) => (
+        <ReadyActionRow
+          key={reason}
+          icon="alert-circle-outline"
+          label={reason}
+          divider={index < ROOM_REPORT_REASONS.length - 1}
+          onPress={() => onReportReason(reason)}
+        />
+      ))}
+    </ReadyActionSheet>
   );
 }
 
@@ -277,7 +427,7 @@ function PhotoCarousel({
   onIndexChange: (next: number) => void;
 }) {
   const { width } = useWindowDimensions();
-  const photoHeight = Math.round(width * 0.46);
+  const photoHeight = 180;
 
   if (photos.length === 0) {
     return (
@@ -308,30 +458,36 @@ function PhotoCarousel({
           />
         ))}
       </ScrollView>
-      <View className="absolute bottom-3 right-3 rounded-full bg-black/50 px-2.5 py-1">
-        <Text className="text-xs text-white">
-          {index + 1} / {photos.length}
-        </Text>
-      </View>
+      {photos.length > 1 ? (
+        <View className="absolute inset-x-0 bottom-3 flex-row justify-center gap-1.5">
+          {photos.map((url, photoIndex) => (
+            <View
+              key={`${url}-dot-${photoIndex}`}
+              className={`h-1.5 rounded-full ${photoIndex === index ? 'w-4 bg-white' : 'w-1.5 bg-white/60'}`}
+            />
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 function TitleBlock({ post }: { post: RoomPost }) {
   return (
-    <View className="gap-1">
-      <Text className="text-xl font-bold text-neutral-900">{post.title}</Text>
+    <View className="gap-2 px-4 py-5">
+      <View className="flex-row items-center gap-1.5">
+        {isRecent(post.createdAt) ? <ReadyBadge label="NEW" tone="red" /> : null}
+        <ReadyBadge label={ROOM_TYPE_LABEL[post.roomType] ?? post.roomType} tone="blue" />
+      </View>
+      <Text className="text-xl font-bold text-[#17171B]">{post.title}</Text>
       <View className="flex-row items-center gap-2">
-        <Text className="text-sm text-neutral-700">
+        <Text className="text-base font-semibold text-[#17171B]">
           보증금 {post.deposit.toLocaleString()} / 월세 {post.monthlyRent.toLocaleString()}
         </Text>
         {post.maintenanceFee !== undefined ? (
-          <Text className="text-sm text-neutral-500">/ 관리비 {post.maintenanceFee}만원</Text>
+          <Text className="text-sm text-[#696976]">/ 관리비 {post.maintenanceFee}만원</Text>
         ) : null}
       </View>
-      <Text className="text-sm text-neutral-700">
-        {ROOM_TYPE_LABEL[post.roomType] ?? post.roomType}
-      </Text>
       <View className="flex-row items-center gap-3">
         <View className="flex-row items-center gap-1">
           <Ionicons name="location-outline" size={13} color="#696976" />
@@ -352,9 +508,9 @@ function TitleBlock({ post }: { post: RoomPost }) {
 function BasicInfoBlock({ post }: { post: RoomPost }) {
   if (!post.moveInDate) return null;
   return (
-    <View className="rounded-2xl border border-neutral-100 bg-neutral-50 p-3">
+    <ReadySection title="입주 가능일">
       <Row label="입주 가능 시기" value={fmtDate(post.moveInDate)} />
-    </View>
+    </ReadySection>
   );
 }
 
@@ -371,51 +527,44 @@ function LifestyleBlock({
   const hasHiddenLifestyle = lifestyle.pet !== undefined;
 
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">생활패턴</Text>
-      <View className="flex-row flex-wrap gap-2">
-        <InfoTile
+    <ReadySection title="생활 패턴">
+      <View className="flex-row flex-wrap gap-3">
+        <ReadyMetadataTile
           label="취침 시간"
           value={sleepRangeLabel(lifestyle.sleepTime, lifestyle.wakeTime)}
         />
-        <InfoTile label="청결 민감도" value={levelLabel(lifestyle.cleanliness)} />
-        <InfoTile label="소음 민감도" value={levelLabel(lifestyle.noise)} />
-        <InfoTile
+        <ReadyMetadataTile label="청결 민감도" value={levelLabel(lifestyle.cleanliness)} />
+        <ReadyMetadataTile label="소음 민감도" value={levelLabel(lifestyle.noise)} />
+        <ReadyMetadataTile
           label="흡연"
           value={lifestyle.smoking ? SMOKING_LABEL[lifestyle.smoking] : '미입력'}
         />
       </View>
       {expanded && hasHiddenLifestyle ? (
-        <View className="rounded-2xl bg-neutral-50 px-4 py-3">
+        <View className="rounded bg-[#F6F6FA] px-4 py-3">
           <Text className="text-xs text-neutral-600">
             반려동물:{' '}
             {lifestyle.pet === 'no' ? '불가' : lifestyle.pet === 'small' ? '소형 가능' : '협의'}
           </Text>
         </View>
       ) : null}
-      {hasHiddenLifestyle ? (
-        <Pressable onPress={onToggle} className="flex-row items-center justify-center gap-1 py-1">
-          <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
-        </Pressable>
-      ) : null}
-    </View>
+      {hasHiddenLifestyle ? <ReadyMoreButton expanded={expanded} onPress={onToggle} /> : null}
+    </ReadySection>
   );
 }
 
 function OptionsBlock({ options }: { options: RoomOption[] }) {
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">옵션</Text>
+    <ReadySection title="옵션">
       <View className="flex-row justify-around gap-2 py-2">
         {options.map((option) => (
           <View key={option} className="flex-1 items-center gap-2">
-            <RoomOptionArtwork label={OPTION_LABEL[option]} size={30} />
-            <Text className="text-center text-xs text-neutral-700">{OPTION_LABEL[option]}</Text>
+            <RoomOptionArtwork label={OPTION_LABEL[option]} size={40} />
+            <Text className="text-center text-xs text-[#696976]">{OPTION_LABEL[option]}</Text>
           </View>
         ))}
       </View>
-    </View>
+    </ReadySection>
   );
 }
 
@@ -429,9 +578,8 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
       : author.importantConditions
   ).slice(0, 3);
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">선호 룸메이트 조건</Text>
-      <View className="gap-2 rounded-2xl bg-neutral-50 p-4">
+    <ReadySection title="룸메이트 조건">
+      <View className="gap-3 rounded bg-[#F6F6FA] p-4">
         <KeyValueRow
           label="선호 성별"
           value={
@@ -447,7 +595,7 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
         />
         <KeyValueRow label="중요 조건" value={importantLabels.join(' · ') || '없음'} />
       </View>
-    </View>
+    </ReadySection>
   );
 }
 
@@ -467,8 +615,7 @@ function DescriptionBlock({
   }, [description]);
 
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">게시글 내용</Text>
+    <ReadySection title="소개">
       <Text
         numberOfLines={!expanded && hasOverflow === true ? 3 : undefined}
         onTextLayout={(event) => {
@@ -480,13 +627,8 @@ function DescriptionBlock({
       >
         {description}
       </Text>
-      {hasOverflow === true ? (
-        <Pressable onPress={onToggle} className="flex-row items-center gap-1">
-          <Text className="text-xs text-neutral-500">{expanded ? '접기' : '더보기'}</Text>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="#696976" />
-        </Pressable>
-      ) : null}
-    </View>
+      {hasOverflow === true ? <ReadyMoreButton expanded={expanded} onPress={onToggle} /> : null}
+    </ReadySection>
   );
 }
 
@@ -500,9 +642,8 @@ function CompatibilityBlock({ post, isLoggedIn }: { post: RoomPost; isLoggedIn: 
   const scoreColor = hasScore ? '#256EF4' : '#9CA3AF';
 
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">나와 궁합</Text>
-      <View className="flex-row items-center gap-5 rounded-2xl border border-neutral-100 bg-white px-5 py-5">
+    <ReadySection title="궁합 점수">
+      <View className="flex-row items-center gap-5 px-4 py-3">
         <View
           style={{
             width: RING_SIZE,
@@ -548,15 +689,14 @@ function CompatibilityBlock({ post, isLoggedIn }: { post: RoomPost; isLoggedIn: 
           ) : null}
         </View>
       </View>
-    </View>
+    </ReadySection>
   );
 }
 
 function LocationBlock({ post }: { post: RoomPost }) {
   const regionLabel = `${post.region.city} ${post.region.district}`.trim();
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">위치</Text>
+    <ReadySection title="위치">
       <View className="relative h-40 overflow-hidden rounded-lg bg-[#F1F3F5]">
         <View className="absolute -left-5 top-9 h-3 w-[115%] rotate-[-8deg] bg-white/80" />
         <View className="absolute -left-5 bottom-8 h-2 w-[115%] rotate-[7deg] bg-white/70" />
@@ -577,54 +717,36 @@ function LocationBlock({ post }: { post: RoomPost }) {
         <Ionicons name="location-outline" size={18} color="#8B8B9B" />
         <Text className="text-xs text-neutral-600">{regionLabel || '위치 정보 없음'}</Text>
       </View>
-    </View>
+    </ReadySection>
   );
 }
 
 function AuthorBlock({ author, onPress }: { author: UserSummary; onPress: () => void }) {
   return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">등록자 정보</Text>
+    <ReadySection title="등록자 정보">
       <Pressable
         onPress={onPress}
         className="flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 active:opacity-90"
       >
-        {author.avatarUrl ? (
-          <Image
-            source={{ uri: author.avatarUrl }}
-            style={{ width: 48, height: 48, borderRadius: 24 }}
-            contentFit="cover"
-          />
-        ) : (
-          <View className="h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
-            <Text className="font-semibold text-neutral-600">{author.name.charAt(0)}</Text>
-          </View>
-        )}
+        <ReadyProfileAvatar name={author.name} imageUrl={author.avatarUrl} size={58} />
         <View className="flex-1 gap-1">
           <Text className="text-sm font-semibold text-neutral-900">
             {author.name} · {author.age}세 · {GENDER_LABEL[author.gender]}
           </Text>
           <View className="flex-row flex-wrap gap-1.5">
             {author.badges.map((badge) => (
-              <View
+              <ReadyBadge
                 key={badge.kind}
-                className="flex-row items-center gap-1 rounded bg-emerald-50 px-2 py-0.5"
-              >
-                <Ionicons
-                  name={badge.kind === 'school' ? 'school-outline' : 'business-outline'}
-                  size={11}
-                  color="#047857"
-                />
-                <Text className="text-[10px] text-emerald-700">
-                  {badge.kind === 'school' ? '학교 인증' : '회사 인증'}
-                </Text>
-              </View>
+                label={badge.kind === 'school' ? '학교 인증' : '회사 인증'}
+                tone="green"
+                icon={badge.kind === 'school' ? 'school-outline' : 'business-outline'}
+              />
             ))}
           </View>
         </View>
         <Ionicons name="chevron-forward" size={18} color="#DADAE8" />
       </Pressable>
-    </View>
+    </ReadySection>
   );
 }
 
@@ -672,55 +794,10 @@ function BottomBar({
   );
 }
 
-function MenuRow({
-  iconName,
-  title,
-  description,
-  onPress,
-  danger,
-  warning,
-}: {
-  iconName: keyof typeof Ionicons.glyphMap;
-  title: string;
-  description?: string;
-  onPress: () => void;
-  danger?: boolean;
-  warning?: boolean;
-}) {
-  const titleColor = danger ? 'text-rose-600' : warning ? 'text-amber-600' : 'text-neutral-900';
-  return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-3 rounded-xl px-3 py-3 active:bg-neutral-50"
-    >
-      <Ionicons
-        name={iconName}
-        size={21}
-        color={danger ? '#E11D48' : warning ? '#D97706' : '#404047'}
-      />
-      <View className="flex-1">
-        <Text className={`text-sm font-semibold ${titleColor}`}>{title}</Text>
-        {description ? (
-          <Text className="mt-0.5 text-xs text-neutral-500">{description}</Text>
-        ) : null}
-      </View>
-    </Pressable>
-  );
-}
-
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between py-1">
       <Text className="text-xs text-neutral-500">{label}</Text>
-      <Text className="text-sm font-semibold text-neutral-800">{value}</Text>
-    </View>
-  );
-}
-
-function InfoTile({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="min-w-[45%] flex-1 gap-0.5 rounded-2xl bg-neutral-50 p-3">
-      <Text className="text-[11px] text-neutral-500">{label}</Text>
       <Text className="text-sm font-semibold text-neutral-800">{value}</Text>
     </View>
   );
@@ -751,4 +828,9 @@ function fmtDate(d: Date): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
     d.getDate(),
   ).padStart(2, '0')}`;
+}
+
+function isRecent(date: Date): boolean {
+  const age = Date.now() - date.getTime();
+  return age >= 0 && age <= 7 * 24 * 60 * 60 * 1000;
 }

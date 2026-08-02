@@ -11,6 +11,7 @@ import { ScreenViewTracker } from '@/lib/analytics/screen-tracker';
 import { AlarmRealtimeBridge } from '@/components/notifications/alarm-realtime-bridge';
 import { PushNotificationBridge } from '@/components/notifications/push-notification-bridge';
 import { AgreementProvider, ModerationProvider, SessionProvider } from '@/lib/domain';
+import { AppVersionGate } from '@/components/app-version/app-version-gate';
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ export default function RootLayout() {
                 <Stack.Screen name="support" />
                 <Stack.Screen name="notifications" />
               </Stack>
+              <AppVersionGate />
               <StatusBar style="auto" />
             </AgreementProvider>
           </ModerationProvider>

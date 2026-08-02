@@ -21,6 +21,12 @@ export type ProfileBasicRequest =
 export type ProfileBasicUpdateRequest =
   OpenApiSchema<'org.example.knockin.dto.ModifyProfileBasicDto$Request'>;
 
+export type ProfileBasicImageInput = {
+  uri: string;
+  name?: string;
+  type?: string;
+};
+
 /** 기본정보2 (온보딩 2단계) — 생활패턴. */
 export type ProfileLifestyleRequest =
   OpenApiSchema<'org.example.knockin.dto.SaveProfileLifeStyleDto$Request'>;
@@ -158,9 +164,13 @@ const MOCK_PREFERENCE_ALL: PreferenceAllData = {
 const MOCK_MY_BOARDS: MyBoardListData = {
   boards: [
     {
-      boardId: 1,
-      image: 'https://picsum.photos/seed/p1/600/400',
+      id: 1,
+      imageUrl: 'https://picsum.photos/seed/p1/600/400',
       title: '망원 한강뷰 투룸 함께 살 룸메 구해요',
+      roomTypes: ['투룸'],
+      regionFullName: '서울 마포구',
+      memberName: '나',
+      createdAt: '2026-05-10T09:00:00Z',
     },
   ],
 };
@@ -198,9 +208,12 @@ export function saveProfileAll(body: ProfileAllRequest): Promise<ApiResponse<Upd
 /** PUT /users/me/profile/basic */
 export function updateProfileBasic(
   body: ProfileBasicUpdateRequest,
+  file?: ProfileBasicImageInput,
 ): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
-  return request('PUT', '/users/me/profile/basic', { body });
+  return request('PUT', '/users/me/profile/basic', {
+    body: profileBasicUpdateToFormData(body, file),
+  });
 }
 
 /** PUT /users/me/profile/lifestyle */
@@ -291,6 +304,31 @@ export function getPreferenceAll(): Promise<ApiResponse<PreferenceAllData>> {
 export function updateVisibility(body: VisibilityRequest): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('PATCH', '/users/me/visibility', { body });
+}
+
+function profileBasicUpdateToFormData(
+  body: ProfileBasicUpdateRequest,
+  file?: ProfileBasicImageInput,
+): FormData {
+  const formData = new FormData();
+  const requestJson = JSON.stringify(body);
+
+  if (typeof (formData as FormData & { getParts?: () => unknown }).getParts === 'function') {
+    // React Native에서는 JSON 파트에 타입을 붙여야 백엔드의 @RequestPart로 들어간다.
+    formData.append('request', { string: requestJson, type: 'application/json' } as any);
+  } else {
+    formData.append('request', new Blob([requestJson], { type: 'application/json' }));
+  }
+
+  if (file?.uri && !file.uri.startsWith('http')) {
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name ?? 'profile.jpg',
+      type: file.type ?? 'image/jpeg',
+    } as any);
+  }
+
+  return formData;
 }
 
 /** GET /users/me/boards — 내 룸메이트 게시글 리스트 탐색 */

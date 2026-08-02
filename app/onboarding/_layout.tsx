@@ -67,13 +67,14 @@ function toRequest(
     type: isHas ? 'OFFER' : 'SEEKER',
     minDeposit: isHas ? undefined : room.budgetDeposit.min,
     maxDeposit: isHas ? undefined : room.budgetDeposit.max,
-    minMounthRent: isHas ? undefined : seekerBudgetRent.min,
-    maxMounthRent: isHas ? undefined : seekerBudgetRent.max,
-    comeEnableAt: moveDate ? formatApiLocalDateTime(moveDate) : undefined,
+    minMonthlyRent: isHas ? undefined : seekerBudgetRent.min,
+    maxMonthlyRent: isHas ? undefined : seekerBudgetRent.max,
+    // 운영 DTO는 협의 가능 여부와 별개로 입주일을 필수로 받는다.
+    comeEnableAt: formatApiLocalDateTime(moveDate ?? new Date()),
     region: regionIds,
     roomProfile: roomProfileIds,
     deposit: isHas ? (room.deposit ?? 0) : undefined,
-    mounthRent: isHas ? (room.monthlyRent ?? 0) : undefined,
+    monthlyRent: isHas ? (room.monthlyRent ?? 0) : undefined,
     comeableAtNegotiable: isMoveDateNegotiable,
   });
 }

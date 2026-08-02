@@ -51,15 +51,15 @@ export function useChatListScreen(): UseChatListScreenReturn {
   const rows = useMemo<ChatListRow[]>(
     () =>
       (rooms ?? []).map((room) => {
-        const proposal = room.status === 'PENDING';
+        const proposal = room.roommateStatus === 'PENDING';
         return {
           room,
           proposal,
-          unread: room.unreadCount ?? 0,
+          unread: room.messageCount ?? room.unreadCount ?? 0,
           preview:
             room.lastMessage ??
             (proposal ? '룸메이트를 요청했어요!' : '채팅이 시작되었어요. 인사를 건네보세요.'),
-          timeLabel: formatChatTime(room.creatAt ?? room.createdAt),
+          timeLabel: formatChatTime(room.lastMessageAt ?? room.creatAt ?? room.createdAt),
           onPress: () => {
             logEvent(AnalyticsEvent.CHAT_ROOM_ENTER, { room_id: room.chatRoomId });
             goChatRoom(router, String(room.chatRoomId));

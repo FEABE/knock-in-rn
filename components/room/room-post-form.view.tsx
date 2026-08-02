@@ -33,6 +33,10 @@ export function RoomPostFormView({
   onEditProfile,
   roomTypes,
   roomOptions,
+  roomTypesLoading,
+  roomTypesError,
+  roomOptionsLoading,
+  roomOptionsError,
   regionCities,
   regionDistricts,
   regionNeighborhoods,
@@ -51,6 +55,8 @@ export function RoomPostFormView({
   removePhoto,
   toggleOption,
   setDescription,
+  reloadRoomTypes,
+  reloadRoomOptions,
   submit,
 }: RoomPostFormViewProps) {
   return (
@@ -140,29 +146,35 @@ export function RoomPostFormView({
         </Section>
 
         <Section title="룸 형태" badge={mode === 'edit' ? '프로필 값' : undefined}>
-          <View className="flex-row flex-wrap gap-2">
-            {roomTypes.map((rt) => {
-              const selected = draft.roomType === rt.value;
-              return (
-                <Pressable
-                  key={rt.value}
-                  onPress={() => selectRoomType(rt.value)}
-                  className={`flex-row items-center gap-1.5 rounded-lg border py-1.5 pl-2 pr-4 active:opacity-80 ${
-                    selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
-                  }`}
-                >
-                  <RoomTypeArtwork label={rt.label} size={28} />
-                  <Text
-                    className={
-                      selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
-                    }
+          {roomTypesLoading ? (
+            <MetadataState message="방 형태를 불러오는 중이에요." loading />
+          ) : roomTypesError ? (
+            <MetadataState message="방 형태를 불러오지 못했어요." onRetry={reloadRoomTypes} />
+          ) : (
+            <View className="flex-row flex-wrap gap-2">
+              {roomTypes.map((rt) => {
+                const selected = draft.roomType === rt.value;
+                return (
+                  <Pressable
+                    key={rt.value}
+                    onPress={() => selectRoomType(rt.value)}
+                    className={`flex-row items-center gap-1.5 rounded-lg border py-1.5 pl-2 pr-4 active:opacity-80 ${
+                      selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
+                    }`}
                   >
-                    {rt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                    <RoomTypeArtwork label={rt.label} size={28} />
+                    <Text
+                      className={
+                        selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
+                      }
+                    >
+                      {rt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </Section>
 
         <Section title="방 위치" badge={mode === 'edit' ? '프로필 값' : undefined}>
@@ -193,33 +205,41 @@ export function RoomPostFormView({
           </View>
         </Section>
 
-        {roomOptions.length > 0 ? (
+        {roomOptionsLoading || roomOptionsError || roomOptions.length > 0 ? (
           <Section title="방 옵션" badge="최대 4개">
-            <View className="flex-row flex-wrap gap-2">
-              {roomOptions.map((o) => {
-                const selected = draft.options.includes(o.value);
-                return (
-                  <Pressable
-                    key={o.value}
-                    onPress={() => toggleOption(o.value)}
-                    className={`h-[42px] flex-row items-center gap-1.5 rounded-lg border px-3 active:opacity-80 ${
-                      selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
-                    }`}
-                  >
-                    <RoomOptionArtwork label={o.label} size={22} />
-                    <Text
-                      className={
+            {roomOptionsLoading ? (
+              <MetadataState message="방 옵션을 불러오는 중이에요." loading />
+            ) : roomOptionsError ? (
+              <MetadataState message="방 옵션을 불러오지 못했어요." onRetry={reloadRoomOptions} />
+            ) : (
+              <View className="flex-row flex-wrap gap-3">
+                {roomOptions.map((o) => {
+                  const selected = draft.options.includes(o.value);
+                  return (
+                    <Pressable
+                      key={o.value}
+                      onPress={() => toggleOption(o.value)}
+                      className={`min-h-[92px] w-[31%] items-center justify-center gap-2 rounded-lg border px-2 py-3 active:opacity-80 ${
                         selected
-                          ? 'text-base font-medium text-[#256EF4]'
-                          : 'text-base font-medium text-[#696976]'
-                      }
+                          ? 'border-[#256EF4] bg-[#256EF4]/10'
+                          : 'border-neutral-200 bg-white'
+                      }`}
                     >
-                      {o.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <RoomOptionArtwork label={o.label} size={40} />
+                      <Text
+                        className={
+                          selected
+                            ? 'text-center text-xs font-semibold text-[#256EF4]'
+                            : 'text-center text-xs font-medium text-[#696976]'
+                        }
+                      >
+                        {o.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </Section>
         ) : null}
 
@@ -327,6 +347,28 @@ export function RoomPostFormView({
         </Pressable>
       </View>
     </>
+  );
+}
+
+function MetadataState({
+  message,
+  loading,
+  onRetry,
+}: {
+  message: string;
+  loading?: boolean;
+  onRetry?: () => void;
+}) {
+  return (
+    <View className="items-center justify-center gap-3 rounded-lg bg-[#F6F6FA] py-8">
+      {loading ? <ActivityIndicator color="#256EF4" /> : null}
+      <Text className="text-sm text-[#696976]">{message}</Text>
+      {onRetry ? (
+        <Pressable onPress={onRetry} className="rounded-lg bg-[#ECF2FE] px-4 py-2">
+          <Text className="text-sm font-medium text-[#256EF4]">다시 시도</Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 

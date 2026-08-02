@@ -22,13 +22,14 @@ export type UseInquiryListScreenReturn = {
   totalCount: number;
   loading: boolean;
   error: string | null;
+  retry: () => void;
   onCreatePress: () => void;
 };
 
 export function useInquiryListScreen(): UseInquiryListScreenReturn {
   const router = useRouter();
   const { session, requireLogin } = useRequireLogin();
-  const { data, loading, error } = useSupportInquiries(Boolean(session));
+  const { data, loading, error, reload } = useSupportInquiries(Boolean(session));
 
   const inquiries = useMemo<InquiryListItem[]>(() => data ?? [], [data]);
 
@@ -37,6 +38,7 @@ export function useInquiryListScreen(): UseInquiryListScreenReturn {
     totalCount: inquiries.length,
     loading,
     error: session ? error : '문의내역은 로그인 후 확인할 수 있어요.',
+    retry: reload,
     onCreatePress: () =>
       requireLogin(() => goSupportInquiryNew(router), {
         title: '로그인 필요',

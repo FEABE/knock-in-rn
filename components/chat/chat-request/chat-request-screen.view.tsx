@@ -1,8 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ErrorState } from '@/components/ui/error-state';
+import {
+  ReadyBadge,
+  ReadyMetadataTile,
+  ReadyProfileAvatar,
+  ReadyScreenHeader,
+  ReadySection,
+} from '@/components/ui/ready-to-dev-components';
 
 import type { UseChatRequestScreenReturn } from './use-chat-request-screen';
 
@@ -22,13 +28,7 @@ export function ChatRequestScreenView({
 }: UseChatRequestScreenReturn) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center border-b border-[#ECECF3] px-3 py-2">
-        <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#17171B" />
-        </Pressable>
-        <Text className="flex-1 text-lg font-bold text-[#17171B]">채팅 요청</Text>
-        <View className="w-10" />
-      </View>
+      <ReadyScreenHeader title="채팅 요청" onBack={onBack} />
 
       {loading ? (
         <View className="flex-1 items-center justify-center gap-3">
@@ -43,49 +43,30 @@ export function ChatRequestScreenView({
         />
       ) : (
         <>
-          <ScrollView contentContainerClassName="px-5 pb-28 pt-7">
+          <ScrollView contentContainerClassName="pb-28 pt-7">
             <View className="items-center gap-3">
-              <View className="h-24 w-24 items-center justify-center rounded-full bg-[#E9F0FE]">
-                <Text className="text-[32px] font-bold text-[#256EF4]">
-                  {(opponent.name ?? opponent.memberName ?? '사').charAt(0)}
-                </Text>
-              </View>
+              <ReadyProfileAvatar
+                name={opponent.name ?? opponent.memberName ?? '사용자'}
+                size={96}
+              />
               <View className="items-center gap-1">
                 <Text className="text-[22px] font-bold text-[#17171B]">
                   {opponent.name ?? opponent.memberName ?? '사용자'}
                 </Text>
-                <Text className="text-sm text-[#696976]">
-                  {formatMeta(opponent.memberAge, opponent.gender)}
-                </Text>
+                <ReadyBadge label={formatMeta(opponent.memberAge, opponent.gender)} tone="red" />
               </View>
-              {score != null ? (
-                <View className="rounded-full bg-[#256EF4] px-4 py-2">
-                  <Text className="text-sm font-bold text-white">궁합 {score}점</Text>
-                </View>
-              ) : null}
+              {score != null ? <ReadyBadge label={`궁합 ${score}점`} tone="dark" /> : null}
             </View>
 
-            <View className="mt-8 border-t border-[#ECECF3] pt-5">
-              <Text className="mb-3 text-base font-bold text-[#17171B]">생활 패턴</Text>
-              <View className="gap-2">
+            <ReadySection title="생활 패턴" className="mt-8 border-t border-[#ECECF3]">
+              <View className="flex-row flex-wrap gap-3">
                 {(opponent.lifeStyles ?? []).length ? (
                   opponent.lifeStyles?.map((item, index) => (
-                    <View
+                    <ReadyMetadataTile
                       key={String(item.lifestyleId ?? index)}
-                      className="flex-row items-center justify-between rounded-lg bg-[#F7F7FA] px-4 py-3"
-                    >
-                      <View className="flex-1 gap-0.5">
-                        <Text className="text-sm font-semibold text-[#3F3F47]">
-                          {item.name ?? '생활 패턴'}
-                        </Text>
-                        {item.description ? (
-                          <Text className="text-xs text-[#AAAABA]">{item.description}</Text>
-                        ) : null}
-                      </View>
-                      <Text className="text-sm font-semibold text-[#256EF4]">
-                        {item.value ?? '-'}
-                      </Text>
-                    </View>
+                      label={item.name ?? item.description ?? '생활 패턴'}
+                      value={item.value ?? '-'}
+                    />
                   ))
                 ) : (
                   <Text className="py-6 text-center text-sm text-[#AAAABA]">
@@ -93,7 +74,7 @@ export function ChatRequestScreenView({
                   </Text>
                 )}
               </View>
-            </View>
+            </ReadySection>
           </ScrollView>
 
           {status === 'PENDING' ? (

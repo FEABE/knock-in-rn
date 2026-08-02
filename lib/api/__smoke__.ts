@@ -70,7 +70,7 @@ async function main() {
   check(
     'getRoommateBoardDetail',
     detail.data.boardId === 1 && detailImages.length > 0,
-    `boardId=${detail.data.boardId} images=${detailImages.length} score=${detail.data.compatibility?.score}`,
+    `boardId=${detail.data.boardId} images=${detailImages.length} score=${detail.data.compatibility?.totalScore}`,
   );
 
   const matches = await getRoommateMatches();
@@ -103,7 +103,7 @@ async function main() {
 
   const score = await getMatchScore();
   const scoreItems = score.data.compatibility?.lifeStyleInfo ?? [];
-  check('getMatchScore', scoreItems.length > 0, `score=${score.data.compatibility?.score}`);
+  check('getMatchScore', scoreItems.length > 0, `score=${score.data.compatibility?.totalScore}`);
 
   const chats = await getChatRooms();
   const chatRooms = chats.data.chatRooms ?? [];

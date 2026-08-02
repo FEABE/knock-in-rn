@@ -1,5 +1,9 @@
 import { Pressable, Text, View } from 'react-native';
 
+import {
+  ReadyErrorState,
+  ReadyLoadingState,
+} from '@/components/ui/ready-to-dev-feedback';
 import { useRoomTypeOptions } from '@/lib/api';
 import type { RoomType } from '@/lib/onboarding';
 
@@ -15,6 +19,18 @@ export function RoomTypeFilterBody({
 }) {
   const isAll = value.length === 0;
   const roomTypes = useRoomTypeOptions();
+
+  if (roomTypes.loading) return <ReadyLoadingState label="룸 형태를 불러오는 중..." compact />;
+  if (roomTypes.error) {
+    return (
+      <ReadyErrorState
+        title="룸 형태를 불러오지 못했어요"
+        description={roomTypes.error}
+        onRetry={roomTypes.reload}
+        compact
+      />
+    );
+  }
 
   const toggle = (rt: RoomType) => {
     if (value.includes(rt)) {

@@ -11,7 +11,7 @@ import { OnboardingFooter } from '../onboarding-footer';
 export function TermsStep() {
   const { terms, setTerms } = useOnboardingTerms();
   const { goNext } = useOnboarding();
-  const { data, loading } = useApi(['meta', 'terms'], () => getTerms());
+  const { data, loading } = useApi(['meta', 'terms'], () => getTerms(), { retry: false });
   const renderTerms = useMemo<Term[]>(() => {
     const apiTerms = data?.terms ?? [];
     return apiTerms.flatMap((term) =>
