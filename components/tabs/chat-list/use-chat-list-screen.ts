@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { type ChatRoomItem, useChatRooms } from '@/lib/api';
@@ -27,7 +28,23 @@ export function useChatListScreen(): UseChatListScreenReturn {
   const router = useRouter();
   const { session } = useSession();
   const isLoggedIn = !!session;
-  const { data: rooms, loading, error } = useChatRooms(isLoggedIn);
+  const { data: rooms, loading, error, reload } = useChatRooms(isLoggedIn);
+  const focusedOnceRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isLoggedIn) {
+        focusedOnceRef.current = false;
+        return;
+      }
+      // 첫 진입은 useChatRooms가 조회하므로, 이후 탭 재진입부터 서버 데이터를 새로 받는다.
+      if (!focusedOnceRef.current) {
+        focusedOnceRef.current = true;
+        return;
+      }
+      reload();
+    }, [isLoggedIn, reload]),
+  );
 
   useEffect(() => {
     if (error) {
