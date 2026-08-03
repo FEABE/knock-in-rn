@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ChatMessage, ChatRoom, UserSummary } from '@/lib/domain';
 
 import {
+  createChatRoom,
+  type ChatRoomCreateRequest,
   type ChatRoomDetailData,
   type ChatRoomItem,
   getChatRoomDetail,
@@ -34,6 +36,27 @@ import { type AsyncState, useApi } from './use-async';
 export function useChatRooms(enabled = true): AsyncState<ChatRoomItem[]> {
   const state = useApi(['chat', 'rooms'], () => getChatRooms(), { enabled, retry: false });
   return { ...state, data: state.data?.chatRooms ?? null };
+}
+
+/** 채팅 요청 승인 단계 없이 채팅방을 바로 생성한다. */
+export function useCreateChatRoom() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (body: ChatRoomCreateRequest) => createChatRoom(body),
+  });
+
+  return {
+    createRoom: async (body: ChatRoomCreateRequest) => {
+      const res = await mutation.mutateAsync(body);
+      const chatRoomId = res.data?.chatRoomId;
+      if (res.status < 200 || res.status >= 300 || res.error || chatRoomId == null) {
+        throw new Error(res.error?.message ?? '채팅방을 만들지 못했습니다.');
+      }
+      await queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] });
+      return chatRoomId;
+    },
+    creatingRoom: mutation.isPending,
+  };
 }
 
 export function useChatRequests(enabled = true): AsyncState<ChatRequestItem[]> {

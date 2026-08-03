@@ -33,6 +33,7 @@ export function RoommateDetailScreenView({
   liked,
   reportOpen,
   lifestyleExpanded,
+  creatingChat,
   bottomPadding,
   setReportOpen,
   onBack,
@@ -40,7 +41,7 @@ export function RoommateDetailScreenView({
   onCompatibilityLayout,
   toggleLifestyle,
   onLike,
-  onRequest,
+  onChat,
   onBlock,
   onReportReason,
 }: RoommateDetailScreenViewProps) {
@@ -133,7 +134,8 @@ export function RoommateDetailScreenView({
           <BottomBar
             liked={liked}
             onLike={onLike}
-            onRequest={onRequest}
+            onChat={onChat}
+            creatingChat={creatingChat}
             bottomPadding={bottomPadding}
           />
 
@@ -326,12 +328,14 @@ function LifestyleBlock({
 function BottomBar({
   liked,
   onLike,
-  onRequest,
+  onChat,
+  creatingChat,
   bottomPadding,
 }: {
   liked: boolean;
   onLike: () => void;
-  onRequest: () => void;
+  onChat: () => void;
+  creatingChat: boolean;
   bottomPadding: number;
 }) {
   return (
@@ -352,10 +356,20 @@ function BottomBar({
         />
       </Pressable>
       <Pressable
-        onPress={onRequest}
-        className="h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90"
+        onPress={onChat}
+        disabled={creatingChat}
+        accessibilityRole="button"
+        accessibilityLabel="채팅하기"
+        accessibilityState={{ disabled: creatingChat }}
+        className={`h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90 ${
+          creatingChat ? 'opacity-60' : ''
+        }`}
       >
-        <Text className="text-base font-semibold text-white">채팅 요청하기</Text>
+        {creatingChat ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text className="text-base font-semibold text-white">채팅하기</Text>
+        )}
       </Pressable>
     </View>
   );

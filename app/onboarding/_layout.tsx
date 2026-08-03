@@ -7,6 +7,7 @@ import {
   compactNumbers,
   formatApiLocalDateTime,
   getAccessToken,
+  getNotificationSettings,
   getPreferenceAll,
   getProfileAll,
   lifestyleIdsFromPatternOptions,
@@ -15,6 +16,7 @@ import {
   roomTypeBackendId,
   saveProfileAll,
   savePreferenceAll,
+  updateNotificationSetting,
   updateVisibility,
   withComeableAtNegotiable,
   type ProfileAllRuntimeRequest,
@@ -24,6 +26,7 @@ import {
 import { useSession } from '@/lib/domain';
 import {
   ONBOARDING_WRITE_ENABLED,
+  MARKETING_PUSH_TERM_KEY,
   ONBOARDING_STEPS,
   OnboardingProvider,
   agreedTermBackendIds,
@@ -162,6 +165,30 @@ function validationMessage(missing: string[]): string {
   return `다음 항목을 입력해주세요.\n\n${missing.map((item) => `- ${item}`).join('\n')}`;
 }
 
+async function saveMarketingNotificationConsent(enabled: boolean): Promise<string | null> {
+  const settingsRes = await getNotificationSettings();
+  if (settingsRes.error || settingsRes.status !== 200) {
+    return settingsRes.error?.message ?? '알림 설정을 불러오지 못했습니다.';
+  }
+
+  const marketingSettings = (settingsRes.data?.alarmsSettings ?? []).flatMap((setting) => {
+    const settingId = Number(setting.id);
+    const name = setting.name?.replace(/\s/g, '').toLowerCase() ?? '';
+    const isMarketing = ['마케팅', '정보성', '프로모션', '이벤트'].some((keyword) =>
+      name.includes(keyword),
+    );
+    return Number.isFinite(settingId) && isMarketing ? [{ settingId, enabled }] : [];
+  });
+
+  if (!marketingSettings.length) {
+    return '정보성 알림 설정 항목을 찾지 못했습니다.';
+  }
+
+  const responses = await Promise.all(marketingSettings.map(updateNotificationSetting));
+  const failed = responses.find((response) => response.error || response.status !== 200);
+  return failed ? (failed.error?.message ?? '정보성 알림 동의를 저장하지 못했습니다.') : null;
+}
+
 function profileSaveErrorMessage(
   message: string | undefined,
   request: ProfileAllRuntimeRequest,
@@ -193,7 +220,7 @@ function profileSaveErrorMessage(
 export default function OnboardingLayout() {
   const router = useRouter();
   const { step } = useGlobalSearchParams<{ step?: string }>();
-  const { session, signIn, markProfileComplete } = useSession();
+  const { signIn, markProfileComplete } = useSession();
   const lifestyleOptions = useLifestylePatternOptions();
   const initialStep = __DEV__ && isOnboardingStep(step) ? step : undefined;
   const completingRef = useRef(false);
@@ -225,7 +252,6 @@ export default function OnboardingLayout() {
       total_steps: 15,
     });
 
-    let profileAlreadyComplete = session?.isProfileComplete === true;
     if (ONBOARDING_WRITE_ENABLED && !getAccessToken()) {
       const signInResult = await signIn();
       if (signInResult.status !== 'success') {
@@ -235,23 +261,21 @@ export default function OnboardingLayout() {
         ]);
         return;
       }
-      profileAlreadyComplete = signInResult.isProfileComplete;
     }
 
     if (ONBOARDING_WRITE_ENABLED) {
       const request = toRequest(values, lifestyleOptions);
-      if (!profileAlreadyComplete) {
-        const profileRes = await getProfileAll();
-        if (profileRes.status === 200 && !profileRes.error) {
-          profileAlreadyComplete = hasSavedProfile(profileRes.data);
-        } else if (profileRes.status !== 404) {
-          Alert.alert(
-            '프로필 확인 실패',
-            profileRes.error?.message ??
-              '기존 프로필 상태를 확인하지 못했습니다. 중복 저장을 막기 위해 잠시 후 다시 시도해주세요.',
-          );
-          return;
-        }
+      let profileAlreadyComplete = false;
+      const profileRes = await getProfileAll();
+      if (profileRes.status === 200 && !profileRes.error) {
+        profileAlreadyComplete = hasSavedProfile(profileRes.data, lifestyleOptions);
+      } else if (profileRes.status !== 404) {
+        Alert.alert(
+          '프로필 확인 실패',
+          profileRes.error?.message ??
+            '기존 프로필 상태를 확인하지 못했습니다. 중복 저장을 막기 위해 잠시 후 다시 시도해주세요.',
+        );
+        return;
       }
 
       if (!profileAlreadyComplete) {
@@ -298,11 +322,6 @@ export default function OnboardingLayout() {
           return;
         }
       }
-      await markProfileComplete({
-        name: request.name,
-        birth: request.birth,
-        gender: request.gender,
-      });
       // 신규 온보딩은 공개 상태로 시작하고, 이후 변경은 마이페이지에서만 받는다.
       const visibilityRes = await updateVisibility({
         status: 'PUBLIC',
@@ -311,6 +330,19 @@ export default function OnboardingLayout() {
         Alert.alert('저장 실패', visibilityRes.error?.message ?? '잠시 후 다시 시도해주세요.');
         return;
       }
+      const notificationError = await saveMarketingNotificationConsent(
+        values.terms[MARKETING_PUSH_TERM_KEY] === true,
+      );
+      if (notificationError) {
+        Alert.alert('알림 설정 저장 실패', notificationError);
+        return;
+      }
+      await markProfileComplete({
+        name: request.name,
+        birth: request.birth,
+        gender: request.gender,
+        preferredGender: values.profile.preferredGender ?? 'any',
+      });
     }
     resetToExplore(router);
   };
@@ -345,13 +377,29 @@ function isOnboardingStep(value: string | undefined): value is OnboardingStep {
   return ONBOARDING_STEPS.includes(value as OnboardingStep);
 }
 
-function hasSavedProfile(profile: Awaited<ReturnType<typeof getProfileAll>>['data']): boolean {
-  return Boolean(
-    profile?.type ||
-    profile?.lifestyles?.length ||
-    profile?.region?.length ||
-    profile?.roomProfile?.length,
-  );
+function hasSavedProfile(
+  profile: Awaited<ReturnType<typeof getProfileAll>>['data'],
+  lifestyleOptions: LifestylePatternOptions,
+): boolean {
+  if (!profile?.type || !profile.comeEnableAt) return false;
+  if (!profile.userInfo?.name || !profile.userInfo.birth || !profile.userInfo.gender) return false;
+  if (!profile.userInfo.email) return false;
+  if (!profile.region?.length || !profile.roomProfile?.length) return false;
+
+  const expectedLifestyleCount =
+    lifestyleOptions.scaleOptions.length + lifestyleOptions.choiceGroups.length;
+  if ((profile.lifestyles?.length ?? 0) < expectedLifestyleCount) return false;
+
+  if (profile.type === 'SEEKER') {
+    return [
+      profile.minDeposit,
+      profile.maxDeposit,
+      profile.minMounthRent,
+      profile.maxMounthRent,
+    ].every((value) => typeof value === 'number');
+  }
+
+  return [profile.deposit, profile.mounthRent].every((value) => typeof value === 'number');
 }
 
 function hasSavedPreferences(

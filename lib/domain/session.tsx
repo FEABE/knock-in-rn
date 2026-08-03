@@ -254,7 +254,8 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
   }, []);
 
   const refreshSessionUser = useCallback(async () => {
-    const loaded = await loadSessionUser();
+    const stored = await readStoredAuthSession();
+    const loaded = await loadSessionUser(stored?.identity);
     if (loaded.invalidToken) {
       await signOut();
       return;
@@ -476,7 +477,7 @@ function sessionUserFromProfile(
       fallback?.age ??
       ageFromBirth(userInfo?.birth ?? identity?.birth ?? fallback?.birth),
     gender: domainGender(userInfo?.gender ?? identity?.gender ?? fallback?.gender),
-    preferredGender: 'any',
+    preferredGender: fallback?.preferredGender ?? 'any',
     bio: '',
     avatarUrl:
       userInfo?.profile ??
@@ -513,6 +514,7 @@ function applyIdentity(user: UserSummary, identity?: StoredAuthIdentity): UserSu
     name: identity.name ?? user.name,
     age: identity.age ?? (ageFromBirth(identity.birth) || user.age),
     gender: identity.gender ? domainGender(identity.gender) : user.gender,
+    preferredGender: identity.preferredGender ?? user.preferredGender,
     avatarUrl: identity.profileImageUrl ?? user.avatarUrl,
   };
 }

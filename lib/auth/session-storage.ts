@@ -7,6 +7,7 @@ export type StoredAuthIdentity = {
   birth?: string;
   age?: number;
   gender?: 'MALE' | 'FEMALE';
+  preferredGender?: 'same' | 'any';
   profileImageUrl?: string;
 };
 
@@ -103,6 +104,10 @@ function parseIdentity(value: unknown): StoredAuthIdentity | undefined {
     age: typeof identity.age === 'number' ? identity.age : undefined,
     gender:
       identity.gender === 'MALE' || identity.gender === 'FEMALE' ? identity.gender : undefined,
+    preferredGender:
+      identity.preferredGender === 'same' || identity.preferredGender === 'any'
+        ? identity.preferredGender
+        : undefined,
     profileImageUrl:
       typeof identity.profileImageUrl === 'string' ? identity.profileImageUrl : undefined,
   };

@@ -35,6 +35,12 @@ export type ChatRoomListData = {
 export type ChatRoomDetailData =
   OpenApiSchema<'org.example.knockin.dto.ChatRoomDetailDto$Response'>;
 
+export type ChatRoomCreateRequest =
+  OpenApiSchema<'org.example.knockin.dto.ChatRoomCreateDto$Request'>;
+
+export type ChatRoomCreateData =
+  OpenApiSchema<'org.example.knockin.dto.ChatRoomCreateDto$Response'>;
+
 export type ChatRoomImageData = OpenApiSchema<'org.example.knockin.dto.ChatRoomImageDto$Response'>;
 
 export type ChatImageUpload = {
@@ -42,6 +48,9 @@ export type ChatImageUpload = {
   name?: string;
   type?: string;
 };
+
+/** Figma 채팅 화면에 정의된 첫 대화 문구. */
+export const DEFAULT_CHAT_MESSAGE = '안녕하세요!\n프로필 보고 연락드렸어요.';
 
 // ─── WebSocket ─────────────────────────────────────────────────────────────────
 
@@ -164,6 +173,19 @@ export function getChatRooms(params: PageParams = {}): Promise<ApiResponse<ChatR
     ...res,
     data: { chatRooms: (res.data ?? []).map(normalizeChatRoomItem) },
   }));
+}
+
+/** POST /chats — 채팅 요청 단계 없이 채팅방 생성 */
+export function createChatRoom(
+  body: ChatRoomCreateRequest,
+): Promise<ApiResponse<ChatRoomCreateData>> {
+  if (USE_MOCK) {
+    return mockOk({
+      chatRoomId: 99,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  return request('POST', '/chats', { body });
 }
 
 /** GET /chats/{chatId} — 채팅방 상세 조회 */

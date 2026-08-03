@@ -42,7 +42,7 @@ export function NotificationScreenView({
         <View className="p-5">
           <LoginPromptCard
             title="로그인하고 알림을 확인해보세요"
-            description="채팅 요청과 룸메이트 매칭 소식을 바로 확인할 수 있어요"
+            description="새 채팅과 룸메이트 매칭 소식을 바로 확인할 수 있어요"
             onPress={onLogin}
           />
         </View>

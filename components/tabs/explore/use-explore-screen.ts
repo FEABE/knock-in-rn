@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
@@ -104,10 +104,22 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const setMatchLiked = useRoommateMatchLikeActions();
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
+  const appliedPreferredGenderRef = useRef(false);
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
   const [preferenceNudgeOpen, setPreferenceNudgeOpen] = useState(false);
   const [preferenceNudgeSnooze, setPreferenceNudgeSnooze] = useState(false);
   const { data: alarms } = useAlarms(Boolean(session));
+
+  useEffect(() => {
+    if (appliedPreferredGenderRef.current || !session) return;
+    appliedPreferredGenderRef.current = true;
+    if (session.user.preferredGender !== 'same') return;
+    const preferredGender = session.user.gender;
+    if (preferredGender !== 'male' && preferredGender !== 'female') return;
+    setFilter((current) =>
+      current.gender === 'any' ? { ...current, gender: preferredGender } : current,
+    );
+  }, [session]);
   const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
   const {
     data: posts,

@@ -6,6 +6,7 @@ import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { getTerms, useApi } from '@/lib/api';
 import { goKakaoLogin } from '@/lib/navigation/routes';
 import {
+  MARKETING_PUSH_TERM_KEY,
   PROFILE_NAME_MAX_LENGTH,
   isValidProfileEmail,
   isValidProfileName,
@@ -37,7 +38,7 @@ type ProfileBasicPreview =
 const PROFILE_BASIC_STAGES: ProfileBasicStage[] = ['intro', 'name', 'birth', 'gender', 'email'];
 const UNDERAGE_ERROR = '만 14세 미만은 가입할 수 없어요';
 const OPTIONAL_NOTIFICATION_TERM: Term = {
-  key: 'marketing-push',
+  key: MARKETING_PUSH_TERM_KEY,
   label: '정보성 알림 동의',
   required: false,
 };

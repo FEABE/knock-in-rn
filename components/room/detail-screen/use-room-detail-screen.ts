@@ -6,15 +6,16 @@ import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   blockUser as blockUserRequest,
+  DEFAULT_CHAT_MESSAGE,
   getAccessTokenMemberId,
-  useChatRequestActions,
+  useCreateChatRoom,
   useRoommateBoardDetail,
   useRoommateBoardLikeActions,
   useRoommateBoardWriteActions,
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { useModeration, useSession, type RoomPost } from '@/lib/domain';
-import { goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
+import { goChatRoom, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
 
 export const ROOM_REPORT_REASONS = [
   '허위 매물',
@@ -38,6 +39,7 @@ export type UseRoomDetailScreenReturn = {
   photoIndex: number;
   descExpanded: boolean;
   lifestyleExpanded: boolean;
+  creatingChat: boolean;
   bottomPadding: number;
   setReportOpen: (next: boolean) => void;
   setMenuOpen: (next: boolean) => void;
@@ -50,7 +52,7 @@ export type UseRoomDetailScreenReturn = {
   onAuthorPress: () => void;
   onShare: () => void;
   onLike: () => void;
-  onRequestChat: () => void;
+  onChat: () => void;
   onReportReason: (reason: string) => void;
   onBlockAuthor: () => void;
 };
@@ -62,7 +64,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
   const { data: post, loading, error } = useRoommateBoardDetail(boardId);
-  const { requestChat } = useChatRequestActions();
+  const { createRoom, creatingRoom } = useCreateChatRoom();
   const setBoardLiked = useRoommateBoardLikeActions();
   const { deleteBoard, reportBoard } = useRoommateBoardWriteActions();
   const { report, blockUser, isPostBlocked, blockPost } = useModeration();
@@ -104,6 +106,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     photoIndex,
     descExpanded,
     lifestyleExpanded,
+    creatingChat: creatingRoom,
     bottomPadding,
     setReportOpen,
     setMenuOpen,
@@ -159,37 +162,30 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
         });
         setBoardLiked(post.id, next);
       }),
-    onRequestChat: () =>
+    onChat: () =>
       requireLogin(() => {
         if (!post) return;
-        Alert.alert('매칭 요청', `${post.author.name}님께 1:1 대화 요청을 보낼까요?`, [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '요청 보내기',
-            onPress: async () => {
-              const requesteeId = Number(post.author.id);
-              const requestBoardId = Number(post.id);
-              if (!Number.isFinite(requesteeId)) {
-                Alert.alert('요청 실패', '상대 사용자 정보를 확인하지 못했습니다.');
-                return;
-              }
-              try {
-                await requestChat({
-                  requesteeId,
-                  boardId: Number.isFinite(requestBoardId) ? requestBoardId : undefined,
-                });
-                Alert.alert('요청 완료', '상대방에게 채팅 요청을 보냈어요.');
-              } catch (requestError) {
-                Alert.alert(
-                  '요청 실패',
-                  requestError instanceof Error
-                    ? requestError.message
-                    : '잠시 후 다시 시도해주세요.',
-                );
-              }
-            },
-          },
-        ]);
+        const requesteeId = Number(post.author.id);
+        const requestBoardId = Number(post.id);
+        if (!Number.isFinite(requesteeId)) {
+          Alert.alert('채팅 실패', '상대 사용자 정보를 확인하지 못했습니다.');
+          return;
+        }
+        void createRoom({
+          requesteeId,
+          boardId: Number.isFinite(requestBoardId) ? requestBoardId : undefined,
+          chatMessage: { contents: DEFAULT_CHAT_MESSAGE },
+        })
+          .then((chatRoomId) => {
+            logEvent(AnalyticsEvent.CHAT_ROOM_ENTER, { room_id: chatRoomId });
+            goChatRoom(router, chatRoomId);
+          })
+          .catch((chatError) => {
+            Alert.alert(
+              '채팅 실패',
+              chatError instanceof Error ? chatError.message : '잠시 후 다시 시도해주세요.',
+            );
+          });
       }),
     onReportReason: (reason) => {
       if (!post) return;

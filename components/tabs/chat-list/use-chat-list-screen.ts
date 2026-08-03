@@ -2,9 +2,9 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
-import { type ChatRequestItem, type ChatRoomItem, useChatRequests, useChatRooms } from '@/lib/api';
+import { type ChatRoomItem, useChatRooms } from '@/lib/api';
 import { useSession } from '@/lib/domain';
-import { goChatRequest, goChatRoom, goKakaoLogin } from '@/lib/navigation/routes';
+import { goChatRoom, goKakaoLogin } from '@/lib/navigation/routes';
 
 export type ChatListRow = {
   room: ChatRoomItem;
@@ -15,21 +15,9 @@ export type ChatListRow = {
   onPress: () => void;
 };
 
-export type ChatRequestRow = {
-  request: ChatRequestItem;
-  name: string;
-  meta: string;
-  scoreLabel: string;
-  preview: string;
-  timeLabel: string;
-  onPress: () => void;
-};
-
 export type UseChatListScreenReturn = {
   rows: ChatListRow[];
-  requestRows: ChatRequestRow[];
   loading: boolean;
-  requestsLoading: boolean;
   error: string | null;
   isLoggedIn: boolean;
   onLoginPress: () => void;
@@ -40,7 +28,6 @@ export function useChatListScreen(): UseChatListScreenReturn {
   const { session } = useSession();
   const isLoggedIn = !!session;
   const { data: rooms, loading, error } = useChatRooms(isLoggedIn);
-  const { data: requests, loading: requestsLoading } = useChatRequests(isLoggedIn);
 
   useEffect(() => {
     if (error) {
@@ -69,38 +56,9 @@ export function useChatListScreen(): UseChatListScreenReturn {
     [rooms, router],
   );
 
-  const requestRows = useMemo<ChatRequestRow[]>(
-    () =>
-      (requests ?? [])
-        .filter((request) => request.status === 'PENDING')
-        .map((request) => {
-          const name = request.name ?? request.memberName ?? '사용자';
-          return {
-            request,
-            name,
-            meta: [
-              request.memberAge ? `${request.memberAge}세` : null,
-              request.gender === 'FEMALE' ? '여성' : request.gender === 'MALE' ? '남성' : null,
-            ]
-              .filter(Boolean)
-              .join(' · '),
-            scoreLabel: request.score != null ? `궁합 ${request.score}점` : '채팅 요청',
-            preview: `${name}님이 룸메이트를 요청했어요!`,
-            timeLabel: formatChatTime(request.createdAt),
-            onPress: () => {
-              const requestId = request.chatReqId ?? request.requiredId;
-              if (requestId != null) goChatRequest(router, requestId);
-            },
-          };
-        }),
-    [requests, router],
-  );
-
   return {
     rows,
-    requestRows,
     loading,
-    requestsLoading,
     error,
     isLoggedIn,
     onLoginPress: () => goKakaoLogin(router),

@@ -5,10 +5,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
+  DEFAULT_CHAT_MESSAGE,
   toRoommateMatchDetailModel,
   type RoommateMatchDetailModel,
-  useChatRequestActions,
   useAccountActions,
+  useCreateChatRoom,
   useRoommateMatchCards,
   useRoommateMatchDetail,
   useRoommateMatchLikeActions,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { useModeration } from '@/lib/domain';
+import { goChatRoom } from '@/lib/navigation/routes';
 
 export type UseRoommateDetailScreenReturn = {
   data: RoommateMatchDetailModel | null;
@@ -24,6 +26,7 @@ export type UseRoommateDetailScreenReturn = {
   liked: boolean;
   reportOpen: boolean;
   lifestyleExpanded: boolean;
+  creatingChat: boolean;
   bottomPadding: number;
   setReportOpen: (next: boolean) => void;
   onBack: () => void;
@@ -31,7 +34,7 @@ export type UseRoommateDetailScreenReturn = {
   onCompatibilityLayout: (y: number) => void;
   toggleLifestyle: () => void;
   onLike: () => void;
-  onRequest: () => void;
+  onChat: () => void;
   onBlock: () => void;
   onReportReason: (reason: string) => void;
 };
@@ -57,7 +60,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const { data: matchCards } = useRoommateMatchCards();
   const setMatchLiked = useRoommateMatchLikeActions();
   const { reportMatch } = useRoommateMatchReportActions();
-  const { requestChat } = useChatRequestActions();
+  const { createRoom, creatingRoom } = useCreateChatRoom();
   const { requestBlock } = useAccountActions();
   const { blockUser } = useModeration();
   const liked = matchCards?.find((match) => match.id === matchId)?.liked ?? false;
@@ -78,6 +81,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
     liked,
     reportOpen,
     lifestyleExpanded,
+    creatingChat: creatingRoom,
     bottomPadding,
     setReportOpen,
     onBack: () => router.back(),
@@ -99,34 +103,28 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
         if (next) logEvent(AnalyticsEvent.ROOMMATE_INTEREST_ADD, { target_user_id: id });
         setMatchLiked(matchId, next);
       }),
-    onRequest: () =>
+    onChat: () =>
       requireLogin(() => {
         if (!data) return;
-        Alert.alert('매칭 요청', `${data.name}님께 매칭을 요청할까요?`, [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '요청',
-            onPress: async () => {
-              logEvent(AnalyticsEvent.ROOMMATE_MATCH_REQUEST, { target_user_id: id });
-              const requesteeId = Number(data.id);
-              if (!Number.isFinite(requesteeId)) {
-                Alert.alert('요청 실패', '상대 사용자 정보를 확인하지 못했습니다.');
-                return;
-              }
-              try {
-                await requestChat({ requesteeId });
-                Alert.alert('요청 완료', '상대방에게 채팅 요청을 보냈어요.');
-              } catch (requestError) {
-                Alert.alert(
-                  '요청 실패',
-                  requestError instanceof Error
-                    ? requestError.message
-                    : '잠시 후 다시 시도해주세요.',
-                );
-              }
-            },
-          },
-        ]);
+        const requesteeId = Number(data.id);
+        if (!Number.isFinite(requesteeId)) {
+          Alert.alert('채팅 실패', '상대 사용자 정보를 확인하지 못했습니다.');
+          return;
+        }
+        void createRoom({
+          requesteeId,
+          chatMessage: { contents: DEFAULT_CHAT_MESSAGE },
+        })
+          .then((chatRoomId) => {
+            logEvent(AnalyticsEvent.CHAT_ROOM_ENTER, { room_id: chatRoomId });
+            goChatRoom(router, chatRoomId);
+          })
+          .catch((chatError) => {
+            Alert.alert(
+              '채팅 실패',
+              chatError instanceof Error ? chatError.message : '잠시 후 다시 시도해주세요.',
+            );
+          });
       }),
     onBlock: () =>
       requireLogin(() => {

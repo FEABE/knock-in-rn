@@ -268,7 +268,8 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         isOwner={props.isOwner}
         liked={props.liked}
         onLike={props.onLike}
-        onRequest={props.onRequestChat}
+        onChat={props.onChat}
+        creatingChat={props.creatingChat}
         onEdit={props.onEdit}
         bottomPadding={props.bottomPadding}
       />
@@ -754,14 +755,16 @@ function BottomBar({
   isOwner,
   liked,
   onLike,
-  onRequest,
+  onChat,
+  creatingChat,
   onEdit,
   bottomPadding,
 }: {
   isOwner: boolean;
   liked: boolean;
   onLike: () => void;
-  onRequest: () => void;
+  onChat: () => void;
+  creatingChat: boolean;
   onEdit: () => void;
   bottomPadding: number;
 }) {
@@ -783,12 +786,22 @@ function BottomBar({
         </Pressable>
       ) : null}
       <Pressable
-        onPress={isOwner ? onEdit : onRequest}
-        className="h-12 flex-1 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
+        onPress={isOwner ? onEdit : onChat}
+        disabled={!isOwner && creatingChat}
+        accessibilityRole="button"
+        accessibilityLabel={isOwner ? '게시글 수정' : '채팅하기'}
+        accessibilityState={{ disabled: !isOwner && creatingChat }}
+        className={`h-12 flex-1 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90 ${
+          !isOwner && creatingChat ? 'opacity-60' : ''
+        }`}
       >
-        <Text className="text-sm font-semibold text-white">
-          {isOwner ? '게시글 수정' : '매칭 요청'}
-        </Text>
+        {!isOwner && creatingChat ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text className="text-sm font-semibold text-white">
+            {isOwner ? '게시글 수정' : '채팅하기'}
+          </Text>
+        )}
       </Pressable>
     </View>
   );

@@ -1,5 +1,7 @@
 import type { ImportantCondition, Region, RoomType, Term, TermKey, TermsAgreement } from './types';
 
+export const MARKETING_PUSH_TERM_KEY = 'marketing-push';
+
 /**
  * 로컬 약관 key → 백엔드 약관 정수 ID 매핑.
  *
@@ -34,7 +36,7 @@ export const TERMS: Term[] = [
     href: 'https://example.com/privacy',
   },
   {
-    key: 'marketing-push',
+    key: MARKETING_PUSH_TERM_KEY,
     label: '알림 수신 동의',
     required: false,
   },

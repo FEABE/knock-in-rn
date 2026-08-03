@@ -77,10 +77,6 @@ export function goChatRoom(router: RouterLike, chatRoomId: string | number) {
   navigate(router, `/chat/${chatRoomId}`);
 }
 
-export function goChatRequest(router: RouterLike, requestId: string | number) {
-  navigate(router, `/chat/request/${requestId}`);
-}
-
 export function goNotifications(router: RouterLike) {
   navigate(router, '/notifications');
 }

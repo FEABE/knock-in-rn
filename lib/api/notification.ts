@@ -83,8 +83,8 @@ export type DeviceRegistrationRequest = {
 
 const MOCK_ALARMS: AlarmItem[] = [
   {
-    title: '새로운 채팅 요청',
-    contents: '하준님이 채팅을 요청했어요.',
+    title: '새로운 채팅',
+    contents: '하준님과 채팅이 시작됐어요.',
     isRead: false,
     createAt: '2026-05-27T08:00:00Z',
   },
