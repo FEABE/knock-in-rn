@@ -93,6 +93,19 @@ export function lifestyleIdsFromPatternOptions(
   return [...new Set(ids)];
 }
 
+export function preferenceConditionIdsFromPatternOptions(
+  options: LifestylePatternOptions,
+  selectedPriorityIds: readonly string[],
+): number[] {
+  const selected = new Set(selectedPriorityIds);
+  const patternIds = [...options.scaleOptions, ...options.choiceGroups].flatMap((option) => {
+    const priorityId = embeddedPriorityIdFromLabel(option.label);
+    return priorityId && selected.has(priorityId) ? [option.patternId] : [];
+  });
+
+  return [...new Set(patternIds)];
+}
+
 export function lifestyleModifyItemsFromPatternOptions(
   options: LifestylePatternOptions,
   existing: LifestyleExistingSelection[],

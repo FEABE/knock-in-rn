@@ -10,6 +10,7 @@ import {
   getPreferenceAll,
   getProfileAll,
   lifestyleIdsFromPatternOptions,
+  preferenceConditionIdsFromPatternOptions,
   regionBackendId,
   roomTypeBackendId,
   saveProfileAll,
@@ -119,6 +120,16 @@ function validateOnboarding(
     missing.push('룸메이트 조건: 생활패턴');
   }
   if (!profile.importantConditionIds.length) missing.push('룸메이트 조건: 우선순위');
+  const preferenceConditionIds = preferenceConditionIdsFromPatternOptions(
+    lifestyleOptions,
+    profile.importantConditionIds,
+  );
+  if (
+    profile.importantConditionIds.length > 0 &&
+    preferenceConditionIds.length !== new Set(profile.importantConditionIds).size
+  ) {
+    missing.push('룸메이트 조건: 저장 가능한 우선순위');
+  }
 
   const hasRoom = room.hasRoom === true;
   const noRoom = room.hasRoom === false;
@@ -257,6 +268,10 @@ export default function OnboardingLayout() {
           ),
         ),
       ];
+      const preferenceConditionIds = preferenceConditionIdsFromPatternOptions(
+        lifestyleOptions,
+        values.profile.importantConditionIds,
+      );
       const preferenceRes = await getPreferenceAll();
       const preferencesAlreadySaved =
         preferenceRes.status === 200 &&
@@ -273,6 +288,7 @@ export default function OnboardingLayout() {
       if (!preferencesAlreadySaved) {
         const savePreferenceRes = await savePreferenceAll({
           lifestyles: preferenceLifestyleIds,
+          conditions: preferenceConditionIds,
         });
         if (savePreferenceRes.error || savePreferenceRes.status !== 200) {
           Alert.alert(
@@ -341,5 +357,5 @@ function hasSavedProfile(profile: Awaited<ReturnType<typeof getProfileAll>>['dat
 function hasSavedPreferences(
   preferences: Awaited<ReturnType<typeof getPreferenceAll>>['data'],
 ): boolean {
-  return Boolean(preferences?.lifestyles?.length || preferences?.conditions?.length);
+  return Boolean(preferences?.lifestyles?.length && preferences?.conditions?.length);
 }
