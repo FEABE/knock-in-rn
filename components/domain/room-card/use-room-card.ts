@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { RoomPost } from '@/lib/domain';
 
-export type RoomCardBadge = 'new' | 'hot' | null;
+export type RoomCardBadge = 'hot' | null;
 
 export type UseRoomCardProps = {
   post: RoomPost;
@@ -52,8 +52,6 @@ function timeAgo(date: Date): string {
 }
 
 function pickBadge(post: RoomPost): RoomCardBadge {
-  const diffDay = Math.floor((Date.now() - post.createdAt.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDay <= 3) return 'new';
   if (post.likes >= 25 || post.views >= 300) return 'hot';
   return null;
 }

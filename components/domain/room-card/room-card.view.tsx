@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
-import type { RoomCardBadge, UseRoomCardReturn } from './use-room-card';
+import type { UseRoomCardReturn } from './use-room-card';
 
 const BRAND = '#256EF4';
 
@@ -40,7 +40,7 @@ export function RoomCardView({
         )}
 
         <View className="absolute left-2.5 top-3 flex-row gap-1">
-          {badge ? <BadgePill kind={badge} /> : null}
+          {badge ? <BadgePill /> : null}
           <RoomTypePill label={roomTypeLabel} />
         </View>
 
@@ -84,14 +84,7 @@ export function RoomCardView({
   );
 }
 
-function BadgePill({ kind }: { kind: NonNullable<RoomCardBadge> }) {
-  if (kind === 'new') {
-    return (
-      <View className="rounded bg-[#256EF4] px-2 py-1">
-        <Text className="text-[11px] font-semibold text-white">NEW</Text>
-      </View>
-    );
-  }
+function BadgePill() {
   return (
     <View className="rounded bg-rose-100 px-2 py-0.5">
       <Text className="text-[11px] font-semibold text-rose-600">인기</Text>
