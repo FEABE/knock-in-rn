@@ -44,6 +44,8 @@ export type RoomPost = {
   status: RoomPostStatus;
   author: UserSummary;
   description: string;
+  /** 게시글 상세의 동적 생활 패턴 항목 (백엔드 /meta/lifestyle-patterns 기준). 목록 응답에는 없음. */
+  lifeStyles?: { id: string; name: string; value: string }[];
   options?: RoomOption[];
   liked?: boolean;
   compatibilityScore?: number;

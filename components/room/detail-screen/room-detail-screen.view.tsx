@@ -44,12 +44,6 @@ const OPTION_LABEL: Record<RoomOption, string> = {
   pet: '반려동물 가능',
 };
 
-const SMOKING_LABEL: Record<string, string> = {
-  no: '비흡연',
-  outdoor: '실외만',
-  yes: '흡연',
-};
-
 const GENDER_LABEL: Record<string, string> = {
   male: '남성',
   female: '여성',
@@ -229,7 +223,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
           }}
         >
           <LifestyleBlock
-            author={props.post.author}
+            lifeStyles={props.post.lifeStyles}
             expanded={props.lifestyleExpanded}
             onToggle={props.toggleLifestyle}
           />
@@ -516,40 +510,29 @@ function BasicInfoBlock({ post }: { post: RoomPost }) {
 }
 
 function LifestyleBlock({
-  author,
+  lifeStyles,
   expanded,
   onToggle,
 }: {
-  author: UserSummary;
+  lifeStyles: RoomPost['lifeStyles'];
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const lifestyle = author.lifestyle ?? {};
-  const hasHiddenLifestyle = lifestyle.pet !== undefined;
+  const items = lifeStyles ?? [];
+  const visible = expanded ? items : items.slice(0, 4);
 
   return (
     <ReadySection title="생활 패턴">
-      <View className="flex-row flex-wrap gap-3">
-        <ReadyMetadataTile
-          label="취침 시간"
-          value={sleepRangeLabel(lifestyle.sleepTime, lifestyle.wakeTime)}
-        />
-        <ReadyMetadataTile label="청결 민감도" value={levelLabel(lifestyle.cleanliness)} />
-        <ReadyMetadataTile label="소음 민감도" value={levelLabel(lifestyle.noise)} />
-        <ReadyMetadataTile
-          label="흡연"
-          value={lifestyle.smoking ? SMOKING_LABEL[lifestyle.smoking] : '미입력'}
-        />
-      </View>
-      {expanded && hasHiddenLifestyle ? (
-        <View className="rounded bg-[#F6F6FA] px-4 py-3">
-          <Text className="text-xs text-neutral-600">
-            반려동물:{' '}
-            {lifestyle.pet === 'no' ? '불가' : lifestyle.pet === 'small' ? '소형 가능' : '협의'}
-          </Text>
+      {items.length ? (
+        <View className="flex-row flex-wrap gap-3">
+          {visible.map((item) => (
+            <ReadyMetadataTile key={item.id} label={item.name} value={item.value} />
+          ))}
         </View>
-      ) : null}
-      {hasHiddenLifestyle ? <ReadyMoreButton expanded={expanded} onPress={onToggle} /> : null}
+      ) : (
+        <Text className="text-sm text-[#AAAABA]">등록된 생활 패턴이 없어요</Text>
+      )}
+      {items.length > 4 ? <ReadyMoreButton expanded={expanded} onPress={onToggle} /> : null}
     </ReadySection>
   );
 }
@@ -823,18 +806,6 @@ function KeyValueRow({ label, value }: { label: string; value: string }) {
       <Text className="text-sm font-medium text-neutral-800">{value}</Text>
     </View>
   );
-}
-
-function sleepRangeLabel(sleep?: string, wake?: string) {
-  if (!sleep && !wake) return '미입력';
-  return `${sleep ?? '?'} ~ ${wake ?? '?'}`;
-}
-
-function levelLabel(value?: number) {
-  if (value === undefined) return '미입력';
-  if (value >= 4) return '높음';
-  if (value >= 3) return '보통';
-  return '낮음';
 }
 
 function fmtDate(d: Date): string {
