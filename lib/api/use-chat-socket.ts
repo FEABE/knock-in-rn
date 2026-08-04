@@ -1,8 +1,13 @@
 import { Client, ReconnectionTimeMode, type IFrame } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { type ChatSendPayload, type ChatSocketEnvelope, pubSendMessage, subChatRoom } from './chat';
+import {
+  type ChatSendPayload,
+  type ChatSocketEnvelope,
+  pubSendMessage,
+  subChatRoom,
+  wsChatUrl,
+} from './chat';
 import { API_BASE_URL, getAccessToken, isAccessTokenExpired, notifyAuthFailure } from './client';
 
 export type ChatSocketStatus = 'idle' | 'connecting' | 'connected' | 'error';
@@ -49,10 +54,7 @@ export function useChatSocket({
     let consecutiveConnectionFailures = 0;
 
     const client = new Client({
-      webSocketFactory: () =>
-        new SockJS(`${API_BASE_URL}/ws-chat`, undefined, {
-          transports: ['websocket'],
-        }) as WebSocket,
+      webSocketFactory: () => new WebSocket(wsChatUrl()),
       connectHeaders: { Authorization: `Bearer ${token}` },
       connectionTimeout: CONNECTION_TIMEOUT_MS,
       reconnectDelay: RECONNECT_DELAY_MS,
