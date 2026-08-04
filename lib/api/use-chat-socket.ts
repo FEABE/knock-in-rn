@@ -8,9 +8,11 @@ import { API_BASE_URL, getAccessToken, isAccessTokenExpired, notifyAuthFailure }
 export type ChatSocketStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
 const CONNECTION_TIMEOUT_MS = 10_000;
+const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY_MS = 1_000;
 const MAX_RECONNECT_DELAY_MS = 10_000;
 const RECONNECTING_MESSAGE = '채팅 서버에 다시 연결하고 있어요.';
+const RECONNECT_FAILED_MESSAGE = '채팅 서버 연결에 실패했습니다. 채팅방을 다시 열어주세요.';
 const SESSION_EXPIRED_MESSAGE = '로그인이 만료되었습니다. 다시 로그인해주세요.';
 
 export function useChatSocket({
@@ -43,6 +45,8 @@ export function useChatSocket({
 
     let stopped = false;
     let authFailureHandled = false;
+    let reconnectLimitReached = false;
+    let consecutiveConnectionFailures = 0;
 
     const client = new Client({
       webSocketFactory: () =>
@@ -68,6 +72,14 @@ export function useChatSocket({
       void client.deactivate({ force: true });
     };
 
+    const stopForReconnectLimit = () => {
+      if (stopped || reconnectLimitReached) return;
+      reconnectLimitReached = true;
+      setStatus('error');
+      setError(RECONNECT_FAILED_MESSAGE);
+      void client.deactivate({ force: true });
+    };
+
     client.beforeConnect = (stompClient) => {
       const latestToken = getAccessToken();
       if (!latestToken || isAccessTokenExpired()) {
@@ -83,6 +95,7 @@ export function useChatSocket({
     };
     client.onConnect = () => {
       if (stopped) return;
+      consecutiveConnectionFailures = 0;
       setStatus('connected');
       setError(null);
       client.subscribe(subChatRoom(chatRoomId), (frame) => {
@@ -103,12 +116,17 @@ export function useChatSocket({
       setError(RECONNECTING_MESSAGE);
     };
     client.onWebSocketError = () => {
-      if (stopped || authFailureHandled) return;
+      if (stopped || authFailureHandled || reconnectLimitReached) return;
       setStatus('connecting');
       setError(RECONNECTING_MESSAGE);
     };
     client.onWebSocketClose = () => {
-      if (stopped || authFailureHandled) return;
+      if (stopped || authFailureHandled || reconnectLimitReached) return;
+      consecutiveConnectionFailures += 1;
+      if (consecutiveConnectionFailures > MAX_RECONNECT_ATTEMPTS) {
+        stopForReconnectLimit();
+        return;
+      }
       setStatus('connecting');
       setError(RECONNECTING_MESSAGE);
     };

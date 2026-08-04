@@ -354,6 +354,7 @@ function detailMessages(detail: ChatRoomDetailData, peerId: string): ChatMessage
     detail.messages?.map((message) => {
       const type = message.type;
       const isSystem = type === 'LEFT_ROOM';
+      const isImage = type === 'IMAGE';
       return {
         id: String(
           message.id ?? `${message.senderId ?? 'system'}-${message.createdAt ?? Date.now()}`,
@@ -362,8 +363,9 @@ function detailMessages(detail: ChatRoomDetailData, peerId: string): ChatMessage
         body: isSystem
           ? '채팅방을 나갔어요.'
           : message.contents || message.imageUrl || '이미지 메시지',
+        imageUrl: isImage ? message.imageUrl : undefined,
         sentAt: parseDate(message.createdAt),
-        kind: isSystem ? 'system' : 'text',
+        kind: isSystem ? 'system' : isImage ? 'image' : 'text',
       } satisfies ChatMessage;
     }) ?? [];
 
