@@ -13,21 +13,22 @@ import {
   type TermsAgreement,
 } from './types';
 
-export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo' | 'preferences';
+export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo';
 
-/** 가입 온보딩 흐름: 기본정보·약관 → 생활패턴 → 방 조건 → 선호조건. */
+/**
+ * 가입 온보딩 흐름: 기본정보·약관 → 생활패턴 → 방 조건.
+ * 선호조건은 필수 입력이 아니므로 탐색 화면의 nudge 팝업 → 마이페이지에서 별도로 받는다.
+ */
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   'profile-basic',
   'profile-lifestyle',
   'roominfo',
-  'preferences',
 ];
 
 export const STEP_LABELS: Record<OnboardingStep, string> = {
   'profile-basic': '기본 정보',
   'profile-lifestyle': '생활패턴',
   roominfo: '방 유무 여부',
-  preferences: '우선순위 선택',
 };
 
 function emptyTerms(): TermsAgreement {
