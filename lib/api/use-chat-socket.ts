@@ -1,11 +1,17 @@
-import { Client } from '@stomp/stompjs';
+import { Client, ReconnectionTimeMode, type IFrame } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type ChatSendPayload, type ChatSocketEnvelope, pubSendMessage, subChatRoom } from './chat';
-import { API_BASE_URL, getAccessToken } from './client';
+import { API_BASE_URL, getAccessToken, isAccessTokenExpired, notifyAuthFailure } from './client';
 
 export type ChatSocketStatus = 'idle' | 'connecting' | 'connected' | 'error';
+
+const CONNECTION_TIMEOUT_MS = 10_000;
+const RECONNECT_DELAY_MS = 1_000;
+const MAX_RECONNECT_DELAY_MS = 10_000;
+const RECONNECTING_MESSAGE = '채팅 서버에 다시 연결하고 있어요.';
+const SESSION_EXPIRED_MESSAGE = '로그인이 만료되었습니다. 다시 로그인해주세요.';
 
 export function useChatSocket({
   chatRoomId,
@@ -35,18 +41,48 @@ export function useChatSocket({
     setStatus('connecting');
     setError(null);
 
+    let stopped = false;
+    let authFailureHandled = false;
+
     const client = new Client({
       webSocketFactory: () =>
         new SockJS(`${API_BASE_URL}/ws-chat`, undefined, {
           transports: ['websocket'],
         }) as WebSocket,
       connectHeaders: { Authorization: `Bearer ${token}` },
-      reconnectDelay: 4000,
+      connectionTimeout: CONNECTION_TIMEOUT_MS,
+      reconnectDelay: RECONNECT_DELAY_MS,
+      maxReconnectDelay: MAX_RECONNECT_DELAY_MS,
+      reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
+      discardWebsocketOnCommFailure: true,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
     });
 
+    const stopForAuthFailure = () => {
+      if (stopped || authFailureHandled) return;
+      authFailureHandled = true;
+      setStatus('error');
+      setError(SESSION_EXPIRED_MESSAGE);
+      notifyAuthFailure();
+      void client.deactivate({ force: true });
+    };
+
+    client.beforeConnect = (stompClient) => {
+      const latestToken = getAccessToken();
+      if (!latestToken || isAccessTokenExpired()) {
+        stopForAuthFailure();
+        return;
+      }
+
+      stompClient.connectHeaders = { Authorization: `Bearer ${latestToken}` };
+      if (!stopped) {
+        setStatus('connecting');
+        setError(null);
+      }
+    };
     client.onConnect = () => {
+      if (stopped) return;
       setStatus('connected');
       setError(null);
       client.subscribe(subChatRoom(chatRoomId), (frame) => {
@@ -58,23 +94,32 @@ export function useChatSocket({
       });
     };
     client.onStompError = (frame) => {
-      setStatus('error');
-      setError(frame.headers.message ?? '채팅 서버 연결에 실패했습니다.');
+      if (isAuthenticationError(frame)) {
+        stopForAuthFailure();
+        return;
+      }
+      if (stopped) return;
+      setStatus('connecting');
+      setError(RECONNECTING_MESSAGE);
     };
     client.onWebSocketError = () => {
-      setStatus('error');
-      setError('채팅 서버 연결에 실패했습니다.');
+      if (stopped || authFailureHandled) return;
+      setStatus('connecting');
+      setError(RECONNECTING_MESSAGE);
     };
     client.onWebSocketClose = () => {
-      setStatus((current) => (current === 'error' ? current : 'connecting'));
+      if (stopped || authFailureHandled) return;
+      setStatus('connecting');
+      setError(RECONNECTING_MESSAGE);
     };
 
     clientRef.current = client;
     client.activate();
 
     return () => {
-      clientRef.current = null;
-      void client.deactivate();
+      stopped = true;
+      if (clientRef.current === client) clientRef.current = null;
+      void client.deactivate({ force: true });
     };
   }, [chatRoomId, enabled]);
 
@@ -93,4 +138,17 @@ export function useChatSocket({
   );
 
   return { status, error, send };
+}
+
+function isAuthenticationError(frame: IFrame): boolean {
+  const message = `${frame.headers.message ?? ''} ${frame.body}`.toLowerCase();
+  return (
+    message.includes('"status":401') ||
+    message.includes('token_expired') ||
+    message.includes('token_invalid') ||
+    message.includes('authentication_failed') ||
+    message.includes('토큰이 만료') ||
+    message.includes('토큰이 유효하지') ||
+    message.includes('인증에 실패')
+  );
 }

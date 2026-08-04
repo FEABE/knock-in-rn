@@ -30,7 +30,9 @@ export function ReadyPageTitle({
     <View className="flex-row items-end justify-between gap-4 px-4 pb-5 pt-4">
       <View className="min-w-0 flex-1 gap-1">
         <Text className="text-[26px] font-bold leading-[39px] text-[#17171B]">{title}</Text>
-        {subtitle ? <Text className="text-sm leading-[21px] text-[#696976]">{subtitle}</Text> : null}
+        {subtitle ? (
+          <Text className="text-sm leading-[21px] text-[#696976]">{subtitle}</Text>
+        ) : null}
       </View>
       {action}
     </View>
@@ -158,7 +160,11 @@ export function ReadyTabs<T extends string>({
 }) {
   return (
     <View className="border-b border-[#DADAE8]">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="flex-1">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="flex-1"
+      >
         {items.map((item) => {
           const selected = value === item.value;
           return (
@@ -272,9 +278,7 @@ export function ReadyProfileAvatar({
       className="items-center justify-center rounded-full border border-[#DADAE8] bg-[#F6F6FA]"
       style={{ width: size, height: size, borderRadius: size / 2 }}
     >
-      <Text className="font-semibold text-[#696976]" style={{ fontSize: size * 0.34 }}>
-        {name.trim().charAt(0) || '사'}
-      </Text>
+      <Ionicons name="person" size={size * 0.68} color="#DADAE8" />
     </View>
   );
 }
@@ -392,7 +396,10 @@ export function ReadyInfoRow({
         {icon ? <Ionicons name={icon} size={17} color="#696976" /> : null}
         <Text className="text-sm leading-[21px] text-[#696976]">{label}</Text>
       </View>
-      <Text numberOfLines={1} className="min-w-0 flex-1 text-right text-sm font-medium text-[#17171B]">
+      <Text
+        numberOfLines={1}
+        className="min-w-0 flex-1 text-right text-sm font-medium text-[#17171B]"
+      >
         {value}
       </Text>
     </View>
@@ -416,13 +423,12 @@ export function ReadyCompatibilityBar({
           <Text className="text-[15px] font-semibold text-[#17171B]">{label}</Text>
           {caption ? <Text className="text-xs text-[#AAAABA]">{caption}</Text> : null}
         </View>
-        <Text className="text-base font-bold text-[#256EF4]">{score == null ? '-' : `${normalized}점`}</Text>
+        <Text className="text-base font-bold text-[#256EF4]">
+          {score == null ? '-' : `${normalized}점`}
+        </Text>
       </View>
       <View className="h-[7px] overflow-hidden rounded-full bg-[#ECECF3]">
-        <View
-          className="h-full rounded-full bg-[#4C87F6]"
-          style={{ width: `${normalized}%` }}
-        />
+        <View className="h-full rounded-full bg-[#4C87F6]" style={{ width: `${normalized}%` }} />
       </View>
     </View>
   );

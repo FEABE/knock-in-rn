@@ -1,24 +1,45 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CalendarField } from '@/components/onboarding/calendar-field';
+import { RegionFilterSheet } from '@/components/room/filters';
 import { RangeField } from '@/components/ui/range-field';
-import { RoomTypeArtwork } from '@/components/ui/ready-to-dev-assets';
-import { RegionFilterBody } from '@/components/room/filters';
-import { ScaleSlider } from '@/components/onboarding/scale-slider';
-import { SegmentedControl, Tabs } from '@/components/ui/headless';
+import {
+  RoomLocationArtwork,
+  RoomPresenceArtwork,
+  RoomTypeArtwork,
+} from '@/components/ui/ready-to-dev-assets';
 
-import { type UseProfileEditScreenReturn } from './use-profile-edit-screen';
+import { LifestyleQuestionFlow } from '../lifestyle-question-flow';
+import type { UseProfileEditScreenReturn } from './use-profile-edit-screen';
 
 export type ProfileEditScreenViewProps = UseProfileEditScreenReturn;
 
-export function ProfileEditScreenView({
-  initialTab,
-  scales,
-  choiceValues,
-  scaleOptions,
-  choiceGroups,
+export function ProfileEditScreenView(props: ProfileEditScreenViewProps) {
+  return (
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+      {props.initialTab === 'lifestyle' ? (
+        <LifestyleQuestionFlow
+          title="생활 패턴 관리"
+          scales={props.scales}
+          choiceValues={props.choiceValues}
+          scaleOptions={props.scaleOptions}
+          choiceGroups={props.choiceGroups}
+          onScaleChange={props.setScale}
+          onChoiceChange={props.setChoice}
+          onBack={props.onBack}
+          onSave={() => void props.saveLifestyle()}
+        />
+      ) : (
+        <RoomConditionFlow {...props} />
+      )}
+    </SafeAreaView>
+  );
+}
+
+function RoomConditionFlow({
   hasRoom,
   regions,
   moveInDate,
@@ -26,107 +47,120 @@ export function ProfileEditScreenView({
   rent,
   roomTypes,
   roomTypeOptions,
-  bottomPadding,
-  setChoice,
   setHasRoom,
   setRegions,
   setMoveInDate,
   setDeposit,
   setRent,
   setRoomTypes,
-  setScale,
   onBack,
-  saveLifestyle,
   saveRoom,
 }: ProfileEditScreenViewProps) {
+  const [stage, setStage] = useState(0);
+  const [regionOpen, setRegionOpen] = useState(false);
   const isOffer = hasRoom === true;
+  const stageCount = 5;
+  const selectedRegionLabel = regions.length
+    ? regions.map((region) => `${region.city} ${region.district}`.trim()).join(', ')
+    : '지역 선택하기';
+
+  const goBack = () => {
+    if (stage === 0) onBack();
+    else setStage((current) => current - 1);
+  };
+
+  const goNext = () => {
+    if (stage >= stageCount - 1) {
+      void saveRoom();
+      return;
+    }
+    setStage((current) => current + 1);
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-        <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#404047" />
+    <View className="flex-1 bg-white">
+      <View className="h-14 flex-row items-center px-3">
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="이전으로"
+          className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
+        >
+          <Ionicons name="chevron-back" size={24} color="#696976" />
         </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">
-          {initialTab === 'room' ? '방 조건 관리' : '생활패턴 관리'}
+        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
+          방 조건 관리
         </Text>
+        <Pressable onPress={() => void saveRoom()} className="ml-auto px-2 py-2 active:opacity-60">
+          <Text className="text-[15px] font-semibold text-[#256EF4]">저장</Text>
+        </Pressable>
       </View>
 
-      <Tabs.Root defaultValue={initialTab} className="flex-1">
-        <Tabs.List className="flex-row border-b border-neutral-100">
-          {[
-            { value: 'lifestyle', label: '생활패턴' },
-            { value: 'room', label: '방 조건' },
-          ].map((tab) => (
-            <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 py-3">
-              {({ selected }) => (
-                <View
-                  className={`items-center border-b-2 pb-2 ${
-                    selected ? 'border-[#256EF4]' : 'border-transparent'
-                  }`}
-                >
-                  <Text
-                    className={
-                      selected ? 'text-sm font-semibold text-[#256EF4]' : 'text-sm text-neutral-400'
-                    }
-                  >
-                    {tab.label}
-                  </Text>
-                </View>
-              )}
-            </Tabs.Trigger>
-          ))}
-        </Tabs.List>
+      <View className="h-1 bg-[#ECECF3]">
+        <View
+          className="h-1 bg-[#256EF4]"
+          style={{ width: `${((stage + 1) / stageCount) * 100}%` }}
+        />
+      </View>
 
-        <Tabs.Content value="lifestyle" className="flex-1">
-          <ScrollView className="flex-1" contentContainerClassName="gap-7 p-5 pb-28">
-            {scaleOptions.map((scale) => {
-              const value = scales[scale.key] ?? 3;
-              return (
-                <ScaleSlider
-                  key={scale.key}
-                  label={scale.label}
-                  valueLabel={scale.levels[value - 1] ?? scale.levels[0] ?? ''}
-                  minLabel={scale.minLabel}
-                  maxLabel={scale.maxLabel}
-                  value={scales[scale.key] ?? null}
-                  onChange={(next) => setScale(scale.key, next)}
-                />
-              );
-            })}
-            {choiceGroups.map((group) => (
-              <Choices
-                key={group.key}
-                label={group.label}
-                options={group.options}
-                value={choiceValues[group.key] ?? null}
-                onChange={(value) => setChoice(group.key, value)}
-              />
-            ))}
-          </ScrollView>
-          <SaveBar onSave={saveLifestyle} bottomPadding={bottomPadding} />
-        </Tabs.Content>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="flex-grow px-4 pb-5 pt-7"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="mb-6 flex-row items-center justify-between">
+          <Text className="text-xs font-semibold text-[#256EF4]">
+            {String(stage + 1).padStart(2, '0')}
+          </Text>
+          <Text className="text-xs text-[#AAAABA]">
+            {stage + 1}/{stageCount}
+          </Text>
+        </View>
 
-        <Tabs.Content value="room" className="flex-1">
-          <ScrollView className="flex-1" contentContainerClassName="gap-6 p-5 pb-28">
-            <Choices
-              label="방 여부"
-              options={[
-                { value: 'yes', label: '방 있어요' },
-                { value: 'no', label: '방 없어요' },
-              ]}
-              value={hasRoom ? 'yes' : 'no'}
-              onChange={(value) => setHasRoom(value === 'yes')}
+        <StageTitle stage={stage} hasRoom={isOffer} />
+
+        {stage === 0 ? (
+          <View className="mt-7 gap-4">
+            <RoomPresenceChoice
+              hasRoom
+              title="방이 있어요"
+              description="현재 방에서 함께 지낼 룸메이트를 찾아요"
+              selected={hasRoom === true}
+              onPress={() => setHasRoom(true)}
             />
-            <View className="gap-2">
-              <Text className="text-sm font-semibold text-neutral-800">
-                {isOffer ? '방 위치' : '선호 지역'}
+            <RoomPresenceChoice
+              hasRoom={false}
+              title="방이 없어요"
+              description="방과 룸메이트를 함께 찾아요"
+              selected={hasRoom === false}
+              onPress={() => setHasRoom(false)}
+            />
+          </View>
+        ) : null}
+
+        {stage === 1 ? (
+          <View className="flex-1 justify-between pt-7">
+            <Pressable
+              onPress={() => setRegionOpen(true)}
+              className="h-14 flex-row items-center justify-between rounded-lg border border-[#DADAE8] px-4 active:bg-[#F7F7FA]"
+            >
+              <Text
+                numberOfLines={1}
+                className={`flex-1 text-[15px] ${regions.length ? 'text-[#242429]' : 'text-[#AAAABA]'}`}
+              >
+                {selectedRegionLabel}
               </Text>
-              <RegionFilterBody
-                value={regions}
-                onChange={(next) => setRegions(isOffer ? next.slice(-1) : next.slice(0, 3))}
-              />
+              <Ionicons name="chevron-down" size={19} color="#8A8A98" />
+            </Pressable>
+            <View className="flex-1 items-center justify-center py-8">
+              <RoomLocationArtwork size={190} />
             </View>
+          </View>
+        ) : null}
+
+        {stage === 2 ? (
+          <View className="mt-8 gap-10">
             <RangeField
               label={isOffer ? '보증금' : '예산 보증금'}
               min={0}
@@ -147,121 +181,173 @@ export function ProfileEditScreenView({
               tickLabels={['최소', '125만', '250만', '최대']}
               scaleStops={[0, 125, 250, 500]}
             />
-            <View className="gap-2">
-              <Text className="text-sm font-semibold text-neutral-800">
-                {isOffer ? '입주 가능 시기' : '입주 희망 시기'}
-              </Text>
-              <CalendarField
-                value={moveInDate}
-                onChange={setMoveInDate}
-                minDate={new Date()}
-                placeholder={isOffer ? '입주 가능일 선택' : '입주 희망일 선택'}
-              />
-            </View>
-            <View className="gap-2">
-              <Text className="text-sm font-semibold text-neutral-800">
-                {isOffer ? '방 형태' : '선호 방 형태 (최대 3개)'}
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {roomTypeOptions.map((roomType) => {
-                  const selected = roomTypes.includes(roomType.value);
-                  return (
-                    <Pressable
-                      key={roomType.value}
-                      disabled={!isOffer && !selected && roomTypes.length >= 3}
-                      onPress={() =>
-                        setRoomTypes((prev) =>
-                          isOffer
-                            ? selected
-                              ? []
-                              : [roomType.value]
-                            : selected
-                              ? prev.filter((item) => item !== roomType.value)
-                              : prev.length < 3
-                                ? [...prev, roomType.value]
-                                : prev,
-                        )
-                      }
-                      className={`flex-row items-center gap-1.5 rounded-lg border py-1.5 pl-2 pr-4 ${
-                        selected
-                          ? 'border-[#256EF4] bg-[#EEF4FF]'
-                          : !isOffer && roomTypes.length >= 3
-                            ? 'border-neutral-200 bg-neutral-50 opacity-50'
-                            : 'border-neutral-300 bg-white'
-                      }`}
-                    >
-                      <RoomTypeArtwork label={roomType.label} size={28} />
-                      <Text
-                        className={
-                          selected
-                            ? 'text-sm font-medium text-[#256EF4]'
-                            : 'text-sm text-neutral-600'
-                        }
-                      >
-                        {roomType.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          </ScrollView>
-          <SaveBar onSave={saveRoom} bottomPadding={bottomPadding} />
-        </Tabs.Content>
-      </Tabs.Root>
-    </SafeAreaView>
-  );
-}
-
-function Choices({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: readonly { value: string; label: string }[];
-  value: string | null;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      <SegmentedControl<string>
-        options={options as { value: string; label: string }[]}
-        value={value}
-        onValueChange={onChange}
-        className="flex-row gap-2"
-        renderItem={({ option, selected }) => (
-          <View
-            className={`rounded-full border px-5 py-2 ${
-              selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
-            }`}
-          >
-            <Text
-              className={selected ? 'text-sm font-medium text-white' : 'text-sm text-neutral-600'}
-            >
-              {option.label}
-            </Text>
           </View>
-        )}
+        ) : null}
+
+        {stage === 3 ? (
+          <View className="mt-8">
+            <CalendarField
+              value={moveInDate}
+              onChange={setMoveInDate}
+              minDate={new Date()}
+              placeholder={isOffer ? '입주 가능일 선택' : '입주 희망일 선택'}
+            />
+          </View>
+        ) : null}
+
+        {stage === 4 ? (
+          <View className="mt-7 flex-row flex-wrap gap-3">
+            {roomTypeOptions.map((roomType) => {
+              const selected = roomTypes.includes(roomType.value);
+              const disabled = !isOffer && !selected && roomTypes.length >= 3;
+              return (
+                <Pressable
+                  key={roomType.value}
+                  disabled={disabled}
+                  onPress={() =>
+                    setRoomTypes((current) =>
+                      isOffer
+                        ? selected
+                          ? []
+                          : [roomType.value]
+                        : selected
+                          ? current.filter((item) => item !== roomType.value)
+                          : current.length < 3
+                            ? [...current, roomType.value]
+                            : current,
+                    )
+                  }
+                  className={`h-[108px] w-[31%] items-center justify-center rounded-lg border px-2 ${
+                    selected
+                      ? 'border-[#256EF4] bg-[#EEF4FF]'
+                      : disabled
+                        ? 'border-[#ECECF3] bg-[#F7F7FA] opacity-40'
+                        : 'border-[#DADAE8] bg-white'
+                  }`}
+                >
+                  <RoomTypeArtwork label={roomType.label} size={62} />
+                  <Text
+                    className={`mt-1 text-[13px] ${
+                      selected ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'
+                    }`}
+                  >
+                    {roomType.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <View className="flex-row gap-3 border-t border-[#ECECF3] bg-white px-4 pb-3 pt-3">
+        {stage > 0 ? (
+          <Pressable
+            onPress={goBack}
+            className="h-12 flex-1 items-center justify-center rounded-lg border border-[#DADAE8] bg-white"
+          >
+            <Text className="text-[15px] font-semibold text-[#696976]">이전으로</Text>
+          </Pressable>
+        ) : null}
+        <Pressable
+          onPress={goNext}
+          className="h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90"
+        >
+          <Text className="text-[15px] font-bold text-white">
+            {stage === stageCount - 1 ? '저장하기' : '다음으로'}
+          </Text>
+        </Pressable>
+      </View>
+
+      <RegionFilterSheet
+        open={regionOpen}
+        onOpenChange={setRegionOpen}
+        value={regions}
+        maxSelection={isOffer ? 1 : 3}
+        onChange={(next) => setRegions(isOffer ? next.slice(-1) : next.slice(0, 3))}
       />
     </View>
   );
 }
 
-function SaveBar({ onSave, bottomPadding }: { onSave: () => void; bottomPadding: number }) {
+function StageTitle({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
+  const copy =
+    stage === 0
+      ? ['현재 머물고 있는', '방이 있으신가요?', '언제든 마이페이지에서 변경할 수 있어요']
+      : stage === 1
+        ? [
+            hasRoom ? '거주하고 있는' : '거주하고 싶은',
+            '지역을 선택해주세요',
+            hasRoom ? '한 곳을 선택할 수 있어요' : '최대 3곳까지 선택할 수 있어요',
+          ]
+        : stage === 2
+          ? [
+              hasRoom ? '거주하고 있는 집의' : '희망하는 예산을',
+              '보증금과 월세를 알려주세요',
+              '범위 양끝을 움직여 금액을 설정해주세요',
+            ]
+          : stage === 3
+            ? [
+                hasRoom ? '룸메이트가 입주할 수 있는' : '입주를 희망하는',
+                '날짜를 선택해주세요',
+                '달력에서 날짜를 선택해주세요',
+              ]
+            : [
+                hasRoom ? '거주하고 있는' : '거주하고 싶은',
+                '방 형태를 선택해주세요',
+                hasRoom ? '한 개를 선택할 수 있어요' : '최대 3개까지 선택할 수 있어요',
+              ];
+
   return (
-    <View
-      className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"
-      style={{ paddingBottom: bottomPadding }}
-    >
-      <Pressable
-        onPress={onSave}
-        className="h-12 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
-      >
-        <Text className="text-base font-semibold text-white">저장하기</Text>
-      </Pressable>
+    <View>
+      <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
+        {copy[0]}
+        {'\n'}
+        {copy[1]}
+      </Text>
+      <Text className="mt-1 text-sm leading-5 text-[#696976]">{copy[2]}</Text>
     </View>
+  );
+}
+
+function RoomPresenceChoice({
+  hasRoom,
+  title,
+  description,
+  selected,
+  onPress,
+}: {
+  hasRoom: boolean;
+  title: string;
+  description: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      className={`h-[112px] flex-row items-center rounded-xl border px-5 ${
+        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-[#DADAE8] bg-white'
+      }`}
+    >
+      <RoomPresenceArtwork hasRoom={hasRoom} size={64} />
+      <View className="ml-4 flex-1 gap-1">
+        <Text
+          className={`text-[16px] font-semibold ${selected ? 'text-[#256EF4]' : 'text-[#242429]'}`}
+        >
+          {title}
+        </Text>
+        <Text className="text-[13px] leading-5 text-[#8A8A98]">{description}</Text>
+      </View>
+      <View
+        className={`h-6 w-6 items-center justify-center rounded-full border ${
+          selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-[#C8C8D2] bg-white'
+        }`}
+      >
+        {selected ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
+      </View>
+    </Pressable>
   );
 }

@@ -77,7 +77,7 @@ export function BudgetFilterSheet({
   depositRange = DEFAULTS.deposit,
   rentRange = DEFAULTS.rent,
 }: BudgetFilterSheetProps) {
-  const { draft, setDraft, reset, apply } = useBudgetFilterSheet({
+  const { draft, setDraft } = useBudgetFilterSheet({
     open,
     value,
     onChange,
@@ -85,17 +85,16 @@ export function BudgetFilterSheet({
     rentRange,
   });
 
+  const handleChange = (next: BudgetValues) => {
+    setDraft(next);
+    onChange(next);
+  };
+
   return (
-    <FilterSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      title="예산"
-      onReset={reset}
-      onApply={apply}
-    >
+    <FilterSheet open={open} onOpenChange={onOpenChange} title="예산">
       <BudgetFilterBody
         value={draft}
-        onChange={setDraft}
+        onChange={handleChange}
         depositRange={depositRange}
         rentRange={rentRange}
       />

@@ -6,9 +6,8 @@ import { useGenderFilterSheet } from './use-gender-filter-sheet';
 export type GenderFilterValue = 'any' | 'male' | 'female';
 
 const OPTIONS: { value: GenderFilterValue; label: string }[] = [
-  { value: 'any', label: '성별 무관' },
-  { value: 'male', label: '남성만' },
-  { value: 'female', label: '여성만' },
+  { value: 'any', label: '전체' },
+  { value: 'female', label: '여성' },
 ];
 
 export function GenderFilterBody({
@@ -19,24 +18,23 @@ export function GenderFilterBody({
   onChange: (next: GenderFilterValue) => void;
 }) {
   return (
-    <View className="gap-2">
+    <View className="gap-5 pb-2">
       {OPTIONS.map((opt) => {
         const selected = value === opt.value;
         return (
           <Pressable
             key={opt.value}
             onPress={() => onChange(opt.value)}
-            className={`items-center rounded-xl border py-3 active:opacity-80 ${
-              selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
-            }`}
+            className="flex-row items-center gap-3 active:opacity-70"
           >
-            <Text
-              className={
-                selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'
-              }
+            <View
+              className={`h-5 w-5 items-center justify-center rounded-full border-2 ${
+                selected ? 'border-[#256EF4]' : 'border-[#DADAE8]'
+              }`}
             >
-              {opt.label}
-            </Text>
+              {selected ? <View className="h-2.5 w-2.5 rounded-full bg-[#256EF4]" /> : null}
+            </View>
+            <Text className="text-[15px] leading-[23px] text-[#17171B]">{opt.label}</Text>
           </Pressable>
         );
       })}
@@ -52,17 +50,16 @@ export type GenderFilterSheetProps = {
 };
 
 export function GenderFilterSheet({ open, onOpenChange, value, onChange }: GenderFilterSheetProps) {
-  const { draft, setDraft, reset, apply } = useGenderFilterSheet({ open, value, onChange });
+  const { draft, setDraft } = useGenderFilterSheet({ open, value, onChange });
+
+  const handleChange = (next: GenderFilterValue) => {
+    setDraft(next);
+    onChange(next);
+  };
 
   return (
-    <FilterSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      title="성별"
-      onReset={reset}
-      onApply={apply}
-    >
-      <GenderFilterBody value={draft} onChange={setDraft} />
+    <FilterSheet open={open} onOpenChange={onOpenChange} title="성별">
+      <GenderFilterBody value={draft} onChange={handleChange} />
     </FilterSheet>
   );
 }

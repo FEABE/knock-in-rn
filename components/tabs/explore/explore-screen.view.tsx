@@ -5,7 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
 import { RoomListControls } from '@/components/domain/room-list-controls';
-import { RoomFilterSheet } from '@/components/room/filters';
+import {
+  BudgetFilterSheet,
+  GenderFilterSheet,
+  RegionFilterSheet,
+  RoomTypeFilterSheet,
+  SortFilterSheet,
+} from '@/components/room/filters';
 import { Tabs } from '@/components/ui/headless';
 import {
   ReadyEmptyState,
@@ -94,9 +100,7 @@ export function ExploreScreenView({
             searchQuery={searchQuery}
             onSearchPress={onSearchPress}
             onSearchClear={onSearchClear}
-            onSortPress={() =>
-              setSort(sort === 'latest' ? 'likes' : sort === 'likes' ? 'views' : 'latest')
-            }
+            onSortPress={() => setOpenSheet('sort')}
             onFilterPress={setOpenSheet}
           />
 
@@ -114,7 +118,9 @@ export function ExploreScreenView({
               <ReadyEmptyState
                 compact
                 title={searchQuery ? '검색 결과가 없어요' : '조건에 맞는 방이 없어요'}
-                description={searchQuery ? '다른 키워드로 검색해보세요' : '다른 조건으로 다시 찾아보세요'}
+                description={
+                  searchQuery ? '다른 키워드로 검색해보세요' : '다른 조건으로 다시 찾아보세요'
+                }
               />
             ) : (
               visiblePosts.map((post) => (
@@ -139,21 +145,10 @@ export function ExploreScreenView({
         </Tabs.Content>
 
         <Tabs.Content value="roommates" className="flex-1">
-          <RoomListControls
-            filter={filter}
-            initialFilter={INITIAL_EXPLORE_FILTER}
-            sortLabel={
-              EXPLORE_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? '정렬'
-            }
-            searchQuery={searchQuery}
-            onSearchPress={onSearchPress}
-            onSearchClear={onSearchClear}
-            onSortPress={() =>
-              setSort(sort === 'latest' ? 'likes' : sort === 'likes' ? 'views' : 'latest')
-            }
-            onFilterPress={setOpenSheet}
-          />
-          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-24">
+          <ScrollView
+            className="flex-1 bg-[#F7F8FC]"
+            contentContainerClassName="gap-4 px-4 pb-24 pt-5"
+          >
             {matchesLoading ? (
               <ReadyLoadingState compact label="룸메이트를 불러오는 중..." />
             ) : matchesError ? (
@@ -167,7 +162,9 @@ export function ExploreScreenView({
               <ReadyEmptyState
                 compact
                 title={searchQuery ? '검색 결과가 없어요' : '매칭된 룸메이트가 없어요'}
-                description={searchQuery ? '다른 키워드로 검색해보세요' : '다른 조건으로 다시 찾아보세요'}
+                description={
+                  searchQuery ? '다른 키워드로 검색해보세요' : '다른 조건으로 다시 찾아보세요'
+                }
               />
             ) : (
               visibleMatches.map((match) => (
@@ -183,13 +180,40 @@ export function ExploreScreenView({
         </Tabs.Content>
       </Tabs.Root>
 
-      <RoomFilterSheet
-        open={openSheet !== null}
-        onOpenChange={(open) => setOpenSheet(open ? openSheet : null)}
-        defaultTab={openSheet ?? 'region'}
-        value={filter}
-        onChange={handleFilterChange}
-        initial={INITIAL_EXPLORE_FILTER}
+      <SortFilterSheet
+        open={openSheet === 'sort'}
+        onOpenChange={(open) => setOpenSheet(open ? 'sort' : null)}
+        value={sort}
+        onChange={setSort}
+      />
+      <RegionFilterSheet
+        open={openSheet === 'region'}
+        onOpenChange={(open) => setOpenSheet(open ? 'region' : null)}
+        value={filter.regions}
+        onChange={(regions) => handleFilterChange({ ...filter, regions })}
+      />
+      <GenderFilterSheet
+        open={openSheet === 'gender'}
+        onOpenChange={(open) => setOpenSheet(open ? 'gender' : null)}
+        value={filter.gender}
+        onChange={(gender) => handleFilterChange({ ...filter, gender })}
+      />
+      <BudgetFilterSheet
+        open={openSheet === 'budget'}
+        onOpenChange={(open) => setOpenSheet(open ? 'budget' : null)}
+        value={{
+          depositMin: filter.depositMin,
+          depositMax: filter.depositMax,
+          rentMin: filter.rentMin,
+          rentMax: filter.rentMax,
+        }}
+        onChange={(budget) => handleFilterChange({ ...filter, ...budget })}
+      />
+      <RoomTypeFilterSheet
+        open={openSheet === 'roomType'}
+        onOpenChange={(open) => setOpenSheet(open ? 'roomType' : null)}
+        value={filter.roomTypes}
+        onChange={(roomTypes) => handleFilterChange({ ...filter, roomTypes })}
       />
 
       <PreferenceNudgeModal

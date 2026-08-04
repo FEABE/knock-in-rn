@@ -6,9 +6,14 @@ import type { Region } from '@/lib/onboarding';
 export type UseRegionFilterBodyProps = {
   value: Region[];
   onChange: (next: Region[]) => void;
+  maxSelection?: number;
 };
 
-export function useRegionFilterBody({ value, onChange }: UseRegionFilterBodyProps) {
+export function useRegionFilterBody({
+  value,
+  onChange,
+  maxSelection = 10,
+}: UseRegionFilterBodyProps) {
   const regionOptions = useRegionOptions();
   const cities = regionOptions.cities;
   const [activeCity, setActiveCity] = useState<string | null>(cities[0]?.id ?? null);
@@ -24,7 +29,11 @@ export function useRegionFilterBody({ value, onChange }: UseRegionFilterBodyProp
 
   const toggleRegion = (region: Region) => {
     const exists = value.some((r) => r.id === region.id);
-    onChange(exists ? value.filter((r) => r.id !== region.id) : [...value, region]);
+    if (exists) {
+      onChange(value.filter((r) => r.id !== region.id));
+      return;
+    }
+    if (value.length < maxSelection) onChange([...value, region]);
   };
 
   return {

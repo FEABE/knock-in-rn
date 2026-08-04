@@ -7,15 +7,14 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
 
 import { useSession } from '@/lib/domain';
 
 const ALARM_QUERY_KEY = ['alarms'] as const;
 
 /**
- * FCM은 기기 등록만 해서는 화면에 보이지 않는다.
- * 앱이 열려 있을 때는 직접 알림을 보여주고, 알림을 눌러 들어오면 알림 목록으로 연결한다.
+ * 앱이 열려 있을 때는 알림 데이터만 갱신한다.
+ * 백그라운드 알림을 눌러 들어오면 알림 목록으로 연결한다.
  */
 export function PushNotificationBridge() {
   const router = useRouter();
@@ -36,15 +35,9 @@ export function PushNotificationBridge() {
 
     try {
       const messaging = getMessaging();
-      unsubscribeForeground = onMessage(messaging, (message) => {
+      unsubscribeForeground = onMessage(messaging, () => {
+        // 앱을 보고 있을 때는 iOS와 Android 모두 팝업을 띄우지 않고 알림 목록만 최신화한다.
         void refreshAlarms();
-        const title = message.notification?.title ?? pushText(message.data?.title) ?? '새 알림';
-        const body = message.notification?.body ?? pushText(message.data?.body);
-
-        Alert.alert(title, body, [
-          { text: '닫기', style: 'cancel' },
-          { text: '알림 보기', onPress: openNotifications },
-        ]);
       });
       unsubscribeOpened = onNotificationOpenedApp(messaging, openNotifications);
 
@@ -78,8 +71,4 @@ export function PushNotificationBridge() {
 function pushErrorMessage(error: unknown): string {
   const candidate = error as { message?: unknown } | null;
   return typeof candidate?.message === 'string' ? candidate.message : '알 수 없는 오류';
-}
-
-function pushText(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined;
 }

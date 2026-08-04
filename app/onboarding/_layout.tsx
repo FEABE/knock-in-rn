@@ -171,20 +171,27 @@ async function saveMarketingNotificationConsent(enabled: boolean): Promise<strin
     return settingsRes.error?.message ?? '알림 설정을 불러오지 못했습니다.';
   }
 
-  const marketingSettings = (settingsRes.data?.alarmsSettings ?? []).flatMap((setting) => {
+  const availableSettings = (settingsRes.data?.alarmsSettings ?? []).flatMap((setting) => {
     const settingId = Number(setting.id);
     const name = setting.name?.replace(/\s/g, '').toLowerCase() ?? '';
-    const isMarketing = ['마케팅', '정보성', '프로모션', '이벤트'].some((keyword) =>
-      name.includes(keyword),
-    );
-    return Number.isFinite(settingId) && isMarketing ? [{ settingId, enabled }] : [];
+    return Number.isFinite(settingId) ? [{ settingId, name }] : [];
   });
+  const marketingSettings = availableSettings.filter(({ name }) =>
+    ['마케팅', '정보성', '프로모션', '이벤트'].some((keyword) => name.includes(keyword)),
+  );
+  // 현재 백엔드는 세부 타입 없이 NOTIFICATION("알림") 한 항목만 내려준다.
+  // 별도 정보성 항목이 생기면 그 항목을 우선하고, 지금 계약에서는 단일 알림 ID를 사용한다.
+  const targetSettings = marketingSettings.length
+    ? marketingSettings
+    : availableSettings.filter(({ name }) => name === '알림' || name === 'notification');
 
-  if (!marketingSettings.length) {
-    return '정보성 알림 설정 항목을 찾지 못했습니다.';
+  if (!targetSettings.length) {
+    return '백엔드 알림 설정 항목을 찾지 못했습니다.';
   }
 
-  const responses = await Promise.all(marketingSettings.map(updateNotificationSetting));
+  const responses = await Promise.all(
+    targetSettings.map(({ settingId }) => updateNotificationSetting({ settingId, enabled })),
+  );
   const failed = responses.find((response) => response.error || response.status !== 200);
   return failed ? (failed.error?.message ?? '정보성 알림 동의를 저장하지 못했습니다.') : null;
 }

@@ -65,6 +65,10 @@ export function setAuthFailureHandler(handler: (() => void) | null) {
   authFailureHandler = handler;
 }
 
+export function notifyAuthFailure() {
+  authFailureHandler?.();
+}
+
 /** mock 응답 헬퍼. 네트워크 지연을 흉내내기 위한 약간의 delay 포함. */
 export function mockOk<T>(data: T, status = 200): Promise<ApiResponse<T>> {
   return new Promise((resolve) => {
@@ -212,7 +216,7 @@ function decodeBase64Ascii(value: string): string {
   return result;
 }
 
-function isAccessTokenExpired(): boolean {
+export function isAccessTokenExpired(): boolean {
   const exp = decodeAccessToken()?.exp;
   return typeof exp === 'number' && exp * 1000 <= Date.now();
 }

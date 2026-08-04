@@ -2,117 +2,78 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { ReportListItem, UseBlockedListScreenReturn } from './use-blocked-list-screen';
+import { ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
+
+import type { UseBlockedListScreenReturn } from './use-blocked-list-screen';
 
 export type BlockedListScreenViewProps = UseBlockedListScreenReturn;
 
 export function BlockedListScreenView({
   users,
-  reports,
   loading,
   error,
-  reportsLoading,
-  reportsError,
   onBack,
   onUnblock,
 }: BlockedListScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-        <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#404047" />
+      <View className="h-14 flex-row items-center px-3">
+        <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
+          <Ionicons name="chevron-back" size={24} color="#696976" />
         </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">차단 / 신고 관리</Text>
-      </View>
-
-      <ScrollView contentContainerClassName="gap-6 p-5">
-        <View className="gap-2">
-          <Text className="text-sm font-semibold text-neutral-800">
-            차단한 사용자 ({users.length})
-          </Text>
-          {loading ? (
-            <View className="items-center gap-3 p-8">
-              <ActivityIndicator color="#256EF4" />
-              <Text className="text-sm text-neutral-400">차단 목록을 불러오는 중...</Text>
-            </View>
-          ) : error ? (
-            <EmptyBox message={`차단 목록을 불러오지 못했어요: ${error}`} />
-          ) : users.length === 0 ? (
-            <EmptyBox message="차단한 사용자가 없어요" />
-          ) : (
-            users.map((user) => (
-              <View
-                key={user.id}
-                className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white p-4"
-              >
-                <View className="flex-row items-center gap-3">
-                  <View className="h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
-                    <Text className="font-semibold text-neutral-600">{user.name.charAt(0)}</Text>
-                  </View>
-                  <View>
-                    <Text className="text-sm font-semibold text-neutral-900">{user.name}</Text>
-                    <Text className="text-xs text-neutral-500">차단일 {user.dateLabel}</Text>
-                  </View>
-                </View>
-                <Pressable
-                  onPress={() => onUnblock(user)}
-                  className="rounded-full bg-neutral-100 px-3 py-1.5"
-                >
-                  <Text className="text-xs font-medium text-neutral-700">해제</Text>
-                </Pressable>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View className="gap-2">
-          <Text className="text-sm font-semibold text-neutral-800">
-            신고 기록 ({reports.length})
-          </Text>
-          {reportsLoading ? (
-            <View className="items-center gap-3 p-8">
-              <ActivityIndicator color="#256EF4" />
-              <Text className="text-sm text-neutral-400">신고 기록을 불러오는 중...</Text>
-            </View>
-          ) : reportsError ? (
-            <EmptyBox message={`신고 기록을 불러오지 못했어요: ${reportsError}`} />
-          ) : reports.length === 0 ? (
-            <EmptyBox message="신고 기록이 없어요" />
-          ) : (
-            reports.map((report) => <ReportCard key={report.id} report={report} />)
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function EmptyBox({ message }: { message: string }) {
-  return (
-    <View className="rounded-2xl border border-dashed border-neutral-200 p-8">
-      <Text className="text-center text-sm text-neutral-400">{message}</Text>
-    </View>
-  );
-}
-
-function ReportCard({ report }: { report: ReportListItem }) {
-  const toneClass =
-    report.statusTone === 'done'
-      ? 'bg-emerald-50 text-emerald-700'
-      : report.statusTone === 'reviewing'
-        ? 'bg-amber-50 text-amber-700'
-        : 'bg-neutral-100 text-neutral-500';
-
-  return (
-    <View className="gap-1 rounded-2xl border border-neutral-200 bg-white p-4">
-      <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-medium text-neutral-900">{report.title}</Text>
-        <Text className={`rounded-full px-2 py-0.5 text-[10px] ${toneClass}`}>
-          {report.statusLabel}
+        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
+          차단 목록
         </Text>
       </View>
-      <Text className="text-xs text-neutral-600">사유: {report.reason}</Text>
-      <Text className="text-[10px] text-neutral-400">{report.dateLabel}</Text>
-    </View>
+
+      <View className="mx-4 mt-2 flex-row gap-3 rounded-lg bg-[#FFF4E8] px-4 py-3">
+        <Ionicons name="information-circle-outline" size={20} color="#F28A2E" />
+        <Text className="flex-1 text-xs leading-[18px] text-[#8A5A2B]">
+          차단한 사용자에게는 서로 프로필이 노출되지 않아요
+        </Text>
+      </View>
+
+      {loading ? (
+        <View className="flex-1 items-center justify-center gap-3">
+          <ActivityIndicator color="#256EF4" />
+          <Text className="text-sm text-[#AAAABA]">차단 목록을 불러오는 중...</Text>
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-7">
+          <Text className="text-center text-sm leading-5 text-[#696976]">
+            차단 목록을 불러오지 못했어요.{`\n`}
+            {error}
+          </Text>
+        </View>
+      ) : users.length === 0 ? (
+        <View className="flex-1 items-center justify-center gap-3 px-6">
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-[#F6F6FA]">
+            <Ionicons name="people-outline" size={26} color="#AAAABA" />
+          </View>
+          <Text className="text-sm text-[#8A8A98]">차단한 회원이 없어요</Text>
+        </View>
+      ) : (
+        <ScrollView className="mt-4 flex-1" showsVerticalScrollIndicator={false}>
+          {users.map((user) => (
+            <View
+              key={user.id}
+              className="min-h-[76px] flex-row items-center border-b border-[#F1F1F5] px-4 py-3"
+            >
+              <ReadyProfileAvatar name={user.name} size={48} />
+              <View className="ml-3 flex-1">
+                <Text className="text-[15px] font-semibold text-[#242429]">{user.name}</Text>
+                <Text className="mt-1 text-xs text-[#AAAABA]">차단일 {user.dateLabel}</Text>
+              </View>
+              <Pressable
+                onPress={() => onUnblock(user)}
+                className="h-9 items-center justify-center rounded bg-[#E8341A] px-4 active:opacity-85"
+              >
+                <Text className="text-[13px] font-semibold text-white">차단 해제</Text>
+              </Pressable>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+    </SafeAreaView>
   );
 }

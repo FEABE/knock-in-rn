@@ -32,7 +32,7 @@ export function MyPageHomeScreenView({
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <View className="px-4 pb-3 pt-4">
-          <Text className="text-[28px] font-extrabold text-neutral-900">마이페이지</Text>
+          <Text className="text-xl font-bold leading-6 text-[#17171B]">마이페이지</Text>
         </View>
         <View className="gap-3 p-5">
           <LoginPromptCard
@@ -47,19 +47,19 @@ export function MyPageHomeScreenView({
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="px-4 pb-3 pt-4">
-        <Text className="text-[28px] font-extrabold text-neutral-900">마이페이지</Text>
+      <View className="px-4 pb-4 pt-7">
+        <Text className="text-xl font-bold leading-6 text-[#17171B]">마이페이지</Text>
       </View>
 
       <ScrollView contentContainerClassName="pb-24">
         <Pressable
           onPress={onProfilePress}
-          className="flex-row items-center gap-3 px-4 pb-5 pt-2 active:bg-[#F6F6FA]"
+          className="flex-row items-center gap-3 px-4 pb-6 pt-2 active:bg-[#F6F6FA]"
         >
-          <ReadyProfileAvatar name={user.name} imageUrl={user.avatarUrl} />
+          <ReadyProfileAvatar name={user.name} imageUrl={user.avatarUrl} size={60} />
           <View className="flex-1 gap-1.5">
             <View className="flex-row items-center gap-1">
-              <Text className="text-[15px] font-bold text-[#17171B]">{user.name}님</Text>
+              <Text className="text-base font-bold leading-6 text-[#17171B]">{user.name}님</Text>
               {(schoolVerified || companyVerified) && (
                 <Ionicons name="checkmark-circle" size={15} color="#24A96B" />
               )}
@@ -76,7 +76,7 @@ export function MyPageHomeScreenView({
         </Pressable>
 
         <Section title="프로필">
-          <View className="flex-row items-center justify-between border-b border-[#ECECF3] px-4 py-4">
+          <View className="min-h-[76px] flex-row items-center justify-between border-b border-[#ECECF3] px-4 py-3">
             <View>
               <Text className="text-sm font-medium text-neutral-800">프로필 공개</Text>
               <Text className="text-xs text-neutral-400">룸메이트 매칭 탭에 노출 중이에요</Text>
@@ -148,11 +148,11 @@ function MenuRow({ row, last }: { row: MyPageMenuRow; last?: boolean }) {
         {row.sub ? <Text className="text-xs text-neutral-400">{row.sub}</Text> : null}
       </View>
       {row.badge ? (
-        <Text className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] text-amber-600">
-          {row.badge}
-        </Text>
+        <View className="mr-2 rounded border border-dashed border-[#8DB4FF] bg-[#F5F8FF] px-2 py-1">
+          <Text className="text-[11px] font-medium text-[#4C87F6]">인증 필요</Text>
+        </View>
       ) : null}
-      <Ionicons name="chevron-forward" size={18} color="#D4D4D4" />
+      <Ionicons name="chevron-forward" size={19} color="#696976" />
     </Pressable>
   );
 }
@@ -170,11 +170,11 @@ function Switch({
     <Toggle checked={checked} disabled={disabled} onCheckedChange={onChange}>
       {({ checked: isChecked }) => (
         <View
-          className={`h-7 w-12 justify-center rounded-full px-1 ${
+          className={`h-8 w-[52px] justify-center rounded-full px-1 ${
             isChecked ? 'bg-[#256EF4]' : disabled ? 'bg-neutral-200' : 'bg-neutral-300'
           }`}
         >
-          <View className={`h-5 w-5 rounded-full bg-white ${isChecked ? 'ml-5' : 'ml-0'}`} />
+          <View className={`h-6 w-6 rounded-full bg-white ${isChecked ? 'ml-5' : 'ml-0'}`} />
         </View>
       )}
     </Toggle>

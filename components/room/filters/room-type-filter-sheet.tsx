@@ -1,9 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import {
-  ReadyErrorState,
-  ReadyLoadingState,
-} from '@/components/ui/ready-to-dev-feedback';
+import { ReadyErrorState, ReadyLoadingState } from '@/components/ui/ready-to-dev-feedback';
 import { useRoomTypeOptions } from '@/lib/api';
 import type { RoomType } from '@/lib/onboarding';
 
@@ -13,9 +10,11 @@ import { useRoomTypeFilterSheet } from './use-room-type-filter-sheet';
 export function RoomTypeFilterBody({
   value,
   onChange,
+  showHint = true,
 }: {
   value: RoomType[];
   onChange: (next: RoomType[]) => void;
+  showHint?: boolean;
 }) {
   const isAll = value.length === 0;
   const roomTypes = useRoomTypeOptions();
@@ -41,8 +40,8 @@ export function RoomTypeFilterBody({
   };
 
   return (
-    <View className="gap-3">
-      <Text className="text-xs text-[#AAAABA]">최대 3개 선택 가능</Text>
+    <View className="gap-3 pb-1">
+      {showHint ? <Text className="text-xs text-[#AAAABA]">최대 3개 선택 가능</Text> : null}
       <View className="flex-row flex-wrap gap-2">
         <Pressable
           onPress={() => onChange([])}
@@ -106,17 +105,21 @@ export function RoomTypeFilterSheet({
   value,
   onChange,
 }: RoomTypeFilterSheetProps) {
-  const { draft, setDraft, reset, apply } = useRoomTypeFilterSheet({ open, value, onChange });
+  const { draft, setDraft } = useRoomTypeFilterSheet({ open, value, onChange });
+
+  const handleChange = (next: RoomType[]) => {
+    setDraft(next);
+    onChange(next);
+  };
 
   return (
     <FilterSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="룸 형태"
-      onReset={reset}
-      onApply={apply}
+      title="방 형태"
+      subtitle="최대 3개 선택 가능"
     >
-      <RoomTypeFilterBody value={draft} onChange={setDraft} />
+      <RoomTypeFilterBody value={draft} onChange={handleChange} showHint={false} />
     </FilterSheet>
   );
 }

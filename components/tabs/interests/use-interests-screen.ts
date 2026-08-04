@@ -130,7 +130,6 @@ function toBoardQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery 
 
 function sortPosts(posts: RoomPost[], sort: ExploreSort): RoomPost[] {
   const next = [...posts];
-  if (sort === 'likes') return next.sort((a, b) => b.likes - a.likes);
   if (sort === 'views') return next.sort((a, b) => b.views - a.views);
   return next.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

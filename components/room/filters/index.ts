@@ -3,6 +3,7 @@ export { RegionFilterSheet, RegionFilterBody } from './region-filter-sheet';
 export { GenderFilterSheet, GenderFilterBody, type GenderFilterValue } from './gender-filter-sheet';
 export { BudgetFilterSheet, BudgetFilterBody, type BudgetValues } from './budget-filter-sheet';
 export { RoomTypeFilterSheet, RoomTypeFilterBody } from './room-type-filter-sheet';
+export { SortFilterSheet, type RoomSortValue } from './sort-filter-sheet';
 export {
   RoomFilterSheet,
   type RoomFilterValue,

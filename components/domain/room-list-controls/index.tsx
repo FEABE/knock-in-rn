@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text } from 'react-native';
 
 import type { RoomFilterValue } from '@/components/room/filters';
+import { ReadyFilterChip } from '@/components/ui/ready-to-dev-components';
 
 export type RoomListFilterKey = 'region' | 'gender' | 'budget' | 'roomType';
 
@@ -61,54 +62,30 @@ export function RoomListControls({
         style={{ flexGrow: 0 }}
         contentContainerClassName="items-center gap-2 px-4 pb-5 pt-3"
       >
-        <FilterChip label={sortLabel} outlined onPress={onSortPress} />
-        <FilterChip
-          label={filter.regions.length > 0 ? `지역 ${filter.regions.length}` : '지역'}
-          active={filter.regions.length > 0}
+        <ReadyFilterChip label={sortLabel} onPress={onSortPress} />
+        <ReadyFilterChip
+          label="지역"
+          count={filter.regions.length}
+          selected={filter.regions.length > 0}
           onPress={() => onFilterPress('region')}
         />
-        <FilterChip
-          label={filter.gender === 'any' ? '성별' : filter.gender === 'male' ? '남성만' : '여성만'}
-          active={filter.gender !== 'any'}
+        <ReadyFilterChip
+          label="성별"
+          selected={filter.gender !== 'any'}
           onPress={() => onFilterPress('gender')}
         />
-        <FilterChip label="예산" active={budgetActive} onPress={() => onFilterPress('budget')} />
-        <FilterChip
-          label={filter.roomTypes.length > 0 ? `룸 형태 ${filter.roomTypes.length}` : '룸 형태'}
-          active={filter.roomTypes.length > 0}
+        <ReadyFilterChip
+          label="예산"
+          selected={budgetActive}
+          onPress={() => onFilterPress('budget')}
+        />
+        <ReadyFilterChip
+          label="방 형태"
+          count={filter.roomTypes.length}
+          selected={filter.roomTypes.length > 0}
           onPress={() => onFilterPress('roomType')}
         />
       </ScrollView>
     </>
-  );
-}
-
-function FilterChip({
-  label,
-  active,
-  outlined,
-  onPress,
-}: {
-  label: string;
-  active?: boolean;
-  outlined?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`h-[38px] flex-row items-center gap-1 rounded-full border px-3.5 active:opacity-80 ${
-        active
-          ? 'border-[#4C87F6] bg-[#EEF4FF]'
-          : outlined
-            ? 'border-[#DADAE8] bg-white'
-            : 'border-transparent bg-[#F6F6FA]'
-      }`}
-    >
-      <Text className={active ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-[#696976]'}>
-        {label}
-      </Text>
-      <Ionicons name="chevron-down" size={14} color={active ? '#256EF4' : '#696976'} />
-    </Pressable>
   );
 }

@@ -1,11 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type BoardListQuery,
-  labelForRoomTypeId,
   regionBackendId,
   roomTypeBackendId,
   useRoommateBoardLikeActions,
@@ -32,8 +31,8 @@ import {
   snoozePreferenceNudgeForWeek,
 } from '@/lib/preferences/nudge-storage';
 
-export type ExploreSort = 'latest' | 'likes' | 'views';
-export type ExploreFilterKey = 'region' | 'gender' | 'budget' | 'roomType';
+export type ExploreSort = 'latest' | 'views';
+export type ExploreFilterKey = 'sort' | 'region' | 'gender' | 'budget' | 'roomType';
 
 export type ExploreFilter = {
   regions: Region[];
@@ -57,8 +56,7 @@ export const INITIAL_EXPLORE_FILTER: ExploreFilter = {
 
 export const EXPLORE_SORT_OPTIONS: { value: ExploreSort; label: string }[] = [
   { value: 'latest', label: '최신순' },
-  { value: 'likes', label: '인기순' },
-  { value: 'views', label: '조회수순' },
+  { value: 'views', label: '조회순' },
 ];
 
 export type UseExploreScreenReturn = {
@@ -104,22 +102,11 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const setMatchLiked = useRoommateMatchLikeActions();
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
-  const appliedPreferredGenderRef = useRef(false);
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
   const [preferenceNudgeOpen, setPreferenceNudgeOpen] = useState(false);
   const [preferenceNudgeSnooze, setPreferenceNudgeSnooze] = useState(false);
   const { data: alarms } = useAlarms(Boolean(session));
 
-  useEffect(() => {
-    if (appliedPreferredGenderRef.current || !session) return;
-    appliedPreferredGenderRef.current = true;
-    if (session.user.preferredGender !== 'same') return;
-    const preferredGender = session.user.gender;
-    if (preferredGender !== 'male' && preferredGender !== 'female') return;
-    setFilter((current) =>
-      current.gender === 'any' ? { ...current, gender: preferredGender } : current,
-    );
-  }, [session]);
   const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
   const {
     data: posts,
@@ -142,13 +129,8 @@ export function useExploreScreen(): UseExploreScreenReturn {
     reload: reloadMatches,
   } = useRoommateMatchCards();
   const visibleMatches = useMemo(
-    () =>
-      filterMatches(
-        (matchList ?? []).filter((match) => !isUserBlocked(match.id)),
-        searchQuery,
-        filter,
-      ),
-    [matchList, isUserBlocked, searchQuery, filter],
+    () => (matchList ?? []).filter((match) => !isUserBlocked(match.id)),
+    [matchList, isUserBlocked],
   );
 
   const handleFilterChange = (next: ExploreFilter) => {
@@ -259,88 +241,6 @@ function filterRoomsBySearch(posts: RoomPost[], query: string): RoomPost[] {
   );
 }
 
-function filterMatches(
-  matches: RoommateMatchCardModel[],
-  query: string,
-  filter: ExploreFilter,
-): RoommateMatchCardModel[] {
-  const normalized = normalizeSearchValue(query);
-  const selectedRoomTypes = filter.roomTypes
-    .map(roomTypeBackendId)
-    .filter((id): id is number => id !== undefined)
-    .map(labelForRoomTypeId)
-    .map(normalizeSearchValue);
-  const hasBudgetFilter =
-    filter.depositMin !== INITIAL_EXPLORE_FILTER.depositMin ||
-    filter.depositMax !== INITIAL_EXPLORE_FILTER.depositMax ||
-    filter.rentMin !== INITIAL_EXPLORE_FILTER.rentMin ||
-    filter.rentMax !== INITIAL_EXPLORE_FILTER.rentMax;
-
-  return matches.filter((match) => {
-    if (
-      normalized &&
-      !normalizeSearchValue(
-        [
-          match.name,
-          match.genderLabel,
-          ...match.regionLabels,
-          ...match.roomTypeLabels,
-          ...match.lifestyleChips,
-          ...match.conditionChips,
-        ].join(' '),
-      ).includes(normalized)
-    ) {
-      return false;
-    }
-
-    if (filter.gender !== 'any' && match.gender !== filter.gender) return false;
-
-    if (filter.regions.length > 0) {
-      const matchRegions = match.regionLabels.map(normalizeRegionValue);
-      const regionMatched = filter.regions.some((region) => {
-        const selected = normalizeRegionValue(`${region.city} ${region.district}`);
-        return matchRegions.some(
-          (candidate) => candidate.includes(selected) || selected.includes(candidate),
-        );
-      });
-      if (!regionMatched) return false;
-    }
-
-    if (
-      selectedRoomTypes.length > 0 &&
-      !match.roomTypeLabels
-        .map(normalizeSearchValue)
-        .some((roomType) => selectedRoomTypes.includes(roomType))
-    ) {
-      return false;
-    }
-
-    if (
-      hasBudgetFilter &&
-      (!rangesOverlap(match.minDeposit, match.maxDeposit, filter.depositMin, filter.depositMax) ||
-        !rangesOverlap(match.minMonthlyRent, match.maxMonthlyRent, filter.rentMin, filter.rentMax))
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-function normalizeRegionValue(value: string): string {
-  return normalizeSearchValue(value).replace(/특별시|광역시|특별자치시|특별자치도|도/g, '');
-}
-
-function rangesOverlap(
-  candidateMin: number | undefined,
-  candidateMax: number | undefined,
-  selectedMin: number,
-  selectedMax: number,
-): boolean {
-  if (candidateMin === undefined || candidateMax === undefined) return false;
-  return candidateMin <= selectedMax && candidateMax >= selectedMin;
-}
-
 function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
   return {
     regionIds: filter.regions.map(regionBackendId).filter((id): id is number => id !== undefined),
@@ -358,7 +258,6 @@ function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQu
 
 function sortPosts(posts: RoomPost[], sort: ExploreSort): RoomPost[] {
   const next = [...posts];
-  if (sort === 'likes') return next.sort((a, b) => b.likes - a.likes);
   if (sort === 'views') return next.sort((a, b) => b.views - a.views);
   return next.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

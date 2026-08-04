@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/headless';
@@ -6,46 +7,37 @@ export type FilterSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  onReset: () => void;
-  onApply: () => void;
+  subtitle?: string;
   children: React.ReactNode;
 };
 
-export function FilterSheet({
-  open,
-  onOpenChange,
-  title,
-  onReset,
-  onApply,
-  children,
-}: FilterSheetProps) {
+export function FilterSheet({ open, onOpenChange, title, subtitle, children }: FilterSheetProps) {
   return (
     <BottomSheet
       open={open}
       onOpenChange={onOpenChange}
-      contentClassName="rounded-t-2xl bg-white px-5 pb-8 pt-3"
+      showHandle={false}
+      contentClassName="rounded-t-[20px] bg-white px-4 pb-5 pt-4"
     >
-      <Text className="mb-4 mt-1 text-lg font-bold text-neutral-900">{title}</Text>
-
-      <View className="gap-4">{children}</View>
-
-      <View className="mt-6 flex-row gap-3">
+      <View className="mb-5 flex-row items-center justify-between">
+        <View className="flex-row items-center gap-2">
+          <Text className="text-[17px] font-bold leading-6 text-[#17171B]">{title}</Text>
+          {subtitle ? (
+            <Text className="text-xs leading-[18px] text-[#AAAABA]">{subtitle}</Text>
+          ) : null}
+        </View>
         <Pressable
-          onPress={onReset}
-          className="h-12 flex-1 items-center justify-center rounded-xl border border-neutral-200 active:bg-neutral-50"
+          onPress={() => onOpenChange(false)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="닫기"
+          className="h-8 w-8 items-center justify-center rounded-full active:bg-[#F6F6FA]"
         >
-          <Text className="text-sm font-medium text-neutral-700">초기화</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            onApply();
-            onOpenChange(false);
-          }}
-          className="h-12 flex-[2] items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90"
-        >
-          <Text className="text-sm font-semibold text-white">적용하기</Text>
+          <Ionicons name="close" size={23} color="#696976" />
         </Pressable>
       </View>
+
+      {children}
     </BottomSheet>
   );
 }
