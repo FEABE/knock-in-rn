@@ -118,7 +118,6 @@ function validateOnboarding(
   }
   if (missingScales.length) missing.push(`생활 패턴: ${missingScales.join(', ')}`);
   if (missingChoices.length) missing.push(`생활 패턴: ${missingChoices.join(', ')}`);
-  if (!profile.preferredGender) missing.push('룸메이트 조건: 성별');
   if (Object.keys(preferences.lifestyleSelections).length < 5) {
     missing.push('룸메이트 조건: 생활패턴');
   }

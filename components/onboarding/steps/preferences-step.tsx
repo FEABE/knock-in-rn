@@ -25,7 +25,6 @@ type PreferenceQuestion = {
 };
 
 const PREFERENCE_HEADERS = [
-  '성별',
   '성격',
   '개인 공간 중요도',
   '방문객 빈도',
@@ -84,38 +83,19 @@ export function PreferencesStep() {
         [key]: value,
       },
     });
-    setStage((current) => Math.min(current + 1, 6));
+    setStage((current) => Math.min(current + 1, 5));
   };
-  const activeQuestion = stage >= 1 && stage <= 5 ? questions[stage - 1] : null;
+  const activeQuestion = stage >= 0 && stage <= 4 ? questions[stage] : null;
 
   return (
     <View className="flex-1 bg-white">
       <PreferenceHeader stage={stage} onBack={goBack} />
 
-      {stage === 0 ? (
-        <PreferenceQuestionView
-          title="원하는 룸메이트의 성별을 선택해주세요"
-          options={[
-            { label: '동성만 원해요', value: 'same' },
-            { label: '성별은 상관 없어요', value: 'any' },
-          ]}
-          selected={profile.preferredGender}
-          onSelect={(value) => {
-            patchProfile({ preferredGender: value as 'same' | 'any' });
-            setStage(1);
-          }}
-        />
-      ) : null}
-
-      {stage >= 1 && stage <= 5 ? (
+      {stage >= 0 && stage <= 4 ? (
         lifestyleOptions.loading ? (
           <LoadingState message="선호조건 항목을 불러오는 중이에요" />
         ) : lifestyleOptions.error ? (
-          <LoadingState
-            error
-            message={lifestyleOptions.error}
-            onRetry={lifestyleOptions.reload}
-          />
+          <LoadingState error message={lifestyleOptions.error} onRetry={lifestyleOptions.reload} />
         ) : activeQuestion ? (
           <PreferenceQuestionView
             title={activeQuestion.title}
@@ -132,7 +112,7 @@ export function PreferencesStep() {
         )
       ) : null}
 
-      {stage === 6 ? (
+      {stage === 5 ? (
         <>
           <ScrollView className="flex-1" contentContainerClassName="px-4 pb-8 pt-6">
             <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
@@ -184,7 +164,9 @@ function PreferenceHeader({ stage, onBack }: { stage: number; onBack: () => void
     <View className="h-12 flex-row items-center justify-between px-4">
       <BackButton onPress={onBack} />
       <Text className="text-lg font-medium text-[#17171B]">{PREFERENCE_HEADERS[stage]}</Text>
-      <Text className="w-10 text-right text-base text-[#AAAABA]">{stage + 1}/7</Text>
+      <Text className="w-10 text-right text-base text-[#AAAABA]">
+        {stage + 1}/{PREFERENCE_HEADERS.length}
+      </Text>
     </View>
   );
 }

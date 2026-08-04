@@ -181,7 +181,6 @@ export function isBasicProfileComplete(profile: BasicProfile): boolean {
     isValidProfileEmail(profile.email) &&
     profile.birthDate !== null &&
     profile.gender !== null &&
-    profile.preferredGender !== null &&
     profile.regions.length > 0 &&
     profile.bio.trim().length > 0 &&
     isLifestyleComplete(profile.lifestyle) &&
