@@ -50,7 +50,7 @@ export default function RootLayout() {
                 <Stack.Screen name="notifications" />
               </Stack>
               <AppVersionGate />
-              <StatusBar style="auto" />
+              <StatusBar style="dark" />
             </AgreementProvider>
           </ModerationProvider>
         </SessionProvider>
