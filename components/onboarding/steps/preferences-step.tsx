@@ -148,11 +148,7 @@ export function PreferencesStep() {
               )}
             />
           </ScrollView>
-          <OnboardingFooter
-            canProceed={profile.importantConditionIds.length > 0}
-            primaryLabel="완료"
-            onPress={() => setComplete(true)}
-          />
+          <OnboardingFooter canProceed primaryLabel="완료" onPress={() => setComplete(true)} />
         </>
       ) : null}
     </View>

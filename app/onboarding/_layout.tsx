@@ -121,7 +121,6 @@ function validateOnboarding(
   if (Object.keys(preferences.lifestyleSelections).length < 5) {
     missing.push('룸메이트 조건: 생활패턴');
   }
-  if (!profile.importantConditionIds.length) missing.push('룸메이트 조건: 우선순위');
   const preferenceConditionIds = preferenceConditionIdsFromPatternOptions(
     lifestyleOptions,
     profile.importantConditionIds,

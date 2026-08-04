@@ -184,7 +184,6 @@ export function isBasicProfileComplete(profile: BasicProfile): boolean {
     profile.regions.length > 0 &&
     profile.bio.trim().length > 0 &&
     isLifestyleComplete(profile.lifestyle) &&
-    profile.importantConditionIds.length > 0 &&
     profile.dealbreaker.trim().length > 0
   );
 }
