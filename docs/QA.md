@@ -75,7 +75,7 @@
 - (complete) 채팅을 시도하면 "채팅 서버에 연결 중이에요" 문구가 노출된 뒤 앱이 충돌하며 종료됩니다. 여러 차례 재시도해도 동일한 현상이 발생했습니다. (8월 4일 오후 7시 기준, 채팅 화면 진입 시 앱이 계속 종료되어 채팅 영역 QA를 정상적으로 진행하지 못함) — 원인: `sockjs-client`는 브라우저 전용 라이브러리라 RN에서 `new SockJS(...)` 생성 시점에 크래시남. STOMP 서버(`.withSockJS()`)의 `/websocket` 서브패스로 SockJS 협상 없이 RN 전역 WebSocket으로 직접 연결하도록 변경(lib/api/chat.ts의 wsChatUrl, lib/api/use-chat-socket.ts). 실제 백엔드가 해당 서브패스를 노출하는지는 로컬에서 서버 기동 확인 못해 미검증 — 다음 QA에서 채팅 진입 시 크래시 재현 여부 꼭 확인 필요
 
 ## 마이페이지
-- 프로필 편집, 생활패턴, 방 조건 관리 저장이 되지 않습니다.
+- 프로필 편집, 생활패턴, 방 조건 관리 저장이 되지 않습니다. — 코드 추적 결과 명확한 RN 버그를 못 찾음. `profile-edit`의 생활패턴 탭(LifestyleQuestionFlow)은 라디오형 UI라 이전 문서화된 "슬라이더 착시" 버그와 무관해 보이고, 방 조건 탭(saveRoom) 검증 로직도 정상. 저장 API(saveProfileLifestyle/updateProfileLifestyle/updateProfileRoomInfo) 자체가 서버에서 실패하는 것으로 추정되나 로컬 백엔드가 없어 재현 불가 — 다음 QA 때 실패 시 뜨는 에러 메시지(Alert 내용) 캡처 필요
 - 생활 패턴 관리, 방 조건 관리, 선호 룸메이트 관리, 신원 인증, 탈퇴하기 화면에 최신 UI 반영이 필요합니다.
 - 약관 및 정책은 계정 설정과 분리하여 최신 UI로 반영해야 합니다.
 - 자주 묻는 질문은 페이지로 이동되지 않습니다.
