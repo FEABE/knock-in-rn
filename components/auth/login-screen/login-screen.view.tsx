@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { SocialProvider } from '@/lib/api';
@@ -14,10 +14,11 @@ export function LoginScreenView({
   activeProvider,
   message,
   onProviderPress,
-  onRetry,
+  onDismissError,
 }: LoginScreenViewProps) {
   const loading = status === 'loading';
   const hasError = status === 'cancelled' || status === 'network' || status === 'failed';
+  const showSuccess = status === 'success';
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -49,26 +50,55 @@ export function LoginScreenView({
           />
         </View>
 
-        {status !== 'idle' && status !== 'loading' ? (
-          <Pressable
-            onPress={hasError ? onRetry : undefined}
-            disabled={!hasError}
-            className="mt-2 min-h-10 items-center justify-center px-3 py-1"
-          >
-            <Text
-              className={`text-center text-sm ${hasError ? 'text-rose-500' : 'text-[#256EF4]'}`}
-            >
-              {message ?? (hasError ? '로그인에 실패했어요. 다시 시도해주세요.' : '로그인됐어요.')}
-            </Text>
-            {hasError ? (
-              <Text className="mt-1 text-xs font-semibold text-[#256EF4]">다시 시도</Text>
-            ) : null}
-          </Pressable>
+        {showSuccess ? (
+          <View className="mt-2 min-h-10 items-center justify-center px-3 py-1">
+            <Text className="text-center text-sm text-[#256EF4]">{message ?? '로그인됐어요.'}</Text>
+          </View>
         ) : (
           <View className="h-10" />
         )}
       </View>
+
+      <LoginErrorModal status={status} hasError={hasError} onDismiss={onDismissError} />
     </SafeAreaView>
+  );
+}
+
+function LoginErrorModal({
+  status,
+  hasError,
+  onDismiss,
+}: {
+  status: LoginScreenViewProps['status'];
+  hasError: boolean;
+  onDismiss: () => void;
+}) {
+  const title = status === 'cancelled' ? '로그인을 취소했어요' : '로그인에 실패했어요';
+  const description =
+    status === 'network'
+      ? '네트워크 연결을 확인한 뒤 다시 시도해주세요'
+      : '잠시 후 다시 시도해주세요';
+
+  return (
+    <Modal transparent animationType="fade" visible={hasError} onRequestClose={onDismiss}>
+      <View className="flex-1 items-center justify-center bg-[#17171B]/40 px-8">
+        <View className="w-full max-w-[300px] items-center gap-4 rounded-2xl bg-white px-6 py-7">
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-[#F6F6FA]">
+            <Ionicons name="alert-circle-outline" size={28} color="#696976" />
+          </View>
+          <View className="items-center gap-1">
+            <Text className="text-base font-bold text-[#17171B]">{title}</Text>
+            <Text className="text-center text-sm text-[#696976]">{description}</Text>
+          </View>
+          <Pressable
+            onPress={onDismiss}
+            className="h-11 w-full items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90"
+          >
+            <Text className="text-[15px] font-semibold text-white">확인</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 

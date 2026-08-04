@@ -16,6 +16,7 @@ export type UseLoginScreenReturn = {
   onRetry: () => void;
   onSkip: () => void;
   onBack: () => void;
+  onDismissError: () => void;
 };
 
 export function useLoginScreen(): UseLoginScreenReturn {
@@ -82,6 +83,10 @@ export function useLoginScreen(): UseLoginScreenReturn {
     onBack: () => {
       if (router.canGoBack()) router.back();
       else goExplore(router, 'replace');
+    },
+    onDismissError: () => {
+      setStatus('idle');
+      setMessage(null);
     },
   };
 }
