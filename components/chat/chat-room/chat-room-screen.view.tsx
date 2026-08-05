@@ -22,7 +22,7 @@ import {
   ReadyBadge,
   ReadyProfileAvatar,
 } from '@/components/ui/ready-to-dev-components';
-import { formatKstTime, isSameKstDay, kstClock } from '@/lib/api';
+import { formatKstTime, isSameKstDay, kstClock, type ChatSocketStatus } from '@/lib/api';
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
 import type { ChatRoomBubble, UseChatRoomScreenReturn } from './use-chat-room-screen';
@@ -41,6 +41,7 @@ export function ChatRoomScreenView({
   canSend,
   socketStatus,
   socketError,
+  retrySocket,
   uploadingImage,
   processingRequest,
   inputBottomPadding,
@@ -70,16 +71,7 @@ export function ChatRoomScreenView({
         onOpenRequestSheet={openRequestSheet}
       />
 
-      {socketStatus !== 'connected' ? (
-        <View className="flex-row items-center justify-center gap-2 bg-[#F6F6FA] px-4 py-2">
-          {socketStatus === 'connecting' ? (
-            <ActivityIndicator size="small" color="#696976" />
-          ) : null}
-          <Text className="text-xs text-[#696976]">
-            {socketError ?? '채팅 서버에 연결하는 중이에요'}
-          </Text>
-        </View>
-      ) : null}
+      <SocketStatusBanner status={socketStatus} error={socketError} onRetry={retrySocket} />
 
       <ScrollView
         ref={scrollRef}
@@ -135,6 +127,35 @@ export function ChatRoomBlockedView({
         <MessageList messages={messages} peer={peer} />
       </ScrollView>
       <ReadyChatComposer value="" disabled placeholder="차단한 사용자에요" />
+    </View>
+  );
+}
+
+function SocketStatusBanner({
+  status,
+  error,
+  onRetry,
+}: {
+  status: ChatSocketStatus;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  if (status === 'connected') return null;
+
+  return (
+    <View className="flex-row items-center justify-center gap-2 bg-[#F6F6FA] px-4 py-2">
+      {status === 'connecting' ? <ActivityIndicator size="small" color="#696976" /> : null}
+      <Text className="text-xs text-[#696976]">{error ?? '채팅 서버에 연결하는 중이에요'}</Text>
+      {status === 'error' ? (
+        <Pressable
+          onPress={onRetry}
+          accessibilityRole="button"
+          accessibilityLabel="채팅 서버에 다시 연결하기"
+          className="h-7 justify-center rounded-md bg-[#256EF4] px-3 active:opacity-90"
+        >
+          <Text className="text-xs font-bold text-white">다시 연결</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

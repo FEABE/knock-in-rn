@@ -1,10 +1,13 @@
 import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useMyRoommateBoards, useRoommateBoardWriteActions } from '@/lib/api';
 import { useSession, type RoomPost } from '@/lib/domain';
 import { goKakaoLogin, goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
+
+const TOAST_DURATION_MS = 1800;
 
 export type UseMyRoomsScreenReturn = {
   loggedIn: boolean;
@@ -13,6 +16,8 @@ export type UseMyRoomsScreenReturn = {
   error: string | null;
   deleting: boolean;
   bottomPadding: number;
+  deleteDialogOpen: boolean;
+  toastMessage: string | null;
   onBack: () => void;
   onLoginPress: () => void;
   onRetry: () => void;
@@ -20,6 +25,8 @@ export type UseMyRoomsScreenReturn = {
   onRoomPress: (post: RoomPost) => void;
   onEditPress: (post: RoomPost) => void;
   onDeletePress: (post: RoomPost) => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
 };
 
 export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
@@ -29,6 +36,38 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
   const { deleteBoard, deleting } = useRoommateBoardWriteActions();
   const bottomPadding = useSafeBottomPadding(12, 24);
   const rooms = session ? (apiRooms ?? []) : [];
+  const [deleteTarget, setDeleteTarget] = useState<RoomPost | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
+
+  const showToast = (message: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastMessage(message);
+    toastTimer.current = setTimeout(() => setToastMessage(null), TOAST_DURATION_MS);
+  };
+
+  const onConfirmDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    try {
+      await deleteBoard(deleteTarget.id);
+    } catch (deleteError) {
+      setDeleteTarget(null);
+      Alert.alert(
+        '삭제 실패',
+        deleteError instanceof Error ? deleteError.message : '잠시 후 다시 시도해주세요.',
+      );
+      return;
+    }
+    setDeleteTarget(null);
+    showToast('게시글이 삭제되었어요');
+  };
 
   return {
     loggedIn: !!session,
@@ -37,29 +76,16 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
     error,
     deleting,
     bottomPadding,
+    deleteDialogOpen: deleteTarget !== null,
+    toastMessage,
     onBack: () => router.back(),
     onLoginPress: () => goKakaoLogin(router),
     onRetry: reload,
     onCreatePress: () => goNewRoom(router),
     onRoomPress: (post) => goRoomDetail(router, post.id),
     onEditPress: (post) => goRoomEdit(router, post.id),
-    onDeletePress: (post) =>
-      Alert.alert('삭제', '게시글을 삭제할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteBoard(post.id);
-            } catch (error) {
-              Alert.alert(
-                '삭제 실패',
-                error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.',
-              );
-            }
-          },
-        },
-      ]),
+    onDeletePress: (post) => setDeleteTarget(post),
+    onCancelDelete: () => setDeleteTarget(null),
+    onConfirmDelete,
   };
 }

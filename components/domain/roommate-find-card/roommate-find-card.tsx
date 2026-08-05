@@ -5,6 +5,9 @@ import { Pressable, Text, View } from 'react-native';
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 import type { RoommateMatchCardModel } from '@/lib/api';
 
+/** 리스트 셀이 마운트될 때마다 새로 만들지 않도록 모듈 상수로 공유한다. */
+const PROFILE_IMAGE_STYLE = { width: 48, height: 48, borderRadius: 24 } as const;
+
 export type RoommateFindCardProps = {
   match: RoommateMatchCardModel;
   onPress?: (match: RoommateMatchCardModel) => void;
@@ -25,7 +28,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
         {match.profileImageUrl ? (
           <Image
             source={{ uri: match.profileImageUrl }}
-            style={{ width: 48, height: 48, borderRadius: 24 }}
+            style={PROFILE_IMAGE_STYLE}
             contentFit="cover"
           />
         ) : (

@@ -36,6 +36,7 @@ export type UseChatRoomScreenReturn = {
   blocked: boolean;
   socketStatus: ChatSocketStatus;
   socketError: string | null;
+  retrySocket: () => void;
   uploadingImage: boolean;
   processingRequest: boolean;
   inputBottomPadding: number;
@@ -244,6 +245,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     blocked,
     socketStatus: USE_MOCK ? 'connected' : socket.status,
     socketError: socket.error,
+    retrySocket: socket.retry,
     uploadingImage,
     processingRequest,
     inputBottomPadding,

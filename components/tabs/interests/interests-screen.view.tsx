@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
@@ -10,8 +10,27 @@ import {
   ReadyErrorState,
   ReadyLoadingState,
 } from '@/components/ui/ready-to-dev-feedback';
+import type { RoommateMatchCardModel } from '@/lib/api';
+import type { RoomPost } from '@/lib/domain';
 
 import type { UseInterestsScreenReturn } from './use-interests-screen';
+
+const INTERESTS_TABS = [
+  { value: 'rooms', label: '룸메 구해요' },
+  { value: 'roommates', label: '룸메 찾아요' },
+];
+
+const roomKeyExtractor = (post: RoomPost) => post.id;
+const matchKeyExtractor = (match: RoommateMatchCardModel) => match.id;
+
+/** 기존 contentContainer의 gap-5 / gap-4 를 대체한다(가상화 스페이서에 gap이 먹는 문제 회피). */
+function RoomListSeparator() {
+  return <View className="h-5" />;
+}
+
+function MatchListSeparator() {
+  return <View className="h-4" />;
+}
 
 export type InterestsScreenViewProps = UseInterestsScreenReturn;
 
@@ -47,10 +66,7 @@ export function InterestsScreenView({
       ) : (
         <Tabs.Root defaultValue="rooms" className="flex-1">
           <Tabs.List className="flex-row">
-            {[
-              { value: 'rooms', label: '룸메 구해요' },
-              { value: 'roommates', label: '룸메 찾아요' },
-            ].map((tab) => (
+            {INTERESTS_TABS.map((tab) => (
               <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 pt-3">
                 {({ selected }) => (
                   <View
@@ -90,16 +106,18 @@ export function InterestsScreenView({
                 onAction={onExplorePress}
               />
             ) : (
-              <ScrollView contentContainerClassName="gap-5 px-4 pb-24 pt-1">
-                {rooms.map((post) => (
-                  <RoomCard
-                    key={post.id}
-                    post={post}
-                    onPress={onRoomPress}
-                    onLikeChange={onRoomLikeChange}
-                  />
-                ))}
-              </ScrollView>
+              <FlatList
+                contentContainerClassName="px-4 pb-24 pt-1"
+                data={rooms}
+                keyExtractor={roomKeyExtractor}
+                renderItem={({ item }) => (
+                  <RoomCard post={item} onPress={onRoomPress} onLikeChange={onRoomLikeChange} />
+                )}
+                ItemSeparatorComponent={RoomListSeparator}
+                initialNumToRender={4}
+                maxToRenderPerBatch={4}
+                windowSize={7}
+              />
             )}
           </Tabs.Content>
 
@@ -120,16 +138,22 @@ export function InterestsScreenView({
                 onAction={onExplorePress}
               />
             ) : (
-              <ScrollView contentContainerClassName="gap-4 p-5">
-                {likedMatches.map((match) => (
+              <FlatList
+                contentContainerClassName="p-5"
+                data={likedMatches}
+                keyExtractor={matchKeyExtractor}
+                renderItem={({ item }) => (
                   <RoommateFindCard
-                    key={match.id}
-                    match={match}
+                    match={item}
                     onPress={onRoommatePress}
                     onLikeChange={onRoommateLikeChange}
                   />
-                ))}
-              </ScrollView>
+                )}
+                ItemSeparatorComponent={MatchListSeparator}
+                initialNumToRender={5}
+                maxToRenderPerBatch={5}
+                windowSize={7}
+              />
             )}
           </Tabs.Content>
         </Tabs.Root>

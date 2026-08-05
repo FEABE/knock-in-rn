@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
@@ -14,6 +14,10 @@ import {
 } from '@/components/ui/ready-to-dev-feedback';
 
 import type { ChatListRow, UseChatListScreenReturn } from './use-chat-list-screen';
+
+const chatRowKeyExtractor = (row: ChatListRow) => String(row.room.chatRoomId);
+
+const renderChatRow = ({ item }: { item: ChatListRow }) => <ChatRoomRow row={item} />;
 
 export type ChatListScreenViewProps = UseChatListScreenReturn;
 
@@ -46,11 +50,14 @@ export function ChatListScreenView({
           description="마음에 드는 룸메이트에게 먼저 말을 걸어보세요"
         />
       ) : (
-        <ScrollView>
-          {rows.map((row) => (
-            <ChatRoomRow key={String(row.room.chatRoomId)} row={row} />
-          ))}
-        </ScrollView>
+        <FlatList
+          data={rows}
+          keyExtractor={chatRowKeyExtractor}
+          renderItem={renderChatRow}
+          initialNumToRender={12}
+          maxToRenderPerBatch={10}
+          windowSize={11}
+        />
       )}
     </SafeAreaView>
   );

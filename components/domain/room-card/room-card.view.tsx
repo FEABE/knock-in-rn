@@ -6,6 +6,10 @@ import type { UseRoomCardReturn } from './use-room-card';
 
 const BRAND = '#256EF4';
 
+/** 리스트 셀이 마운트될 때마다 새로 만들지 않도록 모듈 상수로 공유한다. */
+const THUMBNAIL_STYLE = { width: '100%', height: 165 } as const;
+const AUTHOR_AVATAR_STYLE = { width: 24, height: 24, borderRadius: 12 } as const;
+
 export type RoomCardViewProps = UseRoomCardReturn & {
   className?: string;
 };
@@ -30,7 +34,7 @@ export function RoomCardView({
         {post.thumbnailUrl ? (
           <Image
             source={{ uri: post.thumbnailUrl }}
-            style={{ width: '100%', height: 165 }}
+            style={THUMBNAIL_STYLE}
             contentFit="cover"
             transition={150}
           />
@@ -76,7 +80,7 @@ export function RoomCardView({
             {post.author.avatarUrl ? (
               <Image
                 source={{ uri: post.author.avatarUrl }}
-                style={{ width: 24, height: 24, borderRadius: 12 }}
+                style={AUTHOR_AVATAR_STYLE}
                 contentFit="cover"
               />
             ) : (

@@ -283,6 +283,14 @@ export function ReadyProfileAvatar({
   );
 }
 
+const BADGE_PALETTE = {
+  neutral: ['bg-[#F1F1F6]', '#696976'],
+  blue: ['bg-[#ECF2FE]', '#4C87F6'],
+  red: ['bg-[#FDEFEC]', '#DE3412'],
+  green: ['bg-[#EAF7F1]', '#249F6A'],
+  dark: ['bg-[#696976]', '#FFFFFF'],
+} as const;
+
 export function ReadyBadge({
   label,
   tone = 'neutral',
@@ -292,14 +300,7 @@ export function ReadyBadge({
   tone?: 'neutral' | 'blue' | 'red' | 'green' | 'dark';
   icon?: keyof typeof Ionicons.glyphMap;
 }) {
-  const palette = {
-    neutral: ['bg-[#F1F1F6]', '#696976'],
-    blue: ['bg-[#ECF2FE]', '#4C87F6'],
-    red: ['bg-[#FDEFEC]', '#DE3412'],
-    green: ['bg-[#EAF7F1]', '#249F6A'],
-    dark: ['bg-[#696976]', '#FFFFFF'],
-  } as const;
-  const [backgroundClass, color] = palette[tone];
+  const [backgroundClass, color] = BADGE_PALETTE[tone];
 
   return (
     <View className={`flex-row items-center gap-1 rounded px-1.5 py-1 ${backgroundClass}`}>

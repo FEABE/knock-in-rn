@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { RoomCard } from '@/components/domain';
 import { ErrorState } from '@/components/ui/error-state';
+import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseMyRoomsScreenReturn } from './use-my-rooms-screen';
 
@@ -15,12 +16,17 @@ export function MyRoomsScreenView({
   rooms,
   loading,
   error,
+  deleting,
   bottomPadding,
+  deleteDialogOpen,
+  toastMessage,
   onBack,
   onLoginPress,
   onRetry,
   onCreatePress,
   onRoomPress,
+  onCancelDelete,
+  onConfirmDelete,
 }: MyRoomsScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -80,6 +86,18 @@ export function MyRoomsScreenView({
           <Ionicons name="add" size={28} color="#FFFFFF" />
         </Pressable>
       ) : null}
+
+      <ReadyConfirmDialog
+        open={deleteDialogOpen}
+        title="게시글을 삭제하시겠어요?"
+        description="게시글 삭제 후에는 복구가 불가해요"
+        cancelLabel="취소"
+        confirmLabel="삭제"
+        processing={deleting}
+        onCancel={onCancelDelete}
+        onConfirm={onConfirmDelete}
+      />
+      <ReadyToast visible={toastMessage !== null} message={toastMessage ?? ''} tone="success" />
     </SafeAreaView>
   );
 }

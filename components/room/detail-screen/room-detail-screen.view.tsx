@@ -24,6 +24,7 @@ import {
   ReadyScreenHeader,
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
+import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
 import type { LifestyleTile, UseRoomDetailScreenReturn } from './use-room-detail-screen';
@@ -303,6 +304,22 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
           )}
         </View>
       </ReadyActionSheet>
+
+      <ReadyConfirmDialog
+        open={props.deleteDialogOpen}
+        title="게시글을 삭제하시겠어요?"
+        description="게시글 삭제 후에는 복구가 불가해요"
+        cancelLabel="취소"
+        confirmLabel="삭제"
+        processing={props.deleting}
+        onCancel={props.onCancelDelete}
+        onConfirm={props.onConfirmDelete}
+      />
+      <ReadyToast
+        visible={props.deleteToastVisible}
+        message="게시글이 삭제되었어요"
+        tone="success"
+      />
     </SafeAreaView>
   );
 }
