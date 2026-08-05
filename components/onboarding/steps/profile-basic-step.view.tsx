@@ -340,7 +340,7 @@ function TermsBottomSheet({
       open={open}
       onOpenChange={onOpenChange}
       backdropClassName="flex-1 justify-end bg-[#17171B]/40"
-      contentClassName="h-[388px] rounded-t-[20px] bg-white px-5 pt-2"
+      contentClassName="rounded-t-[20px] bg-white px-5 pt-2"
       handleClassName="mx-auto mb-7 h-0.5 w-[66px] rounded-full bg-black/60"
     >
       {toastVisible ? <RequiredTermToast /> : null}
@@ -400,20 +400,18 @@ function TermsBottomSheet({
         </Text>
       ) : null}
 
-      <View className="absolute inset-x-4 bottom-4">
-        <Pressable
-          onPress={onContinue}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canContinue }}
-          className={`h-12 items-center justify-center rounded-lg ${
-            canContinue ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
-          }`}
-        >
-          <Text className={`text-base font-bold ${canContinue ? 'text-white' : 'text-[#AAAABA]'}`}>
-            확인
-          </Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={onContinue}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !canContinue }}
+        className={`mt-6 h-12 items-center justify-center rounded-lg ${
+          canContinue ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
+        }`}
+      >
+        <Text className={`text-base font-bold ${canContinue ? 'text-white' : 'text-[#AAAABA]'}`}>
+          확인
+        </Text>
+      </Pressable>
     </BottomSheet>
   );
 }
