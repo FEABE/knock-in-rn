@@ -64,6 +64,7 @@
 
 ## 룸메 구해요
 - 최신 UI 반영
+- (complete) [BE] 게시글 작성 시(게시물 목록 "+" 버튼) 사용자 정보(생활패턴/선호 룸메이트 조건·중요 조건)가 없어 게시물 작성이 불가능함 — FE 처리건으로 `GET users/me/profile/all`, `GET users/me/preferences/all` 호출 요청받음. 코드 확인 결과 `1c4273d` 시점에는 `use-new-room-screen.ts`가 `useRoommateBoardWriteActions`만 쓰고 두 API를 전혀 호출하지 않아 보고된 버그가 실제로 존재했음. 이후 팀이 직접 커밋(`da59b1f` "3차 커밋")에서 `lib/api/use-account.ts`에 `useMyLifestyleOverview` 훅을 신설해 두 API(`getProfileAll`/`getPreferenceAll`)를 정확히 호출하도록 고쳤고, `new-room-screen.view.tsx`의 "생활 패턴과 룸메이트 정보를 확인해주세요" 화면(스크린샷과 동일 화면)에 데이터를 연결함. 수정 화면(`edit-room-screen`)도 다음 커밋(`0bc19c2` "room 수정 진행")에서 동일한 훅으로 연결 완료. 현재 `dev`(`0bc19c2`) 기준으로 신규 작성/수정 화면 둘 다 두 API를 정상 호출함 — 재확인 필요 없음
 
 ## 관심
 - 룸메 구해요, 룸메 찾아요 탭의 폰트 크기가 시안보다 큽니다.
