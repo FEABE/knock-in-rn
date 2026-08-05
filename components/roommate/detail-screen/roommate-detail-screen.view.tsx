@@ -500,7 +500,6 @@ function KeyVal({ label, value }: { label: string; value: string }) {
 }
 
 function figmaLivingLabel(label: string): string {
-  if (label === '입주 가능 시기' || label === '입주 희망 시기') return '입주 가능일';
   if (label === '지역' || label === '희망 지역') return '위치';
   return label;
 }

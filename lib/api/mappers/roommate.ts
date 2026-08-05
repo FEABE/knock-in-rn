@@ -167,16 +167,11 @@ export function toRoommateMatchDetailModel(
   const livingRows = isOffer
     ? [
         {
-          label: '보증금',
-          value: `${numberValue(data.offerProfile?.deposit ?? data.deposit).toLocaleString()}만원`,
-        },
-        {
-          label: '월세',
-          value: `${numberValue(
+          label: '예산',
+          value: `보증금 ${numberValue(data.offerProfile?.deposit ?? data.deposit).toLocaleString()}만원 / 월세 ${numberValue(
             data.offerProfile?.monthlyRent ?? data.mounthRent,
           ).toLocaleString()}만원`,
         },
-        { label: '입주 가능 시기', value: formatDateLabel(data.comeableAt) },
         { label: '방 형태', value: roomTypeLabel },
         {
           label: '지역',
@@ -185,18 +180,13 @@ export function toRoommateMatchDetailModel(
       ]
     : [
         {
-          label: '예산 보증금',
-          value: `${numberValue(
+          label: '예산',
+          value: `보증금 ${numberValue(
             data.seekerProfile?.maxDeposit ?? data.maxDeposit,
-          ).toLocaleString()}만원 이하`,
-        },
-        {
-          label: '예산 월세',
-          value: `${numberValue(
+          ).toLocaleString()}만원 / 월세 ${numberValue(
             data.seekerProfile?.maxMonthlyRent ?? data.maxMounthRent,
           ).toLocaleString()}만원 이하`,
         },
-        { label: '입주 희망 시기', value: formatDateLabel(data.comeableAt) },
         { label: '희망 룸 형태', value: roomTypeLabel },
         {
           label: '희망 지역',
