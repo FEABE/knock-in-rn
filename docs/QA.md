@@ -68,7 +68,7 @@
 ## 관심
 - 룸메 구해요, 룸메 찾아요 탭의 폰트 크기가 시안보다 큽니다.
 - (complete) 룸메 구해요 탭에서 방 보러가기를 선택하면 탐색 화면에서 이전에 보던 탭으로 이동합니다. 룸메 구해요 탭으로 바로 이동해야 합니다. — 관심 탭의 "방 보러가기"/"룸메이트 보러가기" 둘 다 goExplore(router)만 호출해서 tab 지정이 아예 없었음. goExplore에 tab 파라미터 추가(?tab=rooms|roommates), 탐색 화면의 Tabs.Root를 uncontrolled(defaultValue)에서 controlled(value+onValueChange)로 바꿔서 화면이 계속 마운트돼 있어도 쿼리 파라미터가 바뀌면 강제로 탭 전환되도록 함. 웹 mock으로 ?tab=roommates 진입 시 룸메이트 목록으로 바로 전환되는 것 확인
-- 재로그인 후 관심 목록에 저장했던 룸메 찾아요 항목이 사라졌습니다.
+- 재로그인 후 관심 목록에 저장했던 룸메 찾아요 항목이 사라졌습니다. — RN 코드 확인 결과 toggleMatchLike API 호출 + 뮤테이션 후 쿼리 무효화 + 로그아웃 시 queryClient.clear() 전부 정상 구현되어 있어, liked 상태는 매번 서버(getRoommateMatches)에서 새로 받아옴. RN 캐싱 버그로 보긴 어려움 — 백엔드가 좋아요 상태를 영속화하지 못하는 문제로 추정, 백엔드 확인 필요
 
 ## 채팅
 - UI가 최신화 필요
