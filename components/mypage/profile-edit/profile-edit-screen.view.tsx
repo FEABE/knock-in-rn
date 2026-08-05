@@ -23,6 +23,7 @@ export function ProfileEditScreenView(props: ProfileEditScreenViewProps) {
       {props.initialTab === 'lifestyle' ? (
         <LifestyleQuestionFlow
           title="생활 패턴 관리"
+          questionVariant="lifestyle"
           scales={props.scales}
           choiceValues={props.choiceValues}
           scaleOptions={props.scaleOptions}

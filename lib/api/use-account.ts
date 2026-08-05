@@ -4,10 +4,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import {
+  EMBEDDED_PREFERENCE_PRIORITIES,
+  embeddedPriorityIdFromLabel,
+} from '@/lib/domain/preference-priorities';
+
 import { getAccessToken } from './client';
 import { formatKstDateLabel, parseServerDate } from './date-time';
 import { logout, withdraw } from './auth';
-import { getProfileAll, updateVisibility } from './profile';
+import { getPreferenceAll, getProfileAll, updateVisibility } from './profile';
 import { getNotificationSettings, updateNotificationSetting } from './notification';
 import {
   blockUser as blockUserRequest,
@@ -57,6 +62,99 @@ export function useMyPageProfileSummary(enabled = true): AsyncState<MyPageProfil
   }, [state.data]);
 
   return { ...state, data: summary };
+}
+
+/** 생활패턴/선호조건 한 줄. `id`는 매칭된 내장 우선순위 키(sleep/cleanliness/…)다. */
+export type LifestyleSummaryItem = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+export type MyLifestyleOverview = {
+  /** 내 생활패턴 (GET /users/me/profile/all). */
+  lifestyles: LifestyleSummaryItem[];
+  /** 선호 룸메이트 조건 (GET /users/me/preferences/all → lifestyles). */
+  preferredLifestyles: LifestyleSummaryItem[];
+  /** 중요 조건 (GET /users/me/preferences/all → conditions). */
+  importantConditions: string[];
+};
+
+type RawLifestyleItem = {
+  lifestyleId?: number;
+  name?: string;
+  value?: string;
+  description?: string;
+};
+
+const PRIORITY_ORDER: readonly string[] = EMBEDDED_PREFERENCE_PRIORITIES.map(
+  (priority) => priority.value,
+);
+
+/**
+ * 내 생활패턴 + 선호 룸메이트 조건 조회.
+ *
+ * 세션(`session.user.lifestyle`)에는 생활패턴이 담기지 않으므로, 프로필 요약이
+ * 필요한 화면은 이 훅으로 서버에서 직접 읽어야 한다.
+ */
+export function useMyLifestyleOverview(
+  enabled = Boolean(getAccessToken()),
+): AsyncState<MyLifestyleOverview> {
+  const profile = useApi(['profile', 'all'], () => getProfileAll(), { enabled, retry: false });
+  const preference = useApi(['profile', 'preferences', 'all'], () => getPreferenceAll(), {
+    enabled,
+    retry: false,
+  });
+
+  const overview = useMemo<MyLifestyleOverview | null>(() => {
+    if (!profile.data && !preference.data) return null;
+    return {
+      lifestyles: toLifestyleSummaryItems(profile.data?.lifestyles),
+      preferredLifestyles: toLifestyleSummaryItems(preference.data?.lifestyles),
+      importantConditions: (preference.data?.conditions ?? []).flatMap((condition) => {
+        const name = condition.name?.trim();
+        return name ? [name] : [];
+      }),
+    };
+  }, [preference.data, profile.data]);
+
+  const { reload: reloadProfile } = profile;
+  const { reload: reloadPreference } = preference;
+  const reload = useCallback(() => {
+    reloadProfile();
+    reloadPreference();
+  }, [reloadPreference, reloadProfile]);
+
+  return {
+    data: overview,
+    loading: profile.loading || preference.loading,
+    error: profile.error ?? preference.error,
+    reload,
+  };
+}
+
+/** 서버 생활패턴 항목을 화면용 라벨/값으로 정규화하고 온보딩 질문 순서대로 정렬한다. */
+function toLifestyleSummaryItems(items?: RawLifestyleItem[]): LifestyleSummaryItem[] {
+  return (items ?? [])
+    .flatMap((item) => {
+      const label = item.name?.trim();
+      if (!label) return [];
+      const value = item.description?.trim() || item.value?.trim();
+      if (!value) return [];
+      return [
+        {
+          id: embeddedPriorityIdFromLabel(label) ?? `pattern-${item.lifestyleId ?? label}`,
+          label,
+          value,
+        },
+      ];
+    })
+    .sort((a, b) => priorityRank(a.id) - priorityRank(b.id));
+}
+
+function priorityRank(id: string): number {
+  const index = PRIORITY_ORDER.indexOf(id);
+  return index === -1 ? PRIORITY_ORDER.length : index;
 }
 
 export type MyVerificationSummary = {

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRef } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,6 +26,7 @@ export function PreferencesScreenView(props: PreferencesScreenViewProps) {
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
         <LifestyleQuestionFlow
           title="선호 룸메이트 관리"
+          questionVariant="preference"
           scales={props.scales}
           choiceValues={props.choiceValues}
           scaleOptions={props.scaleOptions}
@@ -95,12 +97,16 @@ function PromptStep({
 
 function PriorityStep({
   priorities,
+  questionLabels,
   selected,
   goBackStep,
   togglePriority,
   save,
   formBottomPadding,
 }: PreferencesScreenViewProps) {
+  // 탭 스트립도 서버 문항 목록에서 만든다(하드코딩 06~09 제거). 마지막 '우선순위'가 현재 단계.
+  const tabs = [...questionLabels, '우선순위'];
+  const tabStrip = useRef<ScrollView>(null);
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="h-14 flex-row items-center px-3">
@@ -123,19 +129,17 @@ function PriorityStep({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        ref={tabStrip}
+        onContentSizeChange={() => tabStrip.current?.scrollToEnd({ animated: false })}
         className="max-h-[58px] border-b border-[#ECECF3]"
         contentContainerClassName="px-0"
       >
-        {[
-          ['06', '소음 민감도'],
-          ['07', '개인 공간 중요도'],
-          ['08', '성격'],
-          ['09', '우선순위'],
-        ].map(([number, label], index) => {
-          const active = index === 3;
+        {tabs.map((label, index) => {
+          const active = index === tabs.length - 1;
+          const number = String(index + 1).padStart(2, '0');
           return (
             <View
-              key={number}
+              key={`${number}-${label}`}
               className={`h-[58px] min-w-[86px] justify-center border-b-2 px-4 ${
                 active ? 'border-[#256EF4]' : 'border-transparent'
               }`}
@@ -189,7 +193,7 @@ function PriorityStep({
                       : 'border-[#DADAE8] bg-white'
                 }`}
               >
-                <PriorityArtwork label={priority.name} size={22} />
+                <PriorityArtwork label={priority.name} image={priority.image} size={22} />
                 <Text
                   className={`text-[14px] font-medium ${on ? 'text-[#256EF4]' : 'text-[#696976]'}`}
                 >
@@ -216,10 +220,12 @@ function PriorityStep({
                   <View className="h-6 w-6 items-center justify-center rounded-full bg-[#256EF4]">
                     <Text className="text-xs font-bold text-white">{index + 1}</Text>
                   </View>
-                  <PriorityArtwork label={priority.name} size={25} />
+                  <PriorityArtwork label={priority.name} image={priority.image} size={25} />
                   <View className="flex-1">
                     <Text className="text-sm font-semibold text-[#242429]">{priority.name}</Text>
-                    <Text className="mt-0.5 text-xs text-[#8A8A98]">{priority.desc}</Text>
+                    {priority.desc ? (
+                      <Text className="mt-0.5 text-xs text-[#8A8A98]">{priority.desc}</Text>
+                    ) : null}
                   </View>
                 </View>
               );

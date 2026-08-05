@@ -12,6 +12,7 @@ export function NoticeDetailScreenView({
   title,
   dateLabel,
   body,
+  bodyUnavailable,
   loading,
   error,
   retry,
@@ -32,7 +33,18 @@ export function NoticeDetailScreenView({
         <ScrollView contentContainerClassName="gap-2 p-5">
           <Text className="text-lg font-bold text-neutral-900">{title}</Text>
           <Text className="text-xs text-neutral-400">{dateLabel}</Text>
-          <Text className="mt-3 text-sm leading-6 text-neutral-700">{body}</Text>
+          {bodyUnavailable ? (
+            <View className="mt-3">
+              <ReadyErrorState
+                title="공지 본문을 불러오지 못했어요"
+                description="잠시 후 다시 시도해주세요."
+                onRetry={retry}
+                compact
+              />
+            </View>
+          ) : (
+            <Text className="mt-3 text-sm leading-6 text-neutral-700">{body}</Text>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>

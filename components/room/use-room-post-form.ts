@@ -265,8 +265,8 @@ export function useRoomPostForm({
           imageUris: current.draft.imageUris.filter((_, photoIndex) => photoIndex !== index),
         },
       })),
+    // 서버는 방 옵션 개수를 제한하지 않는다(/meta/room-add-options 6종 전부 선택 가능).
     toggleOption: (next) => {
-      if (!draft.options.includes(next) && draft.options.length >= 4) return;
       patch({
         options: draft.options.includes(next)
           ? draft.options.filter((option) => option !== next)

@@ -14,9 +14,6 @@ import {
   NegotiableSelector,
   PhotoSlot,
   RegionSelectButton,
-  profileSensitivityLabel,
-  profileSleepLabel,
-  profileSmokingLabel,
 } from '@/components/room/room-post-form.view';
 import type { UseRoomPostFormReturn } from '@/components/room/use-room-post-form';
 import { TextField } from '@/components/ui/headless';
@@ -31,8 +28,6 @@ import {
   ReadyLoadingState,
   ReadyToast,
 } from '@/components/ui/ready-to-dev-feedback';
-import type { UserSummary } from '@/lib/domain';
-
 import type { UseNewRoomScreenReturn } from './use-new-room-screen';
 
 export type NewRoomScreenViewProps = UseNewRoomScreenReturn & {
@@ -50,6 +45,12 @@ export function NewRoomScreenView({
   submitting,
   successToastVisible,
   mypageDialogOpen,
+  lifestyleTiles,
+  preferredLifestyles,
+  importantConditions,
+  lifestyleLoading,
+  lifestyleError,
+  reloadLifestyle,
   onBack,
   onSignIn,
   onRequestEditProfile,
@@ -88,7 +89,14 @@ export function NewRoomScreenView({
         automaticallyAdjustKeyboardInsets
       >
         {form.page === 'lifestyle' ? (
-          <LifestylePage profile={session.user} />
+          <LifestylePage
+            tiles={lifestyleTiles}
+            preferredLifestyles={preferredLifestyles}
+            importantConditions={importantConditions}
+            loading={lifestyleLoading}
+            error={lifestyleError}
+            onRetry={reloadLifestyle}
+          />
         ) : form.page === 'roomType' ? (
           <RoomTypePage form={form} />
         ) : form.page === 'location' ? (
@@ -237,23 +245,81 @@ function Headline({ children }: { children: ReactNode }) {
   return <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{children}</Text>;
 }
 
-function LifestylePage({ profile }: { profile: UserSummary }) {
+function LifestylePage({
+  tiles,
+  preferredLifestyles,
+  importantConditions,
+  loading,
+  error,
+  onRetry,
+}: {
+  tiles: UseNewRoomScreenReturn['lifestyleTiles'];
+  preferredLifestyles: UseNewRoomScreenReturn['preferredLifestyles'];
+  importantConditions: string[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
   return (
     <View>
       <Headline>생활 패턴과 룸메이트 정보를{'\n'}확인해주세요</Headline>
-      <Text className="mt-8 text-[15px] font-bold text-[#17171B]">생활 패턴</Text>
-      <View className="mt-3 flex-row flex-wrap gap-2">
-        <LifestyleTile label="취침 시간" value={profileSleepLabel(profile)} />
-        <LifestyleTile
-          label="청결 민감도"
-          value={profileSensitivityLabel(profile.lifestyle?.cleanliness)}
+
+      {loading ? (
+        <ReadyLoadingState label="내 정보를 불러오는 중이에요." compact />
+      ) : error ? (
+        <ReadyErrorState
+          title="내 정보를 불러오지 못했어요"
+          description="네트워크 상태를 확인한 뒤 다시 시도해주세요."
+          onRetry={onRetry}
+          compact
         />
-        <LifestyleTile
-          label="소음 민감도"
-          value={profileSensitivityLabel(profile.lifestyle?.noise)}
-        />
-        <LifestyleTile label="흡연 여부" value={profileSmokingLabel(profile)} />
-      </View>
+      ) : (
+        <>
+          <Text className="mt-8 text-[15px] font-bold text-[#17171B]">생활 패턴</Text>
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            {tiles.map((tile) => (
+              <LifestyleTile key={tile.id} label={tile.label} value={tile.value} />
+            ))}
+          </View>
+
+          <Text className="mt-8 text-[15px] font-bold text-[#17171B]">선호 룸메이트 조건</Text>
+          {preferredLifestyles.length ? (
+            <View className="mt-3 gap-2 rounded-lg bg-[#F6F6FA] px-4 py-4">
+              {preferredLifestyles.map((item) => (
+                <View key={item.id} className="flex-row items-start justify-between gap-3">
+                  <Text className="text-[13px] text-[#696976]">{item.label}</Text>
+                  <Text className="flex-1 text-right text-[13px] font-semibold text-[#17171B]">
+                    {item.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <EmptyNotice message="아직 선호 룸메이트 조건을 입력하지 않았어요" />
+          )}
+
+          <Text className="mt-8 text-[15px] font-bold text-[#17171B]">중요 조건</Text>
+          {importantConditions.length ? (
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {importantConditions.map((condition) => (
+                <View key={condition} className="rounded-full bg-[#ECF2FE] px-3 py-1.5">
+                  <Text className="text-[13px] font-medium text-[#256EF4]">{condition}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <EmptyNotice message="아직 중요 조건을 선택하지 않았어요" />
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+function EmptyNotice({ message }: { message: string }) {
+  return (
+    <View className="mt-3 rounded-lg bg-[#F6F6FA] px-4 py-4">
+      <Text className="text-[13px] text-[#696976]">{message}</Text>
     </View>
   );
 }
@@ -445,7 +511,7 @@ function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
                   selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
                 } active:opacity-80`}
               >
-                <RoomOptionArtwork label={option.label} size={40} />
+                <RoomOptionArtwork label={option.label} image={option.image} size={40} />
                 <Text
                   className={
                     selected

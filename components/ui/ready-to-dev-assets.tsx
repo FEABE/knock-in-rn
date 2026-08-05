@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 
 type RoomTypeArtworkProps = {
   label: string;
@@ -12,11 +13,50 @@ type ArtworkProps = {
 
 type RoomOptionArtworkProps = ArtworkProps & {
   label: string;
+  /** 서버 메타 image 필드(이모지 문자열 또는 URL). 렌더 불가한 값이면 로컬 아트워크로 폴백한다. */
+  image?: string | null;
 };
 
 type PriorityArtworkProps = ArtworkProps & {
   label: string;
+  /** 서버 메타 image 필드(이모지 문자열 또는 URL). 렌더 불가한 값이면 로컬 아트워크로 폴백한다. */
+  image?: string | null;
 };
+
+type ServerArtwork = { kind: 'emoji'; value: string } | { kind: 'uri'; value: string };
+
+/**
+ * 서버 메타의 image 필드를 렌더 가능한 형태로 해석한다.
+ * 실서버는 현재 파일명("life_saved.png")만 내려주는데 그것만으로는 URL을 만들 수 없어 null(로컬 폴백)을 준다.
+ * 이모지 문자열이나 절대 URL로 바뀌면 별도 수정 없이 그대로 표시된다.
+ */
+function serverArtwork(image: string | null | undefined): ServerArtwork | null {
+  const value = image?.trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return { kind: 'uri', value };
+  // 확장자/경로가 있는 값은 파일명일 뿐이라 렌더할 수 없다.
+  if (/[./\\]/.test(value)) return null;
+  // 순수 ASCII면 이모지가 아니라 슬러그/키 값이므로 렌더하지 않는다.
+  if (!/[^\u0000-\u007F]/.test(value)) return null;
+  return { kind: 'emoji', value };
+}
+
+function ServerArtworkView({ artwork, size }: { artwork: ServerArtwork; size: number }) {
+  if (artwork.kind === 'emoji') {
+    return (
+      <View style={{ width: size, height: size }} className="items-center justify-center">
+        <Text style={{ fontSize: size * 0.82, lineHeight: size }}>{artwork.value}</Text>
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri: artwork.value }}
+      contentFit="contain"
+      style={{ width: size, height: size }}
+    />
+  );
+}
 
 const ROOM_TYPE_ARTWORK = {
   all: {
@@ -99,16 +139,31 @@ function roomTypeArtworkKey(label: string): RoomTypeArtworkKey {
   return 'one-room';
 }
 
-function roomOptionArtworkKey(label: string): RoomOptionArtworkKey {
+/**
+ * 서버 /meta/room-add-options 의 name 기준 아이콘 매핑.
+ * 서버 표기가 "엘레베이터"라 '엘리/엘레' 양쪽을 모두 받는다.
+ */
+function roomOptionArtworkKey(label: string): RoomOptionArtworkKey | null {
   const normalized = label.replace(/\s/g, '').toLowerCase();
   if (normalized.includes('인터넷')) return 'internet';
   if (normalized.includes('주차')) return 'parking';
-  if (normalized.includes('엘리베이터')) return 'elevator';
+  if (normalized.includes('엘리베이터') || normalized.includes('엘레베이터')) return 'elevator';
   if (normalized.includes('반려') || normalized.includes('펫')) return 'pet';
   if (normalized.includes('에어컨')) return 'air-conditioner';
   if (normalized.includes('세탁')) return 'washer';
   if (normalized.includes('건조')) return 'dryer';
-  return 'full-option';
+  if (normalized.includes('풀옵션')) return 'full-option';
+  return null;
+}
+
+/** 전용 아트워크가 없는 서버 옵션(베란다/발코니, 보안/CCTV 등)의 기본 아이콘. */
+function roomOptionIconName(label: string): keyof typeof Ionicons.glyphMap {
+  const normalized = label.replace(/\s/g, '').toLowerCase();
+  if (normalized.includes('베란다') || normalized.includes('발코니')) return 'sunny-outline';
+  if (normalized.includes('보안') || normalized.includes('cctv') || normalized.includes('시큐')) {
+    return 'shield-checkmark-outline';
+  }
+  return 'cube-outline';
 }
 
 function priorityArtworkKey(label: string): PriorityArtworkKey {
@@ -174,10 +229,21 @@ export function RoomPresenceArtwork({ hasRoom, size = 28 }: ArtworkProps & { has
   );
 }
 
-export function RoomOptionArtwork({ label, size = 22 }: RoomOptionArtworkProps) {
+export function RoomOptionArtwork({ label, image, size = 22 }: RoomOptionArtworkProps) {
+  const artwork = serverArtwork(image);
+  if (artwork) return <ServerArtworkView artwork={artwork} size={size} />;
+
+  const key = roomOptionArtworkKey(label);
+  if (!key) {
+    return (
+      <View style={{ width: size, height: size }} className="items-center justify-center">
+        <Ionicons name={roomOptionIconName(label)} size={size * 0.86} color="#696976" />
+      </View>
+    );
+  }
   return (
     <Image
-      source={ROOM_OPTION_ARTWORK[roomOptionArtworkKey(label)]}
+      source={ROOM_OPTION_ARTWORK[key]}
       contentFit="cover"
       style={{ width: size, height: size }}
     />
@@ -232,7 +298,9 @@ export function LifestyleIntroArtwork({ size = 238 }: ArtworkProps) {
   );
 }
 
-export function PriorityArtwork({ label, size = 22 }: PriorityArtworkProps) {
+export function PriorityArtwork({ label, image, size = 22 }: PriorityArtworkProps) {
+  const artwork = serverArtwork(image);
+  if (artwork) return <ServerArtworkView artwork={artwork} size={size} />;
   return (
     <Image
       source={PRIORITY_ARTWORK[priorityArtworkKey(label)]}

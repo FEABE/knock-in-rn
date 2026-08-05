@@ -8,13 +8,13 @@ import { markStoredPreferenceComplete } from '@/lib/auth/session-storage';
 import {
   EMBEDDED_PREFERENCE_PRIORITIES,
   embeddedPriorityIdFromLabel,
-  type EmbeddedPreferencePriorityId,
 } from '@/lib/domain/preference-priorities';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   getPreferenceAll,
   lifestyleIdsFromPatternOptions,
   lifestyleModifyItemsFromPatternOptions,
+  lifestylePatternQuestions,
   lifestyleSelectionsFromProfileItems,
   savePreferenceAll,
   updatePreferenceAll,
@@ -25,11 +25,17 @@ import {
 import { goExplore } from '@/lib/navigation/routes';
 import { ONBOARDING_WRITE_ENABLED } from '@/lib/onboarding';
 
+/**
+ * 중요 조건 = 서버 /meta/lifestyle-patterns 의 문항 그 자체다.
+ * (백엔드 preference_condition_weight → life_pattern 참조, conditions[].conditionsId = lifePattern.id)
+ * 이름/순서/이모지는 서버 값을 쓰고, 로컬 상수는 부가 설명 문구 폴백으로만 쓴다.
+ */
 export type PreferencePriority = {
-  id: EmbeddedPreferencePriorityId;
+  /** 서버 lifePattern.id */
+  id: number;
   name: string;
   desc: string;
-  backendId?: number;
+  image: string | null;
 };
 
 export type PreferencesStep = 0 | 1 | 2;
@@ -41,7 +47,9 @@ export type UsePreferencesScreenReturn = {
   scaleOptions: LifestyleScaleOption[];
   choiceGroups: LifestyleChoiceGroup[];
   priorities: PreferencePriority[];
-  selected: EmbeddedPreferencePriorityId[];
+  /** 우선순위 탭 스트립에 쓰는 서버 문항명(응답 순서 그대로). */
+  questionLabels: string[];
+  selected: number[];
   promptBottomPadding: number;
   formBottomPadding: number;
   setScale: (key: string, next: number) => void;
@@ -50,7 +58,7 @@ export type UsePreferencesScreenReturn = {
   skip: () => void;
   goBackStep: () => void;
   goPriorityStep: () => void;
-  togglePriority: (id: EmbeddedPreferencePriorityId) => void;
+  togglePriority: (id: number) => void;
   save: () => Promise<void>;
 };
 
@@ -66,20 +74,18 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     }),
     [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions],
   );
-  const priorities = useMemo<PreferencePriority[]>(() => {
-    const backendIdByEmbeddedId = new Map<EmbeddedPreferencePriorityId, number>();
-    [...lifestyleOptions.scaleOptions, ...lifestyleOptions.choiceGroups].forEach((option) => {
-      const embeddedId = embeddedPriorityIdFromLabel(option.label);
-      if (embeddedId) backendIdByEmbeddedId.set(embeddedId, option.patternId);
-    });
-
-    return EMBEDDED_PREFERENCE_PRIORITIES.map((option) => ({
-      id: option.value,
-      name: option.label,
-      desc: option.description,
-      backendId: backendIdByEmbeddedId.get(option.value),
-    }));
-  }, [lifestyleOptions.choiceGroups, lifestyleOptions.scaleOptions]);
+  const questions = useMemo(() => lifestylePatternQuestions(patternOptions), [patternOptions]);
+  const priorities = useMemo<PreferencePriority[]>(
+    () =>
+      questions.map((question) => ({
+        id: question.patternId,
+        name: question.label,
+        desc: priorityDescription(question.label),
+        image: question.image,
+      })),
+    [questions],
+  );
+  const questionLabels = useMemo(() => questions.map((question) => question.label), [questions]);
   const promptBottomPadding = useSafeBottomPadding(24, 32);
   const formBottomPadding = useSafeBottomPadding(12, 24);
   const [state, setState] = useState<PreferencesState>({
@@ -100,11 +106,12 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
         lifestyleId: item.lifestyleId,
         value: item.value,
       }));
+      // conditions[].conditionsId 는 lifePattern.id 다. id로 먼저 맞추고, 못 찾으면 이름으로 보완한다.
       const nextSelected = (res.data.conditions ?? []).flatMap((condition) => {
-        const embeddedId =
-          embeddedPriorityIdFromLabel(condition.name) ??
-          priorities.find((priority) => priority.backendId === condition.conditionsId)?.id;
-        return embeddedId ? [embeddedId] : [];
+        const byId = priorities.find((priority) => priority.id === condition.conditionsId);
+        if (byId) return [byId.id];
+        const byName = priorities.find((priority) => priority.name === condition.name?.trim());
+        return byName ? [byName.id] : [];
       });
       const hasSavedPreferences = loadedLifestyles.length > 0 || nextSelected.length > 0;
       setState((current) => ({
@@ -146,7 +153,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
       logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'priority_selection' });
   }, [step]);
 
-  const togglePriority = (id: EmbeddedPreferencePriorityId) => {
+  const togglePriority = (id: number) => {
     const name = priorities.find((priority) => priority.id === id)?.name ?? String(id);
     if (selected.includes(id)) {
       logEvent(AnalyticsEvent.PREFERENCE_PRIORITY_DESELECT, { condition_name: name });
@@ -168,20 +175,8 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     logEvent(AnalyticsEvent.PREFERENCE_COMPLETE);
     if (ONBOARDING_WRITE_ENABLED) {
       const lifestyles = lifestyleIdsFromPatternOptions(patternOptions, scales, choiceValues);
-      const unmappedPriorities = priorities.filter(
-        (priority) => selected.includes(priority.id) && priority.backendId === undefined,
-      );
-      if (unmappedPriorities.length) {
-        Alert.alert(
-          '저장할 수 없는 조건이 있어요',
-          `${unmappedPriorities.map((priority) => priority.name).join(', ')} 항목의 서버 기준값이 아직 준비되지 않았어요.`,
-        );
-        return;
-      }
       const conditions = priorities.flatMap((priority) =>
-        selected.includes(priority.id) && priority.backendId !== undefined
-          ? [priority.backendId]
-          : [],
+        selected.includes(priority.id) ? [priority.id] : [],
       );
       const modifyItems = lifestyleModifyItemsFromPatternOptions(
         patternOptions,
@@ -220,6 +215,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     scaleOptions: lifestyleOptions.scaleOptions,
     choiceGroups: lifestyleOptions.choiceGroups,
     priorities,
+    questionLabels,
     selected,
     promptBottomPadding,
     formBottomPadding,
@@ -266,5 +262,13 @@ type PreferencesState = {
   scales: Record<string, number>;
   choiceValues: Record<string, string>;
   loadedLifestyles: { id?: number; lifestyleId?: number; value?: string }[];
-  selected: EmbeddedPreferencePriorityId[];
+  selected: number[];
 };
+
+/** 서버는 조건 부가 설명을 주지 않는다. 로컬 상수에서 문구만 보완하고 없으면 비운다. */
+function priorityDescription(name: string): string {
+  const embeddedId = embeddedPriorityIdFromLabel(name);
+  return (
+    EMBEDDED_PREFERENCE_PRIORITIES.find((item) => item.value === embeddedId)?.description ?? ''
+  );
+}

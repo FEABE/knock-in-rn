@@ -133,7 +133,11 @@ export const MOCK_ROOM_POSTS: RoomPost[] = [
       'https://picsum.photos/seed/p1b/600/400',
       'https://picsum.photos/seed/p1c/600/400',
     ],
-    options: ['full-option', 'parking', 'elevator'],
+    options: [
+      { id: 1, name: '풀옵션' },
+      { id: 2, name: '엘레베이터' },
+      { id: 3, name: '주차가능' },
+    ],
   },
   {
     id: 'p-2',

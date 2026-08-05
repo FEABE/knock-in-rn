@@ -1,5 +1,6 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useGlobalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
@@ -74,6 +75,7 @@ export type UseProfileBasicStepReturn = {
   onTermsOpenChange: (open: boolean) => void;
   onTermsChange: ReturnType<typeof useOnboardingTerms>['setTerms'];
   onTermsContinue: () => void;
+  onTermDetailPress: (termKey: string) => void;
 };
 
 export function useProfileBasicStep(): UseProfileBasicStepReturn {
@@ -113,6 +115,9 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
   const [termsOpen, setTermsOpen] = useState(false);
   const [termsToastVisible, setTermsToastVisible] = useState(false);
   const termsToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 약관 상세를 보고 돌아왔을 때 시트를 다시 열어야 하는지. */
+  const reopenTermsRef = useRef(false);
+  const termDetailFrame = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
 
   useEffect(() => {
     onboardingTiming.enterStep();
@@ -194,8 +199,18 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
   useEffect(
     () => () => {
       if (termsToastTimer.current) clearTimeout(termsToastTimer.current);
+      if (termDetailFrame.current !== null) cancelAnimationFrame(termDetailFrame.current);
     },
     [],
+  );
+
+  // 약관 상세(/support/terms)에서 뒤로 돌아오면 동의 플로우를 이어가도록 시트를 다시 연다.
+  useFocusEffect(
+    useCallback(() => {
+      if (!reopenTermsRef.current) return;
+      reopenTermsRef.current = false;
+      setTermsOpen(true);
+    }, []),
   );
 
   const onBirthChange = (text: string) => {
@@ -259,6 +274,24 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
     goNext();
   };
 
+  /**
+   * 약관 '보기' 탭.
+   *
+   * 약관 시트는 RN `Modal` 위에 떠 있어서, 시트를 연 채로 push 하면 새 스크린이
+   * 시트 뒤에 가려진다. 시트를 먼저 닫고 닫힘이 커밋된 다음 프레임에 상세로 이동한다.
+   */
+  const onTermDetailPress = (termKey: string) => {
+    setTermsToastVisible(false);
+    setTermsOpen(false);
+    reopenTermsRef.current = true;
+
+    if (termDetailFrame.current !== null) cancelAnimationFrame(termDetailFrame.current);
+    termDetailFrame.current = requestAnimationFrame(() => {
+      termDetailFrame.current = null;
+      router.push(`/support/terms?termId=${encodeURIComponent(termKey)}`);
+    });
+  };
+
   const onBack = () => {
     if (stage === 'intro') {
       goKakaoLogin(router, 'replace');
@@ -309,14 +342,20 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
     onExit: () => {
       setDialog(null);
       setTermsOpen(false);
+      reopenTermsRef.current = false;
       goKakaoLogin(router, 'replace');
     },
     onTermsOpenChange: (open) => {
       setTermsOpen(open);
-      if (!open) setTermsToastVisible(false);
+      if (!open) {
+        setTermsToastVisible(false);
+        // 사용자가 직접 닫은 경우에는 다시 열지 않는다.
+        reopenTermsRef.current = false;
+      }
     },
     onTermsChange: setTerms,
     onTermsContinue,
+    onTermDetailPress,
   };
 }
 

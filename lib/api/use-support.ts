@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createInquiry,
+  getNoticeDetail,
   getNotices,
   getInquiries,
   getInquiryCategories,
@@ -29,8 +30,16 @@ export type SupportFaqItem = {
 export type SupportNoticeItem = {
   id: string;
   title: string;
-  body: string;
   dateLabel: string;
+};
+
+export type SupportNoticeDetail = {
+  id: string;
+  title: string;
+  dateLabel: string;
+  body: string;
+  /** 상세 본문을 받아오지 못하고 목록 정보만으로 채운 경우 true. */
+  bodyUnavailable: boolean;
 };
 
 export type SupportInquiryListItem = {
@@ -110,9 +119,58 @@ export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
       return (list.data?.notices ?? []).map((notice) => ({
         id: String(notice.id ?? ''),
         title: notice.title ?? '공지사항',
-        body: '',
         dateLabel: formatDateLabel(notice.createAt),
       }));
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading || query.isFetching,
+    error: query.error instanceof Error ? query.error.message : null,
+    reload: () => {
+      void query.refetch();
+    },
+  };
+}
+
+/**
+ * 공지 상세.
+ *
+ * `GET /users/me/notices/{id}` 를 우선 호출하고, 실패하면 목록(`GET /users/me/notices`)에서
+ * 같은 id 를 찾아 제목/날짜만이라도 채운다. (상세 엔드포인트 배포 전 대비)
+ */
+export function useSupportNoticeDetail(id: string): AsyncState<SupportNoticeDetail> {
+  const query = useQuery({
+    queryKey: ['support', 'notices', id],
+    enabled: Boolean(id),
+    retry: false,
+    queryFn: async () => {
+      const detail = await getNoticeDetail(id);
+      const notice = detail.data?.notice;
+      if (detail.status === 200 && !detail.error && notice) {
+        return {
+          id: String(notice.id ?? id),
+          title: notice.title ?? '공지사항',
+          dateLabel: formatDateLabel(notice.createAt),
+          body: notice.contents ?? '',
+          bodyUnavailable: false,
+        };
+      }
+
+      const list = await getNotices({ page: 0, size: 100 });
+      const item = (list.data?.notices ?? []).find((each) => String(each.id ?? '') === id);
+      if (!item) {
+        throw new Error(detail.error?.message ?? `요청 실패 (status ${detail.status})`);
+      }
+
+      return {
+        id,
+        title: item.title ?? '공지사항',
+        dateLabel: formatDateLabel(item.createAt),
+        body: '',
+        bodyUnavailable: true,
+      };
     },
   });
 

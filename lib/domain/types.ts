@@ -25,7 +25,16 @@ export type UserSummary = {
 
 export type RoomPostStatus = 'open' | 'matched' | 'closed';
 
-export type RoomOption = 'parking' | 'full-option' | 'elevator' | 'pet';
+/**
+ * 방 추가 옵션. 종류/이름이 서버 DB(/meta/room-add-options)에서만 정의되므로
+ * 앱은 유니언 타입 대신 서버 id + name을 그대로 들고 다닌다.
+ */
+export type RoomOption = {
+  /** 서버 room_add_option.id */
+  id: number;
+  /** 서버 name. 비어 있으면 메타 조회로 채운다. */
+  name: string;
+};
 
 export type RoomPost = {
   id: string;

@@ -6,7 +6,6 @@ import { goSupportNoticeDetail } from '@/lib/navigation/routes';
 export type NoticeListItem = {
   id: string;
   title: string;
-  body: string;
   dateLabel: string;
 };
 

@@ -1,4 +1,3 @@
-import type { RoomOption } from '@/lib/domain';
 import type { Region, RoomType } from '@/lib/onboarding';
 
 export const ROOM_TYPE_BACKEND_IDS: Partial<Record<RoomType, number>> = {
@@ -40,20 +39,6 @@ export const CONDITION_BACKEND_IDS: Record<string, number> = {
   worker: 12,
   'long-term': 13,
   'short-term': 14,
-};
-
-export const ROOM_OPTION_BACKEND_IDS: Record<RoomOption, number> = {
-  'full-option': 1,
-  parking: 2,
-  elevator: 3,
-  pet: 4,
-};
-
-export const ROOM_OPTION_BACKEND_VALUES: Record<number, RoomOption> = {
-  1: 'full-option',
-  2: 'parking',
-  3: 'elevator',
-  4: 'pet',
 };
 
 export const REGION_BACKEND_IDS: Record<string, number> = {
@@ -256,15 +241,4 @@ export function labelForRoomProfileType(value: 'SEEKER' | 'OFFER' | null | undef
   if (value === 'OFFER') return '방 있음';
   if (value === 'SEEKER') return '방 찾는 중';
   return '-';
-}
-
-export function roomOptionBackendId(value: RoomOption | null | undefined): number | undefined {
-  return value ? ROOM_OPTION_BACKEND_IDS[value] : undefined;
-}
-
-export function roomOptionFromBackendId(
-  value: number | string | null | undefined,
-): RoomOption | null {
-  const id = Number(value);
-  return Number.isFinite(id) ? (ROOM_OPTION_BACKEND_VALUES[id] ?? null) : null;
 }

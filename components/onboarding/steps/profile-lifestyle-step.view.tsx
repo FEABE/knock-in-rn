@@ -4,26 +4,12 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { LifestyleIntroArtwork } from '@/components/ui/ready-to-dev-assets';
 import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
-import type { LifestyleScaleKey } from '@/lib/onboarding';
+import { lifestylePatternQuestions } from '@/lib/api';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import type { UseProfileLifestyleStepReturn } from './use-profile-lifestyle-step';
 
 export type ProfileLifestyleStepViewProps = UseProfileLifestyleStepReturn;
-
-type LifestyleQuestion =
-  | {
-      kind: 'scale';
-      key: LifestyleScaleKey;
-      label: string;
-      levels: string[];
-    }
-  | {
-      kind: 'choice';
-      key: string;
-      label: string;
-      options: { value: string; label: string }[];
-    };
 
 export function ProfileLifestyleStepView({
   scales,
@@ -39,22 +25,9 @@ export function ProfileLifestyleStepView({
   onBack,
   onNext,
 }: ProfileLifestyleStepViewProps) {
-  const questions = useMemo<LifestyleQuestion[]>(
-    () =>
-      [
-        ...scaleOptions.map((option) => ({
-          kind: 'scale' as const,
-          key: option.key,
-          label: option.label,
-          levels: [...option.levels],
-        })),
-        ...choiceGroups.map((group) => ({
-          kind: 'choice' as const,
-          key: group.key,
-          label: group.label,
-          options: [...group.options],
-        })),
-      ].sort((a, b) => questionOrder(a.label) - questionOrder(b.label)),
+  // 문항 순서·문항명·질문·선택지는 모두 서버 /meta/lifestyle-patterns 응답을 그대로 따른다.
+  const questions = useMemo(
+    () => lifestylePatternQuestions({ scaleOptions, choiceGroups }),
     [choiceGroups, scaleOptions],
   );
   const [questionIndex, setQuestionIndex] = useState(-1);
@@ -108,7 +81,7 @@ export function ProfileLifestyleStepView({
   if (!question) {
     return (
       <View className="flex-1 bg-white">
-        <LifestyleHeader progress={Math.min(questionIndex + 1, 8)} onBack={goBack} />
+        <LifestyleHeader progress={questionIndex + 1} total={questions.length} onBack={goBack} />
         <View className="flex-1 items-center justify-center gap-3 px-6">
           {submitting ? <ActivityIndicator color="#256EF4" /> : null}
           <Text
@@ -130,7 +103,7 @@ export function ProfileLifestyleStepView({
     question.kind === 'scale' ? scales[question.key] : choiceValues[question.key];
   const options =
     question.kind === 'scale'
-      ? question.levels.map((label, index) => ({ value: index + 1, label }))
+      ? question.levels.map((level) => ({ value: level.value, label: level.label }))
       : question.options;
   const advance = () => {
     if (questionIndex >= questions.length - 1) {
@@ -142,11 +115,11 @@ export function ProfileLifestyleStepView({
 
   return (
     <View className="flex-1 bg-white">
-      <LifestyleHeader progress={Math.min(questionIndex + 1, 8)} onBack={goBack} />
+      <LifestyleHeader progress={questionIndex + 1} total={questions.length} onBack={goBack} />
       <View className="flex-1 px-4 pt-6">
         <View className="gap-2">
           <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
-            {questionTitle(question.label)}
+            {question.question}
           </Text>
           <Text className="text-sm leading-5 text-[#696976]">
             가장 가까운 것 한 개를 선택해주세요
@@ -184,7 +157,7 @@ export function ProfileLifestyleStepView({
                       : 'text-base font-medium text-[#696976]'
                   }
                 >
-                  {choiceOptionLabel(question.label, option.label)}
+                  {option.label}
                 </Text>
               </Pressable>
             );
@@ -195,7 +168,15 @@ export function ProfileLifestyleStepView({
   );
 }
 
-function LifestyleHeader({ progress, onBack }: { progress?: number; onBack: () => void }) {
+function LifestyleHeader({
+  progress,
+  total,
+  onBack,
+}: {
+  progress?: number;
+  total?: number;
+  onBack: () => void;
+}) {
   return (
     <View className="h-12 flex-row items-center justify-between px-4">
       <Pressable
@@ -212,7 +193,7 @@ function LifestyleHeader({ progress, onBack }: { progress?: number; onBack: () =
         {progress ? (
           <>
             <Text className="text-[#17171B]">{progress}</Text>
-            <Text className="text-[#8B8B9B]">/15</Text>
+            <Text className="text-[#8B8B9B]">/{total ?? progress}</Text>
           </>
         ) : (
           ''
@@ -227,58 +208,4 @@ function categoryLabel(progress?: number): string {
   if (progress === undefined || progress <= 4) return '생활패턴';
   if (progress <= 7) return '생활성향';
   return '성격';
-}
-
-/** 흡연 여부 선택지만 "비흡연자예요"/"흡연자예요" 문구로 덮어쓴다. 서버 원문 라벨은 그대로 둔다. */
-function choiceOptionLabel(questionLabel: string, optionLabel: string): string {
-  const normalizedQuestion = questionLabel.replace(/\s/g, '').toLowerCase();
-  if (!normalizedQuestion.includes('흡연')) return optionLabel;
-
-  const normalizedOption = optionLabel.replace(/\s/g, '').toLowerCase();
-  if (normalizedOption.includes('비흡연') || normalizedOption.includes('안함')) {
-    return '비흡연자예요';
-  }
-  return '흡연자예요';
-}
-
-function questionOrder(label: string): number {
-  const normalized = label.replace(/\s/g, '').toLowerCase();
-  if (normalized.includes('취침') || normalized.includes('수면')) return 0;
-  if (normalized.includes('방문') || normalized.includes('손님')) return 1;
-  if (normalized.includes('흡연')) return 2;
-  if (normalized.includes('반려') || normalized.includes('애완')) return 3;
-  if (normalized.includes('청결') || normalized.includes('청소')) return 4;
-  if (normalized.includes('소음') || normalized.includes('방음')) return 5;
-  if (normalized.includes('개인공간') || normalized.includes('프라이버시')) return 6;
-  if (normalized.includes('성격') || normalized.includes('성향') || normalized.includes('mbti')) {
-    return 7;
-  }
-  return 100;
-}
-
-function questionTitle(label: string): string {
-  const normalized = label.replace(/\s/g, '').toLowerCase();
-  if (normalized.includes('취침') || normalized.includes('수면')) {
-    return '평소 취침 시간은\n어떤 편인가요?';
-  }
-  if (normalized.includes('방문') || normalized.includes('손님')) {
-    return '주로 얼마나 자주\n방문객이 오시나요?';
-  }
-  if (normalized.includes('흡연')) return '흡연을\n하시나요?';
-  if (normalized.includes('반려') || normalized.includes('애완')) {
-    return '반려동물을\n키우고 있나요?';
-  }
-  if (normalized.includes('청결') || normalized.includes('청소')) {
-    return '청결에 얼마나\n민감하신가요?';
-  }
-  if (normalized.includes('소음') || normalized.includes('방음')) {
-    return '소음에 얼마나\n민감하신가요?';
-  }
-  if (normalized.includes('개인공간') || normalized.includes('프라이버시')) {
-    return '개인 공간을 얼마나\n중요하게 생각하시나요?';
-  }
-  if (normalized.includes('성격') || normalized.includes('성향') || normalized.includes('mbti')) {
-    return '나의 성격은\n어떤 편인가요?';
-  }
-  return `${label}은\n어떤 편인가요?`;
 }

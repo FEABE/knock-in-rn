@@ -9,7 +9,6 @@ import {
   parseServerDate,
   regionFromBackendId,
   serverCalendarDateToLocal,
-  roomOptionBackendId,
   roomTypeFromBackendId,
   type BoardEditData,
   type BoardWriteRequest,
@@ -182,7 +181,7 @@ function toInitialDraft(post: RoomPost): Partial<RoomFormDraft> {
     description: post.description,
     moveInDate: fmtCalendarDate(post.moveInDate),
     imageUris: post.photoUrls ?? (post.thumbnailUrl ? [post.thumbnailUrl] : []),
-    options: compactNumbers(post.options?.map(roomOptionBackendId) ?? []),
+    options: compactNumbers(post.options?.map((option) => option.id) ?? []),
   };
 }
 

@@ -200,7 +200,7 @@ export function RoomPostFormView({
         </Section>
 
         {roomOptionsLoading || roomOptionsError || roomOptions.length > 0 ? (
-          <Section title="방 옵션" badge="최대 4개">
+          <Section title="방 옵션">
             {roomOptionsLoading ? (
               <MetadataState message="방 옵션을 불러오는 중이에요." loading />
             ) : roomOptionsError ? (
@@ -219,7 +219,7 @@ export function RoomPostFormView({
                           : 'border-neutral-200 bg-white'
                       }`}
                     >
-                      <RoomOptionArtwork label={o.label} size={40} />
+                      <RoomOptionArtwork label={o.label} image={o.image} size={40} />
                       <Text
                         className={
                           selected

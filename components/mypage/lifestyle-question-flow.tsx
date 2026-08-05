@@ -2,24 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import type { LifestyleChoiceGroup, LifestyleScaleOption } from '@/lib/api';
-
-type LifestyleQuestion =
-  | {
-      kind: 'scale';
-      key: string;
-      label: string;
-      levels: string[];
-    }
-  | {
-      kind: 'choice';
-      key: string;
-      label: string;
-      options: { value: string; label: string }[];
-    };
+import {
+  lifestylePatternQuestions,
+  type LifestyleChoiceGroup,
+  type LifestyleScaleOption,
+} from '@/lib/api';
 
 type LifestyleQuestionFlowProps = {
   title: string;
+  /**
+   * 질문 문구 출처. 내 생활패턴 화면은 lifePatternDescription,
+   * 선호 룸메이트 화면은 preferenceDescription을 쓴다(두 값이 다를 수 있다).
+   */
+  questionVariant: 'lifestyle' | 'preference';
   scales: Record<string, number>;
   choiceValues: Record<string, string>;
   scaleOptions: LifestyleScaleOption[];
@@ -32,6 +27,7 @@ type LifestyleQuestionFlowProps = {
 
 export function LifestyleQuestionFlow({
   title,
+  questionVariant,
   scales,
   choiceValues,
   scaleOptions,
@@ -41,22 +37,8 @@ export function LifestyleQuestionFlow({
   onBack,
   onSave,
 }: LifestyleQuestionFlowProps) {
-  const questions = useMemo<LifestyleQuestion[]>(
-    () =>
-      [
-        ...scaleOptions.map((option) => ({
-          kind: 'scale' as const,
-          key: option.key,
-          label: option.label,
-          levels: [...option.levels],
-        })),
-        ...choiceGroups.map((group) => ({
-          kind: 'choice' as const,
-          key: group.key,
-          label: group.label,
-          options: [...group.options],
-        })),
-      ].sort((a, b) => questionOrder(a.label) - questionOrder(b.label)),
+  const questions = useMemo(
+    () => lifestylePatternQuestions({ scaleOptions, choiceGroups }),
     [choiceGroups, scaleOptions],
   );
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -91,7 +73,7 @@ export function LifestyleQuestionFlow({
           const selected = index === questionIndex;
           return (
             <Pressable
-              key={`${item.kind}-${item.key}`}
+              key={`${item.kind}-${item.patternId}`}
               onPress={() => setQuestionIndex(index)}
               className={`min-w-[74px] items-center justify-center border-b-2 px-2 ${
                 selected ? 'border-[#256EF4]' : 'border-transparent'
@@ -106,7 +88,7 @@ export function LifestyleQuestionFlow({
                 numberOfLines={1}
                 className={`mt-0.5 text-[12px] ${selected ? 'text-[#242429]' : 'text-[#AAAABA]'}`}
               >
-                {shortQuestionLabel(item.label)}
+                {item.label}
               </Text>
             </Pressable>
           );
@@ -120,7 +102,7 @@ export function LifestyleQuestionFlow({
           showsVerticalScrollIndicator={false}
         >
           <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
-            {questionTitle(question.label, title === '선호 룸메이트 관리')}
+            {questionVariant === 'preference' ? question.preferenceQuestion : question.question}
           </Text>
           <Text className="mt-1 text-sm leading-5 text-[#696976]">
             가장 가까운 것 한 개를 선택해주세요
@@ -128,7 +110,7 @@ export function LifestyleQuestionFlow({
 
           <View className="mt-7 gap-3">
             {(question.kind === 'scale'
-              ? question.levels.map((label, index) => ({ value: index + 1, label }))
+              ? question.levels.map((level) => ({ value: level.value, label: level.label }))
               : question.options
             ).map((option) => {
               const selected =
@@ -198,63 +180,4 @@ export function LifestyleQuestionFlow({
       )}
     </View>
   );
-}
-
-function questionOrder(label: string): number {
-  const normalized = label.replace(/\s/g, '').toLowerCase();
-  if (normalized.includes('취침') || normalized.includes('수면')) return 0;
-  if (normalized.includes('방문') || normalized.includes('손님')) return 1;
-  if (normalized.includes('흡연')) return 2;
-  if (normalized.includes('반려') || normalized.includes('애완')) return 3;
-  if (normalized.includes('청결') || normalized.includes('청소')) return 4;
-  if (normalized.includes('소음') || normalized.includes('방음')) return 5;
-  if (normalized.includes('개인공간') || normalized.includes('프라이버시')) return 6;
-  if (normalized.includes('성격') || normalized.includes('성향') || normalized.includes('mbti')) {
-    return 7;
-  }
-  return 100;
-}
-
-function shortQuestionLabel(label: string) {
-  const normalized = label.replace(/\s/g, '').toLowerCase();
-  if (normalized.includes('취침') || normalized.includes('수면')) return '취침 시간';
-  if (normalized.includes('방문') || normalized.includes('손님')) return '방문객';
-  if (normalized.includes('흡연')) return '흡연';
-  if (normalized.includes('반려') || normalized.includes('애완')) return '반려동물';
-  if (normalized.includes('청결') || normalized.includes('청소')) return '청결';
-  if (normalized.includes('소음') || normalized.includes('방음')) return '소음';
-  if (normalized.includes('개인공간') || normalized.includes('프라이버시')) return '개인 공간';
-  if (normalized.includes('성격') || normalized.includes('성향') || normalized.includes('mbti')) {
-    return '성격';
-  }
-  return label;
-}
-
-function questionTitle(label: string, preference: boolean): string {
-  const subject = preference ? '원하는 룸메이트의' : '평소';
-  const normalized = label.replace(/\s/g, '').toLowerCase();
-  if (normalized.includes('취침') || normalized.includes('수면')) {
-    return `${subject} 취침 시간은\n어떤 편인가요?`;
-  }
-  if (normalized.includes('방문') || normalized.includes('손님')) {
-    return `${subject} 방문객 빈도는\n어느 정도인가요?`;
-  }
-  if (normalized.includes('흡연'))
-    return preference ? '룸메이트의 흡연 여부를\n선택해주세요' : '흡연을\n하시나요?';
-  if (normalized.includes('반려') || normalized.includes('애완')) {
-    return preference ? '룸메이트의 반려동물 여부를\n선택해주세요' : '반려동물을\n키우고 있나요?';
-  }
-  if (normalized.includes('청결') || normalized.includes('청소')) {
-    return `${subject} 청결 기준은\n어느 정도인가요?`;
-  }
-  if (normalized.includes('소음') || normalized.includes('방음')) {
-    return `${subject} 소음 민감도는\n어느 정도인가요?`;
-  }
-  if (normalized.includes('개인공간') || normalized.includes('프라이버시')) {
-    return `${subject} 개인 공간은\n얼마나 중요한가요?`;
-  }
-  if (normalized.includes('성격') || normalized.includes('성향') || normalized.includes('mbti')) {
-    return preference ? '원하는 룸메이트의 성격은\n어떤 편인가요?' : '나의 성격은\n어떤 편인가요?';
-  }
-  return `${label}은\n어떤 편인가요?`;
 }

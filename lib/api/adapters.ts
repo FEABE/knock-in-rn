@@ -5,16 +5,11 @@
  * 리치 타입(RoomPost, RoommateCard 등)을 쓴다. 이 파일이 둘 사이를 잇는다.
  * 순수 함수만 두며 React/네트워크에 의존하지 않는다.
  */
-import type { RoomPost, RoommateCard, UserSummary } from '@/lib/domain';
+import type { RoomOption, RoomPost, RoommateCard, UserSummary } from '@/lib/domain';
 import type { Gender, Region, RoomType } from '@/lib/onboarding';
 
 import { parseServerDate } from './date-time';
-import {
-  labelForRegionId,
-  regionFromBackendId,
-  roomOptionFromBackendId,
-  roomTypeFromBackendId,
-} from './backend-ids';
+import { labelForRegionId, regionFromBackendId, roomTypeFromBackendId } from './backend-ids';
 import type { LifestyleItem } from './entities';
 import type { BoardDetailData, BoardListItem, MatchListItem } from './roommate-boards';
 
@@ -107,15 +102,7 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
   const id = String(data.boardId ?? '');
   const writer = data.writer ?? data.memberName ?? '익명';
   const photoUrls = (data.images ?? []).map(imageUrl).filter(Boolean);
-  const optionsFromIds =
-    data.roomOption
-      ?.map(roomOptionFromBackendId)
-      .filter((option): option is NonNullable<typeof option> => option !== null) ?? [];
-  const options = optionsFromIds.length
-    ? optionsFromIds
-    : (data.roomExtraOptions ?? [])
-        .map((option) => roomOptionFromLabel(option.name ?? ''))
-        .filter((option): option is NonNullable<typeof option> => option !== null);
+  const options = roomOptionsFromDetail(data);
 
   return {
     id,
@@ -291,13 +278,24 @@ function imageUrl(image: NonNullable<BoardDetailData['images']>[number] | undefi
   return typeof image === 'string' ? image : (image.url ?? '');
 }
 
-function roomOptionFromLabel(label: string) {
-  const normalized = label.replace(/\s/g, '').toLowerCase();
-  if (normalized.includes('주차')) return 'parking' as const;
-  if (normalized.includes('풀옵션')) return 'full-option' as const;
-  if (normalized.includes('엘리베이터')) return 'elevator' as const;
-  if (normalized.includes('반려') || normalized.includes('펫')) return 'pet' as const;
-  return null;
+/**
+ * 방 추가 옵션은 서버 DB(/meta/room-add-options) 정의를 그대로 쓴다.
+ * 상세 응답의 roomExtraOptions(id+name)를 우선 쓰고, id만 오는 roomOption도 함께 수용한다.
+ * 이름이 비면 화면에서 메타로 채운다.
+ */
+function roomOptionsFromDetail(data: BoardDetailData): RoomOption[] {
+  const byId = new Map<number, RoomOption>();
+  (data.roomExtraOptions ?? []).forEach((option) => {
+    const id = Number(option.extraOptionId);
+    if (!Number.isFinite(id)) return;
+    byId.set(id, { id, name: option.name?.trim() ?? '' });
+  });
+  (data.roomOption ?? []).forEach((value) => {
+    const id = Number(value);
+    if (!Number.isFinite(id) || byId.has(id)) return;
+    byId.set(id, { id, name: '' });
+  });
+  return [...byId.values()].sort((a, b) => a.id - b.id);
 }
 
 function hasAuthentication(value: unknown, expected: 'STUDENT' | 'COMPANY'): boolean {

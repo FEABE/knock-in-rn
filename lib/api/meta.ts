@@ -136,10 +136,12 @@ const MOCK_REGIONS: RegionMeta[] = [
 ];
 
 const MOCK_ROOM_ADD_OPTIONS: RoomAddOption[] = [
-  { id: 1, name: '주차 가능' },
-  { id: 2, name: '풀옵션' },
-  { id: 3, name: '엘리베이터' },
-  { id: 4, name: '반려동물 가능' },
+  { id: 1, name: '풀옵션' },
+  { id: 2, name: '엘레베이터' },
+  { id: 3, name: '주차가능' },
+  { id: 4, name: '베란다/발코니' },
+  { id: 5, name: '반려동물 협의' },
+  { id: 6, name: '보안/CCTV' },
 ];
 
 const MOCK_FAQS: NonNullable<FaqAllListData['faqInfoList']> = [

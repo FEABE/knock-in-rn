@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { BottomSheet, Modal, TermsAgreement, TextField } from '@/components/ui/headless';
@@ -43,6 +42,7 @@ export function ProfileBasicStepView({
   onTermsOpenChange,
   onTermsChange,
   onTermsContinue,
+  onTermDetailPress,
 }: ProfileBasicStepViewProps) {
   const [genderOpen, setGenderOpen] = useState(false);
 
@@ -227,6 +227,7 @@ export function ProfileBasicStepView({
         onOpenChange={onTermsOpenChange}
         onTermsChange={onTermsChange}
         onContinue={onTermsContinue}
+        onTermDetailPress={onTermDetailPress}
       />
 
       <BasicInfoDialog variant={dialog} onClose={onDialogClose} onExit={onExit} />
@@ -323,6 +324,7 @@ function TermsBottomSheet({
   onOpenChange,
   onTermsChange,
   onContinue,
+  onTermDetailPress,
 }: {
   open: boolean;
   terms: Record<string, boolean>;
@@ -334,6 +336,7 @@ function TermsBottomSheet({
   onOpenChange: (open: boolean) => void;
   onTermsChange: (terms: Record<string, boolean>) => void;
   onContinue: () => void;
+  onTermDetailPress: (termKey: string) => void;
 }) {
   return (
     <BottomSheet
@@ -386,7 +389,7 @@ function TermsBottomSheet({
                   <Text className="flex-1 text-[15px] leading-[23px] text-[#696976]">
                     [{required ? '필수' : '선택'}] {label}
                   </Text>
-                  <TermDetailLink termKey={term.key} />
+                  <TermDetailLink termKey={term.key} onPress={onTermDetailPress} />
                 </>
               )}
             </TermsAgreement.Item>
@@ -416,12 +419,19 @@ function TermsBottomSheet({
   );
 }
 
-function TermDetailLink({ termKey }: { termKey: string }) {
-  const router = useRouter();
+function TermDetailLink({
+  termKey,
+  onPress,
+}: {
+  termKey: string;
+  onPress: (termKey: string) => void;
+}) {
   return (
     <Text
+      accessibilityRole="link"
+      accessibilityLabel="약관 상세 보기"
       className="text-xs text-[#AAAABA] underline"
-      onPress={() => router.push(`/support/terms?termId=${termKey}`)}
+      onPress={() => onPress(termKey)}
     >
       보기
     </Text>

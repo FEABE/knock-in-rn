@@ -34,12 +34,17 @@ export type BoNoticeListData = OpenApiSchema<'org.example.knockin.dto.BoNoticeLi
 export type BoNoticeDetailData =
   OpenApiSchema<'org.example.knockin.dto.BoNoticeDetailDto$Response'>;
 
-// 현재 포함된 OpenAPI 스냅샷에는 사용자용 NoticeListDto가 빠져 있어,
-// 백엔드 DTO와 같은 목록 구조를 직접 정의합니다.
-export type NoticeItem = BoNoticeItem;
+export type NoticeItem = OpenApiSchema<'org.example.knockin.dto.NoticeListDto$Response$NoticeItem'>;
 
-export type NoticeListData = {
-  notices?: NoticeItem[];
+export type NoticeListData = OpenApiSchema<'org.example.knockin.dto.NoticeListDto$Response'>;
+
+// 사용자용 공지 상세는 아직 OpenAPI 스냅샷에 없다.
+// 백엔드가 BoNoticeDetailDto 와 동일한 `{ notice: {...} }` 구조로 내려주므로 그 형태를 재사용한다.
+export type NoticeDetail =
+  OpenApiSchema<'org.example.knockin.dto.BoNoticeDetailDto$Response$NoticeDetail'>;
+
+export type NoticeDetailData = {
+  notice?: NoticeDetail;
 };
 
 export type AlarmSetting =
@@ -211,6 +216,22 @@ export function getBoNoticeDetail(id: string): Promise<ApiResponse<BoNoticeDetai
 export function getNotices(params: PageParams = {}): Promise<ApiResponse<NoticeListData>> {
   if (USE_MOCK) return mockOk({ notices: MOCK_NOTICES });
   return request('GET', '/users/me/notices', { query: params });
+}
+
+/**
+ * GET /users/me/notices/{id} — 사용자 공지 상세 조회.
+ *
+ * `/bo/notices/{id}` 는 ADMIN 권한 전용(SecurityConfig: `/bo/**` hasAuthority(ADMIN))이라
+ * 일반 사용자가 호출하면 403 이 떨어진다. 사용자 화면은 반드시 이 엔드포인트를 쓴다.
+ */
+export function getNoticeDetail(id: string): Promise<ApiResponse<NoticeDetailData>> {
+  if (USE_MOCK) {
+    const notice = MOCK_NOTICES.find((item) => String(item.id) === id) ?? MOCK_NOTICES[0];
+    return mockOk({
+      notice: notice ? { ...notice, contents: '노크인 서비스 공지사항입니다.' } : undefined,
+    });
+  }
+  return request('GET', `/users/me/notices/${id}`);
 }
 
 // ─── Client: 고객센터 ───────────────────────────────────────────────────────────

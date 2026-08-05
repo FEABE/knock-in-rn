@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
-import { formatKstDateLabel } from '@/lib/api';
+import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
 import {
   ReadyActionRow,
   ReadyActionSheet,
@@ -37,13 +37,6 @@ const ROOM_TYPE_LABEL: Record<string, string> = {
   'share-house': '쉐어하우스',
   apt: '아파트',
   villa: '빌라',
-};
-
-const OPTION_LABEL: Record<RoomOption, string> = {
-  parking: '주차 가능',
-  'full-option': '풀옵션',
-  elevator: '엘리베이터',
-  pet: '반려동물 가능',
 };
 
 const SMOKING_LABEL: Record<string, string> = {
@@ -543,16 +536,27 @@ function LifestyleBlock({
   );
 }
 
+/**
+ * 방 옵션은 서버 DB(/meta/room-add-options) 정의를 따른다.
+ * 게시글 응답에 name이 없으면(id만 온 경우) 메타에서 이름과 이모지를 채운다.
+ */
 function OptionsBlock({ options }: { options: RoomOption[] }) {
+  const { options: meta } = useRoomAddOptionOptions();
+  const metaById = useMemo(() => new Map(meta.map((option) => [option.value, option])), [meta]);
+
   return (
     <ReadySection title="옵션">
-      <View className="flex-row justify-around gap-2 py-2">
-        {options.map((option) => (
-          <View key={option} className="flex-1 items-center gap-2">
-            <RoomOptionArtwork label={OPTION_LABEL[option]} size={40} />
-            <Text className="text-center text-xs text-[#696976]">{OPTION_LABEL[option]}</Text>
-          </View>
-        ))}
+      <View className="flex-row flex-wrap justify-around gap-2 py-2">
+        {options.map((option) => {
+          const fromMeta = metaById.get(option.id);
+          const label = option.name || fromMeta?.label || `옵션 #${option.id}`;
+          return (
+            <View key={option.id} className="min-w-[72px] flex-1 items-center gap-2">
+              <RoomOptionArtwork label={label} image={fromMeta?.image} size={40} />
+              <Text className="text-center text-xs text-[#696976]">{label}</Text>
+            </View>
+          );
+        })}
       </View>
     </ReadySection>
   );
