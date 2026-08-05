@@ -3,6 +3,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'knock-in-rn',
   slug: 'knock-in-rn',
+  owner: 'chl09jaes-team',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
@@ -85,6 +86,11 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    eas: {
+      projectId: '5a6d97d4-5a83-48d3-aeef-a44a2cfb1c2f',
+    },
   },
 };
 
