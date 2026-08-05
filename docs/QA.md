@@ -18,7 +18,7 @@
 - 텍스트 필드의 안내 문구가 세로 중앙에 정렬되지 않고 아래쪽으로 치우쳐 있습니다. 이메일 입력 시 영문 텍스트가 잘려 보입니다.
 - (complete) 키보드가 노출된 상태에서도 다음으로 버튼이 키보드 위에 고정되어야 합니다. — profile-basic-step.view.tsx의 KeyboardAvoidingView가 Android에서 behavior=undefined라 AndroidManifest의 adjustResize에만 의존하고 있었음. iOS/Android 표준 패턴인 padding/height로 명시적으로 지정. 실기기 검증은 이 세션에서 불가
 - 기본 정보 입력 후 노출되는 바텀시트에서 동의 영역과 버튼 사이 간격이 너무 넓고, 버튼이 지나치게 아래에 배치되어 있습니다.
-- 약관 상세 화면으로 이동할 수 있는 버튼이 없습니다.
+- (complete) 약관 상세 화면으로 이동할 수 있는 버튼이 없습니다. — 실제 쓰이는 약관 동의 UI는 `components/onboarding/steps/terms-step.tsx`(어디서도 안 쓰이는 죽은 코드)가 아니라 `profile-basic-step.view.tsx` 내부의 `TermsBottomSheet`였음. 여기엔 "보기" 링크가 아예 없었어서 추가: `TermDetailLink`가 `/support/terms?termId=<id>`로 이동, `use-terms-screen.ts`가 termId 쿼리로 해당 약관 섹션을 바로 펼치도록 함. 바텀시트 내부 라디오/링크는 이 세션 브라우저 툴로 클릭스루 검증은 못함(타입체크·lint만 확인)
 - 우측 프로그래스바에는 현재 입력 중인 단계에 해당하는 숫자를 진하게 표시해야 합니다.
 - 흡연 여부 카피를 "비흡연자예요", "흡연자예요"로 변경해야 합니다.
 - 거주하고 싶은 집 주소의 위치 선택 팝업 UI가 최신 시안과 다릅니다.

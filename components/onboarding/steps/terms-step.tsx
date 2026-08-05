@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Linking, ScrollView, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ScrollView, Text, View } from 'react-native';
 import { useMemo } from 'react';
 
 import { TermsAgreement } from '@/components/ui/headless';
@@ -9,6 +10,7 @@ import { type Term, useOnboarding, useOnboardingTerms } from '@/lib/onboarding';
 import { OnboardingFooter } from '../onboarding-footer';
 
 export function TermsStep() {
+  const router = useRouter();
   const { terms, setTerms } = useOnboardingTerms();
   const { goNext } = useOnboarding();
   const { data, loading } = useApi(['meta', 'terms'], () => getTerms(), { retry: false });
@@ -66,7 +68,7 @@ export function TermsStep() {
               termKey={term.key}
               className="flex-row items-center gap-3 py-1"
             >
-              {({ checked, required, label, href }) => (
+              {({ checked, required, label }) => (
                 <>
                   <View
                     className={`h-5 w-5 items-center justify-center rounded ${
@@ -83,14 +85,12 @@ export function TermsStep() {
                       {label}
                     </Text>
                   </View>
-                  {href ? (
-                    <Text
-                      className="text-xs text-neutral-400 underline"
-                      onPress={() => Linking.openURL(href)}
-                    >
-                      보기
-                    </Text>
-                  ) : null}
+                  <Text
+                    className="text-xs text-neutral-400 underline"
+                    onPress={() => router.push(`/support/terms?termId=${term.key}`)}
+                  >
+                    보기
+                  </Text>
                 </>
               )}
             </TermsAgreement.Item>

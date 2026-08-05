@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { BottomSheet, Modal, TermsAgreement, TextField } from '@/components/ui/headless';
@@ -382,9 +383,10 @@ function TermsBottomSheet({
               {({ checked, required, label }) => (
                 <>
                   <CheckIcon checked={checked} size={20} />
-                  <Text className="text-[15px] leading-[23px] text-[#696976]">
+                  <Text className="flex-1 text-[15px] leading-[23px] text-[#696976]">
                     [{required ? '필수' : '선택'}] {label}
                   </Text>
+                  <TermDetailLink termKey={term.key} />
                 </>
               )}
             </TermsAgreement.Item>
@@ -413,6 +415,18 @@ function TermsBottomSheet({
         </Pressable>
       </View>
     </BottomSheet>
+  );
+}
+
+function TermDetailLink({ termKey }: { termKey: string }) {
+  const router = useRouter();
+  return (
+    <Text
+      className="text-xs text-[#AAAABA] underline"
+      onPress={() => router.push(`/support/terms?termId=${termKey}`)}
+    >
+      보기
+    </Text>
   );
 }
 
