@@ -16,6 +16,12 @@ export type RoomPostFormViewProps = UseRoomPostFormReturn & {
   submitLabel: string;
   mode: 'create' | 'edit';
   profile?: UserSummary;
+  /** 서버(/users/me/profile/all)에서 읽은 생활패턴 4타일. 있으면 세션 대신 이걸 렌더한다. */
+  lifestyleTiles?: { id: string; label: string; value: string }[];
+  /** 서버(/users/me/preferences/all)에서 읽은 선호 룸메이트 조건. */
+  preferredLifestyles?: { label: string; value: string }[];
+  /** 서버에서 읽은 중요 조건 이름 목록. */
+  importantConditions?: string[];
   submitting: boolean;
   onEditProfile: () => void;
 };
@@ -31,6 +37,9 @@ export function RoomPostFormView({
   submitLabel,
   mode,
   profile,
+  lifestyleTiles,
+  preferredLifestyles,
+  importantConditions,
   submitting,
   onEditProfile,
   roomTypes,
@@ -251,16 +260,24 @@ export function RoomPostFormView({
           </View>
 
           <View className="flex-row flex-wrap gap-2">
-            <ProfileTile label="취침 시간" value={profileSleepLabel(profile)} />
-            <ProfileTile
-              label="청결 민감도"
-              value={profileSensitivityLabel(profile?.lifestyle?.cleanliness)}
-            />
-            <ProfileTile
-              label="소음 민감도"
-              value={profileSensitivityLabel(profile?.lifestyle?.noise)}
-            />
-            <ProfileTile label="흡연" value={profileSmokingLabel(profile)} />
+            {lifestyleTiles ? (
+              lifestyleTiles.map((tile) => (
+                <ProfileTile key={tile.id} label={tile.label} value={tile.value} />
+              ))
+            ) : (
+              <>
+                <ProfileTile label="취침 시간" value={profileSleepLabel(profile)} />
+                <ProfileTile
+                  label="청결 민감도"
+                  value={profileSensitivityLabel(profile?.lifestyle?.cleanliness)}
+                />
+                <ProfileTile
+                  label="소음 민감도"
+                  value={profileSensitivityLabel(profile?.lifestyle?.noise)}
+                />
+                <ProfileTile label="흡연" value={profileSmokingLabel(profile)} />
+              </>
+            )}
           </View>
 
           <View className="gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
@@ -274,9 +291,16 @@ export function RoomPostFormView({
                   : '성별 무관'
               }
             />
+            {(preferredLifestyles ?? []).map((item) => (
+              <KeyValueRow key={item.label} label={item.label} value={item.value} />
+            ))}
             <KeyValueRow
               label="중요 조건"
-              value={profile?.importantConditions.slice(0, 2).join(' · ') || '미입력'}
+              value={
+                (importantConditions ?? profile?.importantConditions ?? [])
+                  .slice(0, 2)
+                  .join(' · ') || '미입력'
+              }
             />
           </View>
         </Section>

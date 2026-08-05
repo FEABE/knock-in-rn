@@ -13,6 +13,9 @@ export type RoomPostFormProps = {
   submitLabel: string;
   mode?: 'create' | 'edit';
   profile?: UserSummary;
+  lifestyleTiles?: { id: string; label: string; value: string }[];
+  preferredLifestyles?: { label: string; value: string }[];
+  importantConditions?: string[];
   submitting?: boolean;
 };
 
@@ -22,6 +25,9 @@ export function RoomPostForm({
   submitLabel,
   mode = 'create',
   profile,
+  lifestyleTiles,
+  preferredLifestyles,
+  importantConditions,
   submitting = false,
 }: RoomPostFormProps) {
   const router = useRouter();
@@ -33,6 +39,9 @@ export function RoomPostForm({
       submitLabel={submitLabel}
       mode={mode}
       profile={profile}
+      lifestyleTiles={lifestyleTiles}
+      preferredLifestyles={preferredLifestyles}
+      importantConditions={importantConditions}
       submitting={submitting}
       onEditProfile={() => goMypageProfile(router)}
     />

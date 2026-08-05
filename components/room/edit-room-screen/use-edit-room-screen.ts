@@ -12,9 +12,11 @@ import {
   roomTypeFromBackendId,
   type BoardEditData,
   type BoardWriteRequest,
+  useMyLifestyleOverview,
   useRoommateBoardDetail,
   useRoommateBoardEdit,
   useRoommateBoardWriteActions,
+  type LifestyleSummaryItem,
 } from '@/lib/api';
 import { useSession, type RoomPost } from '@/lib/domain';
 
@@ -24,6 +26,9 @@ export type UseEditRoomScreenReturn = {
   state: EditRoomState;
   post?: RoomPost;
   profile?: RoomPost['author'];
+  lifestyleTiles: { id: string; label: string; value: string }[];
+  preferredLifestyles: LifestyleSummaryItem[];
+  importantConditions: string[];
   initial?: Partial<RoomFormDraft>;
   submitting: boolean;
   deleting: boolean;
@@ -38,11 +43,21 @@ export type UseEditRoomScreenReturn = {
 
 const SUCCESS_TOAST_MS = 1200;
 
+/** 작성 화면과 동일한 고정 4타일. 서버 값이 없으면 '미입력'으로 채운다. */
+const LIFESTYLE_TILES = [
+  { id: 'sleep', label: '취침 시간' },
+  { id: 'cleanliness', label: '청결 민감도' },
+  { id: 'noise', label: '소음 민감도' },
+  { id: 'smoking', label: '흡연 여부' },
+] as const;
+
 export function useEditRoomScreen(): UseEditRoomScreenReturn {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const boardId = typeof id === 'string' ? id : '';
   const { session } = useSession();
+  // 세션에는 생활패턴/선호조건이 없어서 화면 진입 시 서버에서 직접 읽어온다.
+  const lifestyleOverview = useMyLifestyleOverview(Boolean(session));
   const { data: post, loading, error } = useRoommateBoardDetail(boardId);
   const { data: editData, loading: editLoading } = useRoommateBoardEdit(boardId);
   const { updateBoard, deleteBoard, deleting } = useRoommateBoardWriteActions();
@@ -107,10 +122,21 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
     showToastAndGoBack('게시글이 수정되었어요');
   };
 
+  const lifestyleValueById = new Map(
+    (lifestyleOverview.data?.lifestyles ?? []).map((item) => [item.id, item.value]),
+  );
+
   return {
     state,
     post: post ?? undefined,
     profile: session?.user,
+    lifestyleTiles: LIFESTYLE_TILES.map((tile) => ({
+      id: tile.id,
+      label: tile.label,
+      value: lifestyleValueById.get(tile.id) ?? '미입력',
+    })),
+    preferredLifestyles: lifestyleOverview.data?.preferredLifestyles ?? [],
+    importantConditions: lifestyleOverview.data?.importantConditions ?? [],
     initial: editData ? toInitialDraftFromEdit(editData) : post ? toInitialDraft(post) : undefined,
     submitting,
     deleting,

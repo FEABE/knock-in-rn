@@ -13,6 +13,9 @@ export function EditRoomScreenView({
   state,
   profile,
   initial,
+  lifestyleTiles,
+  preferredLifestyles,
+  importantConditions,
   submitting,
   deleting,
   deleteDialogOpen,
@@ -52,6 +55,9 @@ export function EditRoomScreenView({
         submitLabel="수정 완료"
         profile={profile}
         initial={initial}
+        lifestyleTiles={lifestyleTiles}
+        preferredLifestyles={preferredLifestyles}
+        importantConditions={importantConditions}
         submitting={submitting}
         onSubmit={onSubmit}
       />
