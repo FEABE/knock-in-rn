@@ -1,4 +1,7 @@
+import { useRouter } from 'expo-router';
+
 import { useSupportNotices } from '@/lib/api';
+import { goSupportNoticeDetail } from '@/lib/navigation/routes';
 
 export type NoticeListItem = {
   id: string;
@@ -13,9 +16,11 @@ export type UseNoticeScreenReturn = {
   error: string | null;
   unavailable: boolean;
   retry: () => void;
+  onNoticePress: (id: string) => void;
 };
 
 export function useNoticeScreen(): UseNoticeScreenReturn {
+  const router = useRouter();
   const state = useSupportNotices();
   return {
     notices: state.data ?? [],
@@ -23,5 +28,6 @@ export function useNoticeScreen(): UseNoticeScreenReturn {
     error: state.error,
     unavailable: false,
     retry: state.reload,
+    onNoticePress: (id) => goSupportNoticeDetail(router, id),
   };
 }

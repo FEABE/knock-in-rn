@@ -175,10 +175,10 @@ function Switch({
       {({ checked: isChecked }) => (
         <View
           className={`h-8 w-[52px] justify-center rounded-full px-1 ${
-            isChecked ? 'bg-[#256EF4]' : disabled ? 'bg-neutral-200' : 'bg-neutral-300'
-          }`}
+            isChecked ? 'items-end' : 'items-start'
+          } ${isChecked ? 'bg-[#256EF4]' : disabled ? 'bg-neutral-200' : 'bg-neutral-300'}`}
         >
-          <View className={`h-6 w-6 rounded-full bg-white ${isChecked ? 'ml-5' : 'ml-0'}`} />
+          <View className="h-6 w-6 rounded-full bg-white" />
         </View>
       )}
     </Toggle>

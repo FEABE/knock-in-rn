@@ -13,7 +13,7 @@ import {
   type TermsAgreement,
 } from './types';
 
-export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo' | 'preferences';
+export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo';
 
 /**
  * 가입 온보딩 필수 흐름: 기본정보·약관 → 생활패턴 → 방 조건.
@@ -31,7 +31,6 @@ export const STEP_LABELS: Record<OnboardingStep, string> = {
   'profile-basic': '기본 정보',
   'profile-lifestyle': '생활패턴',
   roominfo: '방 유무 여부',
-  preferences: '우선순위 선택',
 };
 
 function emptyTerms(): TermsAgreement {

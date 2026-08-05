@@ -191,6 +191,48 @@ const MOCK_LIFESTYLES: LifestyleItem[] = [
     description: '깔끔한 편',
     type: 'SCALE',
   },
+  {
+    lifestyleId: 3,
+    name: '소음 민감도',
+    value: '3',
+    description: '보통',
+    type: 'SCALE',
+  },
+  {
+    lifestyleId: 4,
+    name: '흡연 여부',
+    value: '비흡연',
+    description: '비흡연',
+    type: 'BOOLEAN',
+  },
+  {
+    lifestyleId: 5,
+    name: '반려동물',
+    value: '없음',
+    description: '없음',
+    type: 'BOOLEAN',
+  },
+  {
+    lifestyleId: 6,
+    name: '성격',
+    value: '외향적',
+    description: '외향적',
+    type: 'SCALE',
+  },
+  {
+    lifestyleId: 7,
+    name: '개인 공간 중요도',
+    value: '중요함',
+    description: '중요함',
+    type: 'SCALE',
+  },
+  {
+    lifestyleId: 8,
+    name: '방문객 빈도',
+    value: '적음',
+    description: '적음',
+    type: 'SCALE',
+  },
 ];
 
 const MOCK_PREFERENCES: PreferenceItem[] = [

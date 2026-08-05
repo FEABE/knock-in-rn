@@ -7,6 +7,7 @@ export type GenderFilterValue = 'any' | 'male' | 'female';
 
 const OPTIONS: { value: GenderFilterValue; label: string }[] = [
   { value: 'any', label: '전체' },
+  { value: 'male', label: '남성' },
   { value: 'female', label: '여성' },
 ];
 

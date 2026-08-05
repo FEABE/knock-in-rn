@@ -103,7 +103,7 @@ export function InterestsScreenView({
                 title="관심 표시한 방이 없어요"
                 description="마음에 드는 방을 찾아보세요"
                 actionLabel="방 보러가기"
-                onAction={onExplorePress}
+                onAction={() => onExplorePress('rooms')}
               />
             ) : (
               <FlatList
@@ -135,7 +135,7 @@ export function InterestsScreenView({
                 title="관심 표시한 룸메이트가 없어요"
                 description="마음에 드는 룸메이트를 찾아보세요"
                 actionLabel="룸메이트 보러가기"
-                onAction={onExplorePress}
+                onAction={() => onExplorePress('roommates')}
               />
             ) : (
               <FlatList

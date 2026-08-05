@@ -1,4 +1,5 @@
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
@@ -14,6 +15,7 @@ export function NoticeScreenView({
   error,
   unavailable,
   retry,
+  onNoticePress,
 }: NoticeScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -47,14 +49,18 @@ export function NoticeScreenView({
           </View>
         ) : (
           notices.map((notice) => (
-            <View
+            <Pressable
               key={notice.id}
-              className="gap-2 rounded-2xl border border-neutral-200 bg-white p-5"
+              onPress={() => onNoticePress(notice.id)}
+              accessibilityRole="button"
+              className="flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-5 active:opacity-80"
             >
-              <Text className="text-base font-semibold text-neutral-900">{notice.title}</Text>
-              <Text className="text-xs text-neutral-400">{notice.dateLabel}</Text>
-              <Text className="text-sm leading-6 text-neutral-700">{notice.body}</Text>
-            </View>
+              <View className="flex-1 gap-2">
+                <Text className="text-base font-semibold text-neutral-900">{notice.title}</Text>
+                <Text className="text-xs text-neutral-400">{notice.dateLabel}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#AAAABA" />
+            </Pressable>
           ))
         )}
       </ScrollView>

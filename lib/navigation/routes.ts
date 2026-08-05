@@ -26,9 +26,14 @@ export function goBack(router: RouterLike) {
   router.back();
 }
 
-export function goExplore(router: RouterLike, mode: NavigationMode = 'navigate') {
-  if (mode === 'replace') replace(router, '/explore');
-  else navigate(router, '/explore');
+export function goExplore(
+  router: RouterLike,
+  mode: NavigationMode = 'navigate',
+  tab?: 'rooms' | 'roommates',
+) {
+  const href = tab ? `/explore?tab=${tab}` : '/explore';
+  if (mode === 'replace') replace(router, href);
+  else navigate(router, href);
 }
 
 export function resetToExplore(router: RouterLike) {
@@ -139,6 +144,10 @@ export function goSupportFaq(router: RouterLike) {
 
 export function goSupportNotice(router: RouterLike) {
   navigate(router, '/support/notice');
+}
+
+export function goSupportNoticeDetail(router: RouterLike, id: string) {
+  navigate(router, `/support/notice/${id}`);
 }
 
 export function goSupportInquiries(router: RouterLike) {

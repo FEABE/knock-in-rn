@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { BottomSheet, Modal, TermsAgreement, TextField } from '@/components/ui/headless';
@@ -69,7 +70,7 @@ export function ProfileBasicStepView({
       <BasicInfoHeader onBack={onBack} />
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
         <ScrollView
@@ -339,7 +340,7 @@ function TermsBottomSheet({
       open={open}
       onOpenChange={onOpenChange}
       backdropClassName="flex-1 justify-end bg-[#17171B]/40"
-      contentClassName="h-[388px] rounded-t-[20px] bg-white px-5 pt-2"
+      contentClassName="rounded-t-[20px] bg-white px-5 pt-2"
       handleClassName="mx-auto mb-7 h-0.5 w-[66px] rounded-full bg-black/60"
     >
       {toastVisible ? <RequiredTermToast /> : null}
@@ -382,9 +383,10 @@ function TermsBottomSheet({
               {({ checked, required, label }) => (
                 <>
                   <CheckIcon checked={checked} size={20} />
-                  <Text className="text-[15px] leading-[23px] text-[#696976]">
+                  <Text className="flex-1 text-[15px] leading-[23px] text-[#696976]">
                     [{required ? '필수' : '선택'}] {label}
                   </Text>
+                  <TermDetailLink termKey={term.key} />
                 </>
               )}
             </TermsAgreement.Item>
@@ -398,21 +400,31 @@ function TermsBottomSheet({
         </Text>
       ) : null}
 
-      <View className="absolute inset-x-4 bottom-4">
-        <Pressable
-          onPress={onContinue}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canContinue }}
-          className={`h-12 items-center justify-center rounded-lg ${
-            canContinue ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
-          }`}
-        >
-          <Text className={`text-base font-bold ${canContinue ? 'text-white' : 'text-[#AAAABA]'}`}>
-            확인
-          </Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={onContinue}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !canContinue }}
+        className={`mt-6 h-12 items-center justify-center rounded-lg ${
+          canContinue ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
+        }`}
+      >
+        <Text className={`text-base font-bold ${canContinue ? 'text-white' : 'text-[#AAAABA]'}`}>
+          확인
+        </Text>
+      </Pressable>
     </BottomSheet>
+  );
+}
+
+function TermDetailLink({ termKey }: { termKey: string }) {
+  const router = useRouter();
+  return (
+    <Text
+      className="text-xs text-[#AAAABA] underline"
+      onPress={() => router.push(`/support/terms?termId=${termKey}`)}
+    >
+      보기
+    </Text>
   );
 }
 

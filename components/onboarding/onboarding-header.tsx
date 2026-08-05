@@ -8,7 +8,6 @@ import { STEP_LABELS, useOnboarding, type OnboardingStep } from '@/lib/onboardin
 const DESIGN_PROGRESS: Record<Exclude<OnboardingStep, 'roominfo'>, number> = {
   'profile-basic': 1,
   'profile-lifestyle': 3,
-  preferences: 10,
 };
 
 export function OnboardingHeader() {

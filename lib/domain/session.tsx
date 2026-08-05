@@ -42,8 +42,6 @@ import { goKakaoLogin } from '@/lib/navigation/routes';
 
 // WebBrowser.maybeCompleteAuthSession(); // 더 이상 사용하지 않음
 
-const E2E_ACCESS_TOKEN = process.env.EXPO_PUBLIC_E2E_ACCESS_TOKEN;
-
 export type SignInFailureKind = 'cancelled' | 'network' | 'failed' | 'withdrawn' | 'suspended';
 
 export type SignInResult =
@@ -89,25 +87,6 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     if (USE_MOCK || initial !== undefined) return;
 
     let cancelled = false;
-    if (__DEV__ && E2E_ACCESS_TOKEN) {
-      setAccessToken(E2E_ACCESS_TOKEN);
-      loadSessionUser().then(({ user, invalidToken }) => {
-        if (cancelled) return;
-        if (invalidToken) {
-          setAccessToken(null);
-          setSession(null);
-          return;
-        }
-        setSession({
-          user,
-          isProfileComplete: true,
-          visibility: 'public',
-        });
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
 
     readStoredAuthSession().then((stored) => {
       if (cancelled || !stored) return;

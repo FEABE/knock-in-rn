@@ -147,6 +147,11 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
       lifestyle: lifestyleFromItems(data.lifeStyles),
     }),
     description: data.contents ?? '',
+    lifeStyles: (data.lifeStyles ?? []).map((item, index) => ({
+      id: item.lifestyleId != null ? String(item.lifestyleId) : `lifestyle-${index}`,
+      name: item.name ?? '-',
+      value: item.description?.trim() || item.value?.trim() || '-',
+    })),
     options,
     moveInDate: parseServerDate(data.comeableDate) ?? undefined,
     liked,

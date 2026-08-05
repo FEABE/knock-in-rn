@@ -184,7 +184,7 @@ export function ProfileLifestyleStepView({
                       : 'text-base font-medium text-[#696976]'
                   }
                 >
-                  {option.label}
+                  {choiceOptionLabel(question.label, option.label)}
                 </Text>
               </Pressable>
             );
@@ -227,6 +227,18 @@ function categoryLabel(progress?: number): string {
   if (progress === undefined || progress <= 4) return '생활패턴';
   if (progress <= 7) return '생활성향';
   return '성격';
+}
+
+/** 흡연 여부 선택지만 "비흡연자예요"/"흡연자예요" 문구로 덮어쓴다. 서버 원문 라벨은 그대로 둔다. */
+function choiceOptionLabel(questionLabel: string, optionLabel: string): string {
+  const normalizedQuestion = questionLabel.replace(/\s/g, '').toLowerCase();
+  if (!normalizedQuestion.includes('흡연')) return optionLabel;
+
+  const normalizedOption = optionLabel.replace(/\s/g, '').toLowerCase();
+  if (normalizedOption.includes('비흡연') || normalizedOption.includes('안함')) {
+    return '비흡연자예요';
+  }
+  return '흡연자예요';
 }
 
 function questionOrder(label: string): number {

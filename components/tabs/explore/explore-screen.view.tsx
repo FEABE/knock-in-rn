@@ -54,6 +54,8 @@ export function ExploreScreenView({
   sort,
   filter,
   searchQuery,
+  activeTab,
+  setActiveTab,
   openSheet,
   visiblePosts,
   visibleMatches,
@@ -85,7 +87,11 @@ export function ExploreScreenView({
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <Header hasUnread={hasUnreadAlarms} onNotificationPress={onNotificationPress} />
 
-      <Tabs.Root defaultValue="rooms" className="flex-1">
+      <Tabs.Root
+        value={activeTab}
+        onValueChange={(next) => setActiveTab(next === 'roommates' ? 'roommates' : 'rooms')}
+        className="flex-1"
+      >
         <Tabs.List className="flex-row border-b border-[#DADAE8]">
           {EXPLORE_TABS.map((tab) => (
             <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1">

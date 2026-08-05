@@ -1,0 +1,87 @@
+# QA 체크리스트
+
+출처: [Notion PD QA 목록 (26.08.04)](https://glorious-handbell-d25.notion.site/PD-QA-26-08-04-3b2b20fc0f048065b4a6ea124e11044c) + 채팅 전달 QA (26.08.04) + 한지수 디자인 수정사항 전달 (26.08.05)
+
+수정 완료 시 항목 맨 앞에 `(complete)`를 붙인다.
+
+## 로그인
+- 비로그인 상태에 로그인 유도 팝업이 노출되지 않습니다. (탐색 화면에서는 노출) — 관심/채팅/알림/마이페이지/신원인증(홈·이메일) 7개 화면 전부 확인, LoginPromptCard로 !isLoggedIn 게이팅 정상 구현되어 있고 isLoggedIn도 useSession() 기반으로 일관됨. 코드상 재현 안 됨 — 구체적으로 어느 화면/액션에서 안 뜨는지 재현 스텝 필요
+- (complete) 로그인 실패/취소 팝업 버튼 변경 (기존: 나가기, 확인 -> 수정: 확인 단일 버튼) — login-screen.view.tsx의 기존 인라인 에러 배너를 아이콘+제목+설명+확인 버튼 1개짜리 모달(LoginErrorModal)로 교체. 아이콘은 정확한 시안 에셋이 없어 Ionicons `alert-circle-outline`으로 대체(시안 에셋 받으면 교체 필요)
+
+## 온보딩
+- (complete) 생활패턴까지 입력 후 탐색 페이지로 복귀 시, 선호 조건 참여 여부를 물어보지 않고 바로 이어져서 강제성이 되어버림 (선호 조건 참여 여부를 물어본 뒤 진행해야 함) — 온보딩 필수 흐름을 기본정보/생활패턴/방정보 3단계로 종료하도록 변경(방정보는 saveProfileAll 필수값이라 필수 유지), 온보딩 내장 선호조건 스텝(구버전, preferences-step.tsx)은 삭제. 탐색 화면의 기존 선호조건 nudge 팝업 → mypage/preferences-screen(신버전)으로 선택 입력을 받음. 이 변경으로 "선택 입력 유도 팝업 신/구버전 중복 노출" Notion 이슈도 함께 해소됨
+- (complete) 선호 조건에서 룸메이트 선호 성별 항목 삭제
+- (complete) 선호 조건 마지막 항목(우선순위 선택)은 미입력도 가능하므로 완료 버튼이 상시 활성화되어야 함
+- 로고와 카피가 전체적으로 너무 위쪽에 배치되어 있습니다.
+- 로고 이미지 화질이 낮습니다.
+- 화면 내 이미지가 중앙에 정렬되지 않습니다.
+- 텍스트 필드의 안내 문구가 세로 중앙에 정렬되지 않고 아래쪽으로 치우쳐 있습니다. 이메일 입력 시 영문 텍스트가 잘려 보입니다.
+- (complete) 키보드가 노출된 상태에서도 다음으로 버튼이 키보드 위에 고정되어야 합니다. — profile-basic-step.view.tsx의 KeyboardAvoidingView가 Android에서 behavior=undefined라 AndroidManifest의 adjustResize에만 의존하고 있었음. iOS/Android 표준 패턴인 padding/height로 명시적으로 지정. 실기기 검증은 이 세션에서 불가
+- (complete) 기본 정보 입력 후 노출되는 바텀시트에서 동의 영역과 버튼 사이 간격이 너무 넓고, 버튼이 지나치게 아래에 배치되어 있습니다. — TermsBottomSheet가 고정 높이(h-[388px])였고 확인 버튼은 그 안에서 absolute bottom-4로 항상 시트 맨 아래 고정이라, 약관 항목 수가 적으면 사이 공백이 크게 벌어졌음. 고정 높이 제거(콘텐츠에 맞게 자동 크기)하고 버튼을 일반 흐름 요소(mt-6)로 바꿔 콘텐츠 바로 아래 붙도록 수정. 브라우저 클릭스루는 이 세션 도구 한계로 미검증, 레이아웃 로직은 코드로 확인
+- (complete) 약관 상세 화면으로 이동할 수 있는 버튼이 없습니다. — 실제 쓰이는 약관 동의 UI는 `components/onboarding/steps/terms-step.tsx`(어디서도 안 쓰이는 죽은 코드)가 아니라 `profile-basic-step.view.tsx` 내부의 `TermsBottomSheet`였음. 여기엔 "보기" 링크가 아예 없었어서 추가: `TermDetailLink`가 `/support/terms?termId=<id>`로 이동, `use-terms-screen.ts`가 termId 쿼리로 해당 약관 섹션을 바로 펼치도록 함. 바텀시트 내부 라디오/링크는 이 세션 브라우저 툴로 클릭스루 검증은 못함(타입체크·lint만 확인)
+- 우측 프로그래스바에는 현재 입력 중인 단계에 해당하는 숫자를 진하게 표시해야 합니다.
+- (complete) 흡연 여부 카피를 "비흡연자예요", "흡연자예요"로 변경해야 합니다. — 온보딩 생활패턴 스텝의 흡연 선택지는 백엔드 /meta/lifestyle-patterns가 내려주는 원문("흡연자"/"비흡연자")을 그대로 표시하고 있었음. profile-lifestyle-step.view.tsx에 choiceOptionLabel() 추가해서 흡연 질문에서만 "비흡연자예요"/"흡연자예요"로 덮어씀 (다른 선택지는 서버 원문 그대로 유지). 목데이터 라벨과 매칭 로직 코드 대조로 확인, 클릭스루는 브라우저 툴 한계로 미검증
+- 거주하고 싶은 집 주소의 위치 선택 팝업 UI가 최신 시안과 다릅니다.
+- 구·군 선택 화면 상단의 안내 카피는 삭제해야 합니다. — 관련 지역 선택 UI 3곳(roominfo-step의 RegionPickerSheet, 필터의 RegionFilterSheet, 공통 FilterSheet subtitle) 전부 확인했으나 삭제 대상이 될 상단 안내문을 못 찾음 — 정확히 어느 화면인지(스크린샷) 확인 필요
+- 지역을 10개 이상 선택했을 때 노출되는 토스트 팝업 UI가 시안과 다릅니다.
+- 예산 선택 화면에서 프로그래스바를 가장 왼쪽으로 이동하면 다시 조정할 수 없습니다. 뒤로 이동한 뒤 다시 진입해도 동일한 상태가 유지됩니다. — `range-field.tsx`/`use-range-slider.ts`의 clamp·비율 계산 로직을 경계값(min)까지 꼼꼼히 추적했으나 코드상 결함을 못 찾음. 실제 터치 제스처 상호작용 버그로 추정되어 기기 재현 필요, 보류
+- 방 형태 선택 항목에 쉐어하우스, 빌라가 없습니다. — RN 버그 아님. 온보딩/필터 둘 다 useRoomTypeOptions()로 GET /meta/room-types를 그대로 렌더링함 (하드코딩 없음). 백엔드가 해당 방 형태를 아직 안 내려주는 것으로 보임, BE 시드 데이터 확인 필요
+- 아파트 아이콘의 흰색 배경을 제거해야 합니다. — room-type-apartment.png 자체가 알파 채널 없는 완전 불투명 PNG (colorType=2/RGB). 코드로 지울 수 있는 배경이 아니라 에셋을 투명 배경으로 다시 내보내야 함, 피그마 에셋 필요
+- (complete) 현재 필수 입력 완료 후 선택 입력으로 바로 이어지는데, 필수 입력이 끝나면 탐색 화면으로 이동해야 합니다. — 위 "생활패턴까지 입력 후..." 항목과 동일 수정으로 해소
+- (complete) 선택 입력을 유도하는 팝업이 현재 버전과 이전 버전 두 가지로 중복 노출됩니다. — 온보딩 내장 구버전 선호조건 스텝 삭제로 중복 해소, mypage/preferences-screen(신버전)만 남음
+- 모든 준비가 끝났어요 화면의 이미지가 중앙에 정렬되지 않습니다.
+
+## 탐색
+- (complete) NEW 태그 삭제 (인기 태그만 유지)
+- (complete) 룸메 구해요 게시글의 생활패턴 8가지 항목이 다 안 나옴 (현재 상위 4가지만 보이고 더보기 이후 4개가 안 나옴) — RN이 백엔드 동적 lifeStyles 배열을 옛 6개 고정 스키마로 욱여넣던 문제, roommate-detail-screen과 동일한 동적 리스트 방식으로 교체. / 룸메 찾아요는 생활패턴이 하나밖에 안 뜸 — 코드(roommate-detail-screen)는 이미 동적 리스트 정상 처리 중, 실제 원인은 백엔드 응답 데이터 자체가 적은 것으로 RN 이슈 아님
+- (complete) 신고하기 사유 입력 페이지 없음 — 게시글/룸메이트 신고 사유 시트 둘 다 "기타" 선택 시 바로 그 라벨 문자열로 제출돼서 실제 설명을 입력할 방법이 없었음. "기타" 선택 시 텍스트 입력 화면으로 전환되도록 추가 (room-detail-screen.view.tsx, roommate-detail-screen.view.tsx). 백엔드 reportBoard/reportMatch가 원래 자유 텍스트를 받으므로 API 변경 불필요
+- (complete) 룸메 찾아요에는 검색바·필터 전부 없어야 됨 — 코드 확인 결과 이미 미노출 상태 (explore-screen.view.tsx의 roommates 탭에 RoomListControls 미포함)
+- 관심(찜) 했을 시 색상이 다름
+- 게시글 이미지가 없을 때 디폴트 이미지가 적용되지 않습니다. — 코드상 8곳(게시글 카드/상세, 룸메이트 카드/상세, 채팅, 프로필 편집 등)의 이미지 사용처 전부 fallback(아이콘+회색배경) 이미 구현되어 있어 재현 안 됨. 혹시 "디폴트 이미지"가 아이콘이 아니라 브랜드 이미지 에셋을 의미하는 것이면 피그마 에셋 필요
+- 플로팅 버튼 크기가 너무 작고 그림자가 시안보다 강하게 적용되어 있습니다.
+- 기본 리스트 UI가 시안과 다릅니다. 작성자, 작성 시간, 예산 정보 디자인이 다릅니다.
+
+## 필터
+- 최신 UI가 반영되지 않았습니다. 전체적인 구조는 유사하지만 일부 스타일이 다릅니다.
+- (complete) 성별 항목을 전체, 남성, 여성으로 변경해야 합니다. — gender-filter-sheet.tsx의 OPTIONS 배열에 '남성' 옵션이 아예 빠져있었음(타입엔 'male'이 있는데 목록에서 누락). 전체/남성/여성 순서로 추가
+- 방 형태 항목에 쉐어하우스, 빌라가 없습니다. — RN 버그 아님, 위 온보딩 항목과 동일 원인(BE 시드 데이터)
+- 필터 적용 후 노출되는 상태 UI가 시안과 다릅니다.
+
+## 알림
+- 최신 UI 반영
+
+## 룸메 찾아요
+- 최신 UI 반영이 필요합니다.
+- 프로필 이미지가 없을 때 디폴트 이미지가 적용되지 않습니다. — 위 게시글 이미지 항목과 동일 확인, 코드상 재현 안 됨
+- (complete) 방 소개 항목의 보증금 + 월세를 예산으로 변경해야 합니다. — lib/api/mappers/roommate.ts의 livingRows에서 "보증금"/"월세" 별도 행을 "예산" 한 행("보증금 N만원 / 월세 N만원")으로 합침. 웹 mock으로 확인
+- (complete) 입주 가능일 항목은 삭제해야 합니다. — 같은 livingRows에서 "입주 가능 시기"/"입주 희망 시기" 행 제거, roommate-detail-screen.view.tsx의 관련 라벨 매핑도 정리. 웹 mock으로 확인
+- (complete) 생활 패턴이 현재 숫자로 표시되고 있어, 시안에 맞는 텍스트 표현으로 변경해야 합니다. — lib/api/mappers/roommate.ts가 lifeStyles/preferenceRows를 매핑할 때 서버가 같이 내려주는 description(텍스트) 대신 value(원본 숫자/코드)를 그대로 쓰고 있었음. adapters.ts의 방 게시글 쪽과 동일하게 description 우선으로 수정. 웹 mock으로 "청결: 4" → "깔끔한 편", "소음 민감도: 3" → "보통"으로 바뀌는 것 확인
+- 차단 팝업 카피가 시안과 다릅니다.
+- 차단 실패 발생 후 앱이 종료되고, 재진입 시 온보딩부터 다시 진행되는 현상이 발생했습니다. — 코드 추적으로는 명확한 크래시 지점을 못 찾음 (`use-roommate-detail-screen.ts`의 onBlock은 이미 try/catch로 감싸져 있음). 401 발생 시 [session.tsx:279](lib/domain/session.tsx:279)의 전역 인증 실패 핸들러가 signOut+강제 라우팅을 동시에 시도하는 것과 겹칠 가능성은 있으나 확정 아님 — 재현 시 Logcat/Xcode 콘솔 크래시 로그 필요, 보류
+- 앱을 백그라운드에서 종료한 뒤 다시 실행하니 사용자님 계정으로 로그인되는 현상도 확인되었습니다. — 다른 계정이 아니라 본인 계정에 이름이 "사용자"로 표시되는 것으로 보임. [docs/qa-issues.md](docs/qa-issues.md) 4번 이슈와 원인 동일 — `GET /profile/all` 응답에 name/gender 필드가 없는 BE 스펙 문제라 RN만으로 해결 불가, 로컬 캐시(identity.name)도 온보딩 완료 시에만 채워져 그 경로를 안 탄 계정은 항상 폴백됨. BE 조치 필요
+- 신고 팝업 카피가 시안과 다릅니다.
+- (complete) 채팅 요청하기 -> 채팅하기로 카피 변경 (등록자 정보 하단 채팅 버튼) — 확인 결과 커밋 d9c59ee(문구 맞추기 및 기본 데이터 넣기 우선은)에서 이미 room-detail-screen.view.tsx / roommate-detail-screen.view.tsx 둘 다 "채팅하기"로 변경 완료된 상태였음. 추가 수정 불필요
+
+## 룸메 구해요
+- 최신 UI 반영
+
+## 관심
+- 룸메 구해요, 룸메 찾아요 탭의 폰트 크기가 시안보다 큽니다.
+- (complete) 룸메 구해요 탭에서 방 보러가기를 선택하면 탐색 화면에서 이전에 보던 탭으로 이동합니다. 룸메 구해요 탭으로 바로 이동해야 합니다. — 관심 탭의 "방 보러가기"/"룸메이트 보러가기" 둘 다 goExplore(router)만 호출해서 tab 지정이 아예 없었음. goExplore에 tab 파라미터 추가(?tab=rooms|roommates), 탐색 화면의 Tabs.Root를 uncontrolled(defaultValue)에서 controlled(value+onValueChange)로 바꿔서 화면이 계속 마운트돼 있어도 쿼리 파라미터가 바뀌면 강제로 탭 전환되도록 함. 웹 mock으로 ?tab=roommates 진입 시 룸메이트 목록으로 바로 전환되는 것 확인
+- 재로그인 후 관심 목록에 저장했던 룸메 찾아요 항목이 사라졌습니다. — RN 코드 확인 결과 toggleMatchLike API 호출 + 뮤테이션 후 쿼리 무효화 + 로그아웃 시 queryClient.clear() 전부 정상 구현되어 있어, liked 상태는 매번 서버(getRoommateMatches)에서 새로 받아옴. RN 캐싱 버그로 보긴 어려움 — 백엔드가 좋아요 상태를 영속화하지 못하는 문제로 추정, 백엔드 확인 필요
+
+## 채팅
+- UI가 최신화 필요
+- (complete) 채팅을 시도하면 "채팅 서버에 연결 중이에요" 문구가 노출된 뒤 앱이 충돌하며 종료됩니다. 여러 차례 재시도해도 동일한 현상이 발생했습니다. (8월 4일 오후 7시 기준, 채팅 화면 진입 시 앱이 계속 종료되어 채팅 영역 QA를 정상적으로 진행하지 못함) — 원인: `sockjs-client`는 브라우저 전용 라이브러리라 RN에서 `new SockJS(...)` 생성 시점에 크래시남. STOMP 서버(`.withSockJS()`)의 `/websocket` 서브패스로 SockJS 협상 없이 RN 전역 WebSocket으로 직접 연결하도록 변경(lib/api/chat.ts의 wsChatUrl, lib/api/use-chat-socket.ts). 실제 백엔드가 해당 서브패스를 노출하는지는 로컬에서 서버 기동 확인 못해 미검증 — 다음 QA에서 채팅 진입 시 크래시 재현 여부 꼭 확인 필요
+
+## 마이페이지
+- 프로필 편집, 생활패턴, 방 조건 관리 저장이 되지 않습니다. — 코드 추적 결과 명확한 RN 버그를 못 찾음. `profile-edit`의 생활패턴 탭(LifestyleQuestionFlow)은 라디오형 UI라 이전 문서화된 "슬라이더 착시" 버그와 무관해 보이고, 방 조건 탭(saveRoom) 검증 로직도 정상. 저장 API(saveProfileLifestyle/updateProfileLifestyle/updateProfileRoomInfo) 자체가 서버에서 실패하는 것으로 추정되나 로컬 백엔드가 없어 재현 불가 — 다음 QA 때 실패 시 뜨는 에러 메시지(Alert 내용) 캡처 필요
+- 생활 패턴 관리, 방 조건 관리, 선호 룸메이트 관리, 신원 인증, 탈퇴하기 화면에 최신 UI 반영이 필요합니다.
+- 약관 및 정책은 계정 설정과 분리하여 최신 UI로 반영해야 합니다.
+- 자주 묻는 질문은 페이지로 이동되지 않습니다. — 코드 확인 결과 goSupportFaq 라우팅, 액션 연결, /support/faq 화면 전부 정상 구현되어 있음. 웹 mock으로 직접 이동해서 정상 렌더링까지 확인, 재현 안 됨
+- (complete) 공지사항 선택 시 상세 페이지로 이동해야 합니다. — 목록 API(GET /users/me/notices)는 애초에 body를 안 내려주는데(코드에서 body:''로 고정), 상세 조회용 GET /bo/notices/{id}(getBoNoticeDetail)는 있었지만 어디서도 쓰이지 않고 있었음. app/support/notice/[id].tsx 라우트와 notice-detail-screen 신설, 목록 각 항목을 Pressable로 바꿔 상세로 이동하도록 함. 웹 mock으로 목록→상세 이동, 본문 표시까지 확인
+- (complete) [김종민, 26.08.05] 로그인하지 않고 앱 재시작 시 "사용자"라는 미상의 유저로 로그인되어 있어서 모든 페이지 접근 가능해짐 — `lib/domain/session.tsx`에 `EXPO_PUBLIC_E2E_ACCESS_TOKEN` 환경변수만 있으면 `__DEV__` 빌드에서 로그인 버튼 없이 그 토큰으로 자동 로그인되는 코드가 있었음. 저장소에 E2E 자동화 테스트 프레임워크(Detox/Maestro 등)가 전혀 없고 `.env.example`에도 문서화 안 돼있어 예전에 개인 로컬 테스트용으로 추가되고 방치된 백도어로 판단, 해당 분기 전체 삭제. 실제로 이 환경변수가 QA 빌드에 어떻게 들어갔는지(빌드 스크립트/공유 .env 등)는 확인 필요
+- (complete) [한지수 댓글] 토글도 뭔가 이상함 (원이 중심 쪽으로 치우침) — mypage-home-screen.view.tsx의 Switch가 `justify-center` 트랙 안에서 `ml-5`/`ml-0` 마진으로 위치를 잡고 있어서, 중앙 정렬 기준으로 밀리는 바람에 끝까지 안 붙었음. `items-start`/`items-end`로 정렬 기준을 바꿔 수정
+
+## 앱 셸 / 네이티브
+- (complete) iOS, Android 둘 다 OS 헤더 영역(시간·배터리)이 투명 처리가 아니라 흰색으로 덮여서 안 보임 — app/_layout.tsx의 `<StatusBar style="auto" />`가 시스템 다크모드 설정 시 흰색 아이콘을 그리는데, 앱 화면은 전부 밝은 배경(bg-white)만 써서 흰 배경 위에 흰 아이콘이 렌더되어 보이지 않던 문제. `style="dark"`로 고정. 네이티브 전용 이슈라 iOS/Android 실기기·시뮬레이터 확인은 이 세션에서 불가
