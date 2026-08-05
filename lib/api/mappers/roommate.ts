@@ -212,13 +212,13 @@ export function toRoommateMatchDetailModel(
     lifeStyles: (data.lifeStyles ?? []).map((item, index) => ({
       id: stringValue(item.lifestyleId, `lifestyle-${index}`),
       name: item.name ?? '-',
-      value: item.value ?? '-',
+      value: item.description?.trim() || item.value?.trim() || '-',
     })),
     livingRows,
     preferenceRows: (data.preferences ?? []).map((preference, index) => ({
       key: stringValue(preference.preferencesId, `preference-${index}`),
       label: preference.name ?? '-',
-      value: preference.value ?? '-',
+      value: preference.description?.trim() || preference.value?.trim() || '-',
     })),
     conditionText: definedLabels(
       (data.conditionWeights ?? []).map((condition) => condition.name),

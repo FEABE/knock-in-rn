@@ -55,7 +55,7 @@
 - 프로필 이미지가 없을 때 디폴트 이미지가 적용되지 않습니다. — 위 게시글 이미지 항목과 동일 확인, 코드상 재현 안 됨
 - (complete) 방 소개 항목의 보증금 + 월세를 예산으로 변경해야 합니다. — lib/api/mappers/roommate.ts의 livingRows에서 "보증금"/"월세" 별도 행을 "예산" 한 행("보증금 N만원 / 월세 N만원")으로 합침. 웹 mock으로 확인
 - (complete) 입주 가능일 항목은 삭제해야 합니다. — 같은 livingRows에서 "입주 가능 시기"/"입주 희망 시기" 행 제거, roommate-detail-screen.view.tsx의 관련 라벨 매핑도 정리. 웹 mock으로 확인
-- 생활 패턴이 현재 숫자로 표시되고 있어, 시안에 맞는 텍스트 표현으로 변경해야 합니다.
+- (complete) 생활 패턴이 현재 숫자로 표시되고 있어, 시안에 맞는 텍스트 표현으로 변경해야 합니다. — lib/api/mappers/roommate.ts가 lifeStyles/preferenceRows를 매핑할 때 서버가 같이 내려주는 description(텍스트) 대신 value(원본 숫자/코드)를 그대로 쓰고 있었음. adapters.ts의 방 게시글 쪽과 동일하게 description 우선으로 수정. 웹 mock으로 "청결: 4" → "깔끔한 편", "소음 민감도: 3" → "보통"으로 바뀌는 것 확인
 - 차단 팝업 카피가 시안과 다릅니다.
 - 차단 실패 발생 후 앱이 종료되고, 재진입 시 온보딩부터 다시 진행되는 현상이 발생했습니다. — 코드 추적으로는 명확한 크래시 지점을 못 찾음 (`use-roommate-detail-screen.ts`의 onBlock은 이미 try/catch로 감싸져 있음). 401 발생 시 [session.tsx:279](lib/domain/session.tsx:279)의 전역 인증 실패 핸들러가 signOut+강제 라우팅을 동시에 시도하는 것과 겹칠 가능성은 있으나 확정 아님 — 재현 시 Logcat/Xcode 콘솔 크래시 로그 필요, 보류
 - 앱을 백그라운드에서 종료한 뒤 다시 실행하니 사용자님 계정으로 로그인되는 현상도 확인되었습니다. — 다른 계정이 아니라 본인 계정에 이름이 "사용자"로 표시되는 것으로 보임. [docs/qa-issues.md](docs/qa-issues.md) 4번 이슈와 원인 동일 — `GET /profile/all` 응답에 name/gender 필드가 없는 BE 스펙 문제라 RN만으로 해결 불가, 로컬 캐시(identity.name)도 온보딩 완료 시에만 채워져 그 경로를 안 탄 계정은 항상 폴백됨. BE 조치 필요
