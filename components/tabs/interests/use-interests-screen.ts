@@ -48,7 +48,7 @@ export type UseInterestsScreenReturn = {
   setFilter: (next: ExploreFilter) => void;
   onSearchPress: () => void;
   onLoginPress: () => void;
-  onExplorePress: () => void;
+  onExplorePress: (tab: 'rooms' | 'roommates') => void;
   onRoomPress: (post: RoomPost) => void;
   onRoomLikeChange: (post: RoomPost, liked: boolean) => void;
   onRoommatePress: (match: RoommateMatchCardModel) => void;
@@ -105,7 +105,7 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
     setFilter,
     onSearchPress: () => goRoomSearch(router),
     onLoginPress: () => goKakaoLogin(router),
-    onExplorePress: () => goExplore(router),
+    onExplorePress: (tab) => goExplore(router, 'navigate', tab),
     onRoomPress: (post) => goRoomDetail(router, post.id),
     onRoomLikeChange: (post, liked) => requireLogin(() => setBoardLiked(post.id, liked)),
     onRoommatePress: (match) => goRoommateDetail(router, match.id),

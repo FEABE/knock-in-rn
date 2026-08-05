@@ -59,10 +59,14 @@ export const EXPLORE_SORT_OPTIONS: { value: ExploreSort; label: string }[] = [
   { value: 'views', label: '조회순' },
 ];
 
+export type ExploreRoomTab = 'rooms' | 'roommates';
+
 export type UseExploreScreenReturn = {
   sort: ExploreSort;
   filter: ExploreFilter;
   searchQuery: string;
+  activeTab: ExploreRoomTab;
+  setActiveTab: (next: ExploreRoomTab) => void;
   openSheet: ExploreFilterKey | null;
   visiblePosts: RoomPost[];
   visibleMatches: RoommateMatchCardModel[];
@@ -93,7 +97,7 @@ export type UseExploreScreenReturn = {
 
 export function useExploreScreen(): UseExploreScreenReturn {
   const router = useRouter();
-  const { q } = useLocalSearchParams<{ q?: string }>();
+  const { q, tab } = useLocalSearchParams<{ q?: string; tab?: string }>();
   const searchQuery = typeof q === 'string' ? q.trim() : '';
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
@@ -102,10 +106,17 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const setMatchLiked = useRoommateMatchLikeActions();
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
+  const [activeTab, setActiveTab] = useState<ExploreRoomTab>('rooms');
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
   const [preferenceNudgeOpen, setPreferenceNudgeOpen] = useState(false);
   const [preferenceNudgeSnooze, setPreferenceNudgeSnooze] = useState(false);
   const { data: alarms } = useAlarms(Boolean(session));
+
+  // 탐색 탭바가 화면 스택에 남아있는 상태에서 다시 진입해도(관심 등 다른 화면에서 특정
+  // 탭을 지정해 들어온 경우) 이전에 보던 탭이 아니라 요청받은 탭으로 강제 전환한다.
+  useEffect(() => {
+    if (tab === 'rooms' || tab === 'roommates') setActiveTab(tab);
+  }, [tab]);
 
   const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
   const {
@@ -172,6 +183,8 @@ export function useExploreScreen(): UseExploreScreenReturn {
     sort,
     filter,
     searchQuery,
+    activeTab,
+    setActiveTab,
     openSheet,
     visiblePosts,
     visibleMatches,
