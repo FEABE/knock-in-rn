@@ -146,6 +146,10 @@ export function goSupportNotice(router: RouterLike) {
   navigate(router, '/support/notice');
 }
 
+export function goSupportNoticeDetail(router: RouterLike, id: string) {
+  navigate(router, `/support/notice/${id}`);
+}
+
 export function goSupportInquiries(router: RouterLike) {
   navigate(router, '/support/inquiries');
 }

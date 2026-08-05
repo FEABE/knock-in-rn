@@ -79,7 +79,7 @@
 - 생활 패턴 관리, 방 조건 관리, 선호 룸메이트 관리, 신원 인증, 탈퇴하기 화면에 최신 UI 반영이 필요합니다.
 - 약관 및 정책은 계정 설정과 분리하여 최신 UI로 반영해야 합니다.
 - 자주 묻는 질문은 페이지로 이동되지 않습니다. — 코드 확인 결과 goSupportFaq 라우팅, 액션 연결, /support/faq 화면 전부 정상 구현되어 있음. 웹 mock으로 직접 이동해서 정상 렌더링까지 확인, 재현 안 됨
-- 공지사항 선택 시 상세 페이지로 이동해야 합니다.
+- (complete) 공지사항 선택 시 상세 페이지로 이동해야 합니다. — 목록 API(GET /users/me/notices)는 애초에 body를 안 내려주는데(코드에서 body:''로 고정), 상세 조회용 GET /bo/notices/{id}(getBoNoticeDetail)는 있었지만 어디서도 쓰이지 않고 있었음. app/support/notice/[id].tsx 라우트와 notice-detail-screen 신설, 목록 각 항목을 Pressable로 바꿔 상세로 이동하도록 함. 웹 mock으로 목록→상세 이동, 본문 표시까지 확인
 
 ## 앱 셸 / 네이티브
 - (complete) iOS, Android 둘 다 OS 헤더 영역(시간·배터리)이 투명 처리가 아니라 흰색으로 덮여서 안 보임 — app/_layout.tsx의 `<StatusBar style="auto" />`가 시스템 다크모드 설정 시 흰색 아이콘을 그리는데, 앱 화면은 전부 밝은 배경(bg-white)만 써서 흰 배경 위에 흰 아이콘이 렌더되어 보이지 않던 문제. `style="dark"`로 고정. 네이티브 전용 이슈라 iOS/Android 실기기·시뮬레이터 확인은 이 세션에서 불가
