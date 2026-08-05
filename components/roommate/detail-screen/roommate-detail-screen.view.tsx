@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TextField } from '@/components/ui/headless';
 import {
   ReadyActionRow,
   ReadyActionSheet,
@@ -21,6 +22,8 @@ import {
   ROOMMATE_REPORT_REASONS,
   type UseRoommateDetailScreenReturn,
 } from './use-roommate-detail-screen';
+
+const OTHER_REPORT_REASON = '기타';
 
 export type RoommateDetailScreenViewProps = UseRoommateDetailScreenReturn;
 
@@ -387,14 +390,58 @@ function ReportSheet({
   onReportReason: (reason: string) => void;
 }) {
   const [showReasons, setShowReasons] = useState(false);
+  const [enteringCustom, setEnteringCustom] = useState(false);
+  const [customReason, setCustomReason] = useState('');
   const handleOpenChange = (next: boolean) => {
-    if (!next) setShowReasons(false);
+    if (!next) {
+      setShowReasons(false);
+      setEnteringCustom(false);
+      setCustomReason('');
+    }
     onOpenChange(next);
+  };
+  const submitCustom = () => {
+    const trimmed = customReason.trim();
+    if (!trimmed) return;
+    onReportReason(trimmed);
+    handleOpenChange(false);
   };
 
   return (
     <ReadyActionSheet open={open} onOpenChange={handleOpenChange}>
-      {showReasons ? (
+      {enteringCustom ? (
+        <View>
+          <Pressable
+            onPress={() => setEnteringCustom(false)}
+            className="mb-2 h-10 flex-row items-center gap-1"
+          >
+            <Ionicons name="chevron-back" size={20} color="#696976" />
+            <Text className="text-base font-semibold text-[#17171B]">신고 사유 입력</Text>
+          </Pressable>
+          <Text className="mb-3 text-sm text-[#696976]">어떤 문제가 있었는지 알려주세요</Text>
+          <TextField
+            value={customReason}
+            onChangeValue={setCustomReason}
+            placeholder="신고 사유를 입력해주세요"
+            multiline
+            maxLength={300}
+            className="h-28 rounded-lg border border-[#DADAE8] px-3 py-2 text-[15px] text-[#17171B]"
+          />
+          <Pressable
+            onPress={submitCustom}
+            disabled={!customReason.trim()}
+            className={`mt-3 h-12 items-center justify-center rounded-lg ${
+              customReason.trim() ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
+            }`}
+          >
+            <Text
+              className={`text-base font-bold ${customReason.trim() ? 'text-white' : 'text-[#AAAABA]'}`}
+            >
+              제출
+            </Text>
+          </Pressable>
+        </View>
+      ) : showReasons ? (
         <View>
           <Pressable
             onPress={() => setShowReasons(false)}
@@ -409,7 +456,9 @@ function ReportSheet({
               icon="alert-circle-outline"
               label={reason}
               divider={index < ROOMMATE_REPORT_REASONS.length - 1}
-              onPress={() => onReportReason(reason)}
+              onPress={() =>
+                reason === OTHER_REPORT_REASON ? setEnteringCustom(true) : onReportReason(reason)
+              }
             />
           ))}
         </View>

@@ -34,7 +34,7 @@
 ## 탐색
 - (complete) NEW 태그 삭제 (인기 태그만 유지)
 - (complete) 룸메 구해요 게시글의 생활패턴 8가지 항목이 다 안 나옴 (현재 상위 4가지만 보이고 더보기 이후 4개가 안 나옴) — RN이 백엔드 동적 lifeStyles 배열을 옛 6개 고정 스키마로 욱여넣던 문제, roommate-detail-screen과 동일한 동적 리스트 방식으로 교체. / 룸메 찾아요는 생활패턴이 하나밖에 안 뜸 — 코드(roommate-detail-screen)는 이미 동적 리스트 정상 처리 중, 실제 원인은 백엔드 응답 데이터 자체가 적은 것으로 RN 이슈 아님
-- 신고하기 사유 입력 페이지 없음
+- (complete) 신고하기 사유 입력 페이지 없음 — 게시글/룸메이트 신고 사유 시트 둘 다 "기타" 선택 시 바로 그 라벨 문자열로 제출돼서 실제 설명을 입력할 방법이 없었음. "기타" 선택 시 텍스트 입력 화면으로 전환되도록 추가 (room-detail-screen.view.tsx, roommate-detail-screen.view.tsx). 백엔드 reportBoard/reportMatch가 원래 자유 텍스트를 받으므로 API 변경 불필요
 - (complete) 룸메 찾아요에는 검색바·필터 전부 없어야 됨 — 코드 확인 결과 이미 미노출 상태 (explore-screen.view.tsx의 roommates 탭에 RoomListControls 미포함)
 - 관심(찜) 했을 시 색상이 다름
 - 게시글 이미지가 없을 때 디폴트 이미지가 적용되지 않습니다.

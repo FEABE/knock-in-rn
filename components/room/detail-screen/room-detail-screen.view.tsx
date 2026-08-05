@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TextField } from '@/components/ui/headless';
 import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
 import {
   ReadyActionRow,
@@ -387,6 +388,8 @@ function Header({
   );
 }
 
+const OTHER_REPORT_REASON = '기타';
+
 function ReportReasonSheet({
   open,
   onOpenChange,
@@ -396,8 +399,56 @@ function ReportReasonSheet({
   onOpenChange: (open: boolean) => void;
   onReportReason: (reason: string) => void;
 }) {
+  const [customReason, setCustomReason] = useState('');
+  const [enteringCustom, setEnteringCustom] = useState(false);
+
+  const close = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setEnteringCustom(false);
+      setCustomReason('');
+    }
+    onOpenChange(nextOpen);
+  };
+
+  const submitCustom = () => {
+    const trimmed = customReason.trim();
+    if (!trimmed) return;
+    onReportReason(trimmed);
+    close(false);
+  };
+
+  if (enteringCustom) {
+    return (
+      <ReadyActionSheet open={open} onOpenChange={close}>
+        <Text className="mb-2 text-base font-semibold text-[#17171B]">신고 사유 입력</Text>
+        <Text className="mb-3 text-sm text-[#696976]">어떤 문제가 있었는지 알려주세요</Text>
+        <TextField
+          value={customReason}
+          onChangeValue={setCustomReason}
+          placeholder="신고 사유를 입력해주세요"
+          multiline
+          maxLength={300}
+          className="h-28 rounded-lg border border-[#DADAE8] px-3 py-2 text-[15px] text-[#17171B]"
+        />
+        <Pressable
+          onPress={submitCustom}
+          disabled={!customReason.trim()}
+          className={`mt-3 h-12 items-center justify-center rounded-lg ${
+            customReason.trim() ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
+          }`}
+        >
+          <Text
+            className={`text-base font-bold ${customReason.trim() ? 'text-white' : 'text-[#AAAABA]'}`}
+          >
+            제출
+          </Text>
+        </Pressable>
+      </ReadyActionSheet>
+    );
+  }
+
   return (
-    <ReadyActionSheet open={open} onOpenChange={onOpenChange}>
+    <ReadyActionSheet open={open} onOpenChange={close}>
       <Text className="mb-2 text-base font-semibold text-[#17171B]">신고 사유</Text>
       {ROOM_REPORT_REASONS.map((reason, index) => (
         <ReadyActionRow
@@ -405,7 +456,9 @@ function ReportReasonSheet({
           icon="alert-circle-outline"
           label={reason}
           divider={index < ROOM_REPORT_REASONS.length - 1}
-          onPress={() => onReportReason(reason)}
+          onPress={() =>
+            reason === OTHER_REPORT_REASON ? setEnteringCustom(true) : onReportReason(reason)
+          }
         />
       ))}
     </ReadyActionSheet>
