@@ -1,12 +1,11 @@
 import '../global.css';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ScreenViewTracker } from '@/lib/analytics/screen-tracker';
 import { AlarmRealtimeBridge } from '@/components/notifications/alarm-realtime-bridge';
 import { PushNotificationBridge } from '@/components/notifications/push-notification-bridge';
@@ -19,12 +18,11 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+// 다크모드 미지원 — 시스템 설정과 무관하게 라이트 테마로 고정한다.
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={DefaultTheme}>
         <SessionProvider>
           <AlarmRealtimeBridge />
           <PushNotificationBridge />
@@ -44,13 +42,14 @@ export default function RootLayout() {
                 <Stack.Screen name="verification" />
                 <Stack.Screen name="room" />
                 <Stack.Screen name="roommate" />
+                <Stack.Screen name="moderation" />
                 <Stack.Screen name="chat" />
                 <Stack.Screen name="mypage" />
                 <Stack.Screen name="support" />
                 <Stack.Screen name="notifications" />
               </Stack>
               <AppVersionGate />
-              <StatusBar style="auto" />
+              <StatusBar style="dark" />
             </AgreementProvider>
           </ModerationProvider>
         </SessionProvider>

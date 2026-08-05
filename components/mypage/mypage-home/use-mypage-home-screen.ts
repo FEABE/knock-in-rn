@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   useMyPageProfileSummary,
@@ -21,6 +22,10 @@ import {
   goSupportTerms,
   goVerification,
 } from '@/lib/navigation/routes';
+
+import { consumeMypageHomeToast } from './mypage-home-toast';
+
+const TOAST_DURATION_MS = 2500;
 
 export type MyPageMenuRow = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -43,6 +48,7 @@ export type UseMyPageHomeScreenReturn = {
   matchingRows: MyPageMenuRow[];
   accountRows: MyPageMenuRow[];
   supportRows: MyPageMenuRow[];
+  toast: string | null;
   onSignIn: () => void;
   onProfilePress: () => void;
   setProfileVisible: (next: boolean) => void;
@@ -60,6 +66,25 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
   );
   const { notificationEnabled, notificationEditable, setNotificationEnabled } =
     useNotificationSettingToggle(!!session);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const message = consumeMypageHomeToast();
+      if (!message) return;
+      setToast(message);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
+    }, []),
+  );
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
   const user = session?.user ?? null;
   const verified = verification.data?.verified ?? (user?.badges.length ?? 0) > 0;
@@ -148,6 +173,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     matchingRows,
     accountRows,
     supportRows,
+    toast,
     onSignIn: () => goKakaoLogin(router),
     onProfilePress: () => goMypageBasicProfile(router),
     setProfileVisible,

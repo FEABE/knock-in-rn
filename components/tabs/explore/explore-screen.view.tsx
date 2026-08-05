@@ -161,10 +161,8 @@ export function ExploreScreenView({
             ) : visibleMatches.length === 0 ? (
               <ReadyEmptyState
                 compact
-                title={searchQuery ? '검색 결과가 없어요' : '매칭된 룸메이트가 없어요'}
-                description={
-                  searchQuery ? '다른 키워드로 검색해보세요' : '다른 조건으로 다시 찾아보세요'
-                }
+                title="매칭된 룸메이트가 없어요"
+                description="다른 조건으로 다시 찾아보세요"
               />
             ) : (
               visibleMatches.map((match) => (

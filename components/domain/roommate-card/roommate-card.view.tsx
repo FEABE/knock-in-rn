@@ -54,7 +54,7 @@ export function RoommateCardView({
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
             size={19}
-            color={liked ? '#EF4444' : '#AAAABA'}
+            color={liked ? '#256EF4' : '#AAAABA'}
           />
         </Pressable>
       </View>

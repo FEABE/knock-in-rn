@@ -15,6 +15,7 @@ import {
   type InquiryCreate,
   type InquiryItem,
 } from './notification';
+import { formatKstDateLabel, parseServerDate } from './date-time';
 import { getFaqAll, getTermDetail, getTerms, type TermSummary } from './meta';
 import type { AsyncState } from './use-async';
 import { useApi } from './use-async';
@@ -279,9 +280,6 @@ function statusLabel(status?: string): string {
 
 function formatDateLabel(value?: string): string {
   if (!value) return '-';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate(),
-  ).padStart(2, '0')}`;
+  const d = parseServerDate(value);
+  return d ? formatKstDateLabel(d) : value;
 }

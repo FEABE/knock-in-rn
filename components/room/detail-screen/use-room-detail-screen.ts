@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Share } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
@@ -8,6 +8,8 @@ import {
   blockUser as blockUserRequest,
   DEFAULT_CHAT_MESSAGE,
   getAccessTokenMemberId,
+  getRoommateBoardDetail,
+  useApi,
   useCreateChatRoom,
   useRoommateBoardDetail,
   useRoommateBoardLikeActions,
@@ -17,31 +19,27 @@ import { useRequireLogin } from '@/lib/auth';
 import { useModeration, useSession, type RoomPost } from '@/lib/domain';
 import { goChatRoom, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
 
-export const ROOM_REPORT_REASONS = [
-  '허위 매물',
-  '욕설/혐오 표현',
-  '불법/사기 의심',
-  '동일/반복 게시',
-  '기타',
-];
+export type LifestyleTile = { label: string; value: string };
 
 export type UseRoomDetailScreenReturn = {
   post: RoomPost | null;
   photos: string[];
+  lifestyleItems: LifestyleTile[];
   loading: boolean;
   error: string | null;
   isLoggedIn: boolean;
   isOwner: boolean;
   blocked: boolean;
   liked: boolean;
-  reportOpen: boolean;
   menuOpen: boolean;
   photoIndex: number;
   descExpanded: boolean;
   lifestyleExpanded: boolean;
   creatingChat: boolean;
   bottomPadding: number;
-  setReportOpen: (next: boolean) => void;
+  deleting: boolean;
+  deleteDialogOpen: boolean;
+  deleteToastVisible: boolean;
   setMenuOpen: (next: boolean) => void;
   setPhotoIndex: (next: number) => void;
   toggleDescription: () => void;
@@ -49,11 +47,13 @@ export type UseRoomDetailScreenReturn = {
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
   onAuthorPress: () => void;
   onShare: () => void;
   onLike: () => void;
   onChat: () => void;
-  onReportReason: (reason: string) => void;
+  onReport: () => void;
   onBlockAuthor: () => void;
 };
 
@@ -64,17 +64,43 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
   const { data: post, loading, error } = useRoommateBoardDetail(boardId);
+  // 생활 패턴 8종 타일은 서버 라벨/값을 그대로 쓰기 위해 명세 원본 응답을 함께 구독한다.
+  // useRoommateBoardDetail 과 같은 쿼리 키라 추가 네트워크 요청은 발생하지 않는다.
+  const { data: rawDetail } = useApi(
+    ['roommate', 'boards', 'detail', boardId],
+    () => getRoommateBoardDetail(boardId),
+    { enabled: boardId.length > 0, retry: false },
+  );
+  const lifestyleItems = useMemo<LifestyleTile[]>(
+    () =>
+      (rawDetail?.lifeStyles ?? [])
+        .filter((item) => Boolean(item.name?.trim()))
+        .map((item) => ({
+          label: item.name?.trim() ?? '',
+          value: item.description?.trim() || item.value?.trim() || '미입력',
+        })),
+    [rawDetail],
+  );
   const { createRoom, creatingRoom } = useCreateChatRoom();
   const setBoardLiked = useRoommateBoardLikeActions();
-  const { deleteBoard, reportBoard } = useRoommateBoardWriteActions();
-  const { report, blockUser, isPostBlocked, blockPost } = useModeration();
+  const { deleteBoard, deleting } = useRoommateBoardWriteActions();
+  const { blockUser, isPostBlocked, blockPost } = useModeration();
   const bottomPadding = useSafeBottomPadding(12, 12);
 
-  const [reportOpen, setReportOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteToastVisible, setDeleteToastVisible] = useState(false);
+  const deleteBackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (deleteBackTimer.current) clearTimeout(deleteBackTimer.current);
+    },
+    [],
+  );
 
   const photos = post?.photoUrls?.length
     ? post.photoUrls
@@ -95,20 +121,22 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   return {
     post,
     photos,
+    lifestyleItems,
     loading,
     error,
     isLoggedIn: !!session,
     isOwner,
     blocked,
     liked: !!post?.liked,
-    reportOpen,
     menuOpen,
     photoIndex,
     descExpanded,
     lifestyleExpanded,
     creatingChat: creatingRoom,
     bottomPadding,
-    setReportOpen,
+    deleting,
+    deleteDialogOpen,
+    deleteToastVisible,
     setMenuOpen,
     setPhotoIndex,
     toggleDescription: () => setDescExpanded((prev) => !prev),
@@ -122,25 +150,25 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     onDelete: () => {
       if (!post) return;
       setMenuOpen(false);
-      Alert.alert('삭제', '게시글을 삭제할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteBoard(post.id);
-            } catch (deleteError) {
-              Alert.alert(
-                '삭제 실패',
-                deleteError instanceof Error ? deleteError.message : '잠시 후 다시 시도해주세요.',
-              );
-              return;
-            }
-            router.back();
-          },
-        },
-      ]);
+      setDeleteDialogOpen(true);
+    },
+    onCancelDelete: () => setDeleteDialogOpen(false),
+    onConfirmDelete: async () => {
+      if (!post || deleting) return;
+      try {
+        await deleteBoard(post.id);
+      } catch (deleteError) {
+        setDeleteDialogOpen(false);
+        Alert.alert(
+          '삭제 실패',
+          deleteError instanceof Error ? deleteError.message : '잠시 후 다시 시도해주세요.',
+        );
+        return;
+      }
+      // 삭제 성공: 토스트를 잠시 보여준 뒤 목록으로 복귀한다.
+      setDeleteDialogOpen(false);
+      setDeleteToastVisible(true);
+      deleteBackTimer.current = setTimeout(() => router.back(), 1200);
     },
     onAuthorPress: () => {
       if (!post) return;
@@ -187,21 +215,14 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
             );
           });
       }),
-    onReportReason: (reason) => {
+    onReport: () => {
       if (!post) return;
       requireLogin(() => {
-        void reportBoard(post.id, reason)
-          .then(() => {
-            report({ kind: 'post', id: post.id }, reason);
-            setReportOpen(false);
-            Alert.alert('신고 접수 완료', '검토 후 조치할게요.');
-          })
-          .catch((reportError) => {
-            Alert.alert(
-              '신고 실패',
-              reportError instanceof Error ? reportError.message : '잠시 후 다시 시도해주세요.',
-            );
-          });
+        setMenuOpen(false);
+        router.push({
+          pathname: '/moderation/report',
+          params: { target: 'board', id: post.id },
+        } as never);
       });
     },
     onBlockAuthor: () => {
@@ -224,7 +245,6 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
               }
               blockUser(post.author.id);
               blockPost(post.id);
-              setReportOpen(false);
               router.back();
             } catch (blockError) {
               Alert.alert(

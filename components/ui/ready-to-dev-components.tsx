@@ -214,14 +214,14 @@ export function ReadyFilterChip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       className={`h-8 flex-row items-center gap-1 rounded-full border px-3 ${
-        selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
+        selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-[#DADAE8] bg-white'
       }`}
     >
-      <Text className={`text-[13px] font-medium ${selected ? 'text-[#256EF4]' : 'text-[#696976]'}`}>
+      <Text className={`text-[13px] font-medium ${selected ? 'text-white' : 'text-[#696976]'}`}>
         {label}
         {count != null && count > 0 ? ` ${count}` : ''}
       </Text>
-      <Ionicons name="chevron-down" size={13} color={selected ? '#256EF4' : '#696976'} />
+      <Ionicons name="chevron-down" size={13} color={selected ? '#FFFFFF' : '#696976'} />
     </Pressable>
   );
 }

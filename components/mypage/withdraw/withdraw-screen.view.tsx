@@ -2,98 +2,136 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { UseWithdrawScreenReturn, WithdrawReason } from './use-withdraw-screen';
+import { ReadyConfirmDialog } from '@/components/ui/ready-to-dev-feedback';
+import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
+
+import type { UseWithdrawScreenReturn } from './use-withdraw-screen';
 
 export type WithdrawScreenViewProps = UseWithdrawScreenReturn;
 
+type NoticePart = { text: string; emphasis?: boolean };
+
+const NOTICE_ITEMS: NoticePart[][] = [
+  [
+    { text: '탈퇴 후 ' },
+    { text: '3일간 동일계정으로 재가입이 불가', emphasis: true },
+    { text: '해요\n3일 이후에는 재가입이 가능해요' },
+  ],
+  [
+    { text: '등록된 방 게시글, 프로필, 채팅 내역등 ' },
+    { text: '모든 데이터는 삭제', emphasis: true },
+    { text: '돼요' },
+  ],
+  [
+    { text: '진행중인 매칭 및 채팅이 ' },
+    { text: '자동으로 종료', emphasis: true },
+    { text: '돼요' },
+  ],
+  [{ text: '탈퇴 후 ' }, { text: '데이터는 복구되지 않아요', emphasis: true }],
+];
+
 export function WithdrawScreenView({
-  reasons,
-  selectedReasonIds,
-  canSubmit,
   submitting,
+  confirmOpen,
   onBack,
-  toggleReason,
-  submit,
+  openConfirm,
+  closeConfirm,
+  confirmWithdraw,
 }: WithdrawScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-        <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#404040" />
+      <View className="h-12 flex-row items-center justify-center">
+        <Pressable
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel="뒤로 가기"
+          className="absolute left-2 h-10 w-10 items-center justify-center"
+        >
+          <Ionicons name="chevron-back" size={24} color="#17171B" />
         </Pressable>
-        <Text className="text-base font-semibold text-neutral-900">탈퇴하기</Text>
+        <Text className="text-base font-semibold text-[#17171B]">탈퇴하기</Text>
       </View>
 
-      <ScrollView contentContainerClassName="gap-7 p-5">
-        <View className="gap-2">
-          <Text className="text-xl font-bold text-neutral-900">떠나기 전에 확인해주세요</Text>
-          <Text className="text-sm leading-5 text-neutral-500">
-            탈퇴 후에는 프로필, 관심 목록, 채팅 기록 확인이 제한돼요. 계정 삭제는 서버에서
-            처리됩니다.
-          </Text>
+      <ScrollView contentContainerClassName="px-5 pb-6">
+        <View className="items-center py-6">
+          <EmptyHouseArtwork size={180} />
         </View>
 
-        <View className="gap-2 rounded-lg bg-rose-50 p-4">
-          <Text className="text-sm font-semibold text-rose-600">삭제 예정 정보</Text>
-          <Text className="text-xs leading-5 text-rose-500">
-            프로필 정보, 룸메이트 선호 조건, 관심 목록, 등록한 방 게시글, 채팅 연결 정보
+        <View className="flex-row items-center gap-1.5 pb-4">
+          <Ionicons name="warning" size={20} color="#FFB020" />
+          <Text className="text-[17px] font-bold leading-[26px] text-[#17171B]">
+            탈퇴 전 유의사항
           </Text>
         </View>
 
         <View className="gap-3">
-          <Text className="text-sm font-semibold text-neutral-900">탈퇴 사유</Text>
-          {reasons.map((reason) => (
-            <ReasonRow
-              key={reason.id}
-              reason={reason}
-              checked={selectedReasonIds.has(reason.id)}
-              onPress={() => toggleReason(reason.id)}
-            />
+          {NOTICE_ITEMS.map((parts, index) => (
+            <NoticeRow key={index} parts={parts} />
           ))}
+        </View>
+
+        <View className="mt-6 rounded-lg bg-[#FDEFEC] px-4 py-3">
+          <Text className="text-[13px] font-bold leading-5 text-[#D63D4A]">
+            탈퇴후 3일간 계정 데이터가 보관되며, 이후에는 영구 삭제되어 복구가 불가합니다.
+          </Text>
         </View>
       </ScrollView>
 
-      <View className="border-t border-neutral-100 p-5">
+      <View className="gap-3 px-5 pb-3 pt-2">
         <Pressable
-          onPress={submit}
-          disabled={!canSubmit}
-          className={`h-12 items-center justify-center rounded-lg ${
-            canSubmit ? 'bg-rose-600' : 'bg-neutral-300'
+          onPress={onBack}
+          accessibilityRole="button"
+          accessibilityLabel="취소"
+          className="h-12 items-center justify-center rounded-lg bg-[#F6F6FA] active:bg-[#ECECF3]"
+        >
+          <Text className="text-[15px] font-semibold text-[#AAAABA]">취소</Text>
+        </Pressable>
+        <Pressable
+          onPress={openConfirm}
+          disabled={submitting}
+          accessibilityRole="button"
+          accessibilityLabel="탈퇴하기"
+          className={`h-12 items-center justify-center rounded-lg bg-[#256EF4] ${
+            submitting ? 'opacity-50' : 'active:opacity-85'
           }`}
         >
-          <Text
-            className={`text-sm font-semibold ${canSubmit ? 'text-white' : 'text-neutral-500'}`}
-          >
-            {submitting ? '처리 중...' : '탈퇴하기'}
-          </Text>
+          <Text className="text-[15px] font-semibold text-white">탈퇴하기</Text>
         </Pressable>
       </View>
+
+      <ReadyConfirmDialog
+        open={confirmOpen}
+        title="정말 탈퇴하시겠어요?"
+        description={'탈퇴 후 3일간 재가입이 불가하며,\n모든 데이터는 복구되지 않아요'}
+        cancelLabel="취소"
+        confirmLabel="탈퇴하기"
+        destructive
+        processing={submitting}
+        onCancel={closeConfirm}
+        onConfirm={confirmWithdraw}
+      />
     </SafeAreaView>
   );
 }
 
-function ReasonRow({
-  reason,
-  checked,
-  onPress,
-}: {
-  reason: WithdrawReason;
-  checked: boolean;
-  onPress: () => void;
-}) {
+function NoticeRow({ parts }: { parts: NoticePart[] }) {
   return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-3 rounded-lg border border-neutral-200 px-4 py-3 active:bg-neutral-50"
-    >
-      <View
-        className={`h-5 w-5 items-center justify-center rounded border ${
-          checked ? 'border-[#256EF4] bg-[#256EF4]' : 'border-neutral-300 bg-white'
-        }`}
-      >
-        {checked ? <Ionicons name="checkmark" size={14} color="#ffffff" /> : null}
-      </View>
-      <Text className="flex-1 text-sm text-neutral-800">{reason.label}</Text>
-    </Pressable>
+    <View className="flex-row gap-2">
+      <Text className="text-sm leading-[21px] text-[#17171B]">•</Text>
+      <Text className="flex-1 text-sm leading-[21px] text-[#17171B]">
+        {parts.map((part, index) => (
+          <Text
+            key={index}
+            className={
+              part.emphasis
+                ? 'text-sm font-bold leading-[21px] text-[#D63D4A]'
+                : 'text-sm leading-[21px] text-[#17171B]'
+            }
+          >
+            {part.text}
+          </Text>
+        ))}
+      </Text>
+    </View>
   );
 }

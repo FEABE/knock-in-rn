@@ -57,29 +57,51 @@ export function ChatListScreenView({
 }
 
 function ChatRoomRow({ row }: { row: ChatListRow }) {
-  const name = row.room.name ?? '이름 없음';
+  const name = row.room.name ?? row.room.memberName ?? '이름 없음';
+  const matched =
+    row.room.isRoommate === true ||
+    row.room.isAgree === true ||
+    row.room.roommateStatus === 'ACCEPTED';
   return (
     <Pressable
       onPress={row.onPress}
-      className="min-h-[76px] flex-row items-center gap-3 px-4 py-3 active:bg-[#F6F6FA]"
+      className={`min-h-[68px] flex-row items-center gap-3 px-4 py-2 ${
+        row.proposal
+          ? 'bg-[#ECF2FE] active:bg-[#DCE8FD]'
+          : 'border-b border-[#F6F6FA] active:bg-[#F6F6FA]'
+      }`}
     >
-      <ReadyProfileAvatar name={name} imageUrl={row.room.memberProfileImageUrl} />
-      <View className="flex-1 gap-0.5">
-        <View className="flex-row items-center gap-2">
-          <Text className="text-[17px] font-bold text-[#17171B]">{name}</Text>
-          {row.proposal ? <ReadyBadge label="매칭 요청" tone="blue" /> : null}
+      <ReadyProfileAvatar name={name} imageUrl={row.room.memberProfileImageUrl} size={52} />
+      <View className="flex-1 gap-1">
+        <View className="flex-row items-center gap-1.5">
+          <Text numberOfLines={1} className="shrink text-base font-bold text-[#17171B]">
+            {name}
+          </Text>
+          {row.proposal ? (
+            <ReadyBadge label="매칭 요청" tone="blue" />
+          ) : matched ? (
+            <ReadyBadge label="룸메이트" tone="neutral" />
+          ) : null}
+          <View className="flex-1" />
+          <Text className="text-[13px] leading-5 text-[#AAAABA]">{row.timeLabel}</Text>
         </View>
-        <Text numberOfLines={1} className="text-sm text-[#696976]">
-          {row.preview}
-        </Text>
-      </View>
-      <View className="items-end gap-1">
-        <Text className="text-[15px] text-[#AAAABA]">{row.timeLabel}</Text>
-        {row.unread > 0 ? (
-          <View className="h-6 min-w-6 items-center justify-center rounded-full bg-[#256EF4] px-1.5">
-            <Text className="text-sm font-medium text-white">{row.unread}</Text>
-          </View>
-        ) : null}
+        <View className="flex-row items-center gap-2">
+          <Text
+            numberOfLines={1}
+            className={`flex-1 text-sm leading-[21px] ${
+              row.proposal ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'
+            }`}
+          >
+            {row.preview}
+          </Text>
+          {row.unread > 0 ? (
+            <View className="h-[22px] min-w-[22px] items-center justify-center rounded-full bg-[#256EF4] px-1.5">
+              <Text className="text-xs font-medium text-white">
+                {row.unread > 99 ? '99+' : row.unread}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );

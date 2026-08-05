@@ -2,26 +2,32 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
-import type { UseRoomCardReturn } from './use-room-card';
+import { useRoomCard, type UseRoomCardProps } from '@/components/domain';
 
 const BRAND = '#256EF4';
 
-export type RoomCardViewProps = UseRoomCardReturn & {
-  className?: string;
+export type SearchResultCardProps = UseRoomCardProps & {
+  /** 제목에서 파란색으로 강조할 검색 키워드. */
+  keyword: string;
 };
 
-export function RoomCardView({
-  post,
-  liked,
-  toggleLike,
-  onPress,
-  priceLabel,
-  roomTypeLabel,
-  regionLabel,
-  authorMetaLabel,
-  badge,
-  timeAgoLabel,
-}: RoomCardViewProps) {
+/**
+ * 검색 결과 카드 — RoomCard 의 headless 훅(useRoomCard)을 재사용하되,
+ * 제목 속 매칭 키워드를 파란색으로 강조하는 검색 화면 전용 뷰. (디자인 3287:26610)
+ */
+export function SearchResultCard({ keyword, ...hookProps }: SearchResultCardProps) {
+  const {
+    post,
+    liked,
+    toggleLike,
+    onPress,
+    priceLabel,
+    roomTypeLabel,
+    regionLabel,
+    authorMetaLabel,
+    badge,
+    timeAgoLabel,
+  } = useRoomCard(hookProps);
   const verified = post.author.badges.length > 0;
 
   return (
@@ -41,8 +47,14 @@ export function RoomCardView({
         )}
 
         <View className="absolute left-2.5 top-3 flex-row gap-1">
-          {badge === 'hot' ? <HotBadgePill /> : null}
-          <RoomTypePill label={roomTypeLabel} />
+          {badge === 'hot' ? (
+            <View className="rounded bg-rose-100 px-2 py-0.5">
+              <Text className="text-[11px] font-semibold text-rose-600">인기</Text>
+            </View>
+          ) : null}
+          <View className="rounded bg-[#EEF4FF] px-2 py-1">
+            <Text className="text-[11px] font-medium text-[#256EF4]">{roomTypeLabel}</Text>
+          </View>
         </View>
 
         <Pressable
@@ -65,7 +77,11 @@ export function RoomCardView({
             numberOfLines={1}
             className="min-w-0 flex-1 text-[17px] font-bold leading-6 text-[#17171B]"
           >
-            {post.title}
+            {splitByKeyword(post.title, keyword).map((segment, index) => (
+              <Text key={index} className={segment.match ? 'text-[#256EF4]' : undefined}>
+                {segment.text}
+              </Text>
+            ))}
           </Text>
           <Text className="text-xs text-neutral-400">{timeAgoLabel}</Text>
         </View>
@@ -104,18 +120,26 @@ export function RoomCardView({
   );
 }
 
-function HotBadgePill() {
-  return (
-    <View className="rounded bg-rose-100 px-2 py-0.5">
-      <Text className="text-[11px] font-semibold text-rose-600">인기</Text>
-    </View>
-  );
-}
+type TitleSegment = { text: string; match: boolean };
 
-function RoomTypePill({ label }: { label: string }) {
-  return (
-    <View className="rounded bg-[#EEF4FF] px-2 py-1">
-      <Text className="text-[11px] font-medium text-[#256EF4]">{label}</Text>
-    </View>
-  );
+/** 제목을 키워드 매칭 구간과 비매칭 구간으로 분할한다 (대소문자 무시). */
+function splitByKeyword(title: string, keyword: string): TitleSegment[] {
+  const trimmed = keyword.trim();
+  if (!trimmed) return [{ text: title, match: false }];
+
+  const lowerTitle = title.toLowerCase();
+  const lowerKeyword = trimmed.toLowerCase();
+  const segments: TitleSegment[] = [];
+  let cursor = 0;
+
+  while (cursor < title.length) {
+    const index = lowerTitle.indexOf(lowerKeyword, cursor);
+    if (index === -1) break;
+    if (index > cursor) segments.push({ text: title.slice(cursor, index), match: false });
+    segments.push({ text: title.slice(index, index + trimmed.length), match: true });
+    cursor = index + trimmed.length;
+  }
+  if (cursor < title.length) segments.push({ text: title.slice(cursor), match: false });
+
+  return segments.length > 0 ? segments : [{ text: title, match: false }];
 }

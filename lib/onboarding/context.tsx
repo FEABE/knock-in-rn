@@ -15,12 +15,16 @@ import {
 
 export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo' | 'preferences';
 
-/** 가입 온보딩 흐름: 기본정보·약관 → 생활패턴 → 방 조건 → 선호조건. */
+/**
+ * 가입 온보딩 필수 흐름: 기본정보·약관 → 생활패턴 → 방 조건.
+ *
+ * 선호조건(preferences)은 필수 플로우에서 분리됐다. 방 조건 완료 시점에 온보딩을
+ * 완료 처리하고, 선호조건은 탐색 탭의 유도 모달 → 마이페이지 선호 설정 경로로만 입력받는다.
+ */
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   'profile-basic',
   'profile-lifestyle',
   'roominfo',
-  'preferences',
 ];
 
 export const STEP_LABELS: Record<OnboardingStep, string> = {

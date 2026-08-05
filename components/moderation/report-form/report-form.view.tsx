@@ -84,8 +84,8 @@ export function ReportFormView({
           </View>
 
           <ReadyNotice>
-            신고 접수 후 운영팀에서 검토하여 7일 내로 처리돼요. 허위 신고 시 서비스 이용이
-            제한될 수 있어요.
+            신고 접수 후 운영팀에서 검토하여 7일 내로 처리돼요. 허위 신고 시 서비스 이용이 제한될 수
+            있어요.
           </ReadyNotice>
         </ScrollView>
         <ReadyBottomActionBar

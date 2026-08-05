@@ -14,13 +14,11 @@ import {
   ReadyScreenHeader,
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
+import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 import type { RoommateMatchDetailModel } from '@/lib/api';
 
-import {
-  ROOMMATE_REPORT_REASONS,
-  type UseRoommateDetailScreenReturn,
-} from './use-roommate-detail-screen';
+import type { UseRoommateDetailScreenReturn } from './use-roommate-detail-screen';
 
 export type RoommateDetailScreenViewProps = UseRoommateDetailScreenReturn;
 
@@ -34,6 +32,9 @@ export function RoommateDetailScreenView({
   reportOpen,
   lifestyleExpanded,
   creatingChat,
+  blockConfirmOpen,
+  blocking,
+  toast,
   bottomPadding,
   setReportOpen,
   onBack,
@@ -43,7 +44,9 @@ export function RoommateDetailScreenView({
   onLike,
   onChat,
   onBlock,
-  onReportReason,
+  onBlockCancel,
+  onBlockConfirm,
+  onReport,
 }: RoommateDetailScreenViewProps) {
   const scrollRef = useRef<ScrollView>(null);
   const sectionOffsets = useRef<Record<DetailTab, number>>({
@@ -143,10 +146,23 @@ export function RoommateDetailScreenView({
             open={reportOpen}
             onOpenChange={setReportOpen}
             onBlock={onBlock}
-            onReportReason={onReportReason}
+            onReport={onReport}
           />
         </>
       )}
+
+      <ReadyConfirmDialog
+        open={blockConfirmOpen}
+        title="사용자를 차단할까요?"
+        description={'차단 시 사용자의 게시글이 보이지 않고,\n채팅도 보낼 수 없어요'}
+        cancelLabel="취소"
+        confirmLabel="차단"
+        destructive
+        processing={blocking}
+        onCancel={onBlockCancel}
+        onConfirm={onBlockConfirm}
+      />
+      <ReadyToast visible={toast !== null} message={toast ?? ''} tone="success" />
     </SafeAreaView>
   );
 }
@@ -379,56 +395,25 @@ function ReportSheet({
   open,
   onOpenChange,
   onBlock,
-  onReportReason,
+  onReport,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onBlock: () => void;
-  onReportReason: (reason: string) => void;
+  onReport: () => void;
 }) {
-  const [showReasons, setShowReasons] = useState(false);
-  const handleOpenChange = (next: boolean) => {
-    if (!next) setShowReasons(false);
-    onOpenChange(next);
-  };
-
   return (
-    <ReadyActionSheet open={open} onOpenChange={handleOpenChange}>
-      {showReasons ? (
-        <View>
-          <Pressable
-            onPress={() => setShowReasons(false)}
-            className="mb-2 h-10 flex-row items-center gap-1"
-          >
-            <Ionicons name="chevron-back" size={20} color="#696976" />
-            <Text className="text-base font-semibold text-[#17171B]">신고 사유</Text>
-          </Pressable>
-          {ROOMMATE_REPORT_REASONS.map((reason, index) => (
-            <ReadyActionRow
-              key={reason}
-              icon="alert-circle-outline"
-              label={reason}
-              divider={index < ROOMMATE_REPORT_REASONS.length - 1}
-              onPress={() => onReportReason(reason)}
-            />
-          ))}
-        </View>
-      ) : (
-        <View>
-          <ReadyActionRow
-            icon="ban-outline"
-            label="사용자 차단하기"
-            tone="danger"
-            divider
-            onPress={onBlock}
-          />
-          <ReadyActionRow
-            icon="notifications-outline"
-            label="사용자 신고하기"
-            onPress={() => setShowReasons(true)}
-          />
-        </View>
-      )}
+    <ReadyActionSheet open={open} onOpenChange={onOpenChange}>
+      <View>
+        <ReadyActionRow
+          icon="ban-outline"
+          label="사용자 차단하기"
+          tone="danger"
+          divider
+          onPress={onBlock}
+        />
+        <ReadyActionRow icon="notifications-outline" label="사용자 신고하기" onPress={onReport} />
+      </View>
     </ReadyActionSheet>
   );
 }

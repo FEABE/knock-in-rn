@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getAccessToken } from './client';
+import { formatKstDateLabel, parseServerDate } from './date-time';
 import { logout, withdraw } from './auth';
 import { getProfileAll, updateVisibility } from './profile';
 import { getNotificationSettings, updateNotificationSetting } from './notification';
@@ -263,9 +264,6 @@ function isAccepted(value: string | boolean | undefined): boolean {
 
 function formatDateLabel(value?: string): string {
   if (!value) return '-';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate(),
-  ).padStart(2, '0')}`;
+  const d = parseServerDate(value);
+  return d ? formatKstDateLabel(d) : value;
 }

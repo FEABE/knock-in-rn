@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { Toggle } from '@/components/ui/headless';
 import { ReadyBadge, ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
+import { ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 
 import type { MyPageMenuRow, UseMyPageHomeScreenReturn } from './use-mypage-home-screen';
 
@@ -23,6 +24,7 @@ export function MyPageHomeScreenView({
   matchingRows,
   accountRows,
   supportRows,
+  toast,
   onSignIn,
   onProfilePress,
   setProfileVisible,
@@ -120,6 +122,8 @@ export function MyPageHomeScreenView({
           </View>
         </Section>
       </ScrollView>
+
+      <ReadyToast visible={!!toast} message={toast ?? ''} tone="success" />
     </SafeAreaView>
   );
 }

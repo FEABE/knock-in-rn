@@ -8,6 +8,7 @@ import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type ChatSocketEnvelope,
   type ChatSocketStatus,
+  parseServerDate,
   USE_MOCK,
   useChatRoomActions,
   useChatRoomDetail,
@@ -291,7 +292,7 @@ function socketEventToMessage(event: ChatSocketEnvelope): ChatMessage | null {
     imageUrl?: string;
   };
   const body = payload.contents ?? '';
-  const sentAt = event.createdAt ? new Date(event.createdAt) : new Date();
+  const sentAt = parseServerDate(event.createdAt) ?? new Date();
   const id =
     payload.clientMessageId ??
     `${event.chatRoomId}-${payload.senderId ?? 'system'}-${sentAt.getTime()}-${payload.type ?? 'TEXT'}`;

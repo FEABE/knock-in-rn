@@ -43,7 +43,7 @@ import { goKakaoLogin } from '@/lib/navigation/routes';
 
 const E2E_ACCESS_TOKEN = process.env.EXPO_PUBLIC_E2E_ACCESS_TOKEN;
 
-export type SignInFailureKind = 'cancelled' | 'network' | 'failed';
+export type SignInFailureKind = 'cancelled' | 'network' | 'failed' | 'withdrawn' | 'suspended';
 
 export type SignInResult =
   | {
@@ -113,7 +113,11 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       setAccessToken(stored.accessToken);
       loadSessionUser(stored.identity).then(async ({ user, invalidToken, profileComplete }) => {
         if (cancelled) return;
-        if (invalidToken) {
+        const isProfileComplete = stored.basicInfo || profileComplete === true;
+        // 기본정보 입력 전에 앱을 끄면 토큰만 남는다. 이 상태로 세션을 복원하면
+        // 이름 없는 "사용자"로 전 화면 접근이 가능해지므로, 미완성 가입은 복원하지
+        // 않고 로그인부터 다시 진행하게 한다.
+        if (invalidToken || !isProfileComplete) {
           setAccessToken(null);
           setSession(null);
           await queryClient.cancelQueries();
@@ -123,7 +127,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         }
         setSession({
           user,
-          isProfileComplete: stored.basicInfo || profileComplete === true,
+          isProfileComplete,
           visibility: 'public',
         });
       });
@@ -390,6 +394,10 @@ async function signInWithKakaoSdk() {
 
 function classifyApiError(code?: string, message?: string): SignInFailureKind {
   const lower = `${code ?? ''} ${message ?? ''}`.toLowerCase();
+  // 서버 명세(openapi-types)에 탈퇴/정지 전용 에러 코드 enum이 없어서
+  // code/message 문자열 포함 여부로 매핑한다. 확정 코드가 생기면 여기만 갱신하면 된다.
+  if (lower.includes('withdraw') || lower.includes('탈퇴')) return 'withdrawn';
+  if (lower.includes('suspend') || lower.includes('정지')) return 'suspended';
   if (lower.includes('network') || lower.includes('timeout')) return 'network';
   if (lower.includes('cancel')) return 'cancelled';
   return 'failed';

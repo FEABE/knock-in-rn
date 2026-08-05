@@ -8,14 +8,11 @@ import {
   formatApiLocalDateTime,
   getAccessToken,
   getNotificationSettings,
-  getPreferenceAll,
   getProfileAll,
   lifestyleIdsFromPatternOptions,
-  preferenceConditionIdsFromPatternOptions,
   regionBackendId,
   roomTypeBackendId,
   saveProfileAll,
-  savePreferenceAll,
   updateNotificationSetting,
   updateVisibility,
   withComeableAtNegotiable,
@@ -118,21 +115,6 @@ function validateOnboarding(
   }
   if (missingScales.length) missing.push(`생활 패턴: ${missingScales.join(', ')}`);
   if (missingChoices.length) missing.push(`생활 패턴: ${missingChoices.join(', ')}`);
-  if (!profile.preferredGender) missing.push('룸메이트 조건: 성별');
-  if (Object.keys(preferences.lifestyleSelections).length < 5) {
-    missing.push('룸메이트 조건: 생활패턴');
-  }
-  if (!profile.importantConditionIds.length) missing.push('룸메이트 조건: 우선순위');
-  const preferenceConditionIds = preferenceConditionIdsFromPatternOptions(
-    lifestyleOptions,
-    profile.importantConditionIds,
-  );
-  if (
-    profile.importantConditionIds.length > 0 &&
-    preferenceConditionIds.length !== new Set(profile.importantConditionIds).size
-  ) {
-    missing.push('룸메이트 조건: 저장 가능한 우선순위');
-  }
 
   const hasRoom = room.hasRoom === true;
   const noRoom = room.hasRoom === false;
@@ -292,43 +274,8 @@ export default function OnboardingLayout() {
           return;
         }
       }
-      const preferenceLifestyleIds = [
-        ...new Set(
-          Object.values(values.preferences.lifestyleSelections).filter(
-            (value): value is number => typeof value === 'number',
-          ),
-        ),
-      ];
-      const preferenceConditionIds = preferenceConditionIdsFromPatternOptions(
-        lifestyleOptions,
-        values.profile.importantConditionIds,
-      );
-      const preferenceRes = await getPreferenceAll();
-      const preferencesAlreadySaved =
-        preferenceRes.status === 200 &&
-        !preferenceRes.error &&
-        hasSavedPreferences(preferenceRes.data);
-      if (preferenceRes.error && preferenceRes.status !== 404) {
-        Alert.alert(
-          '선호 조건 확인 실패',
-          preferenceRes.error.message ??
-            '기존 선호 조건을 확인하지 못했습니다. 중복 저장을 막기 위해 잠시 후 다시 시도해주세요.',
-        );
-        return;
-      }
-      if (!preferencesAlreadySaved) {
-        const savePreferenceRes = await savePreferenceAll({
-          lifestyles: preferenceLifestyleIds,
-          conditions: preferenceConditionIds,
-        });
-        if (savePreferenceRes.error || savePreferenceRes.status !== 200) {
-          Alert.alert(
-            '선호 조건 저장 실패',
-            savePreferenceRes.error?.message ?? '잠시 후 다시 시도해주세요.',
-          );
-          return;
-        }
-      }
+      // 선호조건(룸메이트 조건)은 온보딩 필수 플로우에서 분리됐다.
+      // 여기서는 저장하지 않고, 탐색 탭 유도 모달 → 마이페이지 선호 설정에서 입력받는다.
       // 신규 온보딩은 공개 상태로 시작하고, 이후 변경은 마이페이지에서만 받는다.
       const visibilityRes = await updateVisibility({
         status: 'PUBLIC',
@@ -407,10 +354,4 @@ function hasSavedProfile(
   }
 
   return [profile.deposit, profile.mounthRent].every((value) => typeof value === 'number');
-}
-
-function hasSavedPreferences(
-  preferences: Awaited<ReturnType<typeof getPreferenceAll>>['data'],
-): boolean {
-  return Boolean(preferences?.lifestyles?.length && preferences?.conditions?.length);
 }

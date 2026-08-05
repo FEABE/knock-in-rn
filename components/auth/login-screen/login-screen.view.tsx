@@ -1,11 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { SocialProvider } from '@/lib/api';
 
-import type { UseLoginScreenReturn } from './use-login-screen';
+import type {
+  LoginErrorDialogKind,
+  LoginErrorDialogState,
+  UseLoginScreenReturn,
+} from './use-login-screen';
 
 export type LoginScreenViewProps = UseLoginScreenReturn;
 
@@ -13,11 +17,12 @@ export function LoginScreenView({
   status,
   activeProvider,
   message,
+  errorDialog,
+  onErrorDialogConfirm,
   onProviderPress,
   onRetry,
 }: LoginScreenViewProps) {
   const loading = status === 'loading';
-  const hasError = status === 'cancelled' || status === 'network' || status === 'failed';
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -28,7 +33,7 @@ export function LoginScreenView({
             좋은 집보다 좋은 룸메이트
           </Text>
           <Text className="mt-2 text-center text-[15px] leading-[23px] text-[#696976]">
-            함께 사는 즐거움을 위해{`\n`} 나와 잘 맞는 룸메이트를 찾아보세요
+            함께 사는 즐거움을 위해{`\n`}나와 잘 맞는 룸메이트를 찾아보세요
           </Text>
         </View>
 
@@ -49,26 +54,68 @@ export function LoginScreenView({
           />
         </View>
 
-        {status !== 'idle' && status !== 'loading' ? (
+        {status === 'network' ? (
           <Pressable
-            onPress={hasError ? onRetry : undefined}
-            disabled={!hasError}
+            onPress={onRetry}
             className="mt-2 min-h-10 items-center justify-center px-3 py-1"
           >
-            <Text
-              className={`text-center text-sm ${hasError ? 'text-rose-500' : 'text-[#256EF4]'}`}
-            >
-              {message ?? (hasError ? '로그인에 실패했어요. 다시 시도해주세요.' : '로그인됐어요.')}
+            <Text className="text-center text-sm text-rose-500">
+              {message ?? '네트워크 연결을 확인한 뒤 다시 시도해주세요.'}
             </Text>
-            {hasError ? (
-              <Text className="mt-1 text-xs font-semibold text-[#256EF4]">다시 시도</Text>
-            ) : null}
+            <Text className="mt-1 text-xs font-semibold text-[#256EF4]">다시 시도</Text>
           </Pressable>
+        ) : status === 'success' ? (
+          <View className="mt-2 min-h-10 items-center justify-center px-3 py-1">
+            <Text className="text-center text-sm text-[#256EF4]">{message ?? '로그인됐어요.'}</Text>
+          </View>
         ) : (
           <View className="h-10" />
         )}
       </View>
+
+      <LoginErrorDialog dialog={errorDialog} onConfirm={onErrorDialogConfirm} />
     </SafeAreaView>
+  );
+}
+
+const ERROR_DIALOG_TITLES: Record<LoginErrorDialogKind, string> = {
+  failed: '로그인에 실패했어요',
+  withdrawn: '탈퇴된 회원이에요',
+  suspended: '정지된 회원이에요',
+};
+
+function LoginErrorDialog({
+  dialog,
+  onConfirm,
+}: {
+  dialog: LoginErrorDialogState | null;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal transparent animationType="fade" visible={dialog !== null} onRequestClose={onConfirm}>
+      <View className="flex-1 items-center justify-center bg-[#17171B]/40 px-9">
+        <View className="w-full max-w-[320px] gap-5 rounded-2xl bg-white px-6 pb-5 pt-6">
+          <View className="gap-2">
+            <Text className="text-center text-lg font-bold leading-[27px] text-[#17171B]">
+              {dialog ? ERROR_DIALOG_TITLES[dialog.kind] : ''}
+            </Text>
+            {dialog?.description ? (
+              <Text className="text-center text-sm leading-[21px] text-[#696976]">
+                {dialog.description}
+              </Text>
+            ) : null}
+          </View>
+          <Pressable
+            onPress={onConfirm}
+            accessibilityRole="button"
+            accessibilityLabel="확인"
+            className="h-11 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-85"
+          >
+            <Text className="text-sm font-semibold text-white">확인</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 

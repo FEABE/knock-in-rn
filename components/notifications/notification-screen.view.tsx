@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
+import { formatKstDateTimeLabel, parseServerDate } from '@/lib/api';
 import { ErrorState } from '@/components/ui/error-state';
 
 import type { UseNotificationScreenReturn } from './use-notification-screen';
@@ -103,12 +104,7 @@ export function NotificationScreenView({
 }
 
 function formatAlarmTime(value?: string): string {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
-    date.getDate(),
-  ).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(
-    date.getMinutes(),
-  ).padStart(2, '0')}`;
+  const date = parseServerDate(value);
+  if (!date) return '';
+  return formatKstDateTimeLabel(date);
 }

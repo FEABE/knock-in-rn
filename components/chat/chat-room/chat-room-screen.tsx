@@ -28,7 +28,7 @@ export function ChatRoomScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {asks.blocked ? (
-        <ChatRoomBlockedView peer={room.peer} onBack={asks.onBack} />
+        <ChatRoomBlockedView peer={room.peer} messages={asks.messages} onBack={asks.onBack} />
       ) : (
         <ChatRoomScreenView {...asks} room={room} />
       )}

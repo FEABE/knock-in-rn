@@ -146,10 +146,42 @@ function optionalNumber(value: number | string | null | undefined): number | und
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+type RawLifestyleItem = NonNullable<MatchDetailData['lifeStyles']>[number];
+
+/**
+ * 상세 응답의 생활 패턴이 일부만 내려오는 경우가 있어, 매칭 리스트 응답의
+ * 생활 패턴을 fallback 으로 병합해 8종 타일이 모두 나오게 한다.
+ */
+function mergeLifestyleItems(
+  primary: RawLifestyleItem[] | undefined,
+  fallback: RawLifestyleItem[] | undefined,
+): RawLifestyleItem[] {
+  const merged: RawLifestyleItem[] = [...(primary ?? [])];
+  const seen = new Set(merged.map(lifestyleItemKey));
+  for (const item of fallback ?? []) {
+    const key = lifestyleItemKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+  }
+  return merged;
+}
+
+function lifestyleItemKey(item: RawLifestyleItem): string {
+  return item.name?.trim() || String(item.lifestyleId ?? '');
+}
+
+/** SCALE 항목은 value 가 숫자 원값이라 사람이 읽는 라벨(description)을 우선한다. */
+function lifestyleDisplayValue(item: RawLifestyleItem): string {
+  return item.description?.trim() || item.value?.trim() || '-';
+}
+
 export function toRoommateMatchDetailModel(
   data: MatchDetailData,
   id: string,
+  fallbackLifeStyles?: RawLifestyleItem[],
 ): RoommateMatchDetailModel {
+  const lifestyleItems = mergeLifestyleItems(data.lifeStyles, fallbackLifeStyles);
   const compatibility = data.compatibility;
   const name = data.name ?? data.memberName ?? '이름 없음';
   const region =
@@ -219,10 +251,10 @@ export function toRoommateMatchDetailModel(
       booleanValue(data.isAuthStudent) || hasAuthentication(data.authentications, 'STUDENT'),
     isAuthEmployee:
       booleanValue(data.isAuthEmployee) || hasAuthentication(data.authentications, 'COMPANY'),
-    lifeStyles: (data.lifeStyles ?? []).map((item, index) => ({
+    lifeStyles: lifestyleItems.map((item, index) => ({
       id: stringValue(item.lifestyleId, `lifestyle-${index}`),
-      name: item.name ?? '-',
-      value: item.value ?? '-',
+      name: item.name?.trim() || '-',
+      value: lifestyleDisplayValue(item),
     })),
     livingRows,
     preferenceRows: (data.preferences ?? []).map((preference, index) => ({

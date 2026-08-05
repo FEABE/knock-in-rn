@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { roomFormValuesToBoardWriteRequest } from '@/components/room/room-post-form.api';
@@ -25,10 +25,17 @@ export type UseEditRoomScreenReturn = {
   profile?: RoomPost['author'];
   initial?: Partial<RoomFormDraft>;
   submitting: boolean;
+  deleting: boolean;
+  deleteDialogOpen: boolean;
+  toastMessage: string | null;
   onBack: () => void;
   onDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
   onSubmit: (values: RoomFormValues) => Promise<void>;
 };
+
+const SUCCESS_TOAST_MS = 1200;
 
 export function useEditRoomScreen(): UseEditRoomScreenReturn {
   const router = useRouter();
@@ -37,8 +44,24 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
   const { session } = useSession();
   const { data: post, loading, error } = useRoommateBoardDetail(boardId);
   const { data: editData, loading: editLoading } = useRoommateBoardEdit(boardId);
-  const { updateBoard, deleteBoard } = useRoommateBoardWriteActions();
+  const { updateBoard, deleteBoard, deleting } = useRoommateBoardWriteActions();
   const [submitting, setSubmitting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const backTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (backTimer.current) clearTimeout(backTimer.current);
+    },
+    [],
+  );
+
+  // 성공 토스트를 잠시 보여준 뒤 이전 화면으로 복귀한다.
+  const showToastAndGoBack = (message: string) => {
+    setToastMessage(message);
+    backTimer.current = setTimeout(() => router.back(), SUCCESS_TOAST_MS);
+  };
 
   const state: EditRoomState =
     loading || editLoading
@@ -49,27 +72,20 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
           ? 'forbidden'
           : 'editable';
 
-  const onDelete = () => {
-    Alert.alert('삭제', '게시글을 삭제할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          if (!post) return;
-          try {
-            await deleteBoard(post.id);
-          } catch (deleteError) {
-            Alert.alert(
-              '삭제 실패',
-              deleteError instanceof Error ? deleteError.message : '잠시 후 다시 시도해주세요.',
-            );
-            return;
-          }
-          router.back();
-        },
-      },
-    ]);
+  const onConfirmDelete = async () => {
+    if (!post || deleting) return;
+    try {
+      await deleteBoard(post.id);
+    } catch (deleteError) {
+      setDeleteDialogOpen(false);
+      Alert.alert(
+        '삭제 실패',
+        deleteError instanceof Error ? deleteError.message : '잠시 후 다시 시도해주세요.',
+      );
+      return;
+    }
+    setDeleteDialogOpen(false);
+    showToastAndGoBack('게시글이 삭제되었어요');
   };
 
   const onSubmit = async (values: RoomFormValues) => {
@@ -87,10 +103,7 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
       setSubmitting(false);
       return;
     }
-    Alert.alert('수정 완료', '게시글이 수정되었어요.', [
-      { text: '확인', onPress: () => router.back() },
-    ]);
-    setSubmitting(false);
+    showToastAndGoBack('게시글이 수정되었어요');
   };
 
   return {
@@ -99,8 +112,13 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
     profile: session?.user,
     initial: editData ? toInitialDraftFromEdit(editData) : post ? toInitialDraft(post) : undefined,
     submitting,
+    deleting,
+    deleteDialogOpen,
+    toastMessage,
     onBack: () => router.back(),
-    onDelete,
+    onDelete: () => setDeleteDialogOpen(true),
+    onCancelDelete: () => setDeleteDialogOpen(false),
+    onConfirmDelete,
     onSubmit,
   };
 }
@@ -115,6 +133,7 @@ function toInitialDraftFromEdit(edit: BoardEditData): Partial<RoomFormDraft> {
     regions: [regionFromBackendId(edit.region?.regionId ?? edit.region?.fullName)],
     description: edit.contents,
     moveInDate: edit.comeableDate ? fmtDate(new Date(edit.comeableDate)) : '',
+    negotiable: edit.comeableDateNegotiable ?? null,
     imageUris: edit.images?.map((image) => image.url).filter((url): url is string => !!url) ?? [],
     options:
       edit.roomExtraOptions

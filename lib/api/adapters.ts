@@ -8,6 +8,7 @@
 import type { RoomPost, RoommateCard, UserSummary } from '@/lib/domain';
 import type { Gender, Region, RoomType } from '@/lib/onboarding';
 
+import { parseServerDate } from './date-time';
 import {
   labelForRegionId,
   regionFromBackendId,
@@ -86,10 +87,7 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
     region,
     views: num(item.viewer ?? item.hits),
     likes: 0,
-    createdAt:
-      (item.createAt ?? item.createdAt)
-        ? new Date(item.createAt ?? item.createdAt ?? '')
-        : new Date(),
+    createdAt: parseServerDate(item.createAt ?? item.createdAt) ?? new Date(),
     status: 'open',
     author: minimalUser(item.writer ?? item.memberName ?? '익명', region),
     description: '',
@@ -130,10 +128,7 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
     region,
     views: num(data.viewer ?? data.hits),
     likes: 0,
-    createdAt:
-      (data.createAt ?? data.createdAt)
-        ? new Date(data.createAt ?? data.createdAt ?? '')
-        : new Date(),
+    createdAt: parseServerDate(data.createAt ?? data.createdAt) ?? new Date(),
     status: 'open',
     author: minimalUser(writer, region, {
       id: String(data.memberId ?? writer),
@@ -153,7 +148,7 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
     }),
     description: data.contents ?? '',
     options,
-    moveInDate: data.comeableDate ? new Date(data.comeableDate) : undefined,
+    moveInDate: parseServerDate(data.comeableDate) ?? undefined,
     liked,
     compatibilityScore:
       data.compatibility?.totalScore != null ? num(data.compatibility.totalScore) : undefined,
@@ -254,7 +249,7 @@ export function matchListItemToRoommateCard(item: MatchListItem): RoommateCard {
     preferredRegions: [region],
     budgetMin: num(item.minMounthRent ?? item.seekerProfile?.minMonthlyRent) || undefined,
     budgetMax: num(item.maxMounthRent ?? item.seekerProfile?.maxMonthlyRent) || undefined,
-    moveInBy: item.comeableAt ? new Date(item.comeableAt) : undefined,
+    moveInBy: parseServerDate(item.comeableAt) ?? undefined,
     compatibilityScore: num(item.score) || undefined,
     liked: bool(item.interested),
   };

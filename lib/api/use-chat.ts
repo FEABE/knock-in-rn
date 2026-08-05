@@ -28,6 +28,7 @@ import {
   type ChatRequestDetailData,
   type ChatRequestItem,
 } from './chat-requests';
+import { parseServerDate } from './date-time';
 import { createRoommateRequest } from './roommate';
 import { acceptRoommateRequest, cancelRoommateRequest, rejectRoommateRequest } from './roommate';
 import { type AsyncState, useApi } from './use-async';
@@ -383,7 +384,5 @@ function detailMessages(detail: ChatRoomDetailData, peerId: string): ChatMessage
 }
 
 function parseDate(value?: string): Date {
-  if (!value) return new Date();
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? new Date() : d;
+  return parseServerDate(value) ?? new Date();
 }

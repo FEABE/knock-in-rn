@@ -207,12 +207,26 @@ function LifestyleHeader({ progress, onBack }: { progress?: number; onBack: () =
       >
         <Ionicons name="chevron-back" size={24} color="#6B6B76" />
       </Pressable>
-      <Text className="text-[18px] font-medium text-[#1E1E24]">생활패턴</Text>
+      <Text className="text-[18px] font-medium text-[#1E1E24]">{categoryLabel(progress)}</Text>
       <Text className="w-10 text-right text-base text-[#8B8B9B]">
-        {progress ? `${progress}/15` : ''}
+        {progress ? (
+          <>
+            <Text className="text-[#17171B]">{progress}</Text>
+            <Text className="text-[#8B8B9B]">/15</Text>
+          </>
+        ) : (
+          ''
+        )}
       </Text>
     </View>
   );
+}
+
+/** 헤더 카테고리 라벨: 질문 1~4 생활패턴, 5~7 생활성향, 8 성격. */
+function categoryLabel(progress?: number): string {
+  if (progress === undefined || progress <= 4) return '생활패턴';
+  if (progress <= 7) return '생활성향';
+  return '성격';
 }
 
 function questionOrder(label: string): number {
@@ -243,16 +257,16 @@ function questionTitle(label: string): string {
     return '반려동물을\n키우고 있나요?';
   }
   if (normalized.includes('청결') || normalized.includes('청소')) {
-    return '청결에 얼마나\n민감한 편인가요?';
+    return '청결에 얼마나\n민감하신가요?';
   }
   if (normalized.includes('소음') || normalized.includes('방음')) {
-    return '소음에 얼마나\n민감한 편인가요?';
+    return '소음에 얼마나\n민감하신가요?';
   }
   if (normalized.includes('개인공간') || normalized.includes('프라이버시')) {
-    return '개인 공간이 얼마나\n중요한가요?';
+    return '개인 공간을 얼마나\n중요하게 생각하시나요?';
   }
   if (normalized.includes('성격') || normalized.includes('성향') || normalized.includes('mbti')) {
-    return '나의 성격은 어떤 편인가요?';
+    return '나의 성격은\n어떤 편인가요?';
   }
   return `${label}은\n어떤 편인가요?`;
 }

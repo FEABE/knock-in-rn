@@ -1,19 +1,60 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, Text, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { RoomPostForm } from '@/components/room/room-post-form';
+import { CalendarField } from '@/components/onboarding/calendar-field';
+import {
+  MAX_ROOM_DESCRIPTION_LENGTH,
+  MAX_ROOM_PHOTOS,
+} from '@/components/room/room-post-form.model';
+import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
+import {
+  NegotiableSelector,
+  PhotoSlot,
+  RegionSelectButton,
+  profileSensitivityLabel,
+  profileSleepLabel,
+  profileSmokingLabel,
+} from '@/components/room/room-post-form.view';
+import type { UseRoomPostFormReturn } from '@/components/room/use-room-post-form';
+import { TextField } from '@/components/ui/headless';
+import {
+  RoomLocationArtwork,
+  RoomOptionArtwork,
+  RoomTypeArtwork,
+} from '@/components/ui/ready-to-dev-assets';
+import {
+  ReadyConfirmDialog,
+  ReadyErrorState,
+  ReadyLoadingState,
+  ReadyToast,
+} from '@/components/ui/ready-to-dev-feedback';
+import type { UserSummary } from '@/lib/domain';
 
 import type { UseNewRoomScreenReturn } from './use-new-room-screen';
 
-export type NewRoomScreenViewProps = UseNewRoomScreenReturn;
+export type NewRoomScreenViewProps = UseNewRoomScreenReturn & {
+  form: UseRoomPostFormReturn;
+};
+
+const STEP_TABS = [
+  { no: '01', label: '생활패턴' },
+  { no: '02', label: '방 정보' },
+  { no: '03', label: '방 소개' },
+];
 
 export function NewRoomScreenView({
   session,
   submitting,
+  successToastVisible,
+  mypageDialogOpen,
   onBack,
   onSignIn,
-  onSubmit,
+  onRequestEditProfile,
+  onCancelEditProfile,
+  onConfirmEditProfile,
+  form,
 }: NewRoomScreenViewProps) {
   if (!session) {
     return (
@@ -37,13 +78,440 @@ export function NewRoomScreenView({
         <Text className="text-base font-semibold text-neutral-900">게시글 등록</Text>
       </View>
 
-      <RoomPostForm
-        mode="create"
-        submitLabel="등록하기"
-        profile={session.user}
-        submitting={submitting}
-        onSubmit={onSubmit}
+      <StepTabs activeStep={form.stepIndex} />
+
+      <ScrollView
+        contentContainerClassName="flex-grow px-5 pb-8 pt-6"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
+        {form.page === 'lifestyle' ? (
+          <LifestylePage profile={session.user} />
+        ) : form.page === 'roomType' ? (
+          <RoomTypePage form={form} />
+        ) : form.page === 'location' ? (
+          <LocationPage form={form} />
+        ) : form.page === 'budget' ? (
+          <BudgetPage form={form} />
+        ) : form.page === 'moveIn' ? (
+          <MoveInPage form={form} />
+        ) : form.page === 'options' ? (
+          <OptionsPage form={form} />
+        ) : (
+          <IntroPage form={form} />
+        )}
+      </ScrollView>
+
+      <View
+        className="border-t border-neutral-100 bg-white px-5 pt-3"
+        style={{ paddingBottom: form.bottomPadding }}
+      >
+        {form.isFirstPage ? (
+          <View className="gap-2">
+            <WizardButton label="다음으로" onPress={form.goNext} disabled={!form.canProceed} />
+            <Pressable
+              onPress={onRequestEditProfile}
+              accessibilityRole="button"
+              className="h-12 items-center justify-center rounded-lg border border-[#256EF4] bg-white active:bg-[#ECF2FE]"
+            >
+              <Text className="text-[15px] font-semibold text-[#256EF4]">
+                마이페이지에서 정보 수정하기
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={form.goPrev}
+              accessibilityRole="button"
+              className="h-12 flex-1 items-center justify-center rounded-lg border border-[#256EF4] bg-white active:bg-[#ECF2FE]"
+            >
+              <Text className="text-[15px] font-semibold text-[#256EF4]">이전으로</Text>
+            </Pressable>
+            <WizardButton
+              label={form.isLastPage ? '등록하기' : '다음으로'}
+              onPress={form.goNext}
+              disabled={!form.canProceed || submitting}
+              loading={form.isLastPage && submitting}
+            />
+          </View>
+        )}
+      </View>
+
+      <RoomRegionSheet
+        open={form.regionSheetOpen}
+        onOpenChange={form.setRegionSheetOpen}
+        value={form.selectedRegion}
+        onSelect={form.selectRegion}
       />
+
+      <ReadyConfirmDialog
+        open={mypageDialogOpen}
+        title="마이페이지로 이동하시겠어요?"
+        description="해당 페이지를 나가면 작성한 글이 사라져요"
+        cancelLabel="취소"
+        confirmLabel="확인"
+        onCancel={onCancelEditProfile}
+        onConfirm={onConfirmEditProfile}
+      />
+
+      <ReadyToast
+        visible={form.toastMessage !== null}
+        message={form.toastMessage ?? ''}
+        tone="neutral"
+        icon="warning"
+      />
+      <ReadyToast visible={successToastVisible} message="게시글이 등록되었어요" tone="success" />
     </SafeAreaView>
+  );
+}
+
+function StepTabs({ activeStep }: { activeStep: number }) {
+  return (
+    <View className="flex-row border-b border-[#ECECF3]">
+      {STEP_TABS.map((tab, index) => {
+        const active = index === activeStep;
+        return (
+          <View
+            key={tab.no}
+            className={`flex-1 gap-0.5 px-5 pb-2.5 pt-3 ${
+              active ? 'border-b-2 border-[#256EF4]' : ''
+            }`}
+          >
+            <Text
+              className={
+                active ? 'text-[13px] font-semibold text-[#17171B]' : 'text-[13px] text-[#AAAABA]'
+              }
+            >
+              {tab.no}
+            </Text>
+            <Text
+              className={
+                active ? 'text-[15px] font-semibold text-[#17171B]' : 'text-[15px] text-[#AAAABA]'
+              }
+            >
+              {tab.label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function WizardButton({
+  label,
+  onPress,
+  disabled,
+  loading,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className={`h-12 flex-1 items-center justify-center rounded-lg ${
+        disabled ? 'bg-[#F1F1F6]' : 'bg-[#256EF4] active:opacity-85'
+      }`}
+    >
+      {loading ? (
+        <ActivityIndicator color="#FFFFFF" />
+      ) : (
+        <Text className={`text-[15px] font-semibold ${disabled ? 'text-[#AAAABA]' : 'text-white'}`}>
+          {label}
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
+function Headline({ children }: { children: ReactNode }) {
+  return (
+    <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{children}</Text>
+  );
+}
+
+function LifestylePage({ profile }: { profile: UserSummary }) {
+  return (
+    <View>
+      <Headline>생활 패턴과 룸메이트 정보를{'\n'}확인해주세요</Headline>
+      <Text className="mt-8 text-[15px] font-bold text-[#17171B]">생활 패턴</Text>
+      <View className="mt-3 flex-row flex-wrap gap-2">
+        <LifestyleTile label="취침 시간" value={profileSleepLabel(profile)} />
+        <LifestyleTile
+          label="청결 민감도"
+          value={profileSensitivityLabel(profile.lifestyle?.cleanliness)}
+        />
+        <LifestyleTile
+          label="소음 민감도"
+          value={profileSensitivityLabel(profile.lifestyle?.noise)}
+        />
+        <LifestyleTile label="흡연 여부" value={profileSmokingLabel(profile)} />
+      </View>
+    </View>
+  );
+}
+
+function LifestyleTile({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="min-w-[47%] flex-1 gap-1.5 rounded-lg bg-[#F6F6FA] px-4 py-4">
+      <Text className="text-[13px] text-[#696976]">{label}</Text>
+      <Text className="text-base font-semibold text-[#17171B]">{value}</Text>
+    </View>
+  );
+}
+
+function RoomTypePage({ form }: { form: UseRoomPostFormReturn }) {
+  return (
+    <View>
+      <Headline>거주하고 있는{'\n'}방 형태를 선택해주세요</Headline>
+      {form.roomTypesLoading ? (
+        <ReadyLoadingState label="방 형태를 불러오는 중이에요." compact />
+      ) : form.roomTypesError ? (
+        <ReadyErrorState
+          title="방 형태를 불러오지 못했어요"
+          onRetry={form.reloadRoomTypes}
+          compact
+        />
+      ) : (
+        <View className="mt-6 flex-row flex-wrap gap-2">
+          {form.roomTypes.map((roomType) => {
+            const selected = form.draft.roomType === roomType.value;
+            return (
+              <Pressable
+                key={roomType.value}
+                onPress={() => form.selectRoomType(roomType.value)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                className={`aspect-square w-[31%] items-center justify-center gap-2 rounded-lg border ${
+                  selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
+                } active:opacity-80`}
+              >
+                <RoomTypeArtwork label={roomType.label} size={60} />
+                <Text
+                  className={
+                    selected
+                      ? 'text-center text-[13px] font-semibold text-[#256EF4]'
+                      : 'text-center text-[13px] text-[#696976]'
+                  }
+                >
+                  {roomType.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function LocationPage({ form }: { form: UseRoomPostFormReturn }) {
+  return (
+    <View>
+      <Headline>거주하고 있는{'\n'}집의 주소를 선택해주세요</Headline>
+      <View className="mt-6">
+        <RegionSelectButton
+          selected={form.selectedRegion}
+          onPress={() => form.setRegionSheetOpen(true)}
+        />
+      </View>
+      <View className="mt-6 items-center rounded-lg bg-[#F6F6FA] py-10">
+        <RoomLocationArtwork size={180} />
+      </View>
+    </View>
+  );
+}
+
+function BudgetPage({ form }: { form: UseRoomPostFormReturn }) {
+  return (
+    <View>
+      <Headline>거주하고 있는 집의{'\n'}예산을 선택해주세요</Headline>
+      <View className="mt-8 gap-8">
+        <MoneyField label="보증금" value={form.draft.deposit} onChange={form.setDeposit} />
+        <MoneyField label="월세" value={form.draft.rent} onChange={form.setRent} />
+        <MoneyField
+          label="관리비"
+          optional
+          value={form.draft.maintenance}
+          onChange={form.setMaintenance}
+        />
+      </View>
+    </View>
+  );
+}
+
+function MoneyField({
+  label,
+  optional,
+  value,
+  onChange,
+}: {
+  label: string;
+  optional?: boolean;
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <View className="gap-1">
+      <View className="flex-row items-end gap-1">
+        <Text className="text-[15px] font-bold text-[#17171B]">{label}</Text>
+        {optional ? <Text className="text-xs text-[#AAAABA]">선택</Text> : null}
+      </View>
+      <View className="flex-row items-center gap-2 border-b border-[#DADAE8] py-3">
+        <TextField
+          value={value}
+          onChangeValue={(next) => onChange(next.replace(/\D/g, ''))}
+          keyboardType="number-pad"
+          placeholder={label}
+          className="flex-1 text-base text-[#17171B]"
+        />
+        <Text className="text-[15px] text-[#AAAABA]">만원</Text>
+      </View>
+    </View>
+  );
+}
+
+function MoveInPage({ form }: { form: UseRoomPostFormReturn }) {
+  return (
+    <View>
+      <Headline>입주 가능일을{'\n'}입력해주세요</Headline>
+      <View className="mt-8 gap-2">
+        <Text className="text-[15px] font-bold text-[#17171B]">입주 가능일</Text>
+        <CalendarField
+          value={form.moveInDate}
+          onChange={form.selectMoveInDate}
+          placeholder="날짜 선택"
+        />
+      </View>
+      <View className="mt-8 gap-3">
+        <Text className="text-[15px] font-bold text-[#17171B]">협의 가능 여부</Text>
+        <NegotiableSelector value={form.draft.negotiable} onChange={form.setNegotiable} />
+      </View>
+    </View>
+  );
+}
+
+function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
+  return (
+    <View>
+      <Headline>
+        방의{'\n'}옵션을 선택해주세요 <Text className="text-sm font-normal text-[#AAAABA]">선택</Text>
+      </Headline>
+      <Text className="mt-2 text-sm text-[#696976]">해당되는 항목을 모두 선택해주세요</Text>
+      {form.roomOptionsLoading ? (
+        <ReadyLoadingState label="방 옵션을 불러오는 중이에요." compact />
+      ) : form.roomOptionsError ? (
+        <ReadyErrorState
+          title="방 옵션을 불러오지 못했어요"
+          onRetry={form.reloadRoomOptions}
+          compact
+        />
+      ) : (
+        <View className="mt-6 flex-row flex-wrap gap-2">
+          {form.roomOptions.map((option) => {
+            const selected = form.draft.options.includes(option.value);
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => form.toggleOption(option.value)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                className={`aspect-square w-[31%] items-center justify-center gap-2 rounded-lg border px-2 ${
+                  selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
+                } active:opacity-80`}
+              >
+                <RoomOptionArtwork label={option.label} size={40} />
+                <Text
+                  className={
+                    selected
+                      ? 'text-center text-[13px] font-semibold text-[#256EF4]'
+                      : 'text-center text-[13px] text-[#696976]'
+                  }
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function IntroPage({ form }: { form: UseRoomPostFormReturn }) {
+  return (
+    <View>
+      <Headline>방을{'\n'}자유롭게 소개해주세요</Headline>
+
+      <View className="mt-8 gap-1">
+        <Text className="text-[15px] font-bold text-[#17171B]">제목</Text>
+        <TextField
+          value={form.draft.title}
+          onChangeValue={form.setTitle}
+          placeholder="예) 신촌역 도보 5분, 풀옵션 원룸"
+          className="border-b border-[#DADAE8] px-0 py-3 text-base text-[#17171B]"
+        />
+      </View>
+
+      <View className="mt-8 gap-1">
+        <Text className="text-[15px] font-bold text-[#17171B]">내용</Text>
+        <TextField
+          value={form.draft.description}
+          onChangeValue={form.setDescription}
+          placeholder="함께 지낼 룸메이트에게 방과 생활 환경을 소개해주세요"
+          multiline
+          numberOfLines={8}
+          maxLength={MAX_ROOM_DESCRIPTION_LENGTH}
+          className="min-h-[160px] border-b border-[#DADAE8] px-0 py-3 text-base leading-6 text-[#17171B]"
+        />
+        <Text className="self-end text-xs text-[#AAAABA]">
+          {form.draft.description.length}/{MAX_ROOM_DESCRIPTION_LENGTH}
+        </Text>
+      </View>
+
+      <View className="mt-6 gap-3">
+        <View className="flex-row items-end gap-1">
+          <Text className="text-[15px] font-bold text-[#17171B]">사진</Text>
+          <Text className="text-xs text-[#AAAABA]">선택</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-2"
+        >
+          {form.photoCount < MAX_ROOM_PHOTOS ? (
+            <Pressable
+              onPress={form.addPhotos}
+              disabled={form.selectingPhotos}
+              accessibilityRole="button"
+              accessibilityLabel="사진 추가"
+              className="h-20 w-20 items-center justify-center gap-1 rounded border border-[#DADAE8] bg-white active:opacity-70"
+            >
+              <Ionicons name="camera-outline" size={24} color="#AAAABA" />
+              <Text className="text-xs text-[#AAAABA]">
+                {form.photoCount}/{MAX_ROOM_PHOTOS}
+              </Text>
+            </Pressable>
+          ) : null}
+          {form.draft.imageUris.map((uri, index) => (
+            <PhotoSlot
+              key={`${uri}-${index}`}
+              uri={uri}
+              index={index}
+              onRemove={form.removePhoto}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    </View>
   );
 }

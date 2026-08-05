@@ -80,8 +80,9 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
         <Text className="text-xs font-bold text-[#1358D8]">{match.compatibilityScore}점</Text>
       </View>
 
-      <View className="gap-1.5 px-1 py-0.5">
+      <View className="gap-1.5 rounded-lg bg-[#F6F6FA] px-3 py-2.5">
         <InfoRow label="예산" value={match.depositRentLabel.replace(/\s\/\s/g, '/')} />
+        <InfoRow label="입주 가능일" value={match.moveInLabel} />
         <InfoRow label="방 형태" value={match.roomTypeLabel} />
         <InfoRow label="위치" value={match.regionLabel} />
       </View>

@@ -3,7 +3,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
-import { type ChatRoomItem, useChatRooms } from '@/lib/api';
+import {
+  type ChatRoomItem,
+  isSameKstDay,
+  kstClock,
+  parseServerDate,
+  useChatRooms,
+} from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import { goChatRoom, goKakaoLogin } from '@/lib/navigation/routes';
 
@@ -83,27 +89,18 @@ export function useChatListScreen(): UseChatListScreenReturn {
 }
 
 function formatChatTime(value?: string): string {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
+  const date = parseServerDate(value);
+  if (!date) return '';
   const now = new Date();
-  const sameDay =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
-  if (sameDay) {
-    const period = date.getHours() < 12 ? '오전' : '오후';
-    const hour = date.getHours() % 12 || 12;
-    return `${period} ${String(hour).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  if (isSameKstDay(date, now)) {
+    const { hour, minute } = kstClock(date);
+    const period = hour < 12 ? '오전' : '오후';
+    const h = hour % 12 || 12;
+    return `${period} ${String(h).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   }
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (
-    date.getFullYear() === yesterday.getFullYear() &&
-    date.getMonth() === yesterday.getMonth() &&
-    date.getDate() === yesterday.getDate()
-  ) {
+  if (isSameKstDay(date, new Date(now.getTime() - 24 * 60 * 60 * 1000))) {
     return '어제';
   }
-  return `${date.getMonth() + 1}.${String(date.getDate()).padStart(2, '0')}`;
+  const { month, day } = kstClock(date);
+  return `${month}.${String(day).padStart(2, '0')}`;
 }

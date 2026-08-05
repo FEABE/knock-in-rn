@@ -5,11 +5,11 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 
 import { TextField } from '@/components/ui/headless';
 import { RoomOptionArtwork, RoomTypeArtwork } from '@/components/ui/ready-to-dev-assets';
-import type { RegionSelectOption } from '@/lib/api';
 import type { UserSummary } from '@/lib/domain';
 import type { Region } from '@/lib/onboarding';
 
-import { MAX_ROOM_PHOTOS } from './room-post-form.model';
+import { MAX_ROOM_DESCRIPTION_LENGTH, MAX_ROOM_PHOTOS } from './room-post-form.model';
+import { RoomRegionSheet } from './room-post-form.region-sheet';
 import type { UseRoomPostFormReturn } from './use-room-post-form';
 
 export type RoomPostFormViewProps = UseRoomPostFormReturn & {
@@ -37,20 +37,17 @@ export function RoomPostFormView({
   roomTypesError,
   roomOptionsLoading,
   roomOptionsError,
-  regionCities,
-  regionDistricts,
-  regionNeighborhoods,
-  activeRegionCityId,
-  activeRegionDistrictId,
+  selectedRegion,
+  regionSheetOpen,
+  setRegionSheetOpen,
   setTitle,
   setDeposit,
   setRent,
   setMaintenance,
   selectRoomType,
-  selectRegionCity,
-  selectRegionDistrict,
   selectRegion,
   setMoveInDate,
+  setNegotiable,
   addPhotos,
   removePhoto,
   toggleOption,
@@ -115,11 +112,11 @@ export function RoomPostFormView({
               placeholder="조용하고 깔끔한 환경 원하시는 분 환영합니다. 풀옵션 구비되어 있고 햇살이 잘 들어오는 남향 방이에요..."
               multiline
               numberOfLines={6}
-              maxLength={500}
+              maxLength={MAX_ROOM_DESCRIPTION_LENGTH}
               className="min-h-[120px] border-b border-[#AAAABA] px-0 py-3 text-sm leading-6"
             />
             <Text className="self-end text-xs text-neutral-400">
-              {draft.description.length} / 500자
+              {draft.description.length} / {MAX_ROOM_DESCRIPTION_LENGTH}자
             </Text>
           </Field>
 
@@ -178,16 +175,9 @@ export function RoomPostFormView({
         </Section>
 
         <Section title="방 위치" badge={mode === 'edit' ? '프로필 값' : undefined}>
-          <RegionTable
-            selected={draft.regions[0] ?? null}
-            cities={regionCities}
-            districts={regionDistricts}
-            neighborhoods={regionNeighborhoods}
-            activeCityId={activeRegionCityId}
-            activeDistrictId={activeRegionDistrictId}
-            onSelectCity={selectRegionCity}
-            onSelectDistrict={selectRegionDistrict}
-            onSelect={selectRegion}
+          <RegionSelectButton
+            selected={selectedRegion}
+            onPress={() => setRegionSheetOpen(true)}
           />
         </Section>
 
@@ -203,6 +193,9 @@ export function RoomPostFormView({
             />
             <Ionicons name="calendar-outline" size={20} color="#AAAABA" />
           </View>
+          <Field label="협의 가능 여부">
+            <NegotiableSelector value={draft.negotiable} onChange={setNegotiable} />
+          </Field>
         </Section>
 
         {roomOptionsLoading || roomOptionsError || roomOptions.length > 0 ? (
@@ -257,48 +250,16 @@ export function RoomPostFormView({
           </View>
 
           <View className="flex-row flex-wrap gap-2">
-            <ProfileTile
-              label="취침 시간"
-              value={
-                profile?.lifestyle?.sleepTime && profile?.lifestyle?.wakeTime
-                  ? `${profile.lifestyle.sleepTime}~${profile.lifestyle.wakeTime}`
-                  : '미입력'
-              }
-            />
+            <ProfileTile label="취침 시간" value={profileSleepLabel(profile)} />
             <ProfileTile
               label="청결 민감도"
-              value={
-                profile?.lifestyle?.cleanliness !== undefined
-                  ? profile.lifestyle.cleanliness >= 4
-                    ? '높음'
-                    : profile.lifestyle.cleanliness >= 3
-                      ? '보통'
-                      : '낮음'
-                  : '미입력'
-              }
+              value={profileSensitivityLabel(profile?.lifestyle?.cleanliness)}
             />
             <ProfileTile
               label="소음 민감도"
-              value={
-                profile?.lifestyle?.noise !== undefined
-                  ? profile.lifestyle.noise >= 4
-                    ? '높음'
-                    : profile.lifestyle.noise >= 3
-                      ? '보통'
-                      : '낮음'
-                  : '미입력'
-              }
+              value={profileSensitivityLabel(profile?.lifestyle?.noise)}
             />
-            <ProfileTile
-              label="흡연"
-              value={
-                profile?.lifestyle?.smoking === 'no'
-                  ? '비흡연'
-                  : profile?.lifestyle?.smoking === 'outdoor'
-                    ? '실외만'
-                    : '미입력'
-              }
-            />
+            <ProfileTile label="흡연" value={profileSmokingLabel(profile)} />
           </View>
 
           <View className="gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
@@ -346,8 +307,119 @@ export function RoomPostFormView({
           )}
         </Pressable>
       </View>
+
+      <RoomRegionSheet
+        open={regionSheetOpen}
+        onOpenChange={setRegionSheetOpen}
+        value={selectedRegion}
+        onSelect={selectRegion}
+      />
     </>
   );
+}
+
+/** "지역 선택하기 ∨" 버튼. 선택된 지역이 있으면 지역명을 보여준다. */
+export function RegionSelectButton({
+  selected,
+  onPress,
+}: {
+  selected: Region | null;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="지역 선택하기"
+      className="h-[52px] flex-row items-center justify-center gap-1 rounded-lg border border-[#DADAE8] bg-white px-4 active:bg-[#F6F6FA]"
+    >
+      <Text
+        className={
+          selected ? 'text-[15px] font-medium text-[#17171B]' : 'text-[15px] text-[#696976]'
+        }
+      >
+        {selected ? `${selected.city} ${selected.district}` : '지역 선택하기'}
+      </Text>
+      <Ionicons name="chevron-down" size={16} color="#696976" />
+    </Pressable>
+  );
+}
+
+/** 협의 가능 여부(가능해요/불가능해요) 선택 카드. */
+export function NegotiableSelector({
+  value,
+  onChange,
+}: {
+  value: boolean | null;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <View className="flex-row gap-3">
+      <NegotiableOption
+        label="가능해요"
+        selected={value === true}
+        onPress={() => onChange(true)}
+        icon={<View className="h-[18px] w-[18px] rounded-full border-[3px] border-[#E5202E]" />}
+      />
+      <NegotiableOption
+        label="불가능해요"
+        selected={value === false}
+        onPress={() => onChange(false)}
+        icon={<Ionicons name="close" size={22} color="#E5202E" />}
+      />
+    </View>
+  );
+}
+
+function NegotiableOption({
+  label,
+  selected,
+  onPress,
+  icon,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  icon: ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-lg border ${
+        selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
+      } active:opacity-80`}
+    >
+      {icon}
+      <Text
+        className={
+          selected ? 'text-[15px] font-semibold text-[#256EF4]' : 'text-[15px] text-[#404047]'
+        }
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function profileSleepLabel(profile?: UserSummary): string {
+  return profile?.lifestyle?.sleepTime && profile?.lifestyle?.wakeTime
+    ? `${profile.lifestyle.sleepTime}~${profile.lifestyle.wakeTime}`
+    : '미입력';
+}
+
+export function profileSensitivityLabel(level?: number): string {
+  if (level === undefined) return '미입력';
+  return level >= 4 ? '높음' : level >= 3 ? '보통' : '낮음';
+}
+
+export function profileSmokingLabel(profile?: UserSummary): string {
+  return profile?.lifestyle?.smoking === 'no'
+    ? '비흡연'
+    : profile?.lifestyle?.smoking === 'outdoor'
+      ? '실외만'
+      : '미입력';
 }
 
 function MetadataState({
@@ -453,7 +525,7 @@ function EmptyPhotoSlot() {
   return <View className="h-20 w-20 rounded bg-[#F1F1F6]" />;
 }
 
-function PhotoSlot({
+export function PhotoSlot({
   uri,
   index,
   onRemove,
@@ -478,109 +550,6 @@ function PhotoSlot({
       >
         <Ionicons name="close" size={13} color="white" />
       </Pressable>
-    </View>
-  );
-}
-
-function RegionTable({
-  selected,
-  cities,
-  districts,
-  neighborhoods,
-  activeCityId,
-  activeDistrictId,
-  onSelectCity,
-  onSelectDistrict,
-  onSelect,
-}: {
-  selected: Region | null;
-  cities: RegionSelectOption[];
-  districts: RegionSelectOption[];
-  neighborhoods: RegionSelectOption[];
-  activeCityId: string | null;
-  activeDistrictId: string | null;
-  onSelectCity: (id: string) => void;
-  onSelectDistrict: (id: string) => void;
-  onSelect: (r: Region) => void;
-}) {
-  return (
-    <View className="rounded-xl border border-neutral-200">
-      <View className="flex-row border-b border-neutral-100 bg-neutral-50">
-        <View className="flex-1 py-2">
-          <Text className="text-center text-[11px] text-neutral-500">시·도</Text>
-        </View>
-        <View className="flex-1 py-2">
-          <Text className="text-center text-[11px] text-neutral-500">구·군</Text>
-        </View>
-        <View className="flex-1 py-2">
-          <Text className="text-center text-[11px] text-neutral-500">동</Text>
-        </View>
-      </View>
-      <View className="flex-row border-b border-neutral-50">
-        <View className="flex-1 py-2">
-          {cities.map((city) => (
-            <Pressable
-              key={city.id}
-              onPress={() => onSelectCity(city.id)}
-              className="items-center py-1.5"
-            >
-              <Text
-                className={
-                  activeCityId === city.id
-                    ? 'text-sm font-semibold text-[#256EF4]'
-                    : 'text-sm text-neutral-700'
-                }
-              >
-                {city.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View className="flex-1 gap-1 py-2">
-          {districts.map((option) => {
-            return (
-              <Pressable
-                key={option.id}
-                onPress={() => onSelectDistrict(option.id)}
-                className="items-center py-0.5"
-              >
-                <Text
-                  className={
-                    activeDistrictId === option.id
-                      ? 'text-xs font-medium text-[#256EF4]'
-                      : 'text-xs text-neutral-600'
-                  }
-                >
-                  {option.region.district}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <View className="flex-1 gap-1 py-2">
-          {neighborhoods.length === 0 ? (
-            <Text className="py-1.5 text-center text-xs text-neutral-400">선택 없음</Text>
-          ) : (
-            neighborhoods.map((option) => (
-              <Pressable
-                key={option.id}
-                onPress={() => onSelect(option.region)}
-                className="items-center py-0.5"
-              >
-                <Text
-                  className={
-                    selected?.id === option.id
-                      ? 'text-xs font-medium text-[#256EF4]'
-                      : 'text-xs text-neutral-600'
-                  }
-                >
-                  {option.region.district.split(' ').at(-1)}
-                </Text>
-              </Pressable>
-            ))
-          )}
-        </View>
-      </View>
     </View>
   );
 }

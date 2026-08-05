@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomPostForm } from '@/components/room/room-post-form';
+import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseEditRoomScreenReturn } from './use-edit-room-screen';
 
@@ -13,8 +14,13 @@ export function EditRoomScreenView({
   profile,
   initial,
   submitting,
+  deleting,
+  deleteDialogOpen,
+  toastMessage,
   onBack,
   onDelete,
+  onCancelDelete,
+  onConfirmDelete,
   onSubmit,
 }: EditRoomScreenViewProps) {
   if (state === 'loading') {
@@ -49,6 +55,18 @@ export function EditRoomScreenView({
         submitting={submitting}
         onSubmit={onSubmit}
       />
+
+      <ReadyConfirmDialog
+        open={deleteDialogOpen}
+        title="게시글을 삭제하시겠어요?"
+        description="게시글 삭제 후에는 복구가 불가해요"
+        cancelLabel="취소"
+        confirmLabel="삭제"
+        processing={deleting}
+        onCancel={onCancelDelete}
+        onConfirm={onConfirmDelete}
+      />
+      <ReadyToast visible={toastMessage !== null} message={toastMessage ?? ''} tone="success" />
     </SafeAreaView>
   );
 }

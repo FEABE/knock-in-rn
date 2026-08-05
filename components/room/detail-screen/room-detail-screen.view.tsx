@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
+import { formatKstDateLabel } from '@/lib/api';
 import {
   ReadyActionRow,
   ReadyActionSheet,
@@ -25,7 +26,7 @@ import {
 } from '@/components/ui/ready-to-dev-components';
 import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
-import { ROOM_REPORT_REASONS, type UseRoomDetailScreenReturn } from './use-room-detail-screen';
+import type { LifestyleTile, UseRoomDetailScreenReturn } from './use-room-detail-screen';
 
 const ROOM_TYPE_LABEL: Record<string, string> = {
   'one-room': '원룸',
@@ -230,6 +231,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         >
           <LifestyleBlock
             author={props.post.author}
+            items={props.lifestyleItems}
             expanded={props.lifestyleExpanded}
             onToggle={props.toggleLifestyle}
           />
@@ -296,20 +298,11 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
               icon="warning-outline"
               label="게시글 신고하기"
               tone="danger"
-              onPress={() => {
-                props.setMenuOpen(false);
-                props.setReportOpen(true);
-              }}
+              onPress={props.onReport}
             />
           )}
         </View>
       </ReadyActionSheet>
-
-      <ReportReasonSheet
-        open={props.reportOpen}
-        onOpenChange={props.setReportOpen}
-        onReportReason={props.onReportReason}
-      />
     </SafeAreaView>
   );
 }
@@ -390,31 +383,6 @@ function Header({
         { icon: 'ellipsis-horizontal', label: '게시글 메뉴', onPress: onMenu },
       ]}
     />
-  );
-}
-
-function ReportReasonSheet({
-  open,
-  onOpenChange,
-  onReportReason,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onReportReason: (reason: string) => void;
-}) {
-  return (
-    <ReadyActionSheet open={open} onOpenChange={onOpenChange}>
-      <Text className="mb-2 text-base font-semibold text-[#17171B]">신고 사유</Text>
-      {ROOM_REPORT_REASONS.map((reason, index) => (
-        <ReadyActionRow
-          key={reason}
-          icon="alert-circle-outline"
-          label={reason}
-          divider={index < ROOM_REPORT_REASONS.length - 1}
-          onPress={() => onReportReason(reason)}
-        />
-      ))}
-    </ReadyActionSheet>
   );
 }
 
@@ -517,39 +485,43 @@ function BasicInfoBlock({ post }: { post: RoomPost }) {
 
 function LifestyleBlock({
   author,
+  items,
   expanded,
   onToggle,
 }: {
   author: UserSummary;
+  items: LifestyleTile[];
   expanded: boolean;
   onToggle: () => void;
 }) {
   const lifestyle = author.lifestyle ?? {};
-  const hasHiddenLifestyle = lifestyle.pet !== undefined;
+  // 서버 원본 생활 패턴(8종)이 있으면 그대로 쓰고, 없으면 매핑된 기본 4종으로 대체한다.
+  const tiles: LifestyleTile[] = items.length
+    ? items
+    : [
+        {
+          label: '취침 시간',
+          value: sleepRangeLabel(lifestyle.sleepTime, lifestyle.wakeTime),
+        },
+        { label: '청결 민감도', value: levelLabel(lifestyle.cleanliness) },
+        { label: '소음 민감도', value: levelLabel(lifestyle.noise) },
+        {
+          label: '흡연 여부',
+          value: lifestyle.smoking
+            ? (SMOKING_LABEL[lifestyle.smoking] ?? lifestyle.smoking)
+            : '미입력',
+        },
+      ];
+  const visible = expanded ? tiles : tiles.slice(0, 4);
 
   return (
     <ReadySection title="생활 패턴">
       <View className="flex-row flex-wrap gap-3">
-        <ReadyMetadataTile
-          label="취침 시간"
-          value={sleepRangeLabel(lifestyle.sleepTime, lifestyle.wakeTime)}
-        />
-        <ReadyMetadataTile label="청결 민감도" value={levelLabel(lifestyle.cleanliness)} />
-        <ReadyMetadataTile label="소음 민감도" value={levelLabel(lifestyle.noise)} />
-        <ReadyMetadataTile
-          label="흡연"
-          value={lifestyle.smoking ? SMOKING_LABEL[lifestyle.smoking] : '미입력'}
-        />
+        {visible.map((tile, index) => (
+          <ReadyMetadataTile key={`${tile.label}-${index}`} label={tile.label} value={tile.value} />
+        ))}
       </View>
-      {expanded && hasHiddenLifestyle ? (
-        <View className="rounded bg-[#F6F6FA] px-4 py-3">
-          <Text className="text-xs text-neutral-600">
-            반려동물:{' '}
-            {lifestyle.pet === 'no' ? '불가' : lifestyle.pet === 'small' ? '소형 가능' : '협의'}
-          </Text>
-        </View>
-      ) : null}
-      {hasHiddenLifestyle ? <ReadyMoreButton expanded={expanded} onPress={onToggle} /> : null}
+      {tiles.length > 4 ? <ReadyMoreButton expanded={expanded} onPress={onToggle} /> : null}
     </ReadySection>
   );
 }
@@ -838,9 +810,7 @@ function levelLabel(value?: number) {
 }
 
 function fmtDate(d: Date): string {
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate(),
-  ).padStart(2, '0')}`;
+  return formatKstDateLabel(d);
 }
 
 function isRecent(date: Date): boolean {

@@ -7,7 +7,7 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'knockinrn',
-  userInterfaceStyle: 'automatic',
+  userInterfaceStyle: 'light',
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
@@ -55,10 +55,9 @@ const config: ExpoConfig = {
       'expo-splash-screen',
       {
         image: './assets/images/splash-icon.png',
-        imageWidth: 200,
+        imageWidth: 245,
         resizeMode: 'contain',
         backgroundColor: '#ffffff',
-        dark: { backgroundColor: '#000000' },
       },
     ],
 

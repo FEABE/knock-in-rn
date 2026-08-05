@@ -30,6 +30,9 @@ export function roomFormValuesToBoardWriteRequest(values: RoomFormValues): Board
     comeableAt: values.moveInDate ? formatApiLocalDateTime(values.moveInDate) : undefined,
     comeableDate: values.moveInDate ? formatApiLocalDateTime(values.moveInDate) : undefined,
   };
+  if (values.moveInNegotiable !== undefined) {
+    body.comeableDateNegotiable = values.moveInNegotiable;
+  }
   if (imageUrls.length > 0) {
     body.images = imageUrls.map((image, index) => ({
       image,

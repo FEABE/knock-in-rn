@@ -62,7 +62,7 @@ export function InterestsScreenView({
                       className={
                         selected
                           ? 'text-[17px] font-semibold text-neutral-900'
-                          : 'text-[17px] font-medium text-neutral-900'
+                          : 'text-[17px] font-medium text-[#AAAABA]'
                       }
                     >
                       {tab.label}

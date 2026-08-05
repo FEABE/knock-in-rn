@@ -17,6 +17,20 @@ type RoomListControlsProps = {
   onFilterPress: (key: RoomListFilterKey) => void;
 };
 
+const ROOM_TYPE_CHIP_LABEL: Record<string, string> = {
+  'one-room': '원룸',
+  'two-room': '투룸',
+  'three-room+': '쓰리룸+',
+  officetel: '오피스텔',
+  'share-house': '쉐어하우스',
+  apt: '아파트',
+  villa: '빌라',
+};
+
+function withMoreSuffix(first: string, total: number): string {
+  return total > 1 ? `${first} 외 ${total - 1}개` : first;
+}
+
 export function RoomListControls({
   filter,
   initialFilter,
@@ -27,11 +41,40 @@ export function RoomListControls({
   onSortPress,
   onFilterPress,
 }: RoomListControlsProps) {
-  const budgetActive =
-    filter.rentMin !== initialFilter.rentMin ||
-    filter.rentMax !== initialFilter.rentMax ||
+  const rentActive =
+    filter.rentMin !== initialFilter.rentMin || filter.rentMax !== initialFilter.rentMax;
+  const depositActive =
     filter.depositMin !== initialFilter.depositMin ||
     filter.depositMax !== initialFilter.depositMax;
+  const budgetActive = rentActive || depositActive;
+
+  const regionLabel =
+    filter.regions.length > 0
+      ? withMoreSuffix(
+          `${filter.regions[0].city} ${filter.regions[0].district}`,
+          filter.regions.length,
+        )
+      : '지역';
+
+  const genderLabel =
+    filter.gender === 'male' ? '남성' : filter.gender === 'female' ? '여성' : '성별';
+
+  const budgetLabel = budgetActive
+    ? [
+        depositActive ? `보증금 ${filter.depositMin}~${filter.depositMax}` : null,
+        rentActive ? `월세 ${filter.rentMin}~${filter.rentMax}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '예산';
+
+  const roomTypeLabel =
+    filter.roomTypes.length > 0
+      ? withMoreSuffix(
+          ROOM_TYPE_CHIP_LABEL[filter.roomTypes[0]] ?? filter.roomTypes[0],
+          filter.roomTypes.length,
+        )
+      : '방 형태';
 
   return (
     <>
@@ -64,24 +107,22 @@ export function RoomListControls({
       >
         <ReadyFilterChip label={sortLabel} onPress={onSortPress} />
         <ReadyFilterChip
-          label="지역"
-          count={filter.regions.length}
+          label={regionLabel}
           selected={filter.regions.length > 0}
           onPress={() => onFilterPress('region')}
         />
         <ReadyFilterChip
-          label="성별"
+          label={genderLabel}
           selected={filter.gender !== 'any'}
           onPress={() => onFilterPress('gender')}
         />
         <ReadyFilterChip
-          label="예산"
+          label={budgetLabel}
           selected={budgetActive}
           onPress={() => onFilterPress('budget')}
         />
         <ReadyFilterChip
-          label="방 형태"
-          count={filter.roomTypes.length}
+          label={roomTypeLabel}
           selected={filter.roomTypes.length > 0}
           onPress={() => onFilterPress('roomType')}
         />

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { RoomPost } from '@/lib/domain';
 
-export type RoomCardBadge = 'new' | 'hot' | null;
+export type RoomCardBadge = 'hot' | null;
 
 export type UseRoomCardProps = {
   post: RoomPost;
@@ -18,14 +18,10 @@ export type UseRoomCardReturn = {
   priceLabel: string;
   roomTypeLabel: string;
   regionLabel: string;
+  authorMetaLabel: string | null;
   badge: RoomCardBadge;
   timeAgoLabel: string;
 };
-
-function fmt(n: number): string {
-  if (n >= 10000) return `${(n / 10000).toFixed(1)}억`;
-  return `${n.toLocaleString()}만`;
-}
 
 const ROOM_TYPE_LABEL: Record<string, string> = {
   'one-room': '원룸',
@@ -52,10 +48,21 @@ function timeAgo(date: Date): string {
 }
 
 function pickBadge(post: RoomPost): RoomCardBadge {
-  const diffDay = Math.floor((Date.now() - post.createdAt.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDay <= 3) return 'new';
   if (post.likes >= 25 || post.views >= 300) return 'hot';
   return null;
+}
+
+const GENDER_META: Record<string, { symbol: string; label: string }> = {
+  female: { symbol: '♀', label: '여성' },
+  male: { symbol: '♂', label: '남성' },
+};
+
+function buildAuthorMetaLabel(age: number, gender: string): string | null {
+  const meta = GENDER_META[gender];
+  const ageLabel = age > 0 ? `${age}세` : null;
+  if (!meta) return ageLabel;
+  if (!ageLabel) return `${meta.symbol} ${meta.label}`;
+  return `${meta.symbol} ${ageLabel} · ${meta.label}`;
 }
 
 export function useRoomCard({
@@ -71,9 +78,13 @@ export function useRoomCard({
 
   const onPress = useCallback(() => onPressProp?.(post), [onPressProp, post]);
 
+  // 디자인 표기: "월세 1,000/55/5" (보증금/월세/관리비, 만 단위)
   const priceLabel = useMemo(
-    () => `보증금 ${fmt(post.deposit)} / 월세 ${fmt(post.monthlyRent)}`,
-    [post.deposit, post.monthlyRent],
+    () =>
+      [post.deposit, post.monthlyRent, post.maintenanceFee ?? 0]
+        .map((amount) => amount.toLocaleString())
+        .join('/'),
+    [post.deposit, post.monthlyRent, post.maintenanceFee],
   );
 
   const roomTypeLabel = useMemo(
@@ -82,6 +93,11 @@ export function useRoomCard({
   );
 
   const regionLabel = useMemo(() => `${post.region.city} ${post.region.district}`, [post.region]);
+
+  const authorMetaLabel = useMemo(
+    () => buildAuthorMetaLabel(post.author.age, post.author.gender),
+    [post.author.age, post.author.gender],
+  );
 
   const badge = useMemo(() => pickBadge(post), [post]);
   const timeAgoLabel = useMemo(() => timeAgo(post.createdAt), [post.createdAt]);
@@ -94,6 +110,7 @@ export function useRoomCard({
     priceLabel,
     roomTypeLabel,
     regionLabel,
+    authorMetaLabel,
     badge,
     timeAgoLabel,
   };

@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
 
+import { setMypageHomeToast } from '@/components/mypage/mypage-home/mypage-home-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { markStoredPreferenceComplete } from '@/lib/auth/session-storage';
 import {
@@ -208,7 +209,8 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
       }
       await markStoredPreferenceComplete();
     }
-    Alert.alert('저장 완료', '선호 조건이 저장되었어요.', [{ text: '확인', onPress: exit }]);
+    if (!fromOnboarding) setMypageHomeToast('저장되었어요');
+    exit();
   };
 
   return {
