@@ -276,7 +276,7 @@ function buildPreferenceQuestions(
       findScale(options.scaleOptions, ['방문객', '손님']),
       'visitors',
       '원하는 룸메이트의 방문객 빈도를 선택해주세요',
-      ['매우 적음', '적음', '보통', '많음', '매우 많음'],
+      ['거의 안 옴', '가끔', '보통', '자주', '매우 자주'],
     ),
     choiceQuestion(
       findChoice(options.choiceGroups, ['흡연']),

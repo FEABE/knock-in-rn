@@ -20,6 +20,8 @@ type AlarmStreamEvent = {
 const RECONNECT_DELAY_MS = 1_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const MAX_RECONNECT_ATTEMPTS = 8;
+/** 이 시간 이상 유지된 연결은 데이터가 없어도 정상으로 본다(서버가 keep-alive를 보내지 않음). */
+const HEALTHY_CONNECTION_MS = 60_000;
 
 export function useAlarmStream({
   enabled,
@@ -135,6 +137,11 @@ export function useAlarmStream({
 
       let consumedLength = 0;
       let pending = '';
+      /** 응답 헤더 200을 받은 시각. 0이면 아직 연결이 성립하지 않은 것이다. */
+      let openedAt = 0;
+      let receivedData = false;
+      /** 헤더 수신으로 리셋한 카운터를 되돌리기 위한 백업. */
+      const failuresBeforeConnect = consecutiveFailures;
       const xhr = new XMLHttpRequest();
       request = xhr;
 
@@ -143,6 +150,11 @@ export function useAlarmStream({
         if (xhr.status === 401 || xhr.status === 403) {
           handleAuthFailure();
           return;
+        }
+        // 헤더만 받고 곧바로 끊기는 연결(서버 재기동·프록시 오류 등)은 성공이 아니다.
+        // 리셋을 되돌려야 백오프가 정상적으로 늘어나고 재시도 한도도 계속 동작한다.
+        if (!receivedData && openedAt > 0 && Date.now() - openedAt < HEALTHY_CONNECTION_MS) {
+          consecutiveFailures = failuresBeforeConnect;
         }
         if (!foregroundRef.current) return;
         scheduleReconnect();
@@ -156,13 +168,27 @@ export function useAlarmStream({
       xhr.onreadystatechange = () => {
         if (stopped || request !== xhr) return;
         if (xhr.readyState < 2) return;
-        if (xhr.status === 401 || xhr.status === 403) handleAuthFailure();
+        if (xhr.status === 401 || xhr.status === 403) {
+          handleAuthFailure();
+          return;
+        }
+        // 서버는 연결 후 첫 알림이 생길 때까지 keep-alive를 포함해 단 한 바이트도 보내지
+        // 않고, 알림이 없으면 1시간 뒤 timeout으로 끊긴다. 바이트 수신만으로 실패 카운터를
+        // 리셋하면 조용한 정상 연결이 시간당 1회씩 실패로 누적돼 결국 halt된다.
+        // 응답 헤더 200을 받은 시점이면 연결 자체는 성립한 것이므로 여기서 리셋한다.
+        if (xhr.status === 200 && openedAt === 0) {
+          openedAt = Date.now();
+          consecutiveFailures = 0;
+        }
       };
 
       xhr.onprogress = () => {
         if (stopped || request !== xhr) return;
         const responseText = xhr.responseText ?? '';
-        if (responseText.length > consumedLength) consecutiveFailures = 0;
+        if (responseText.length > consumedLength) {
+          receivedData = true;
+          consecutiveFailures = 0;
+        }
         pending += responseText.slice(consumedLength);
         consumedLength = responseText.length;
         pending = pending.replace(/\r\n/g, '\n');

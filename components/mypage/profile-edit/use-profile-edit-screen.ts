@@ -6,15 +6,17 @@ import type { RangeValue } from '@/components/ui/headless';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   compactNumbers,
-  formatApiLocalDateTime,
+  formatApiCalendarDate,
   getProfileAll,
   lifestyleIdsFromPatternOptions,
   lifestyleModifyItemsFromPatternOptions,
   lifestyleSelectionsFromProfileItems,
+  parseServerDate,
   regionBackendId,
   regionFromBackendId,
   roomTypeBackendId,
   saveProfileLifestyle,
+  serverCalendarDateToLocal,
   updateProfileLifestyle,
   updateProfileRoomInfo,
   useLifestylePatternOptions,
@@ -128,7 +130,9 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
           data.minMounthRent ?? data.mounthRent ?? 0,
           data.maxMounthRent ?? data.mounthRent ?? 50,
         ],
-        moveInDate: data.comeEnableAt ? new Date(data.comeEnableAt) : null,
+        // comeEnableAt은 오프셋 없는 UTC 벽시계다. parseServerDate로 파싱한 뒤
+        // 캘린더 위젯이 쓰는 로컬 자정으로 옮긴다.
+        moveInDate: toLocalCalendarDate(data.comeEnableAt),
         regions: loadedRegions.length > 0 ? loadedRegions : current.regions,
         roomTypes: ids.length > 0 ? ids : current.roomTypes,
       }));
@@ -203,7 +207,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
         maxDeposit: isOffer ? undefined : deposit[1],
         minMonthlyRent: isOffer ? undefined : rent[0],
         maxMonthlyRent: isOffer ? undefined : rent[1],
-        comeEnableAt: formatApiLocalDateTime(moveInDate ?? new Date()),
+        // 입주(희망)일은 캘린더 날짜다. 서버 LocalDateTime = UTC 벽시계이므로 UTC 자정으로 맞춰 보낸다.
+        comeEnableAt: formatApiCalendarDate(moveInDate ?? new Date()),
         region: isOffer ? regionIds.slice(0, 1) : regionIds,
         roomProfile: isOffer ? roomTypeIds.slice(0, 1) : roomTypeIds,
         deposit: isOffer ? deposit[0] : undefined,
@@ -266,4 +271,10 @@ type ProfileEditState = {
 
 function resolveAction<T>(next: SetStateAction<T>, current: T): T {
   return typeof next === 'function' ? (next as (value: T) => T)(current) : next;
+}
+
+/** 서버가 UTC 자정으로 저장한 캘린더 날짜 문자열을 로컬 자정 Date로 되돌린다. */
+function toLocalCalendarDate(value?: string | null): Date | null {
+  const parsed = parseServerDate(value);
+  return parsed ? serverCalendarDateToLocal(parsed) : null;
 }

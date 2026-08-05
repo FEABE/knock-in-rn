@@ -6,7 +6,9 @@ import { roomFormValuesToBoardWriteRequest } from '@/components/room/room-post-f
 import type { RoomFormDraft, RoomFormValues } from '@/components/room/room-post-form';
 import {
   compactNumbers,
+  parseServerDate,
   regionFromBackendId,
+  serverCalendarDateToLocal,
   roomOptionBackendId,
   roomTypeFromBackendId,
   type BoardEditData,
@@ -132,7 +134,7 @@ function toInitialDraftFromEdit(edit: BoardEditData): Partial<RoomFormDraft> {
     roomType: roomTypeFromBackendId(edit.roomType?.roomTypeId),
     regions: [regionFromBackendId(edit.region?.regionId ?? edit.region?.fullName)],
     description: edit.contents,
-    moveInDate: edit.comeableDate ? fmtDate(new Date(edit.comeableDate)) : '',
+    moveInDate: fmtCalendarDate(parseServerDate(edit.comeableDate)),
     negotiable: edit.comeableDateNegotiable ?? null,
     imageUris: edit.images?.map((image) => image.url).filter((url): url is string => !!url) ?? [],
     options:
@@ -178,14 +180,20 @@ function toInitialDraft(post: RoomPost): Partial<RoomFormDraft> {
     roomType: post.roomType,
     regions: [post.region],
     description: post.description,
-    moveInDate: post.moveInDate ? fmtDate(post.moveInDate) : '',
+    moveInDate: fmtCalendarDate(post.moveInDate),
     imageUris: post.photoUrls ?? (post.thumbnailUrl ? [post.thumbnailUrl] : []),
     options: compactNumbers(post.options?.map(roomOptionBackendId) ?? []),
   };
 }
 
-function fmtDate(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate(),
+/**
+ * 서버 comeableDate는 UTC 자정으로 저장된 '캘린더 날짜'다.
+ * 로컬 자정으로 옮긴 뒤 draft의 YYYY-MM-DD로 직렬화해야 기기 시간대와 무관하게 같은 날짜가 채워진다.
+ */
+function fmtCalendarDate(date: Date | null | undefined): string {
+  if (!date) return '';
+  const local = serverCalendarDateToLocal(date);
+  return `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(
+    local.getDate(),
   ).padStart(2, '0')}`;
 }

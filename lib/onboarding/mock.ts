@@ -103,14 +103,16 @@ export const IMPORTANT_CONDITIONS: ImportantCondition[] = [
   { id: 'short-term', label: '단기 거주 가능' },
 ];
 
+/**
+ * 서버 GET /meta/room-types가 내려주는 5종과 동일하게 맞춘다(id 1~5 순서).
+ * "전체"/쉐어하우스/빌라는 서버에 존재하지 않으므로 넣지 않는다.
+ */
 export const ROOM_TYPES: { value: RoomType; label: string }[] = [
   { value: 'one-room', label: '원룸' },
   { value: 'two-room', label: '투룸' },
-  { value: 'three-room+', label: '쓰리룸 이상' },
+  { value: 'three-room+', label: '쓰리룸+' },
   { value: 'officetel', label: '오피스텔' },
-  { value: 'share-house', label: '쉐어하우스' },
   { value: 'apt', label: '아파트' },
-  { value: 'villa', label: '빌라' },
 ];
 
 export const BUDGET_BOUNDS = {

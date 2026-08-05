@@ -15,9 +15,15 @@ export function AlarmRealtimeBridge() {
   const queryClient = useQueryClient();
   const { session } = useSession();
 
+  /**
+   * 서버가 보내는 이벤트 이름은 ROOM_MATCHING / CHATTING_REQUIRED / DELETE_BOARD /
+   * RECOVER_BOARD / MEMBER_ACTIVE / INQUIRIE_REPLY / SAVE_VERIFICATION /
+   * DELETE_VERIFICATION 뿐이고, 모두 동일한 알림 페이로드를 싣는다. 연결 확인용
+   * 핸드셰이크 이벤트는 존재하지 않으므로 이름별 분기 없이 페이로드 모양만 보고 처리한다.
+   */
   const handleEvent = useCallback(
-    ({ event, data }: { event: string; data: AlarmStreamPayload | string | number | null }) => {
-      if (event === 'connected') return;
+    ({ data }: { data: AlarmStreamPayload | string | number | null }) => {
+      // 알림 객체가 아니면(형식 변경·부분 페이로드 등) 목록을 다시 받아 정합성을 맞춘다.
       if (!data || typeof data !== 'object' || data.id == null) {
         void queryClient.invalidateQueries({ queryKey: ALARM_QUERY_KEY });
         return;

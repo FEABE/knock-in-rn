@@ -10,6 +10,7 @@ import {
 } from '@/components/room/room-post-form.model';
 import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
 import {
+  FieldError,
   NegotiableSelector,
   PhotoSlot,
   RegionSelectButton,
@@ -233,9 +234,7 @@ function WizardButton({
 }
 
 function Headline({ children }: { children: ReactNode }) {
-  return (
-    <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{children}</Text>
-  );
+  return <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{children}</Text>;
 }
 
 function LifestylePage({ profile }: { profile: UserSummary }) {
@@ -335,8 +334,18 @@ function BudgetPage({ form }: { form: UseRoomPostFormReturn }) {
     <View>
       <Headline>거주하고 있는 집의{'\n'}예산을 선택해주세요</Headline>
       <View className="mt-8 gap-8">
-        <MoneyField label="보증금" value={form.draft.deposit} onChange={form.setDeposit} />
-        <MoneyField label="월세" value={form.draft.rent} onChange={form.setRent} />
+        <MoneyField
+          label="보증금"
+          value={form.draft.deposit}
+          onChange={form.setDeposit}
+          error={form.depositError}
+        />
+        <MoneyField
+          label="월세"
+          value={form.draft.rent}
+          onChange={form.setRent}
+          error={form.rentError}
+        />
         <MoneyField
           label="관리비"
           optional
@@ -353,11 +362,13 @@ function MoneyField({
   optional,
   value,
   onChange,
+  error,
 }: {
   label: string;
   optional?: boolean;
   value: string;
   onChange: (next: string) => void;
+  error?: string | null;
 }) {
   return (
     <View className="gap-1">
@@ -365,7 +376,11 @@ function MoneyField({
         <Text className="text-[15px] font-bold text-[#17171B]">{label}</Text>
         {optional ? <Text className="text-xs text-[#AAAABA]">선택</Text> : null}
       </View>
-      <View className="flex-row items-center gap-2 border-b border-[#DADAE8] py-3">
+      <View
+        className={`flex-row items-center gap-2 border-b py-3 ${
+          error ? 'border-[#E5484D]' : 'border-[#DADAE8]'
+        }`}
+      >
         <TextField
           value={value}
           onChangeValue={(next) => onChange(next.replace(/\D/g, ''))}
@@ -375,6 +390,7 @@ function MoneyField({
         />
         <Text className="text-[15px] text-[#AAAABA]">만원</Text>
       </View>
+      <FieldError message={error ?? null} />
     </View>
   );
 }
@@ -403,7 +419,8 @@ function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
   return (
     <View>
       <Headline>
-        방의{'\n'}옵션을 선택해주세요 <Text className="text-sm font-normal text-[#AAAABA]">선택</Text>
+        방의{'\n'}옵션을 선택해주세요{' '}
+        <Text className="text-sm font-normal text-[#AAAABA]">선택</Text>
       </Headline>
       <Text className="mt-2 text-sm text-[#696976]">해당되는 항목을 모두 선택해주세요</Text>
       {form.roomOptionsLoading ? (

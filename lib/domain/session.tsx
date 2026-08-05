@@ -33,6 +33,7 @@ import {
   setAccessToken,
   socialLoginSdk,
   type LoginData,
+  type LoginDeleteInfo,
   type ProfileAllData,
   type SocialProvider,
   USE_MOCK,
@@ -167,10 +168,17 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
           hasAccessToken: Boolean(res.data?.accessToken),
           basicInfo: res.data?.basicInfo,
           preferenceInfo: res.data?.preferenceInfo,
+          deleteInfo: res.data?.deleteInfo,
         });
       }
 
       if (res.error || res.status !== 200 || !res.data?.accessToken) {
+        // 탈퇴/정지는 error가 아니라 deleteInfo로만 통보되므로 가장 먼저 확인한다.
+        const blocked = classifyDeleteInfo(res.data?.deleteInfo);
+        if (blocked) {
+          return { ...blocked, provider };
+        }
+
         const serverUnavailable = res.status >= 500;
         return {
           status: serverUnavailable
@@ -390,6 +398,41 @@ async function signInWithKakaoSdk() {
     access_token: result.accessToken,
     refresh_token: result.refreshToken,
   });
+}
+
+const WITHDRAWN_FALLBACK_MESSAGE = '탈퇴 후 3일이 지나면 재가입할 수 있어요';
+const SUSPENDED_FALLBACK_MESSAGE =
+  '서비스 이용이 제한된 계정이에요\n자세한 내용은 고객센터로 문의해주세요';
+
+/**
+ * 탈퇴/정지 회원 판정.
+ *
+ * 서버는 이 경우에도 예외를 던지지 않고 `error: null` + HTTP 401 + accessToken만 null인
+ * 성공 바디를 준다. 따라서 error 코드/메시지 휴리스틱으로는 절대 잡히지 않고,
+ * `deleteInfo.delete` 하나만 신뢰할 수 있다.
+ *
+ * 탈퇴와 정지 역시 같은 boolean으로 합쳐져 오고 reason으로만 구분된다.
+ * 탈퇴는 고정 문구 `"탈퇴한 회원입니다."`, 정지는 관리자 자유 입력(null 가능)이다.
+ */
+function classifyDeleteInfo(
+  deleteInfo?: LoginDeleteInfo,
+): { status: 'withdrawn' | 'suspended'; code: string; message: string } | null {
+  if (deleteInfo?.delete !== true) return null;
+
+  const reason = deleteInfo.reason?.trim() ?? '';
+  if (reason.includes('탈퇴')) {
+    return {
+      status: 'withdrawn',
+      code: 'MEMBER_WITHDRAWN',
+      message: WITHDRAWN_FALLBACK_MESSAGE,
+    };
+  }
+  return {
+    status: 'suspended',
+    code: 'MEMBER_SUSPENDED',
+    // 관리자가 입력한 정지 사유를 그대로 노출하고, 비어 있으면 기본 문구로 폴백한다.
+    message: reason || SUSPENDED_FALLBACK_MESSAGE,
+  };
 }
 
 function classifyApiError(code?: string, message?: string): SignInFailureKind {

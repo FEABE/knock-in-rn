@@ -5,7 +5,7 @@ import { Alert } from 'react-native';
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import {
   compactNumbers,
-  formatApiLocalDateTime,
+  formatApiCalendarDate,
   getAccessToken,
   getNotificationSettings,
   getProfileAll,
@@ -71,7 +71,7 @@ function toRequest(
     minMonthlyRent: isHas ? undefined : seekerBudgetRent.min,
     maxMonthlyRent: isHas ? undefined : seekerBudgetRent.max,
     // 운영 DTO는 협의 가능 여부와 별개로 입주일을 필수로 받는다.
-    comeEnableAt: formatApiLocalDateTime(moveDate ?? new Date()),
+    comeEnableAt: formatApiCalendarDate(moveDate ?? new Date()),
     region: regionIds,
     roomProfile: roomProfileIds,
     deposit: isHas ? (room.deposit ?? 0) : undefined,

@@ -7,6 +7,7 @@ import {
   deleteHouseRule,
   getHouseRules,
   getMyRoommate,
+  parseServerDate,
   updateHouseRule,
   useApi,
   type HouseRuleItem,
@@ -173,9 +174,10 @@ function houseRulesToAgreements(
   }
 
   if (!Object.keys(serverRuleIds).length) return [];
+  // createdAt은 오프셋 없는 서버 LocalDateTime(=UTC 벽시계)이라 new Date()로는 9시간 어긋난다.
   const createdAtValues = rules
-    .map((rule) => (rule.createdAt ? new Date(rule.createdAt) : null))
-    .filter((value): value is Date => value !== null && !Number.isNaN(value.getTime()));
+    .map((rule) => parseServerDate(rule.createdAt))
+    .filter((value): value is Date => value !== null);
   const finalized = rules.every((rule) => rule.finalized !== false);
 
   return [

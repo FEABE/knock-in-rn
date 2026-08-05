@@ -1,6 +1,6 @@
 import {
   compactNumbers,
-  formatApiLocalDateTime,
+  formatApiCalendarDate,
   regionBackendId,
   roomTypeBackendId,
   type BoardWriteRequest,
@@ -27,8 +27,9 @@ export function roomFormValuesToBoardWriteRequest(values: RoomFormValues): Board
     roomTypeId: roomTypeBackendId(values.roomType),
     region: regionBackendId(values.region),
     regionId: regionBackendId(values.region),
-    comeableAt: values.moveInDate ? formatApiLocalDateTime(values.moveInDate) : undefined,
-    comeableDate: values.moveInDate ? formatApiLocalDateTime(values.moveInDate) : undefined,
+    // 입주일은 '캘린더 날짜'다. 서버 LocalDateTime = UTC 벽시계이므로 UTC 자정으로 맞춰 보낸다.
+    comeableAt: values.moveInDate ? formatApiCalendarDate(values.moveInDate) : undefined,
+    comeableDate: values.moveInDate ? formatApiCalendarDate(values.moveInDate) : undefined,
   };
   if (values.moveInNegotiable !== undefined) {
     body.comeableDateNegotiable = values.moveInNegotiable;

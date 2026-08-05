@@ -1,12 +1,41 @@
 /**
  * 백엔드의 LocalDateTime 필드에 맞는 오프셋 없는 ISO 문자열을 만든다.
  * Date#toISOString()은 Z를 붙이므로 comeEnableAt/comeableDate에 사용하면 400이 발생한다.
+ *
+ * 서버 LocalDateTime = UTC 벽시계다. 백엔드 JVM이 UTC로 뜨기 때문에
+ * 오프셋 없는 문자열은 그대로 UTC 시각으로 해석·저장되고, 조회 시에도 UTC 벽시계로 내려온다
+ * (parseServerDate가 접미사 'Z'를 붙여 파싱하는 근거와 동일하다).
+ * 따라서 기기 로컬 벽시계를 그대로 보내면 KST 기준 9시간이 밀린 값이 저장된다.
+ * 반드시 UTC 컴포넌트(getUTC*)로 직렬화한다.
  */
 export function formatApiLocalDateTime(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(
+    date.getUTCHours(),
+  )}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+}
+
+/**
+ * '캘린더 날짜' 의미(입주일 등)를 가진 로컬 자정 Date를 같은 날짜의 UTC 자정으로 옮긴다.
+ * 서버 LocalDateTime이 UTC 벽시계이므로, 이 변환 없이 보내면 KST 기준 하루가 밀린다
+ * (2026-08-10 00:00 KST → 2026-08-09T15:00 저장).
+ */
+export function localCalendarDateToUtc(date: Date): Date {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+}
+
+/** 캘린더 날짜(로컬 자정)를 서버 LocalDateTime 문자열로 직렬화한다. 결과는 항상 T00:00:00. */
+export function formatApiCalendarDate(date: Date): string {
+  return formatApiLocalDateTime(localCalendarDateToUtc(date));
+}
+
+/**
+ * 서버가 UTC 자정으로 저장한 캘린더 날짜를 기기 로컬 자정 Date로 되돌린다.
+ * 폼 프리필/캘린더 위젯은 로컬 컴포넌트(getFullYear 등)를 쓰므로,
+ * 이 변환을 거쳐야 기기 시간대와 무관하게 같은 날짜가 보인다.
+ */
+export function serverCalendarDateToLocal(date: Date): Date {
+  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;

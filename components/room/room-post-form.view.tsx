@@ -23,6 +23,8 @@ export type RoomPostFormViewProps = UseRoomPostFormReturn & {
 export function RoomPostFormView({
   draft,
   canSubmit,
+  depositError,
+  rentError,
   photoCount,
   selectingPhotos,
   bottomPadding,
@@ -124,11 +126,13 @@ export function RoomPostFormView({
             <View className="flex-1">
               <Field label="보증금" badge={mode === 'edit' ? '프로필 값' : undefined}>
                 <NumberInput value={draft.deposit} onChange={setDeposit} placeholder="1,000만" />
+                <FieldError message={depositError} />
               </Field>
             </View>
             <View className="flex-1">
               <Field label="월세" badge={mode === 'edit' ? '프로필 값' : undefined}>
                 <NumberInput value={draft.rent} onChange={setRent} placeholder="55만" />
+                <FieldError message={rentError} />
               </Field>
             </View>
           </View>
@@ -175,10 +179,7 @@ export function RoomPostFormView({
         </Section>
 
         <Section title="방 위치" badge={mode === 'edit' ? '프로필 값' : undefined}>
-          <RegionSelectButton
-            selected={selectedRegion}
-            onPress={() => setRegionSheetOpen(true)}
-          />
+          <RegionSelectButton selected={selectedRegion} onPress={() => setRegionSheetOpen(true)} />
         </Section>
 
         <Section title="입주 가능 시기" badge={mode === 'edit' ? '프로필 값' : undefined}>
@@ -482,6 +483,12 @@ function Field({ label, badge, children }: { label: string; badge?: string; chil
       {children}
     </View>
   );
+}
+
+/** 서버 상한 초과 등 필드 단위 인라인 안내. */
+export function FieldError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <Text className="text-xs text-[#E5484D]">{message}</Text>;
 }
 
 function NumberInput({

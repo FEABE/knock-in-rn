@@ -12,6 +12,7 @@ import {
 import type { Region, RoomType } from '@/lib/onboarding';
 
 import {
+  depositErrorMessage,
   draftToValues,
   emptyRoomFormDraft,
   formatDraftDate,
@@ -22,11 +23,13 @@ import {
   isRoomFormDraftValid,
   isRoomTitleLongEnough,
   isRoomTypeSectionValid,
+  monthlyRentErrorMessage,
   parseDate,
   type RoomFormDraft,
   type RoomFormValues,
   MAX_ROOM_DESCRIPTION_LENGTH,
   MAX_ROOM_PHOTOS,
+  MAX_ROOM_PHOTOS_MESSAGE,
   MIN_ROOM_TITLE_LENGTH,
 } from './room-post-form.model';
 
@@ -66,6 +69,10 @@ export type UseRoomPostFormProps = {
 export type UseRoomPostFormReturn = {
   draft: RoomFormDraft;
   canSubmit: boolean;
+  /** 보증금 상한(서버 정책) 초과 안내. 없으면 null. */
+  depositError: string | null;
+  /** 월세 상한(서버 정책) 초과 안내. 없으면 null. */
+  rentError: string | null;
   photoCount: number;
   selectingPhotos: boolean;
   bottomPadding: number;
@@ -158,6 +165,11 @@ export function useRoomPostForm({
       showToast(TITLE_TOAST_MESSAGE);
       return;
     }
+    const budgetError = depositErrorMessage(draft) ?? monthlyRentErrorMessage(draft);
+    if (budgetError) {
+      showToast(budgetError);
+      return;
+    }
     const values = draftToValues(draft);
     if (values) onSubmit(values);
   };
@@ -165,6 +177,8 @@ export function useRoomPostForm({
   return {
     draft,
     canSubmit,
+    depositError: depositErrorMessage(draft),
+    rentError: monthlyRentErrorMessage(draft),
     photoCount: draft.imageUris.length,
     selectingPhotos,
     bottomPadding,
@@ -207,8 +221,13 @@ export function useRoomPostForm({
     selectMoveInDate: (next) => patch({ moveInDate: formatDraftDate(next) }),
     setNegotiable: (next) => patch({ negotiable: next }),
     addPhotos: async () => {
+      // 서버 policy.board.image-max-count=10. 초과분은 애초에 고르지 못하게 막는다.
       const remaining = MAX_ROOM_PHOTOS - draft.imageUris.length;
-      if (remaining <= 0 || selectingPhotos) return;
+      if (selectingPhotos) return;
+      if (remaining <= 0) {
+        showToast(MAX_ROOM_PHOTOS_MESSAGE);
+        return;
+      }
 
       setState((current) => ({ ...current, selectingPhotos: true }));
       try {
@@ -220,6 +239,8 @@ export function useRoomPostForm({
         });
         if (result.canceled) return;
         const nextUris = result.assets.map((asset) => asset.uri).filter(Boolean);
+        // selectionLimit을 무시하는 플랫폼이 있어 잘라낸 경우 사용자에게 알린다.
+        if (nextUris.length > remaining) showToast(MAX_ROOM_PHOTOS_MESSAGE);
         setState((current) => ({
           ...current,
           draft: {
