@@ -80,6 +80,8 @@
 - 약관 및 정책은 계정 설정과 분리하여 최신 UI로 반영해야 합니다.
 - 자주 묻는 질문은 페이지로 이동되지 않습니다. — 코드 확인 결과 goSupportFaq 라우팅, 액션 연결, /support/faq 화면 전부 정상 구현되어 있음. 웹 mock으로 직접 이동해서 정상 렌더링까지 확인, 재현 안 됨
 - (complete) 공지사항 선택 시 상세 페이지로 이동해야 합니다. — 목록 API(GET /users/me/notices)는 애초에 body를 안 내려주는데(코드에서 body:''로 고정), 상세 조회용 GET /bo/notices/{id}(getBoNoticeDetail)는 있었지만 어디서도 쓰이지 않고 있었음. app/support/notice/[id].tsx 라우트와 notice-detail-screen 신설, 목록 각 항목을 Pressable로 바꿔 상세로 이동하도록 함. 웹 mock으로 목록→상세 이동, 본문 표시까지 확인
+- (complete) [김종민, 26.08.05] 로그인하지 않고 앱 재시작 시 "사용자"라는 미상의 유저로 로그인되어 있어서 모든 페이지 접근 가능해짐 — `lib/domain/session.tsx`에 `EXPO_PUBLIC_E2E_ACCESS_TOKEN` 환경변수만 있으면 `__DEV__` 빌드에서 로그인 버튼 없이 그 토큰으로 자동 로그인되는 코드가 있었음. 저장소에 E2E 자동화 테스트 프레임워크(Detox/Maestro 등)가 전혀 없고 `.env.example`에도 문서화 안 돼있어 예전에 개인 로컬 테스트용으로 추가되고 방치된 백도어로 판단, 해당 분기 전체 삭제. 실제로 이 환경변수가 QA 빌드에 어떻게 들어갔는지(빌드 스크립트/공유 .env 등)는 확인 필요
+- (complete) [한지수 댓글] 토글도 뭔가 이상함 (원이 중심 쪽으로 치우침) — mypage-home-screen.view.tsx의 Switch가 `justify-center` 트랙 안에서 `ml-5`/`ml-0` 마진으로 위치를 잡고 있어서, 중앙 정렬 기준으로 밀리는 바람에 끝까지 안 붙었음. `items-start`/`items-end`로 정렬 기준을 바꿔 수정
 
 ## 앱 셸 / 네이티브
 - (complete) iOS, Android 둘 다 OS 헤더 영역(시간·배터리)이 투명 처리가 아니라 흰색으로 덮여서 안 보임 — app/_layout.tsx의 `<StatusBar style="auto" />`가 시스템 다크모드 설정 시 흰색 아이콘을 그리는데, 앱 화면은 전부 밝은 배경(bg-white)만 써서 흰 배경 위에 흰 아이콘이 렌더되어 보이지 않던 문제. `style="dark"`로 고정. 네이티브 전용 이슈라 iOS/Android 실기기·시뮬레이터 확인은 이 세션에서 불가
