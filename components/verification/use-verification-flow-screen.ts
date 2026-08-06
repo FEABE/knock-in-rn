@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   confirmVerificationCode,
@@ -59,6 +60,7 @@ export type UseVerificationFlowScreenReturn = UseVerificationFlowScreenProps & {
 export function useVerificationFlowScreen(
   props: UseVerificationFlowScreenProps,
 ): UseVerificationFlowScreenReturn {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<VerificationFlowState>({
     step: 'entry',
     email: props.defaultEmail,
@@ -224,6 +226,9 @@ export function useVerificationFlowScreen(
       return;
     }
     if (step === 'complete') {
+      // 인증 홈 화면은 스택에 남아있는 채로 뒤로가기되므로 리마운트되지 않는다.
+      // 캐시를 무효화해두지 않으면 처음 진입 때 받아온 '미인증' 상태가 그대로 남는다.
+      await queryClient.invalidateQueries({ queryKey: ['profile', 'verifications'] });
       props.onDone();
       return;
     }
