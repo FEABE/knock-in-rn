@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import {
@@ -7,6 +7,123 @@ import {
   type LifestyleChoiceGroup,
   type LifestyleScaleOption,
 } from '@/lib/api';
+
+/**
+ * 관리(마이페이지) 화면 공통 헤더.
+ * 저장 버튼은 시안대로 마지막 단계에서만 파랑(활성)이고 그 전에는 회색(비활성)이다.
+ */
+export function QuestionFlowHeader({
+  title,
+  onBack,
+  onSave,
+  saveEnabled,
+}: {
+  title: string;
+  onBack: () => void;
+  onSave: () => void;
+  saveEnabled: boolean;
+}) {
+  return (
+    <View className="h-14 flex-row items-center px-3">
+      <Pressable
+        onPress={onBack}
+        accessibilityRole="button"
+        accessibilityLabel="이전으로"
+        className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
+      >
+        <Ionicons name="chevron-back" size={24} color="#696976" />
+      </Pressable>
+      <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
+        {title}
+      </Text>
+      <Pressable
+        onPress={onSave}
+        disabled={!saveEnabled}
+        accessibilityRole="button"
+        accessibilityLabel="저장"
+        accessibilityState={{ disabled: !saveEnabled }}
+        className="ml-auto px-2 py-2 active:opacity-60"
+      >
+        <Text
+          className={`text-[15px] ${
+            saveEnabled ? 'font-semibold text-[#256EF4]' : 'font-medium text-[#AAAABA]'
+          }`}
+        >
+          저장
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export type QuestionFlowTab = {
+  key: string;
+  label: string;
+};
+
+/**
+ * 문항 탭 스트립. 시안대로 왼쪽부터 시작하는 가로 스크롤이고,
+ * 선택된 탭이 화면 밖이면 자동으로 스크롤해 보여준다.
+ */
+export function QuestionFlowTabStrip({
+  tabs,
+  activeIndex,
+  onSelect,
+}: {
+  tabs: QuestionFlowTab[];
+  activeIndex: number;
+  onSelect?: (index: number) => void;
+}) {
+  const scrollRef = useRef<ScrollView>(null);
+  const offsets = useRef<number[]>([]);
+
+  useEffect(() => {
+    const x = offsets.current[activeIndex];
+    if (x === undefined) return;
+    scrollRef.current?.scrollTo({ x: Math.max(0, x - 16), animated: true });
+  }, [activeIndex, tabs.length]);
+
+  return (
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      className="max-h-[58px] border-b border-[#ECECF3]"
+      contentContainerClassName="px-4"
+    >
+      {tabs.map((tab, index) => {
+        const active = index === activeIndex;
+        return (
+          <Pressable
+            key={tab.key}
+            disabled={!onSelect}
+            onPress={() => onSelect?.(index)}
+            onLayout={(event) => {
+              offsets.current[index] = event.nativeEvent.layout.x;
+            }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            className={`h-[58px] justify-center border-b-2 pr-6 ${
+              active ? 'border-[#256EF4]' : 'border-transparent'
+            }`}
+          >
+            <Text className={`text-xs ${active ? 'font-bold text-[#17171B]' : 'text-[#AAAABA]'}`}>
+              {String(index + 1).padStart(2, '0')}
+            </Text>
+            <Text
+              numberOfLines={1}
+              className={`mt-1 text-[13px] ${
+                active ? 'font-semibold text-[#17171B]' : 'text-[#AAAABA]'
+              }`}
+            >
+              {tab.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
 
 type LifestyleQuestionFlowProps = {
   title: string;
@@ -23,6 +140,10 @@ type LifestyleQuestionFlowProps = {
   onChoiceChange: (key: string, value: string) => void;
   onBack: () => void;
   onSave: () => void;
+  /** 선호 룸메이트 흐름에서 문항 뒤에 붙는 '우선순위' 탭 라벨. */
+  trailingTabLabel?: string;
+  /** 위 탭을 눌렀을 때(= 다음 단계로 이동). */
+  onTrailingTab?: () => void;
 };
 
 export function LifestyleQuestionFlow({
@@ -36,64 +157,48 @@ export function LifestyleQuestionFlow({
   onChoiceChange,
   onBack,
   onSave,
+  trailingTabLabel,
+  onTrailingTab,
 }: LifestyleQuestionFlowProps) {
   const questions = useMemo(
     () => lifestylePatternQuestions({ scaleOptions, choiceGroups }),
     [choiceGroups, scaleOptions],
   );
   const [questionIndex, setQuestionIndex] = useState(0);
-  const question = questions[questionIndex];
+  const safeIndex = Math.min(questionIndex, Math.max(0, questions.length - 1));
+  const question = questions[safeIndex];
+  const tabs = useMemo<QuestionFlowTab[]>(
+    () => [
+      ...questions.map((item) => ({
+        key: `${item.kind}-${item.patternId}`,
+        label: item.label,
+      })),
+      ...(trailingTabLabel ? [{ key: 'trailing', label: trailingTabLabel }] : []),
+    ],
+    [questions, trailingTabLabel],
+  );
+
+  const answered = question
+    ? question.kind === 'scale'
+      ? scales[question.key] !== undefined
+      : Boolean(choiceValues[question.key])
+    : false;
+  // 시안 기준: 마지막 문항까지 답해야 저장(또는 다음 단계)이 열린다.
+  const canSave = questions.length > 0 && safeIndex === questions.length - 1 && answered;
+
+  const selectTab = (index: number) => {
+    if (index >= questions.length) {
+      onTrailingTab?.();
+      return;
+    }
+    setQuestionIndex(index);
+  };
 
   return (
     <View className="flex-1 bg-white">
-      <View className="h-14 flex-row items-center px-3">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="이전으로"
-          className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
-        >
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
-        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
-          {title}
-        </Text>
-        <Pressable onPress={onSave} className="ml-auto px-2 py-2 active:opacity-60">
-          <Text className="text-[15px] font-medium text-[#696976]">저장</Text>
-        </Pressable>
-      </View>
+      <QuestionFlowHeader title={title} onBack={onBack} onSave={onSave} saveEnabled={canSave} />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="max-h-[58px] border-b border-[#ECECF3]"
-        contentContainerClassName="px-4"
-      >
-        {questions.map((item, index) => {
-          const selected = index === questionIndex;
-          return (
-            <Pressable
-              key={`${item.kind}-${item.patternId}`}
-              onPress={() => setQuestionIndex(index)}
-              className={`min-w-[74px] items-center justify-center border-b-2 px-2 ${
-                selected ? 'border-[#256EF4]' : 'border-transparent'
-              }`}
-            >
-              <Text
-                className={`text-xs font-semibold ${selected ? 'text-[#256EF4]' : 'text-[#AAAABA]'}`}
-              >
-                {String(index + 1).padStart(2, '0')}
-              </Text>
-              <Text
-                numberOfLines={1}
-                className={`mt-0.5 text-[12px] ${selected ? 'text-[#242429]' : 'text-[#AAAABA]'}`}
-              >
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <QuestionFlowTabStrip tabs={tabs} activeIndex={safeIndex} onSelect={selectTab} />
 
       {question ? (
         <ScrollView
@@ -128,6 +233,8 @@ export function LifestyleQuestionFlow({
                     } else {
                       onChoiceChange(question.key, String(option.value));
                     }
+                    // 하단 이전/다음 버튼이 없는 시안이라 선택하면 다음 문항으로 넘어간다.
+                    if (safeIndex < questions.length - 1) setQuestionIndex(safeIndex + 1);
                   }}
                   className={`h-[52px] justify-center rounded-lg border px-5 ${
                     selected
@@ -148,27 +255,6 @@ export function LifestyleQuestionFlow({
                 </Pressable>
               );
             })}
-          </View>
-
-          <View className="mt-7 flex-row justify-between">
-            <Pressable
-              disabled={questionIndex === 0}
-              onPress={() => setQuestionIndex((current) => Math.max(0, current - 1))}
-              className="h-10 flex-row items-center gap-1 px-2 disabled:opacity-30"
-            >
-              <Ionicons name="chevron-back" size={18} color="#696976" />
-              <Text className="text-sm text-[#696976]">이전</Text>
-            </Pressable>
-            <Pressable
-              disabled={questionIndex === questions.length - 1}
-              onPress={() =>
-                setQuestionIndex((current) => Math.min(questions.length - 1, current + 1))
-              }
-              className="h-10 flex-row items-center gap-1 px-2 disabled:opacity-30"
-            >
-              <Text className="text-sm text-[#696976]">다음</Text>
-              <Ionicons name="chevron-forward" size={18} color="#696976" />
-            </Pressable>
           </View>
         </ScrollView>
       ) : (

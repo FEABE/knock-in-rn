@@ -521,7 +521,9 @@ function normalizeBoardListItem(item: BoardListItemSwagger): BoardListItem {
   const roomType = firstValue(item.roomTypes);
   const region = item.regionFullName;
   const writer = item.memberName;
-  const createAt = item.comeableDate;
+  // 작성일이다. comeableDate(입주 가능일)를 넣으면 목록의 "최신순" 정렬과
+  // "N시간 전" 라벨이 입주일 기준으로 뒤집혀, 방금 등록한 글이 목록 아래로 밀린다.
+  const createAt = item.createdAt;
   const viewer = item.hits;
   return {
     ...item,

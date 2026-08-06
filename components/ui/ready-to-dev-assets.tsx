@@ -5,6 +5,8 @@ import { Text, View } from 'react-native';
 type RoomTypeArtworkProps = {
   label: string;
   size?: number;
+  /** 서버 메타 image 필드(이모지 문자열 또는 절대 URL). 렌더 불가한 값이면 로컬 아트워크로 폴백한다. */
+  image?: string | null;
 };
 
 type ArtworkProps = {
@@ -188,7 +190,10 @@ function priorityArtworkKey(label: string): PriorityArtworkKey {
  * Ready-to-Dev 와이어프레임의 방 형태 이미지는 원본 안쪽 여백까지 디자인에 포함되어 있어서,
  * Figma에 지정된 이미지 크롭 비율을 그대로 적용한다.
  */
-export function RoomTypeArtwork({ label, size = 66 }: RoomTypeArtworkProps) {
+export function RoomTypeArtwork({ label, image, size = 66 }: RoomTypeArtworkProps) {
+  const remote = serverArtwork(image);
+  if (remote) return <ServerArtworkView artwork={remote} size={size} />;
+
   const artwork = ROOM_TYPE_ARTWORK[roomTypeArtworkKey(label)];
   const [boxWidth, boxHeight] = artwork.box;
   const [widthRatio, heightRatio, leftRatio, topRatio] = artwork.image;
@@ -316,6 +321,22 @@ export function OnboardingCompleteArtwork({ size = 256 }: ArtworkProps) {
       source={require('../../assets/images/figma-ready/onboarding-complete.png')}
       contentFit="cover"
       style={{ width: size, height: size }}
+    />
+  );
+}
+
+/**
+ * Figma "기본 프로필"(3748:80380) 에셋. 프로필 사진이 없을 때 쓰는 아바타 placeholder다.
+ * 실루엣 하단이 원 밖으로 살짝 넘치는 원본 비율(80 x 81.4339)을 그대로 유지한다.
+ */
+const DEFAULT_PROFILE_ASPECT = 81.4339 / 80;
+
+export function DefaultProfileArtwork({ size = 80 }: ArtworkProps) {
+  return (
+    <Image
+      source={require('../../assets/images/figma-ready/default-profile.png')}
+      contentFit="contain"
+      style={{ width: size, height: size * DEFAULT_PROFILE_ASPECT }}
     />
   );
 }

@@ -55,8 +55,8 @@ export function useMyPageProfileSummary(enabled = true): AsyncState<MyPageProfil
         (state.data.type === 'SEEKER'
           ? '방 찾는 중'
           : state.data.type === 'OFFER'
-            ? '방 있어요'
-            : '방 정보 없음'),
+            ? '방 있음'
+            : '방 없음'),
       regionLabel: regionLabel || '-',
     };
   }, [state.data]);

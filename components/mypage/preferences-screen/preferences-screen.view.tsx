@@ -1,11 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRef } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LifestyleIntroArtwork, PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 
-import { LifestyleQuestionFlow } from '../lifestyle-question-flow';
+import {
+  LifestyleQuestionFlow,
+  QuestionFlowHeader,
+  QuestionFlowTabStrip,
+} from '../lifestyle-question-flow';
 import type { UsePreferencesScreenReturn } from './use-preferences-screen';
 
 export type PreferencesScreenViewProps = UsePreferencesScreenReturn;
@@ -35,6 +37,8 @@ export function PreferencesScreenView(props: PreferencesScreenViewProps) {
           onChoiceChange={props.setChoice}
           onBack={props.goBackStep}
           onSave={props.goPriorityStep}
+          trailingTabLabel="우선순위"
+          onTrailingTab={props.goPriorityStep}
         />
       </SafeAreaView>
     );
@@ -105,60 +109,26 @@ function PriorityStep({
   formBottomPadding,
 }: PreferencesScreenViewProps) {
   // 탭 스트립도 서버 문항 목록에서 만든다(하드코딩 06~09 제거). 마지막 '우선순위'가 현재 단계.
-  const tabs = [...questionLabels, '우선순위'];
-  const tabStrip = useRef<ScrollView>(null);
+  const tabs = [...questionLabels, '우선순위'].map((label, index) => ({
+    key: `${index}-${label}`,
+    label,
+  }));
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="h-14 flex-row items-center px-3">
-        <Pressable
-          onPress={goBackStep}
-          accessibilityRole="button"
-          accessibilityLabel="이전으로"
-          className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
-        >
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
-        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
-          선호 룸메이트 관리
-        </Text>
-        <Pressable onPress={() => void save()} className="ml-auto px-2 py-2 active:opacity-60">
-          <Text className="text-[15px] font-medium text-[#696976]">저장</Text>
-        </Pressable>
-      </View>
+      <QuestionFlowHeader
+        title="선호 룸메이트 관리"
+        onBack={goBackStep}
+        onSave={() => void save()}
+        saveEnabled={selected.length > 0}
+      />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        ref={tabStrip}
-        onContentSizeChange={() => tabStrip.current?.scrollToEnd({ animated: false })}
-        className="max-h-[58px] border-b border-[#ECECF3]"
-        contentContainerClassName="px-0"
-      >
-        {tabs.map((label, index) => {
-          const active = index === tabs.length - 1;
-          const number = String(index + 1).padStart(2, '0');
-          return (
-            <View
-              key={`${number}-${label}`}
-              className={`h-[58px] min-w-[86px] justify-center border-b-2 px-4 ${
-                active ? 'border-[#256EF4]' : 'border-transparent'
-              }`}
-            >
-              <Text
-                className={`text-xs ${active ? 'font-semibold text-[#242429]' : 'text-[#AAAABA]'}`}
-              >
-                {number}
-              </Text>
-              <Text
-                numberOfLines={1}
-                className={`mt-0.5 text-[12px] ${active ? 'font-medium text-[#242429]' : 'text-[#AAAABA]'}`}
-              >
-                {label}
-              </Text>
-            </View>
-          );
-        })}
-      </ScrollView>
+      <QuestionFlowTabStrip
+        tabs={tabs}
+        activeIndex={tabs.length - 1}
+        onSelect={(index) => {
+          if (index < tabs.length - 1) goBackStep();
+        }}
+      />
 
       <ScrollView
         className="flex-1"

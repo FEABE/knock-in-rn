@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
@@ -7,6 +7,10 @@ import type { RoommateMatchCardModel } from '@/lib/api';
 
 /** 리스트 셀이 마운트될 때마다 새로 만들지 않도록 모듈 상수로 공유한다. */
 const PROFILE_IMAGE_STYLE = { width: 48, height: 48, borderRadius: 24 } as const;
+
+/** 인증 뱃지 색상 (Figma: SealCheck 초록 / BagSimple 파랑). */
+const AUTH_BADGE_GREEN = '#3FA654';
+const AUTH_BADGE_BLUE = '#4C87F6';
 
 export type RoommateFindCardProps = {
   match: RoommateMatchCardModel;
@@ -39,13 +43,32 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
         <View className="flex-1 gap-1.5 pt-0.5">
           <View className="flex-row items-center gap-1">
             <Text className="text-sm font-bold text-[#17171B]">{match.name}</Text>
-            <Ionicons name="checkmark-circle" size={14} color="#24A96B" />
-            <Ionicons name="bag-handle" size={13} color="#5B8EF6" />
+            {match.isAuthStudent ? (
+              <MaterialIcons name="verified" size={14} color={AUTH_BADGE_GREEN} />
+            ) : null}
+            {match.isAuthEmployee ? (
+              <MaterialIcons name="work" size={13} color={AUTH_BADGE_BLUE} />
+            ) : null}
           </View>
           <View className="flex-row gap-1">
             {match.age || match.genderLabel ? (
-              <View className="rounded-sm bg-[#FFF1ED] px-1.5 py-0.5">
-                <Text className="text-[10px] text-[#F15B4A]">
+              <View
+                className={`flex-row items-center gap-0.5 rounded-sm px-1.5 py-0.5 ${
+                  match.gender === 'male' ? 'bg-[#E7F4FE]' : 'bg-[#FDEFEC]'
+                }`}
+              >
+                {match.gender ? (
+                  <Ionicons
+                    name={match.gender === 'male' ? 'male' : 'female'}
+                    size={10}
+                    color={match.gender === 'male' ? '#4C87F6' : '#DE3412'}
+                  />
+                ) : null}
+                <Text
+                  className={`text-[10px] ${
+                    match.gender === 'male' ? 'text-[#4C87F6]' : 'text-[#DE3412]'
+                  }`}
+                >
                   {[match.age ? `${match.age}세` : null, match.genderLabel]
                     .filter(Boolean)
                     .join(' · ')}

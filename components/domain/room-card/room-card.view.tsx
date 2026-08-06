@@ -10,6 +10,12 @@ const BRAND = '#256EF4';
 const THUMBNAIL_STYLE = { width: '100%', height: 165 } as const;
 const AUTHOR_AVATAR_STYLE = { width: 24, height: 24, borderRadius: 12 } as const;
 
+/**
+ * 아이콘 폰트의 비대칭 세로 여백을 제거해 원형 배경 정중앙에 오도록 한다.
+ * (Android 기본 includeFontPadding 때문에 글리프가 위로 치우쳐 보인다.)
+ */
+const ICON_GLYPH_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
+
 export type RoomCardViewProps = UseRoomCardReturn & {
   className?: string;
 };
@@ -39,9 +45,7 @@ export function RoomCardView({
             transition={150}
           />
         ) : (
-          <View className="h-[165px] w-full items-center justify-center bg-neutral-100">
-            <Ionicons name="image-outline" size={30} color="#AAAABA" />
-          </View>
+          <RoomThumbnailPlaceholder />
         )}
 
         <View className="absolute left-2.5 top-3 flex-row gap-1">
@@ -59,6 +63,7 @@ export function RoomCardView({
             name={liked ? 'heart' : 'heart-outline'}
             size={25}
             color={liked ? BRAND : 'white'}
+            style={ICON_GLYPH_STYLE}
           />
         </Pressable>
       </View>
@@ -105,6 +110,18 @@ export function RoomCardView({
         </View>
       </View>
     </Pressable>
+  );
+}
+
+/**
+ * 썸네일이 없을 때의 기본 이미지 — 디자인 기준 연회색 배경 + 집 아이콘 플레이스홀더.
+ * 카드/검색 결과 카드가 같은 모양을 쓰도록 공유한다.
+ */
+export function RoomThumbnailPlaceholder() {
+  return (
+    <View className="h-[165px] w-full items-center justify-center bg-[#F6F6FA]">
+      <Ionicons name="home" size={44} color="#DADAE8" style={ICON_GLYPH_STYLE} />
+    </View>
   );
 }
 

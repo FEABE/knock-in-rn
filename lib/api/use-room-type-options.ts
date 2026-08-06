@@ -8,6 +8,8 @@ import { useApi } from './use-async';
 export type RoomTypeOption = {
   value: RoomType;
   label: string;
+  /** 서버 메타 image (절대 URL 또는 이모지). 없으면 로컬 아트워크 폴백. */
+  image?: string | null;
 };
 
 export function useRoomTypeOptions() {
@@ -18,10 +20,12 @@ export function useRoomTypeOptions() {
     () =>
       (state.data?.roomType ?? [])
         .flatMap((item) =>
-          item.id === undefined || !item.name ? [] : [{ id: item.id, name: item.name }],
+          item.id === undefined || !item.name
+            ? []
+            : [{ id: item.id, name: item.name, image: item.image ?? null }],
         )
         .sort((a, b) => a.id - b.id)
-        .map((item) => ({ value: String(item.id), label: item.name })),
+        .map((item) => ({ value: String(item.id), label: item.name, image: item.image })),
     [state.data?.roomType],
   );
 

@@ -83,6 +83,13 @@ export function ReadyScreenHeader({
   );
 }
 
+/**
+ * 검색 입력의 아이콘/플레이스홀더 세로 가운데 정렬용.
+ * TextInput 에 lineHeight 를 주면 Android 에서 글자가 위로 붙어 보이므로
+ * lineHeight 대신 입력 높이를 컨테이너와 맞추고 폰트 패딩을 끈다.
+ */
+const SEARCH_GLYPH_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
+
 export function ReadySearchHeader({
   value,
   onChangeText,
@@ -114,7 +121,9 @@ export function ReadySearchHeader({
         <Ionicons name="chevron-back" size={24} color="#696976" />
       </Pressable>
       <View className="h-[38px] flex-1 flex-row items-center gap-1 rounded bg-[#F6F6FA] px-3">
-        {value.length === 0 ? <Ionicons name="search-outline" size={17} color="#AAAABA" /> : null}
+        {value.length === 0 ? (
+          <Ionicons name="search-outline" size={17} color="#AAAABA" style={SEARCH_GLYPH_STYLE} />
+        ) : null}
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -123,7 +132,8 @@ export function ReadySearchHeader({
           placeholderTextColor="#AAAABA"
           returnKeyType="search"
           autoFocus={autoFocus}
-          className="flex-1 p-0 text-sm leading-[21px] text-[#17171B]"
+          style={SEARCH_GLYPH_STYLE}
+          className="h-[38px] flex-1 p-0 text-sm text-[#17171B]"
         />
         {value.length > 0 ? (
           <Pressable
@@ -197,6 +207,7 @@ export function ReadyTabs<T extends string>({
   );
 }
 
+/** 적용(selected) 상태 배경은 Primary/40(#4C87F6) + 흰 글자 — 디자인 3071:15963 기준. */
 export function ReadyFilterChip({
   label,
   selected = false,
@@ -214,7 +225,7 @@ export function ReadyFilterChip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       className={`h-8 flex-row items-center gap-1 rounded-full border px-3 ${
-        selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-[#DADAE8] bg-white'
+        selected ? 'border-[#4C87F6] bg-[#4C87F6]' : 'border-[#DADAE8] bg-white'
       }`}
     >
       <Text className={`text-[13px] font-medium ${selected ? 'text-white' : 'text-[#696976]'}`}>

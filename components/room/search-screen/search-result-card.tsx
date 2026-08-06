@@ -2,9 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
-import { useRoomCard, type UseRoomCardProps } from '@/components/domain';
+import { RoomThumbnailPlaceholder, useRoomCard, type UseRoomCardProps } from '@/components/domain';
 
 const BRAND = '#256EF4';
+
+/** 하트 글리프를 원형 배경 정중앙에 맞추기 위한 폰트 패딩 제거. */
+const ICON_GLYPH_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
 
 export type SearchResultCardProps = UseRoomCardProps & {
   /** 제목에서 파란색으로 강조할 검색 키워드. */
@@ -41,9 +44,7 @@ export function SearchResultCard({ keyword, ...hookProps }: SearchResultCardProp
             transition={150}
           />
         ) : (
-          <View className="h-[165px] w-full items-center justify-center bg-neutral-100">
-            <Ionicons name="image-outline" size={30} color="#AAAABA" />
-          </View>
+          <RoomThumbnailPlaceholder />
         )}
 
         <View className="absolute left-2.5 top-3 flex-row gap-1">
@@ -67,6 +68,7 @@ export function SearchResultCard({ keyword, ...hookProps }: SearchResultCardProp
             name={liked ? 'heart' : 'heart-outline'}
             size={25}
             color={liked ? BRAND : 'white'}
+            style={ICON_GLYPH_STYLE}
           />
         </Pressable>
       </View>

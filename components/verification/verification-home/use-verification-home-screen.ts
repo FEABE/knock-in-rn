@@ -4,11 +4,7 @@ import { useMemo } from 'react';
 
 import { getVerifications, useApi } from '@/lib/api';
 import { useSession } from '@/lib/domain';
-import {
-  goKakaoLogin,
-  goVerificationCompany,
-  goVerificationSchool,
-} from '@/lib/navigation/routes';
+import { goKakaoLogin, goVerificationCompany, goVerificationSchool } from '@/lib/navigation/routes';
 
 export type VerificationHomeCard = {
   id: 'school' | 'company';

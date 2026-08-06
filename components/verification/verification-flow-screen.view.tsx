@@ -96,15 +96,18 @@ export function VerificationFlowScreenView({
             <View className="gap-2">
               <FieldLabel label="인증 코드" />
               <View className="flex-row items-center border-b border-neutral-300 py-2">
+                {/* 코드가 영숫자 혼합이라 number-pad/maxLength를 두지 않는다(복사·붙여넣기 보존). */}
                 <TextField
                   value={code}
                   onChangeValue={setCode}
-                  placeholder="123456"
-                  keyboardType="number-pad"
-                  maxLength={6}
+                  placeholder="인증 코드 입력"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
                   className="flex-1 text-base text-neutral-900"
                 />
-                <Text className="text-sm text-[#256EF4]">{timerLabel}</Text>
+                <Text className="text-sm font-semibold text-[#D63D4A]">{timerLabel}</Text>
               </View>
             </View>
 
@@ -238,13 +241,19 @@ function PrimaryButton({
       onPress={onPress}
       disabled={loading || disabled}
       className={`h-12 items-center justify-center rounded-lg ${
-        loading || !disabled ? 'bg-[#256EF4] active:opacity-90' : 'bg-neutral-300'
+        loading || !disabled ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
       }`}
     >
       {loading ? (
         <ActivityIndicator color="#ffffff" />
       ) : (
-        <Text className="text-base font-semibold text-white">{label}</Text>
+        <Text
+          className={`text-base font-semibold ${
+            loading || !disabled ? 'text-white' : 'text-[#AAAABA]'
+          }`}
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
   );

@@ -3,10 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
-import {
-  ReadyErrorState,
-  ReadyLoadingState,
-} from '@/components/ui/ready-to-dev-feedback';
+import { ReadyErrorState, ReadyLoadingState } from '@/components/ui/ready-to-dev-feedback';
 
 import type {
   UseVerificationHomeScreenReturn,

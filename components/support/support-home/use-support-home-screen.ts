@@ -1,99 +1,55 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useState } from 'react';
 
-import { useSupportCounts, useSupportFaqs, type SupportFaqItem } from '@/lib/api';
+import { useSupportFaqs, type SupportFaqItem } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
-import {
-  goSupportFaq,
-  goSupportInquiries,
-  goSupportInquiryNew,
-  goSupportNotice,
-} from '@/lib/navigation/routes';
-
-export type SupportHomeAction = {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  description: string;
-  onPress: () => void;
-};
+import { goSupportInquiries, goSupportInquiryNew } from '@/lib/navigation/routes';
 
 export type UseSupportHomeScreenReturn = {
-  actions: SupportHomeAction[];
   faqs: SupportFaqItem[];
   faqsLoading: boolean;
   faqsError: string | null;
   retryFaqs: () => void;
+  /** 펼쳐진 FAQ id 집합. 디자인(3952:51504)에서 여러 항목이 동시에 열려 있다. */
+  openFaqIds: string[];
+  toggleFaq: (id: string) => void;
   operatingHoursLabel: string;
+  onInquiryNew: () => void;
+  onInquiryList: () => void;
 };
 
 export function useSupportHomeScreen(): UseSupportHomeScreenReturn {
   const router = useRouter();
-  const { session, requireLogin } = useRequireLogin();
-  const { data: counts, loading, error: countsError } = useSupportCounts(Boolean(session));
+  const { requireLogin } = useRequireLogin();
   const {
     data: faqs,
     loading: faqsLoading,
     error: faqsError,
     reload: retryFaqs,
   } = useSupportFaqs();
+  const [openFaqIds, setOpenFaqIds] = useState<string[]>([]);
 
-  const actions = useMemo<SupportHomeAction[]>(
-    () => [
-      {
-        icon: 'help-circle-outline',
-        title: '자주 묻는 질문',
-        description: loading
-          ? '불러오는 중'
-          : countsError
-            ? '불러오기 실패'
-            : `${counts?.faqCount ?? 0}개 질문`,
-        onPress: () => goSupportFaq(router),
-      },
-      {
-        icon: 'chatbox-ellipses-outline',
-        title: '문의내역',
-        description: loading
-          ? '불러오는 중'
-          : countsError
-            ? '불러오기 실패'
-            : `${counts?.inquiryCount ?? 0}건의 문의`,
-        onPress: () =>
-          requireLogin(() => goSupportInquiries(router), {
-            title: '로그인 필요',
-            message: '문의내역은 로그인 후 확인할 수 있어요.',
-          }),
-      },
-      {
-        icon: 'create-outline',
-        title: '문의하기',
-        description: '새 문의를 작성해요',
-        onPress: () =>
-          requireLogin(() => goSupportInquiryNew(router), {
-            title: '로그인 필요',
-            message: '문의 접수는 로그인 후 이용할 수 있어요.',
-          }),
-      },
-      {
-        icon: 'megaphone-outline',
-        title: '공지사항',
-        description: '새로운 소식을 확인해요',
-        onPress: () =>
-          requireLogin(() => goSupportNotice(router), {
-            title: '로그인 필요',
-            message: '공지사항은 로그인 후 확인할 수 있어요.',
-          }),
-      },
-    ],
-    [counts?.faqCount, counts?.inquiryCount, countsError, loading, requireLogin, router],
-  );
+  const toggleFaq = useCallback((id: string) => {
+    setOpenFaqIds((prev) => (prev.includes(id) ? prev.filter((it) => it !== id) : [...prev, id]));
+  }, []);
 
   return {
-    actions,
-    faqs: (faqs ?? []).slice(0, 4),
+    faqs: faqs ?? [],
     faqsLoading,
     faqsError,
     retryFaqs,
-    operatingHoursLabel: '평일 10:00 - 18:00 접수된 문의는 순서대로 답변드려요.',
+    openFaqIds,
+    toggleFaq,
+    operatingHoursLabel: '평균 응답 시간은 1~2 영업일이에요',
+    onInquiryNew: () =>
+      requireLogin(() => goSupportInquiryNew(router), {
+        title: '로그인 필요',
+        message: '문의 접수는 로그인 후 이용할 수 있어요.',
+      }),
+    onInquiryList: () =>
+      requireLogin(() => goSupportInquiries(router), {
+        title: '로그인 필요',
+        message: '문의내역은 로그인 후 확인할 수 있어요.',
+      }),
   };
 }

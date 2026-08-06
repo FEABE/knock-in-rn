@@ -769,12 +769,19 @@ function BottomBar({
       {!isOwner ? (
         <Pressable
           onPress={onLike}
-          className="h-12 w-12 items-center justify-center rounded-xl border border-neutral-200"
+          accessibilityRole="button"
+          accessibilityLabel={liked ? '관심 해제' : '관심 등록'}
+          accessibilityState={{ selected: liked }}
+          className={`h-12 w-12 items-center justify-center rounded-xl border ${
+            liked ? 'border-[#256EF4]' : 'border-neutral-200'
+          }`}
         >
+          {/* 선택 시 카드 하트와 동일하게 Primary/50 채움 하트로 표시한다. */}
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
             size={23}
-            color={liked ? '#EF4444' : '#AAAABA'}
+            color={liked ? '#256EF4' : '#AAAABA'}
+            style={{ includeFontPadding: false, textAlignVertical: 'center' }}
           />
         </Pressable>
       ) : null}
