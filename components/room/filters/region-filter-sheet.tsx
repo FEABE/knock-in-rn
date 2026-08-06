@@ -92,7 +92,11 @@ export function RegionFilterBody({
 
       <View className="gap-3 pt-3">
         <View className="flex-row items-center justify-between">
-          <Text className="text-xs leading-[18px] text-[#696976]">
+          <Text
+            className={`text-xs leading-[18px] ${
+              value.length > 0 ? 'font-semibold text-[#17171B]' : 'text-[#696976]'
+            }`}
+          >
             선택 지역 {value.length}/{maxSelection}
           </Text>
           <Pressable
