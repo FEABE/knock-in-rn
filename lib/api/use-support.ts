@@ -54,6 +54,53 @@ export type SupportInquiryListItem = {
   categoryLabel: string;
 };
 
+/** 문의 상세는 목록 카드와 같은 필드 구성이라 타입을 그대로 재사용한다. */
+export type SupportInquiryDetail = SupportInquiryListItem;
+
+/**
+ * 문의 상세 단건 조회.
+ *
+ * 목록(`useSupportInquiries`)도 카드 미리보기를 채우려고 항목마다 이 상세를 이미 불러오지만,
+ * 딥링크/새로고침으로 상세 화면에 바로 들어오는 경우를 위해 단독으로도 조회할 수 있게 한다.
+ */
+export function useSupportInquiryDetail(id: string): AsyncState<SupportInquiryDetail> {
+  const query = useQuery({
+    queryKey: ['support', 'inquiries', id],
+    enabled: Boolean(id),
+    retry: false,
+    queryFn: async () => {
+      const detail = await getInquiryDetail(id);
+      if (detail.status !== 200 || detail.error || !detail.data?.inquirie) {
+        throw new Error(detail.error?.message ?? `요청 실패 (status ${detail.status})`);
+      }
+
+      const source = detail.data.inquirie;
+      const firstReply = source.reply?.[0];
+      return {
+        id,
+        title: source.title ?? '문의',
+        body: source.contents ?? '',
+        answer: firstReply?.contents,
+        authorName: source.writer ?? '나',
+        dateLabel: formatDateLabel(source.createAt),
+        statusLabel: statusLabel(source.status),
+        answered: !!firstReply || isAnswered(source.status),
+        categoryLabel: source.type ?? '기타',
+      };
+    },
+  });
+
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    refreshing: query.isFetching,
+    error: query.error instanceof Error ? query.error.message : null,
+    reload: () => {
+      void query.refetch();
+    },
+  };
+}
+
 export type SupportTermsSection = {
   id: string;
   title: string;
@@ -338,7 +385,7 @@ function isAnswered(status?: string): boolean {
 
 function statusLabel(status?: string): string {
   if (isAnswered(status)) return '답변 완료';
-  return '답변 대기';
+  return '접수';
 }
 
 function formatDateLabel(value?: string): string {
