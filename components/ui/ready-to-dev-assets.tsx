@@ -340,3 +340,25 @@ export function DefaultProfileArtwork({ size = 80 }: ArtworkProps) {
     />
   );
 }
+
+/** 원본이 26x26px로 작아 확대 시 흐릿할 수 있다. */
+export function SchoolBadgeArtwork({ size = 28 }: ArtworkProps) {
+  return (
+    <Image
+      source={require('../../assets/images/figma-ready/school-badge.png')}
+      contentFit="contain"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+/** 원본이 28x25px로 작아 확대 시 흐릿할 수 있다. */
+export function CompanyBadgeArtwork({ size = 28 }: ArtworkProps) {
+  return (
+    <Image
+      source={require('../../assets/images/figma-ready/company-badge.png')}
+      contentFit="contain"
+      style={{ width: size, height: size }}
+    />
+  );
+}

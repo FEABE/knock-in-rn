@@ -11,7 +11,6 @@ import {
 } from '@/lib/api';
 
 export type VerificationFlowStep = 'entry' | 'code' | 'review' | 'complete' | 'rejected';
-export type VerificationStatusTone = 'idle' | 'review' | 'complete' | 'error';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,10 +37,9 @@ export type UseVerificationFlowScreenReturn = UseVerificationFlowScreenProps & {
   code: string;
   loading: boolean;
   error: string | null;
-  statusLabel: string;
-  statusTone: VerificationStatusTone;
+  /** 화면 상단 큰 제목. 단계별로 문구가 다르다(이메일 입력/코드 입력/검토중/완료/반려). */
+  heading: string;
   description: string;
-  reviewTitle: string;
   timerLabel: string;
   canSend: boolean;
   canVerify: boolean;
@@ -102,38 +100,27 @@ export function useVerificationFlowScreen(
     return () => clearInterval(timer);
   }, [expiresAt, step]);
 
-  const statusLabel =
-    step === 'complete'
-      ? '인증 완료'
-      : step === 'review'
-        ? '검토중'
-        : step === 'rejected'
-          ? '반려'
-          : '미인증';
-  const statusTone: VerificationStatusTone =
-    step === 'complete'
-      ? 'complete'
-      : step === 'review'
-        ? 'review'
-        : step === 'rejected'
-          ? 'error'
-          : 'idle';
+  const shortLabel = props.kind === 'student' ? '학교' : '회사';
+  const heading =
+    step === 'entry'
+      ? '이메일을 입력해주세요'
+      : step === 'code'
+        ? '인증 코드를 입력해주세요'
+        : step === 'review'
+          ? '신청하신 이메일을 검토하는 중이에요'
+          : step === 'rejected'
+            ? '인증 신청이 반려됐어요'
+            : '인증이 완료됐어요';
   const description =
     step === 'entry'
-      ? `사용 중인 ${props.label}을 입력하면 인증 코드를 보내드려요.`
+      ? '인증 코드 발송을 위해 이메일을 입력해주세요'
       : step === 'code'
-        ? '입력하신 이메일로 인증 코드를 발송했어요. 코드를 입력해주세요.'
+        ? '입력하신 이메일로 전송받으신 코드를 입력해주세요'
         : step === 'review'
-          ? '신청하신 이메일을 검토하는 중이에요. 완료되면 알림으로 알려드릴게요.'
+          ? '처리까지 최대 3일까지 소요될 수 있어요\n완료되면 앱 내 알림으로 알려드릴게요'
           : step === 'rejected'
             ? '인증이 반려됐어요. 이메일을 다시 확인한 뒤 재신청해주세요.'
-            : `이제 프로필에 ${props.label} 인증 배지가 표시돼요.`;
-  const reviewTitle =
-    step === 'complete'
-      ? `${props.label} 인증이 완료됐어요`
-      : step === 'rejected'
-        ? '인증 신청이 반려됐어요'
-        : '인증 신청이 접수됐어요';
+            : `이제 프로필에 ${shortLabel} 인증 뱃지가 표시돼요\n인증을 취소하려면 고객센터로 문의해주세요`;
   const timerLabel = `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(
     remainingSeconds % 60,
   ).padStart(2, '0')}`;
@@ -220,26 +207,11 @@ export function useVerificationFlowScreen(
       }));
       return;
     }
-    if (step === 'complete') {
-      // 인증 홈 화면은 스택에 남아있는 채로 뒤로가기되므로 리마운트되지 않는다.
-      // 캐시를 무효화해두지 않으면 처음 진입 때 받아온 '미인증' 상태가 그대로 남는다.
-      await queryClient.invalidateQueries({ queryKey: ['profile', 'verifications'] });
-      props.onDone();
-      return;
-    }
-    setState((current) => ({ ...current, loading: true, error: null }));
-    const res = await getVerifications();
-    const status =
-      res.status === 200 && !res.error ? verificationForKind(props.kind, res.data) : null;
-    setState((current) => ({
-      ...current,
-      step: verificationStep(status),
-      loading: false,
-      error:
-        status?.status === 'ACCEPTED'
-          ? null
-          : (res.error?.message ?? '아직 인증 검토가 완료되지 않았어요.'),
-    }));
+    // review/complete 모두 '확인' 한 번으로 닫힌다. 인증 홈 화면은 스택에 남아있는 채로
+    // 뒤로가기되므로 리마운트되지 않는데, 캐시를 무효화해두지 않으면 진입 때 받아온
+    // 이전 상태가 그대로 남는다. 최신 검토 결과는 홈으로 돌아가 다시 조회한다.
+    await queryClient.invalidateQueries({ queryKey: ['profile', 'verifications'] });
+    props.onDone();
   };
 
   return {
@@ -249,10 +221,8 @@ export function useVerificationFlowScreen(
     code,
     loading,
     error,
-    statusLabel,
-    statusTone,
+    heading,
     description,
-    reviewTitle,
     timerLabel,
     canSend,
     canVerify,
