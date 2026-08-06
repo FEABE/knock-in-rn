@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { getVerifications, useApi } from '@/lib/api';
 import { useSession } from '@/lib/domain';
@@ -12,20 +12,17 @@ export type VerificationHomeCard = {
   title: string;
   description: string;
   verified: boolean;
+  onPress: () => void;
 };
 
 export type UseVerificationHomeScreenReturn = {
   cards: VerificationHomeCard[];
-  selectedId: VerificationCardId | null;
-  canProceed: boolean;
   isLoggedIn: boolean;
   loading: boolean;
   error: string | null;
   onBack: () => void;
   onLogin: () => void;
   onRetry: () => void;
-  onSelectCard: (id: VerificationCardId) => void;
-  onNext: () => void;
 };
 
 export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
@@ -41,7 +38,6 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
   );
   const schoolVerified = data?.studentAuth?.status === 'ACCEPTED';
   const companyVerified = data?.employeeAuth?.status === 'ACCEPTED';
-  const [selectedId, setSelectedId] = useState<VerificationCardId | null>(null);
 
   const cards = useMemo<VerificationHomeCard[]>(
     () => [
@@ -50,31 +46,26 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
         title: '학교 이메일 인증',
         description: '발급한 학교 이메일로 인증',
         verified: schoolVerified,
+        onPress: () => goVerificationSchool(router),
       },
       {
         id: 'company',
         title: '회사 이메일 인증',
         description: '현재 재직 중인 회사 이메일 인증',
         verified: companyVerified,
+        onPress: () => goVerificationCompany(router),
       },
     ],
-    [companyVerified, schoolVerified],
+    [companyVerified, router, schoolVerified],
   );
 
   return {
     cards,
-    selectedId,
-    canProceed: selectedId !== null,
     isLoggedIn: Boolean(session),
     loading,
     error,
     onBack: () => router.back(),
     onLogin: () => goKakaoLogin(router),
     onRetry: reload,
-    onSelectCard: (id) => setSelectedId((current) => (current === id ? null : id)),
-    onNext: () => {
-      if (selectedId === 'school') goVerificationSchool(router);
-      else if (selectedId === 'company') goVerificationCompany(router);
-    },
   };
 }

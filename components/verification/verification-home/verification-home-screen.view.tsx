@@ -15,16 +15,12 @@ export type VerificationHomeScreenViewProps = UseVerificationHomeScreenReturn;
 
 export function VerificationHomeScreenView({
   cards,
-  selectedId,
-  canProceed,
   isLoggedIn,
   loading,
   error,
   onBack,
   onLogin,
   onRetry,
-  onSelectCard,
-  onNext,
 }: VerificationHomeScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -47,7 +43,7 @@ export function VerificationHomeScreenView({
           onRetry={onRetry}
         />
       ) : (
-        <ScrollView contentContainerClassName="gap-5 px-4 pb-28 pt-5">
+        <ScrollView contentContainerClassName="gap-5 px-4 pb-10 pt-5">
           <View className="gap-2">
             <Text className="text-xl font-bold text-[#17171B]">인증할 항목을 선택해주세요</Text>
             <Text className="text-sm leading-5 text-[#696976]">
@@ -57,12 +53,7 @@ export function VerificationHomeScreenView({
 
           <View className="gap-3">
             {cards.map((card) => (
-              <VerificationCard
-                key={card.id}
-                card={card}
-                selected={selectedId === card.id}
-                onPress={() => onSelectCard(card.id)}
-              />
+              <VerificationCard key={card.id} card={card} onPress={card.onPress} />
             ))}
           </View>
 
@@ -74,24 +65,6 @@ export function VerificationHomeScreenView({
           </View>
         </ScrollView>
       )}
-
-      {isLoggedIn && !loading && !error ? (
-        <View className="absolute inset-x-0 bottom-0 bg-white px-4 pb-5 pt-3">
-          <Pressable
-            disabled={!canProceed}
-            onPress={onNext}
-            className={`h-12 items-center justify-center rounded-lg ${
-              canProceed ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
-            }`}
-          >
-            <Text
-              className={`text-base font-semibold ${canProceed ? 'text-white' : 'text-[#AAAABA]'}`}
-            >
-              다음으로
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }
@@ -108,23 +81,12 @@ function Header({ onBack }: { onBack: () => void }) {
   );
 }
 
-function VerificationCard({
-  card,
-  selected,
-  onPress,
-}: {
-  card: VerificationHomeCard;
-  selected: boolean;
-  onPress: () => void;
-}) {
+function VerificationCard({ card, onPress }: { card: VerificationHomeCard; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: selected }}
-      className={`min-h-[92px] flex-row items-center gap-4 rounded-md border px-5 py-4 active:opacity-80 ${
-        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-transparent bg-[#F6F6FA]'
-      }`}
+      accessibilityRole="button"
+      className="min-h-[92px] flex-row items-center gap-4 rounded-md bg-[#F6F6FA] px-5 py-4 active:opacity-80"
     >
       <View className="h-[52px] w-[52px] items-center justify-center rounded-full bg-[#E1E2EB]">
         {card.id === 'school' ? (
@@ -139,14 +101,19 @@ function VerificationCard({
           {card.description}
         </Text>
       </View>
-      <View
-        className={`rounded px-3 py-1 ${
-          card.verified ? 'bg-[#256EF4]' : 'border border-[#DADAE8] bg-white'
-        }`}
-      >
-        <Text className={`text-xs font-medium ${card.verified ? 'text-white' : 'text-[#696976]'}`}>
-          {card.verified ? '인증 완료' : '인증 필요'}
-        </Text>
+      <View className="items-end gap-2">
+        <View
+          className={`rounded px-3 py-1 ${
+            card.verified ? 'bg-[#256EF4]' : 'border border-[#DADAE8] bg-white'
+          }`}
+        >
+          <Text
+            className={`text-xs font-medium ${card.verified ? 'text-white' : 'text-[#696976]'}`}
+          >
+            {card.verified ? '인증 완료' : '인증 필요'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#AAAABA" />
       </View>
     </Pressable>
   );
