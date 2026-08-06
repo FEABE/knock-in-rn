@@ -143,6 +143,9 @@ export function useChatSocket({
     const client = new Client({
       webSocketFactory: () => new WebSocket(wsChatUrl()),
       connectHeaders: { Authorization: `Bearer ${token}` },
+      debug: (str) => console.warn('[STOMP-DEBUG]', str),
+      forceBinaryWSFrames: true,
+      appendMissingNULLonIncoming: true,
       connectionTimeout: CONNECTION_TIMEOUT_MS,
       reconnectDelay: RECONNECT_DELAY_MS,
       maxReconnectDelay: MAX_RECONNECT_DELAY_MS,
