@@ -359,7 +359,7 @@ function RoomTypePage({ form }: { form: UseRoomPostFormReturn }) {
                   selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
                 } active:opacity-80`}
               >
-                <RoomTypeArtwork label={roomType.label} size={60} />
+                <RoomTypeArtwork label={roomType.label} image={roomType.image} size={60} />
                 <Text
                   className={
                     selected

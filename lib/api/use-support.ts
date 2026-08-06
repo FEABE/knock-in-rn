@@ -83,6 +83,7 @@ export function useSupportCounts(includePrivate = true): AsyncState<SupportCount
       inquiryCount: includePrivate ? (inquiries.data?.inquiries?.length ?? 0) : 0,
     },
     loading: faqs.loading || (includePrivate && inquiries.loading),
+    refreshing: faqs.refreshing || (includePrivate && inquiries.refreshing),
     error: faqs.error ?? (includePrivate ? inquiries.error : null),
     reload: () => {
       faqs.reload();
@@ -126,7 +127,8 @@ export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
 
   return {
     data: query.data ?? null,
-    loading: query.isLoading || query.isFetching,
+    loading: query.isLoading,
+    refreshing: query.isFetching,
     error: query.error instanceof Error ? query.error.message : null,
     reload: () => {
       void query.refetch();
@@ -176,7 +178,8 @@ export function useSupportNoticeDetail(id: string): AsyncState<SupportNoticeDeta
 
   return {
     data: query.data ?? null,
-    loading: query.isLoading || query.isFetching,
+    loading: query.isLoading,
+    refreshing: query.isFetching,
     error: query.error instanceof Error ? query.error.message : null,
     reload: () => {
       void query.refetch();
@@ -227,7 +230,8 @@ export function useSupportInquiries(enabled = true): AsyncState<SupportInquiryLi
 
   return {
     data: query.data ?? null,
-    loading: query.isLoading || query.isFetching,
+    loading: query.isLoading,
+    refreshing: query.isFetching,
     error: query.error instanceof Error ? query.error.message : null,
     reload: () => {
       void query.refetch();
@@ -252,7 +256,8 @@ export function useSupportTerms(): AsyncState<SupportTermsSection[]> {
 
   return {
     data: query.data ?? null,
-    loading: query.isLoading || query.isFetching,
+    loading: query.isLoading,
+    refreshing: query.isFetching,
     error: query.error instanceof Error ? query.error.message : null,
     reload: () => {
       void query.refetch();

@@ -73,7 +73,9 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     scales: {},
     choiceValues: {},
     loadedLifestyles: [],
-    hasRoom: false,
+    // 서버 값을 읽기 전에는 미선택이다. 기본값을 false로 두면
+    // "방이 없어요"가 고른 것처럼 보이고 미입력 검증도 통과해버린다.
+    hasRoom: null,
     regions: [],
     moveInDate: null,
     deposit: [0, 500],
@@ -171,14 +173,35 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
       scales,
       choiceValues,
     );
-    const res = modifyItems.length
+    // PUT(수정)은 이미 저장된 문항의 값만 바꾼다. 서버에 행이 없는 문항(온보딩 이후 추가된
+    // 문항 등)은 payload에서 통째로 빠져서 "저장했는데 반영이 안 되는" 상태가 된다.
+    // 그래서 답한 문항 전부가 기존 행으로 커버될 때만 PUT을 쓰고, 아니면 POST로 전체 저장한다.
+    const canModifyAll = modifyItems.length === lifestyles.length;
+    const res = canModifyAll
       ? await updateProfileLifestyle({ lifestyles: modifyItems })
       : await saveProfileLifestyle({ lifestyles });
-    Alert.alert(
-      res.error ? '저장 실패' : '저장 완료',
-      res.error?.message ??
-        (res.error ? '잠시 후 다시 시도해주세요.' : '생활 패턴이 저장되었어요.'),
-    );
+
+    if (res.error || res.status !== 200) {
+      Alert.alert('저장 실패', saveErrorMessage(res.error, res.status));
+      return;
+    }
+    // 전체 저장(POST)은 기존 행을 지우고 다시 만들기 때문에 id가 바뀐다.
+    // 다시 읽어두지 않으면 같은 화면에서 두 번째 저장이 옛 id로 나가 무시된다.
+    await refreshLoadedLifestyles();
+    Alert.alert('저장 완료', '생활 패턴이 저장되었어요.');
+  };
+
+  const refreshLoadedLifestyles = async () => {
+    const res = await getProfileAll();
+    if (res.error || res.status !== 200 || !res.data) return;
+    setState((current) => ({
+      ...current,
+      loadedLifestyles: (res.data.lifestyles ?? []).map((item) => ({
+        id: item.id,
+        lifestyleId: item.lifestyleId,
+        value: item.value,
+      })),
+    }));
   };
 
   const saveRoom = async () => {
@@ -189,7 +212,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     if (hasRoom === null) missing.push('방 여부');
     if (!regionIds.length) missing.push(hasRoom ? '방 위치' : '선호 지역');
     if (!roomTypeIds.length) missing.push(hasRoom ? '방 형태' : '선호 방 형태');
-    if (!moveInDate) missing.push(hasRoom ? '입주 가능 시기' : '입주 희망 시기');
+    // 입주(희망)일은 관리 플로우에서 입력받지 않는다(시안에 화면이 없음).
+    // 서버는 comeEnableAt이 필수라 기존 저장값을 그대로 다시 보낸다.
 
     if (missing.length) {
       Alert.alert(
@@ -215,10 +239,11 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
         monthlyRent: isOffer ? rent[0] : undefined,
       }),
     );
-    Alert.alert(
-      res.error ? '저장 실패' : '저장 완료',
-      res.error?.message ?? (res.error ? '잠시 후 다시 시도해주세요.' : '방 조건이 저장되었어요.'),
-    );
+    if (res.error || res.status !== 200) {
+      Alert.alert('저장 실패', saveErrorMessage(res.error, res.status));
+      return;
+    }
+    Alert.alert('저장 완료', '방 조건이 저장되었어요.');
   };
 
   return {
@@ -268,6 +293,15 @@ type ProfileEditState = {
   rent: RangeValue;
   roomTypes: string[];
 };
+
+/** 저장 실패 원인을 QA에서 바로 잡을 수 있게 서버 코드/상태까지 함께 보여준다. */
+function saveErrorMessage(
+  error: { code?: string; message: string } | null,
+  status: number,
+): string {
+  if (!error) return `잠시 후 다시 시도해주세요. (status ${status})`;
+  return `${error.message}${error.code ? ` (${error.code})` : ''} (status ${status})`;
+}
 
 function resolveAction<T>(next: SetStateAction<T>, current: T): T {
   return typeof next === 'function' ? (next as (value: T) => T)(current) : next;

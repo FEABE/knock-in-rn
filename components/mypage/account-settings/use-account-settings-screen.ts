@@ -4,12 +4,7 @@ import { Alert } from 'react-native';
 
 import { useAccountActions, useBlockedUsers } from '@/lib/api';
 import { useSession } from '@/lib/domain';
-import {
-  goMypageBlocked,
-  goMypageWithdraw,
-  goSupportTerms,
-  resetToExplore,
-} from '@/lib/navigation/routes';
+import { goMypageBlocked, goMypageWithdraw, resetToExplore } from '@/lib/navigation/routes';
 
 export type AccountSettingsRow = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -57,24 +52,10 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
 
   return {
     onBack: () => router.back(),
+    // 디자인(3740:75875)에 "약관 및 정책" 섹션은 없다. 약관은 마이페이지 > 고객 지원에서 본다.
     sections: [
       {
-        title: '약관 및 정책',
-        rows: [
-          {
-            icon: 'document-text-outline',
-            title: '이용약관',
-            onPress: () => goSupportTerms(router),
-          },
-          {
-            icon: 'lock-closed-outline',
-            title: '개인정보처리방침',
-            onPress: () => goSupportTerms(router),
-          },
-        ],
-      },
-      {
-        title: '차단관리',
+        title: '차단 관리',
         rows: [
           {
             icon: 'shield-checkmark-outline',
@@ -94,7 +75,7 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
           },
           {
             icon: 'trash-outline',
-            title: '회원 탈퇴',
+            title: '탈퇴하기',
             tone: 'danger',
             onPress: () => goMypageWithdraw(router),
           },

@@ -15,6 +15,8 @@ export type RoommateMatchCardModel = {
   gender?: 'male' | 'female';
   genderLabel?: string;
   hasRoom: boolean;
+  isAuthStudent: boolean;
+  isAuthEmployee: boolean;
   liked: boolean;
   compatibilityScore: number;
   minDeposit?: number;
@@ -70,6 +72,8 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     interested?: boolean;
     minMonthlyRent?: number;
     maxMonthlyRent?: number;
+    isAuthStudent?: boolean;
+    isAuthEmployee?: boolean;
   };
   const id = stringValue(match.userId ?? match.memberId, '');
   const score = numberValue(match.score);
@@ -123,6 +127,12 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     gender: match.gender === 'FEMALE' ? 'female' : match.gender === 'MALE' ? 'male' : undefined,
     genderLabel: match.gender === 'FEMALE' ? '여성' : match.gender === 'MALE' ? '남성' : undefined,
     hasRoom: isOffer,
+    isAuthStudent:
+      booleanValue(runtimeMatch.isAuthStudent) ||
+      hasAuthentication(match.authentications, 'STUDENT'),
+    isAuthEmployee:
+      booleanValue(runtimeMatch.isAuthEmployee) ||
+      hasAuthentication(match.authentications, 'COMPANY'),
     liked: booleanValue(match.interested),
     compatibilityScore: score,
     minDeposit,
@@ -191,7 +201,8 @@ export function toRoommateMatchDetailModel(
       ? `${labelForRoomProfileType(data.roomProfileType)} · ${
           typeof region === 'number' ? labelForRegionId(region) : (region ?? '-')
         }`
-      : '아직 방이 없어요';
+      : // Figma/리스트 카드와 동일한 짧은 뱃지 문구를 쓴다.
+        '방 없음';
   const isOffer = data.roomProfileType === 'OFFER';
   const roomTypeLabel = isOffer
     ? (data.offerProfile?.roomTypeName ?? '-')
@@ -206,7 +217,7 @@ export function toRoommateMatchDetailModel(
         },
         { label: '방 형태', value: roomTypeLabel },
         {
-          label: '지역',
+          label: '위치',
           value: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
         },
       ]
@@ -219,9 +230,9 @@ export function toRoommateMatchDetailModel(
             data.seekerProfile?.maxMonthlyRent ?? data.maxMounthRent,
           ).toLocaleString()}만원 이하`,
         },
-        { label: '희망 룸 형태', value: roomTypeLabel },
+        { label: '방 형태', value: roomTypeLabel },
         {
-          label: '희망 지역',
+          label: '위치',
           value:
             data.seekerProfile?.regionFullNames?.join(' · ') ||
             (typeof region === 'number' ? labelForRegionId(region) : (region ?? '-')),

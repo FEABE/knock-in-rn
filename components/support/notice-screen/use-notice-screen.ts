@@ -12,6 +12,7 @@ export type NoticeListItem = {
 export type UseNoticeScreenReturn = {
   notices: NoticeListItem[];
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   unavailable: boolean;
   retry: () => void;
@@ -24,6 +25,7 @@ export function useNoticeScreen(): UseNoticeScreenReturn {
   return {
     notices: state.data ?? [],
     loading: state.loading,
+    refreshing: state.refreshing,
     error: state.error,
     unavailable: false,
     retry: state.reload,

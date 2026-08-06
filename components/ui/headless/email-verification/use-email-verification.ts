@@ -43,7 +43,7 @@ function emailRegex(suffix?: string): RegExp {
 
 export function useEmailVerification({
   domainSuffix,
-  codeLength = 6,
+  codeLength = 32,
   resendCooldownSec = 60,
   sendCode: sendCodeImpl,
   verifyCode: verifyCodeImpl,

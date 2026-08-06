@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CalendarField } from '@/components/onboarding/calendar-field';
 import { RegionFilterSheet } from '@/components/room/filters';
 import { RangeField } from '@/components/ui/range-field';
 import {
@@ -12,7 +11,7 @@ import {
   RoomTypeArtwork,
 } from '@/components/ui/ready-to-dev-assets';
 
-import { LifestyleQuestionFlow } from '../lifestyle-question-flow';
+import { LifestyleQuestionFlow, QuestionFlowHeader } from '../lifestyle-question-flow';
 import type { UseProfileEditScreenReturn } from './use-profile-edit-screen';
 
 export type ProfileEditScreenViewProps = UseProfileEditScreenReturn;
@@ -40,17 +39,18 @@ export function ProfileEditScreenView(props: ProfileEditScreenViewProps) {
   );
 }
 
+/** 방 조건 관리 단계. 시안에 없는 "입주 희망일 선택" 화면은 두지 않는다. */
+const ROOM_STAGES = ['presence', 'region', 'budget', 'roomType'] as const;
+
 function RoomConditionFlow({
   hasRoom,
   regions,
-  moveInDate,
   deposit,
   rent,
   roomTypes,
   roomTypeOptions,
   setHasRoom,
   setRegions,
-  setMoveInDate,
   setDeposit,
   setRent,
   setRoomTypes,
@@ -60,49 +60,32 @@ function RoomConditionFlow({
   const [stage, setStage] = useState(0);
   const [regionOpen, setRegionOpen] = useState(false);
   const isOffer = hasRoom === true;
-  const stageCount = 5;
-  const selectedRegionLabel = regions.length
-    ? regions.map((region) => `${region.city} ${region.district}`.trim()).join(', ')
-    : '지역 선택하기';
+  const lastStage = ROOM_STAGES.length - 1;
+  const maxRegions = isOffer ? 1 : 3;
 
   const goBack = () => {
     if (stage === 0) onBack();
     else setStage((current) => current - 1);
   };
 
+  // 미입력 상태로는 다음 화면으로 넘어가지 않는다.
+  // 마지막(방 형태) 화면의 "다음으로"는 상단 저장 버튼이 있으므로 항상 비활성이다.
+  const canGoNext =
+    stage === 0 ? hasRoom !== null : stage === 1 ? regions.length > 0 : stage === 2 ? true : false;
+
   const goNext = () => {
-    if (stage >= stageCount - 1) {
-      void saveRoom();
-      return;
-    }
+    if (!canGoNext || stage >= lastStage) return;
     setStage((current) => current + 1);
   };
 
   return (
     <View className="flex-1 bg-white">
-      <View className="h-14 flex-row items-center px-3">
-        <Pressable
-          onPress={goBack}
-          accessibilityRole="button"
-          accessibilityLabel="이전으로"
-          className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
-        >
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
-        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
-          방 조건 관리
-        </Text>
-        <Pressable onPress={() => void saveRoom()} className="ml-auto px-2 py-2 active:opacity-60">
-          <Text className="text-[15px] font-semibold text-[#256EF4]">저장</Text>
-        </Pressable>
-      </View>
-
-      <View className="h-1 bg-[#ECECF3]">
-        <View
-          className="h-1 bg-[#256EF4]"
-          style={{ width: `${((stage + 1) / stageCount) * 100}%` }}
-        />
-      </View>
+      <QuestionFlowHeader
+        title="방 조건 관리"
+        onBack={goBack}
+        onSave={() => void saveRoom()}
+        saveEnabled={stage === lastStage}
+      />
 
       <ScrollView
         className="flex-1"
@@ -110,30 +93,21 @@ function RoomConditionFlow({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="mb-6 flex-row items-center justify-between">
-          <Text className="text-xs font-semibold text-[#256EF4]">
-            {String(stage + 1).padStart(2, '0')}
-          </Text>
-          <Text className="text-xs text-[#AAAABA]">
-            {stage + 1}/{stageCount}
-          </Text>
-        </View>
-
         <StageTitle stage={stage} hasRoom={isOffer} />
 
         {stage === 0 ? (
-          <View className="mt-7 gap-4">
+          <View className="mt-7 gap-3">
             <RoomPresenceChoice
               hasRoom
               title="방이 있어요"
-              description="현재 방에서 함께 지낼 룸메이트를 찾아요"
+              description="룸메이트를 찾고 싶어요"
               selected={hasRoom === true}
               onPress={() => setHasRoom(true)}
             />
             <RoomPresenceChoice
               hasRoom={false}
               title="방이 없어요"
-              description="방과 룸메이트를 함께 찾아요"
+              description="방과 룸메이트를 함께 찾고 싶어요"
               selected={hasRoom === false}
               onPress={() => setHasRoom(false)}
             />
@@ -141,22 +115,32 @@ function RoomConditionFlow({
         ) : null}
 
         {stage === 1 ? (
-          <View className="flex-1 justify-between pt-7">
+          <View className="flex-1 pt-6">
             <Pressable
               onPress={() => setRegionOpen(true)}
-              className="h-14 flex-row items-center justify-between rounded-lg border border-[#DADAE8] px-4 active:bg-[#F7F7FA]"
+              accessibilityRole="button"
+              accessibilityLabel="지역 선택하기"
+              className="h-[46px] flex-row items-center justify-center gap-1.5 rounded-lg border border-[#DADAE8] bg-white px-3 active:bg-[#F6F6FA]"
             >
-              <Text
-                numberOfLines={1}
-                className={`flex-1 text-[15px] ${regions.length ? 'text-[#242429]' : 'text-[#AAAABA]'}`}
-              >
-                {selectedRegionLabel}
-              </Text>
-              <Ionicons name="chevron-down" size={19} color="#8A8A98" />
+              <Text className="text-[15px] font-medium text-[#696976]">지역 선택하기</Text>
+              <Ionicons name="chevron-down" size={16} color="#696976" />
             </Pressable>
-            <View className="flex-1 items-center justify-center py-8">
-              <RoomLocationArtwork size={190} />
-            </View>
+
+            {regions.length > 0 ? (
+              <View className="flex-1 justify-end pb-2 pt-6">
+                <SelectedRegions
+                  regions={regions}
+                  max={maxRegions}
+                  onRemove={(id) =>
+                    setRegions((current) => current.filter((region) => region.id !== id))
+                  }
+                />
+              </View>
+            ) : (
+              <View className="flex-1 items-center justify-center py-8">
+                <RoomLocationArtwork size={150} />
+              </View>
+            )}
           </View>
         ) : null}
 
@@ -186,17 +170,6 @@ function RoomConditionFlow({
         ) : null}
 
         {stage === 3 ? (
-          <View className="mt-8">
-            <CalendarField
-              value={moveInDate}
-              onChange={setMoveInDate}
-              minDate={new Date()}
-              placeholder={isOffer ? '입주 가능일 선택' : '입주 희망일 선택'}
-            />
-          </View>
-        ) : null}
-
-        {stage === 4 ? (
           <View className="mt-7 flex-row flex-wrap gap-3">
             {roomTypeOptions.map((roomType) => {
               const selected = roomTypes.includes(roomType.value);
@@ -218,7 +191,7 @@ function RoomConditionFlow({
                             : current,
                     )
                   }
-                  className={`h-[108px] w-[31%] items-center justify-center rounded-lg border px-2 ${
+                  className={`h-[96px] w-[31%] items-center justify-center rounded-lg border px-2 ${
                     selected
                       ? 'border-[#256EF4] bg-[#EEF4FF]'
                       : disabled
@@ -226,7 +199,7 @@ function RoomConditionFlow({
                         : 'border-[#DADAE8] bg-white'
                   }`}
                 >
-                  <RoomTypeArtwork label={roomType.label} size={62} />
+                  <RoomTypeArtwork label={roomType.label} image={roomType.image} size={44} />
                   <Text
                     className={`mt-1 text-[13px] ${
                       selected ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'
@@ -242,20 +215,22 @@ function RoomConditionFlow({
       </ScrollView>
 
       <View className="flex-row gap-3 border-t border-[#ECECF3] bg-white px-4 pb-3 pt-3">
-        {stage > 0 ? (
-          <Pressable
-            onPress={goBack}
-            className="h-12 flex-1 items-center justify-center rounded-lg border border-[#DADAE8] bg-white"
-          >
-            <Text className="text-[15px] font-semibold text-[#696976]">이전으로</Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={goBack}
+          className="h-12 flex-1 items-center justify-center rounded-lg border border-[#256EF4] bg-white active:opacity-80"
+        >
+          <Text className="text-[15px] font-semibold text-[#256EF4]">이전으로</Text>
+        </Pressable>
         <Pressable
           onPress={goNext}
-          className="h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90"
+          disabled={!canGoNext}
+          accessibilityState={{ disabled: !canGoNext }}
+          className={`h-12 flex-1 items-center justify-center rounded-lg ${
+            canGoNext ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
+          }`}
         >
-          <Text className="text-[15px] font-bold text-white">
-            {stage === stageCount - 1 ? '저장하기' : '다음으로'}
+          <Text className={`text-[15px] font-bold ${canGoNext ? 'text-white' : 'text-[#AAAABA]'}`}>
+            다음으로
           </Text>
         </Pressable>
       </View>
@@ -264,8 +239,8 @@ function RoomConditionFlow({
         open={regionOpen}
         onOpenChange={setRegionOpen}
         value={regions}
-        maxSelection={isOffer ? 1 : 3}
-        onChange={(next) => setRegions(isOffer ? next.slice(-1) : next.slice(0, 3))}
+        maxSelection={maxRegions}
+        onChange={(next) => setRegions(isOffer ? next.slice(-1) : next.slice(0, maxRegions))}
       />
     </View>
   );
@@ -278,8 +253,8 @@ function StageTitle({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
       : stage === 1
         ? [
             hasRoom ? '거주하고 있는' : '거주하고 싶은',
-            '지역을 선택해주세요',
-            hasRoom ? '한 곳을 선택할 수 있어요' : '최대 3곳까지 선택할 수 있어요',
+            '집의 주소를 선택해주세요',
+            '언제든 마이페이지에서 변경할 수 있어요',
           ]
         : stage === 2
           ? [
@@ -287,17 +262,11 @@ function StageTitle({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
               '보증금과 월세를 알려주세요',
               '범위 양끝을 움직여 금액을 설정해주세요',
             ]
-          : stage === 3
-            ? [
-                hasRoom ? '룸메이트가 입주할 수 있는' : '입주를 희망하는',
-                '날짜를 선택해주세요',
-                '달력에서 날짜를 선택해주세요',
-              ]
-            : [
-                hasRoom ? '거주하고 있는' : '거주하고 싶은',
-                '방 형태를 선택해주세요',
-                hasRoom ? '한 개를 선택할 수 있어요' : '최대 3개까지 선택할 수 있어요',
-              ];
+          : [
+              hasRoom ? '거주하고 있는' : '거주하고 싶은',
+              '방 형태를 선택해주세요',
+              hasRoom ? '한 개를 선택할 수 있어요' : '원하시는 방 형태를 최대 3개까지 선택해주세요',
+            ];
 
   return (
     <View>
@@ -307,6 +276,49 @@ function StageTitle({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
         {copy[1]}
       </Text>
       <Text className="mt-1 text-sm leading-5 text-[#696976]">{copy[2]}</Text>
+    </View>
+  );
+}
+
+/** 필터의 지역 시트와 같은 "선택 지역 n/max + 삭제 가능한 칩" 표시. */
+function SelectedRegions({
+  regions,
+  max,
+  onRemove,
+}: {
+  regions: { id: string; city: string; district: string }[];
+  max: number;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <View className="gap-2">
+      <View className="flex-row items-center gap-1.5">
+        <Text className="text-[15px] font-medium text-[#696976]">선택 지역</Text>
+        <Text className="text-[15px] font-medium text-[#17171B]">
+          {regions.length}
+          <Text className="text-[#AAAABA]">/{max}</Text>
+        </Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-2 pr-4"
+      >
+        {regions.map((region) => (
+          <Pressable
+            key={region.id}
+            onPress={() => onRemove(region.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`${region.city} ${region.district} 삭제`}
+            className="h-[42px] flex-row items-center gap-0.5 rounded-full bg-[#ECF2FE] px-3 active:opacity-80"
+          >
+            <Text className="text-[15px] font-medium text-[#256EF4]">
+              {region.city} {region.district}
+            </Text>
+            <Ionicons name="close" size={17} color="#8AAFF8" />
+          </Pressable>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -329,26 +341,17 @@ function RoomPresenceChoice({
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      className={`h-[112px] flex-row items-center rounded-xl border px-5 ${
-        selected ? 'border-[#256EF4] bg-[#EEF4FF]' : 'border-[#DADAE8] bg-white'
+      className={`rounded-xl border px-4 py-4 ${
+        selected ? 'border-[#256EF4] bg-[#F5F9FF]' : 'border-transparent bg-[#F6F6FA]'
       }`}
     >
-      <RoomPresenceArtwork hasRoom={hasRoom} size={64} />
-      <View className="ml-4 flex-1 gap-1">
-        <Text
-          className={`text-[16px] font-semibold ${selected ? 'text-[#256EF4]' : 'text-[#242429]'}`}
-        >
+      <View className="flex-row items-center gap-2">
+        <RoomPresenceArtwork hasRoom={hasRoom} size={22} />
+        <Text className={`text-[15px] font-bold ${selected ? 'text-[#256EF4]' : 'text-[#17171B]'}`}>
           {title}
         </Text>
-        <Text className="text-[13px] leading-5 text-[#8A8A98]">{description}</Text>
       </View>
-      <View
-        className={`h-6 w-6 items-center justify-center rounded-full border ${
-          selected ? 'border-[#256EF4] bg-[#256EF4]' : 'border-[#C8C8D2] bg-white'
-        }`}
-      >
-        {selected ? <Ionicons name="checkmark" size={16} color="#FFFFFF" /> : null}
-      </View>
+      <Text className="mt-1.5 text-[13px] leading-5 text-[#8A8A98]">{description}</Text>
     </Pressable>
   );
 }

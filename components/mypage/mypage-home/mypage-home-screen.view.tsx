@@ -4,10 +4,11 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
-import { Toggle } from '@/components/ui/headless';
+import { DefaultProfileArtwork } from '@/components/ui/ready-to-dev-assets';
 import { ReadyBadge, ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
 import { ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 
+import { MyPageToggle } from './mypage-toggle';
 import type { MyPageMenuRow, UseMyPageHomeScreenReturn } from './use-mypage-home-screen';
 
 export type MyPageHomeScreenViewProps = UseMyPageHomeScreenReturn;
@@ -20,6 +21,7 @@ export function MyPageHomeScreenView({
   notificationEnabled,
   notificationEditable,
   genderLabel,
+  genderIcon,
   roomTypeLabel,
   matchingRows,
   accountRows,
@@ -58,19 +60,21 @@ export function MyPageHomeScreenView({
           onPress={onProfilePress}
           className="flex-row items-center gap-3 px-4 pb-6 pt-2 active:bg-[#F6F6FA]"
         >
-          <ReadyProfileAvatar name={user.name} imageUrl={user.avatarUrl} size={60} />
+          {user.avatarUrl ? (
+            <ReadyProfileAvatar name={user.name} imageUrl={user.avatarUrl} size={60} />
+          ) : (
+            <DefaultProfileArtwork size={60} />
+          )}
           <View className="flex-1 gap-1.5">
             <View className="flex-row items-center gap-1">
               <Text className="text-base font-bold leading-6 text-[#17171B]">{user.name}님</Text>
-              {(schoolVerified || companyVerified) && (
-                <Ionicons name="checkmark-circle" size={15} color="#24A96B" />
-              )}
-              <Ionicons name="bag-handle" size={14} color="#5B8EF6" />
+              {schoolVerified && <Ionicons name="checkmark-circle" size={15} color="#24A96B" />}
+              {companyVerified && <Ionicons name="bag-handle" size={14} color="#5B8EF6" />}
               <Ionicons name="chevron-forward" size={16} color="#696976" />
             </View>
             <View className="flex-row gap-1">
               {user.age > 0 ? (
-                <ReadyBadge label={`${user.age}세 · ${genderLabel}`} tone="red" />
+                <ReadyBadge label={`${user.age}세 · ${genderLabel}`} tone="red" icon={genderIcon} />
               ) : null}
               <ReadyBadge label={roomTypeLabel} tone="blue" icon="home" />
             </View>
@@ -83,7 +87,7 @@ export function MyPageHomeScreenView({
               <Text className="text-sm font-medium text-neutral-800">프로필 공개</Text>
               <Text className="text-xs text-neutral-400">룸메이트 매칭 탭에 노출 중이에요</Text>
             </View>
-            <Switch checked={profileVisible} onChange={setProfileVisible} />
+            <MyPageToggle checked={profileVisible} onChange={setProfileVisible} />
           </View>
         </Section>
 
@@ -99,7 +103,7 @@ export function MyPageHomeScreenView({
           ))}
           <View className="flex-row items-center border-b border-neutral-100 px-4 py-4">
             <Text className="flex-1 text-[15px] font-medium text-[#17171B]">알림</Text>
-            <Switch
+            <MyPageToggle
               checked={notificationEnabled}
               disabled={!notificationEditable}
               onChange={setNotificationEnabled}
@@ -153,34 +157,10 @@ function MenuRow({ row, last }: { row: MyPageMenuRow; last?: boolean }) {
       </View>
       {row.badge ? (
         <View className="mr-2 rounded border border-dashed border-[#8DB4FF] bg-[#F5F8FF] px-2 py-1">
-          <Text className="text-[11px] font-medium text-[#4C87F6]">인증 필요</Text>
+          <Text className="text-[11px] font-medium text-[#4C87F6]">{row.badge}</Text>
         </View>
       ) : null}
       <Ionicons name="chevron-forward" size={19} color="#696976" />
     </Pressable>
-  );
-}
-
-function Switch({
-  checked,
-  disabled = false,
-  onChange,
-}: {
-  checked: boolean;
-  disabled?: boolean;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    <Toggle checked={checked} disabled={disabled} onCheckedChange={onChange}>
-      {({ checked: isChecked }) => (
-        <View
-          className={`h-8 w-[52px] justify-center rounded-full px-1 ${
-            isChecked ? 'items-end' : 'items-start'
-          } ${isChecked ? 'bg-[#256EF4]' : disabled ? 'bg-neutral-200' : 'bg-neutral-300'}`}
-        >
-          <View className="h-6 w-6 rounded-full bg-white" />
-        </View>
-      )}
-    </Toggle>
   );
 }

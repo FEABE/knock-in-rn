@@ -115,9 +115,10 @@ export function EmailVerificationForm({
                 </View>
                 <TextField
                   value={code}
-                  onChangeValue={(t) => setCode(t.replace(/\D/g, '').slice(0, codeLength))}
+                  onChangeValue={(t) => setCode(t.replace(/[^0-9a-zA-Z]/g, '').slice(0, codeLength))}
                   placeholder="인증코드 입력"
-                  keyboardType="number-pad"
+                  keyboardType="default"
+                  autoCapitalize="none"
                   maxLength={codeLength}
                   disabled={isVerified}
                   className={`rounded-xl border px-4 py-3 text-center text-xl tracking-[8px] ${

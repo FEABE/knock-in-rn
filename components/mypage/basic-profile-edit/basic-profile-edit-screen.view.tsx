@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DefaultProfileArtwork } from '@/components/ui/ready-to-dev-assets';
+
 import type { UseBasicProfileEditScreenReturn } from './use-basic-profile-edit-screen';
 
 export function BasicProfileEditScreenView(props: UseBasicProfileEditScreenReturn) {
@@ -72,9 +74,7 @@ export function BasicProfileEditScreenView(props: UseBasicProfileEditScreenRetur
                   style={{ width: 80, height: 80, borderRadius: 40 }}
                 />
               ) : (
-                <View className="h-20 w-20 items-center justify-center rounded-full border border-[#DADAE8] bg-white">
-                  <Ionicons name="person" size={55} color="#DADAE8" />
-                </View>
+                <DefaultProfileArtwork size={80} />
               )}
               <Pressable
                 onPress={() => void props.pickProfileImage()}

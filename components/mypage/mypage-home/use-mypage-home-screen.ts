@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Linking } from 'react-native';
 
 import {
   useMyPageProfileSummary,
@@ -27,6 +28,24 @@ import { consumeMypageHomeToast } from './mypage-home-toast';
 
 const TOAST_DURATION_MS = 2500;
 
+/**
+ * "협업 및 제휴 제안" 외부 링크(구글 폼/노션 등). 디자인·코드 어디에도 실제 URL이 없어
+ * 환경변수로 뺐다. 값이 비어 있으면 안내 후 아무 것도 하지 않는다.
+ */
+const PARTNERSHIP_URL = process.env.EXPO_PUBLIC_PARTNERSHIP_URL ?? '';
+
+async function openPartnershipLink() {
+  if (!PARTNERSHIP_URL) {
+    Alert.alert('준비 중이에요', '제휴 제안 페이지 준비 중이에요. 조금만 기다려주세요.');
+    return;
+  }
+  try {
+    await Linking.openURL(PARTNERSHIP_URL);
+  } catch {
+    Alert.alert('열 수 없어요', '제휴 제안 페이지를 열지 못했어요. 잠시 후 다시 시도해주세요.');
+  }
+}
+
 export type MyPageMenuRow = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -44,6 +63,7 @@ export type UseMyPageHomeScreenReturn = {
   notificationEnabled: boolean;
   notificationEditable: boolean;
   genderLabel: string;
+  genderIcon: keyof typeof Ionicons.glyphMap | undefined;
   roomTypeLabel: string;
   matchingRows: MyPageMenuRow[];
   accountRows: MyPageMenuRow[];
@@ -96,7 +116,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     verification.data?.companyVerified ??
     user?.badges.some((badge) => badge.kind === 'company') ??
     false;
-  const roomTypeLabel = profile.data?.roomTypeLabel ?? '방 없어요';
+  const roomTypeLabel = profile.data?.roomTypeLabel ?? '방 없음';
 
   const matchingRows = useMemo<MyPageMenuRow[]>(
     () => [
@@ -134,7 +154,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
         icon: 'shield-checkmark-outline',
         label: '신원 인증',
         sub: '학교 · 회사 이메일 인증',
-        badge: verified ? undefined : '미인증',
+        badge: verified ? undefined : '인증 필요',
         onPress: () => goVerification(router),
       },
       {
@@ -155,7 +175,11 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
         label: '약관 및 정책',
         onPress: () => goSupportTerms(router),
       },
-      { icon: 'people-outline', label: '협업 및 제휴 제안', onPress: () => goSupport(router) },
+      {
+        icon: 'people-outline',
+        label: '협업 및 제휴 제안',
+        onPress: () => void openPartnershipLink(),
+      },
     ],
     [router],
   );
@@ -169,6 +193,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     notificationEnabled,
     notificationEditable,
     genderLabel: genderLabel(user?.gender),
+    genderIcon: genderIcon(user?.gender),
     roomTypeLabel,
     matchingRows,
     accountRows,
@@ -185,4 +210,11 @@ function genderLabel(gender?: string): string {
   if (gender?.toLowerCase() === 'female') return '여성';
   if (gender?.toLowerCase() === 'male') return '남성';
   return '기타';
+}
+
+/** 디자인(3885:44372)의 나이·성별 뱃지 앞에 붙는 성별 기호. */
+function genderIcon(gender?: string): keyof typeof Ionicons.glyphMap | undefined {
+  if (gender?.toLowerCase() === 'female') return 'female';
+  if (gender?.toLowerCase() === 'male') return 'male';
+  return undefined;
 }

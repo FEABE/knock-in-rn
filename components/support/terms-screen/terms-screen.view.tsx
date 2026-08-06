@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,44 +11,33 @@ export type TermsScreenViewProps = UseTermsScreenReturn;
 
 export function TermsScreenView({
   sections,
-  activeId,
   active,
   loading,
   error,
   retry,
-  setActiveId,
+  open,
+  closeDetail,
 }: TermsScreenViewProps) {
+  // 전문 화면(3941:49919): 헤더 제목이 약관 이름으로 바뀌고 뒤로가기는 목록으로 돌아간다.
+  if (active) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <SupportHeader title={active.title} onBack={closeDetail} />
+        <ScrollView contentContainerClassName="px-4 pb-10 pt-2">
+          <Text className="text-sm leading-6 text-[#3F3F47]">{active.body}</Text>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="약관 및 정책" />
-      <View className="flex-row gap-2 border-b border-neutral-100 px-5 py-3">
-        {sections.map((section) => (
-          <Pressable
-            key={section.id}
-            onPress={() => setActiveId(section.id)}
-            className={`rounded-full border px-3 py-1.5 ${
-              activeId === section.id
-                ? 'border-[#256EF4] bg-[#256EF4]'
-                : 'border-neutral-200 bg-white'
-            }`}
-          >
-            <Text
-              className={
-                activeId === section.id
-                  ? 'text-xs font-medium text-white'
-                  : 'text-xs text-neutral-700'
-              }
-            >
-              {section.title}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <ScrollView contentContainerClassName="p-5">
+      <ScrollView contentContainerClassName="px-4 pb-10 pt-2">
         {loading ? (
           <View className="items-center gap-3 p-10">
             <ActivityIndicator color="#256EF4" />
-            <Text className="text-sm text-neutral-400">약관을 불러오는 중...</Text>
+            <Text className="text-sm text-[#AAAABA]">약관을 불러오는 중...</Text>
           </View>
         ) : error ? (
           <ReadyErrorState
@@ -56,15 +46,23 @@ export function TermsScreenView({
             onRetry={retry}
             compact
           />
-        ) : active ? (
-          <View className="gap-3 rounded-2xl border border-neutral-200 bg-white p-5">
-            <Text className="text-base font-semibold text-neutral-900">{active.title}</Text>
-            <Text className="text-sm leading-7 text-neutral-700">{active.body}</Text>
+        ) : sections.length === 0 ? (
+          <View className="px-2 py-10">
+            <Text className="text-center text-sm text-[#AAAABA]">등록된 약관이 없어요</Text>
           </View>
         ) : (
-          <View className="rounded-2xl border border-dashed border-neutral-200 p-8">
-            <Text className="text-center text-sm text-neutral-400">등록된 약관이 없어요</Text>
-          </View>
+          sections.map((section) => (
+            <Pressable
+              key={section.id}
+              onPress={() => open(section.id)}
+              className="min-h-14 flex-row items-center border-b border-[#ECECF3] py-4 active:bg-[#F6F6FA]"
+            >
+              <Text className="flex-1 text-[15px] font-semibold text-[#17171B]">
+                {section.title}
+              </Text>
+              <Ionicons name="chevron-forward" size={19} color="#696976" />
+            </Pressable>
+          ))
         )}
       </ScrollView>
     </SafeAreaView>

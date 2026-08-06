@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { FlatList, Modal, Pressable, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
@@ -60,8 +60,10 @@ export function ExploreScreenView({
   visiblePosts,
   visibleMatches,
   roomsLoading,
+  roomsRefreshing,
   roomsError,
   matchesLoading,
+  matchesRefreshing,
   matchesError,
   hasUnreadAlarms,
   preferenceNudgeOpen,
@@ -142,6 +144,13 @@ export function ExploreScreenView({
             initialNumToRender={4}
             maxToRenderPerBatch={4}
             windowSize={7}
+            refreshControl={
+              <RefreshControl
+                refreshing={roomsRefreshing}
+                onRefresh={reloadRooms}
+                tintColor="#256EF4"
+              />
+            }
             ListEmptyComponent={
               roomsLoading ? (
                 <ReadyLoadingState compact label="방을 불러오는 중..." />
@@ -191,6 +200,13 @@ export function ExploreScreenView({
             initialNumToRender={5}
             maxToRenderPerBatch={5}
             windowSize={7}
+            refreshControl={
+              <RefreshControl
+                refreshing={matchesRefreshing}
+                onRefresh={reloadMatches}
+                tintColor="#256EF4"
+              />
+            }
             ListEmptyComponent={
               matchesLoading ? (
                 <ReadyLoadingState compact label="룸메이트를 불러오는 중..." />

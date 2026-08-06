@@ -181,13 +181,24 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     }
   }, [appendOptimisticMessage, room, socket, uploadImage]);
 
+  // 시트의 '요청하기' 버튼은 전송 중에도 눌리므로, 연타 시 두 번째 호출이 서버의
+  // ROOMMATE_DUPLICATE("이미 대기중인 룸메이트 요청이 존재합니다.")로 떨어져
+  // 요청이 실제로는 성공했는데도 실패 알럿이 뜬다. 동기 ref로 중복 전송을 막는다.
+  const requestingRef = useRef(false);
+  const [requesting, setRequesting] = useState(false);
+
   const confirmRequest = useCallback(async () => {
-    if (!room) return;
+    if (!room || requestingRef.current) return;
+    requestingRef.current = true;
+    setRequesting(true);
     try {
       await requestRoommate(room.id);
       setRequestSheetVisible(false);
     } catch (requestError) {
       showRequestError(requestError);
+    } finally {
+      requestingRef.current = false;
+      setRequesting(false);
     }
   }, [requestRoommate, room]);
 
@@ -247,7 +258,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     socketError: socket.error,
     retrySocket: socket.retry,
     uploadingImage,
-    processingRequest,
+    processingRequest: processingRequest || requesting,
     inputBottomPadding,
     modalBottomPadding,
     scrollRef,

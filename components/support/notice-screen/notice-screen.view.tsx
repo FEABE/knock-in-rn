@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
@@ -12,6 +12,7 @@ export type NoticeScreenViewProps = UseNoticeScreenReturn;
 export function NoticeScreenView({
   notices,
   loading,
+  refreshing,
   error,
   unavailable,
   retry,
@@ -20,7 +21,12 @@ export function NoticeScreenView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="공지사항" />
-      <ScrollView contentContainerClassName="gap-3 p-5">
+      <ScrollView
+        contentContainerClassName="gap-3 p-5"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={retry} tintColor="#256EF4" />
+        }
+      >
         {unavailable ? (
           <View className="items-center rounded-2xl border border-dashed border-neutral-200 p-10">
             <Text className="text-3xl">📢</Text>

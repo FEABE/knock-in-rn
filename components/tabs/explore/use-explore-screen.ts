@@ -71,8 +71,10 @@ export type UseExploreScreenReturn = {
   visiblePosts: RoomPost[];
   visibleMatches: RoommateMatchCardModel[];
   roomsLoading: boolean;
+  roomsRefreshing: boolean;
   roomsError: string | null;
   matchesLoading: boolean;
+  matchesRefreshing: boolean;
   matchesError: string | null;
   hasUnreadAlarms: boolean;
   preferenceNudgeOpen: boolean;
@@ -122,6 +124,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const {
     data: posts,
     loading: roomsLoading,
+    refreshing: roomsRefreshing,
     error: roomsError,
     reload: reloadRooms,
   } = useRoommateBoards(boardQuery);
@@ -136,6 +139,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const {
     data: matchList,
     loading: matchesLoading,
+    refreshing: matchesRefreshing,
     error: matchesError,
     reload: reloadMatches,
   } = useRoommateMatchCards();
@@ -189,8 +193,10 @@ export function useExploreScreen(): UseExploreScreenReturn {
     visiblePosts,
     visibleMatches,
     roomsLoading,
+    roomsRefreshing,
     roomsError,
     matchesLoading,
+    matchesRefreshing,
     matchesError,
     hasUnreadAlarms: (alarms ?? []).some((alarm) => !alarm.isRead),
     preferenceNudgeOpen,

@@ -6,20 +6,24 @@ import { type BlockedUserItem, useAccountActions, useBlockedUsers } from '@/lib/
 export type UseBlockedListScreenReturn = {
   users: BlockedUserItem[];
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   onBack: () => void;
   onUnblock: (user: BlockedUserItem) => void;
+  reload: () => void;
 };
 
 export function useBlockedListScreen(): UseBlockedListScreenReturn {
   const router = useRouter();
-  const { data: users, loading, error } = useBlockedUsers();
+  const { data: users, loading, refreshing, error, reload } = useBlockedUsers();
   const { requestUnblock } = useAccountActions();
 
   return {
     users: users ?? [],
     loading,
+    refreshing,
     error,
+    reload,
     onBack: () => router.back(),
     onUnblock: (user) =>
       Alert.alert('차단 해제', `${user.name}님을 차단 해제할까요?`, [

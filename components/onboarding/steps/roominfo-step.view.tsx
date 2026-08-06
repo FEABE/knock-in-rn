@@ -178,6 +178,7 @@ export function RoomInfoStepView({
                   <RoomTypeChoice
                     key={type.value}
                     label={type.label}
+                    image={type.image}
                     selected={selected}
                     disabled={disabled}
                     onPress={() =>
@@ -290,11 +291,13 @@ function StageIntro({ stage, hasRoom }: { stage: 0 | 1 | 2 | 3; hasRoom: boolean
 
 function RoomTypeChoice({
   label,
+  image,
   selected,
   disabled,
   onPress,
 }: {
   label: string;
+  image?: string | null;
   selected: boolean;
   disabled?: boolean;
   onPress: () => void;
@@ -311,7 +314,7 @@ function RoomTypeChoice({
             : 'border-[#DADAE8] bg-white active:opacity-80'
       }`}
     >
-      <RoomTypeArtwork label={label} size={66} />
+      <RoomTypeArtwork label={label} image={image} size={66} />
       <Text
         className={
           selected

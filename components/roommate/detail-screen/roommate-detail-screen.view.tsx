@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,7 +22,11 @@ import type { UseRoommateDetailScreenReturn } from './use-roommate-detail-screen
 
 export type RoommateDetailScreenViewProps = UseRoommateDetailScreenReturn;
 
-type DetailTab = 'compatibility' | 'condition' | 'room';
+type DetailTab = 'compatibility' | 'condition' | 'room' | 'lifestyle';
+
+/** 인증 뱃지 색상 (Figma: SealCheck 초록 / BagSimple 파랑). */
+const AUTH_BADGE_GREEN = '#3FA654';
+const AUTH_BADGE_BLUE = '#4C87F6';
 
 export function RoommateDetailScreenView({
   data,
@@ -53,6 +57,7 @@ export function RoommateDetailScreenView({
     compatibility: 0,
     condition: 0,
     room: 0,
+    lifestyle: 0,
   });
   const [activeTab, setActiveTab] = useState<DetailTab>('compatibility');
 
@@ -131,7 +136,14 @@ export function RoommateDetailScreenView({
             </View>
 
             <ReadyDivider />
-            <LifestyleBlock data={data} expanded={lifestyleExpanded} onToggle={toggleLifestyle} />
+
+            <View
+              onLayout={(event) => {
+                sectionOffsets.current.lifestyle = event.nativeEvent.layout.y;
+              }}
+            >
+              <LifestyleBlock data={data} expanded={lifestyleExpanded} onToggle={toggleLifestyle} />
+            </View>
           </ScrollView>
 
           <BottomBar
@@ -169,6 +181,7 @@ export function RoommateDetailScreenView({
 
 function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
   const roomBadge = data.roomStatusLabel.split('·')[0]?.trim();
+  const ageGender = ageGenderLabel(data.age, data.genderLabel);
   return (
     <View className="flex-row items-center gap-3 px-4 py-4">
       <ReadyProfileAvatar name={data.name || data.initial} imageUrl={data.profileImageUrl} />
@@ -176,13 +189,20 @@ function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
       <View className="flex-1 gap-2">
         <View className="flex-row items-center gap-1">
           <Text className="text-base font-semibold text-[#17171B]">{data.name}</Text>
-          {data.isAuthStudent || data.isAuthEmployee ? (
-            <Ionicons name="checkmark-circle" size={14} color="#34B27B" />
-          ) : null}
+          <AuthBadgeIcons
+            isAuthStudent={data.isAuthStudent}
+            isAuthEmployee={data.isAuthEmployee}
+            size={18}
+          />
         </View>
         <View className="flex-row flex-wrap gap-1.5">
-          {data.age ? <ReadyBadge label={`${data.age}세`} tone="red" /> : null}
-          {data.genderLabel ? <ReadyBadge label={data.genderLabel} tone="red" /> : null}
+          {ageGender ? (
+            <ReadyBadge
+              label={ageGender}
+              tone={data.genderLabel === '남성' ? 'blue' : 'red'}
+              icon={genderIconName(data.genderLabel)}
+            />
+          ) : null}
           {roomBadge ? <ReadyBadge label={roomBadge} tone="blue" icon="home" /> : null}
         </View>
       </View>
@@ -190,11 +210,46 @@ function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
   );
 }
 
+/** Figma 인증 아이콘: 학생 인증 = SealCheck(초록), 직장 인증 = BagSimple(파랑). */
+function AuthBadgeIcons({
+  isAuthStudent,
+  isAuthEmployee,
+  size,
+}: {
+  isAuthStudent: boolean;
+  isAuthEmployee: boolean;
+  size: number;
+}) {
+  if (!isAuthStudent && !isAuthEmployee) return null;
+  return (
+    <>
+      {isAuthStudent ? (
+        <MaterialIcons name="verified" size={size} color={AUTH_BADGE_GREEN} />
+      ) : null}
+      {isAuthEmployee ? (
+        <MaterialIcons name="work" size={size - 2} color={AUTH_BADGE_BLUE} />
+      ) : null}
+    </>
+  );
+}
+
+function genderIconName(genderLabel?: string): 'female' | 'male' | undefined {
+  if (genderLabel === '여성') return 'female';
+  if (genderLabel === '남성') return 'male';
+  return undefined;
+}
+
+/** 나이/성별을 하나의 칩 문구로 합친다. (Figma: "24세 · 여성") */
+function ageGenderLabel(age?: number, genderLabel?: string): string {
+  return [age ? `${age}세` : null, genderLabel].filter(Boolean).join(' · ');
+}
+
 function DetailTabs({ active, onPress }: { active: DetailTab; onPress: (tab: DetailTab) => void }) {
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'compatibility', label: '궁합 점수' },
     { key: 'condition', label: '룸메이트 조건' },
     { key: 'room', label: '방 소개' },
+    { key: 'lifestyle', label: '생활 패턴' },
   ];
   return (
     <View className="flex-row border-b border-[#ECECF3] bg-white">
@@ -206,15 +261,16 @@ function DetailTabs({ active, onPress }: { active: DetailTab; onPress: (tab: Det
             onPress={() => onPress(tab.key)}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            className={`h-11 flex-1 items-center justify-center border-b-2 ${
+            className={`h-11 flex-1 items-center justify-center border-b-2 px-0.5 ${
               selected ? 'border-[#256EF4]' : 'border-transparent'
             }`}
           >
             <Text
+              numberOfLines={1}
               className={
                 selected
-                  ? 'text-sm font-semibold text-[#17171B]'
-                  : 'text-sm font-medium text-[#AAAABA]'
+                  ? 'text-[13px] font-semibold text-[#17171B]'
+                  : 'text-[13px] font-medium text-[#AAAABA]'
               }
             >
               {tab.label}
@@ -306,7 +362,7 @@ function RoomIntroductionBlock({ data }: { data: RoommateMatchDetailModel }) {
     <ReadySection title="방 소개">
       <View className="gap-3">
         {data.livingRows.map((row) => (
-          <KeyVal key={row.label} label={figmaLivingLabel(row.label)} value={row.value} />
+          <KeyVal key={row.label} label={row.label} value={row.value} />
         ))}
       </View>
     </ReadySection>
@@ -433,10 +489,4 @@ function KeyVal({ label, value }: { label: string; value: string }) {
       <Text className="max-w-[65%] text-right text-sm font-semibold text-[#17171B]">{value}</Text>
     </View>
   );
-}
-
-function figmaLivingLabel(label: string): string {
-  if (label === '입주 가능 시기' || label === '입주 희망 시기') return '입주 가능일';
-  if (label === '지역' || label === '희망 지역') return '위치';
-  return label;
 }

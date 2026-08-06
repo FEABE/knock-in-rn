@@ -78,13 +78,17 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
     thumbnailUrl: item.image ?? item.imageUrl,
     deposit: num(item.deposit),
     monthlyRent: num(item.mounthRent ?? item.monthlyRent),
+    maintenanceFee: item.managementCost != null ? num(item.managementCost) : undefined,
     roomType: toRoomType(item.roomType ?? item.roomTypes?.[0]),
     region,
     views: num(item.viewer ?? item.hits),
     likes: 0,
     createdAt: parseServerDate(item.createAt ?? item.createdAt) ?? new Date(),
     status: 'open',
-    author: minimalUser(item.writer ?? item.memberName ?? '익명', region),
+    // 차단 필터(isUserBlocked)가 실제 memberId 로 동작하도록 이름이 아닌 id 를 쓴다.
+    author: minimalUser(item.writer ?? item.memberName ?? '익명', region, {
+      id: item.memberId != null ? String(item.memberId) : undefined,
+    }),
     description: '',
     liked: bool(item.interested ?? item.isLike),
   };
@@ -111,6 +115,7 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
     photoUrls,
     deposit: num(data.deposit),
     monthlyRent: num(data.mounthRent ?? data.monthlyRent),
+    maintenanceFee: data.managementCost != null ? num(data.managementCost) : undefined,
     roomType: toRoomType(data.roomType ?? data.roomTypeName),
     region,
     views: num(data.viewer ?? data.hits),
@@ -258,7 +263,20 @@ export function lifestyleLabels(items: LifestyleItem[]): string[] {
   return items.map((it) => `${it.name}: ${it.value}`);
 }
 
+const ROOM_TYPE_BY_SERVER_LABEL: Record<string, RoomType> = {
+  원룸: 'one-room',
+  투룸: 'two-room',
+  '쓰리룸+': 'three-room+',
+  오피스텔: 'officetel',
+  아파트: 'apt',
+  쉐어하우스: 'share-house',
+  빌라: 'villa',
+};
+
 function toRoomType(value: string | number | undefined): RoomType {
+  if (typeof value === 'string' && ROOM_TYPE_BY_SERVER_LABEL[value]) {
+    return ROOM_TYPE_BY_SERVER_LABEL[value];
+  }
   if (
     value === 'one-room' ||
     value === 'two-room' ||

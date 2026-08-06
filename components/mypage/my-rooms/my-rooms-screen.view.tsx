@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
@@ -15,6 +15,7 @@ export function MyRoomsScreenView({
   loggedIn,
   rooms,
   loading,
+  refreshing,
   error,
   deleting,
   bottomPadding,
@@ -61,6 +62,9 @@ export function MyRoomsScreenView({
           className="flex-1 bg-[#F7F8FC]"
           contentContainerClassName="gap-5 px-4 pb-28 pt-5"
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRetry} tintColor="#256EF4" />
+          }
         >
           {rooms.length === 0 ? (
             <View className="mt-8 items-center justify-center rounded-xl border border-dashed border-[#DADAE8] bg-white p-10">

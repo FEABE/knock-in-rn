@@ -37,8 +37,10 @@ export type UseInterestsScreenReturn = {
   sort: ExploreSort;
   openSheet: ExploreFilterKey | null;
   roomsLoading: boolean;
+  roomsRefreshing: boolean;
   roomsError: string | null;
   matchesLoading: boolean;
+  matchesRefreshing: boolean;
   matchesError: string | null;
   reloadRooms: () => void;
   reloadMatches: () => void;
@@ -66,12 +68,14 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
   const {
     data: posts,
     loading: roomsLoading,
+    refreshing: roomsRefreshing,
     error: roomsError,
     reload: reloadRooms,
   } = useRoommateBoards(boardQuery, isLoggedIn);
   const {
     data: matchList,
     loading: matchesLoading,
+    refreshing: matchesRefreshing,
     error: matchesError,
     reload: reloadMatches,
   } = useRoommateMatchCards(isLoggedIn);
@@ -94,8 +98,10 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
     sort,
     openSheet,
     roomsLoading,
+    roomsRefreshing,
     roomsError,
     matchesLoading,
+    matchesRefreshing,
     matchesError,
     reloadRooms,
     reloadMatches,

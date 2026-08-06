@@ -1,4 +1,4 @@
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomCard, RoommateFindCard } from '@/components/domain';
@@ -22,6 +22,8 @@ const INTERESTS_TABS = [
 
 const roomKeyExtractor = (post: RoomPost) => post.id;
 const matchKeyExtractor = (match: RoommateMatchCardModel) => match.id;
+const EMPTY_ROOM_POSTS: RoomPost[] = [];
+const EMPTY_MATCHES: RoommateMatchCardModel[] = [];
 
 /** 기존 contentContainer의 gap-5 / gap-4 를 대체한다(가상화 스페이서에 gap이 먹는 문제 회피). */
 function RoomListSeparator() {
@@ -39,8 +41,10 @@ export function InterestsScreenView({
   likedMatches,
   isLoggedIn,
   roomsLoading,
+  roomsRefreshing,
   roomsError,
   matchesLoading,
+  matchesRefreshing,
   matchesError,
   reloadRooms,
   reloadMatches,
@@ -90,71 +94,87 @@ export function InterestsScreenView({
           </Tabs.List>
 
           <Tabs.Content value="rooms" className="flex-1">
-            {roomsLoading ? (
-              <ReadyLoadingState label="관심 방을 불러오는 중..." />
-            ) : roomsError ? (
-              <ReadyErrorState
-                title="관심 방을 불러오지 못했어요"
-                description={roomsError}
-                onRetry={reloadRooms}
-              />
-            ) : rooms.length === 0 ? (
-              <ReadyEmptyState
-                title="관심 표시한 방이 없어요"
-                description="마음에 드는 방을 찾아보세요"
-                actionLabel="방 보러가기"
-                onAction={() => onExplorePress('rooms')}
-              />
-            ) : (
-              <FlatList
-                contentContainerClassName="px-4 pb-24 pt-1"
-                data={rooms}
-                keyExtractor={roomKeyExtractor}
-                renderItem={({ item }) => (
-                  <RoomCard post={item} onPress={onRoomPress} onLikeChange={onRoomLikeChange} />
-                )}
-                ItemSeparatorComponent={RoomListSeparator}
-                initialNumToRender={4}
-                maxToRenderPerBatch={4}
-                windowSize={7}
-              />
-            )}
+            <FlatList
+              contentContainerClassName="px-4 pb-24 pt-1"
+              data={roomsLoading || roomsError ? EMPTY_ROOM_POSTS : rooms}
+              keyExtractor={roomKeyExtractor}
+              renderItem={({ item }) => (
+                <RoomCard post={item} onPress={onRoomPress} onLikeChange={onRoomLikeChange} />
+              )}
+              ItemSeparatorComponent={RoomListSeparator}
+              initialNumToRender={4}
+              maxToRenderPerBatch={4}
+              windowSize={7}
+              refreshControl={
+                <RefreshControl
+                  refreshing={roomsRefreshing}
+                  onRefresh={reloadRooms}
+                  tintColor="#256EF4"
+                />
+              }
+              ListEmptyComponent={
+                roomsLoading ? (
+                  <ReadyLoadingState label="관심 방을 불러오는 중..." />
+                ) : roomsError ? (
+                  <ReadyErrorState
+                    title="관심 방을 불러오지 못했어요"
+                    description={roomsError}
+                    onRetry={reloadRooms}
+                  />
+                ) : (
+                  <ReadyEmptyState
+                    title="관심 표시한 방이 없어요"
+                    description="마음에 드는 방을 찾아보세요"
+                    actionLabel="방 보러가기"
+                    onAction={() => onExplorePress('rooms')}
+                  />
+                )
+              }
+            />
           </Tabs.Content>
 
           <Tabs.Content value="roommates" className="flex-1">
-            {matchesLoading ? (
-              <ReadyLoadingState label="관심 룸메이트를 불러오는 중..." />
-            ) : matchesError ? (
-              <ReadyErrorState
-                title="관심 룸메이트를 불러오지 못했어요"
-                description={matchesError}
-                onRetry={reloadMatches}
-              />
-            ) : likedMatches.length === 0 ? (
-              <ReadyEmptyState
-                title="관심 표시한 룸메이트가 없어요"
-                description="마음에 드는 룸메이트를 찾아보세요"
-                actionLabel="룸메이트 보러가기"
-                onAction={() => onExplorePress('roommates')}
-              />
-            ) : (
-              <FlatList
-                contentContainerClassName="p-5"
-                data={likedMatches}
-                keyExtractor={matchKeyExtractor}
-                renderItem={({ item }) => (
-                  <RoommateFindCard
-                    match={item}
-                    onPress={onRoommatePress}
-                    onLikeChange={onRoommateLikeChange}
+            <FlatList
+              contentContainerClassName="p-5"
+              data={matchesLoading || matchesError ? EMPTY_MATCHES : likedMatches}
+              keyExtractor={matchKeyExtractor}
+              renderItem={({ item }) => (
+                <RoommateFindCard
+                  match={item}
+                  onPress={onRoommatePress}
+                  onLikeChange={onRoommateLikeChange}
+                />
+              )}
+              ItemSeparatorComponent={MatchListSeparator}
+              initialNumToRender={5}
+              maxToRenderPerBatch={5}
+              windowSize={7}
+              refreshControl={
+                <RefreshControl
+                  refreshing={matchesRefreshing}
+                  onRefresh={reloadMatches}
+                  tintColor="#256EF4"
+                />
+              }
+              ListEmptyComponent={
+                matchesLoading ? (
+                  <ReadyLoadingState label="관심 룸메이트를 불러오는 중..." />
+                ) : matchesError ? (
+                  <ReadyErrorState
+                    title="관심 룸메이트를 불러오지 못했어요"
+                    description={matchesError}
+                    onRetry={reloadMatches}
                   />
-                )}
-                ItemSeparatorComponent={MatchListSeparator}
-                initialNumToRender={5}
-                maxToRenderPerBatch={5}
-                windowSize={7}
-              />
-            )}
+                ) : (
+                  <ReadyEmptyState
+                    title="관심 표시한 룸메이트가 없어요"
+                    description="마음에 드는 룸메이트를 찾아보세요"
+                    actionLabel="룸메이트 보러가기"
+                    onAction={() => onExplorePress('roommates')}
+                  />
+                )
+              }
+            />
           </Tabs.Content>
         </Tabs.Root>
       )}

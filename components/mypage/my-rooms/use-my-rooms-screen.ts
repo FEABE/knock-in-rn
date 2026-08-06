@@ -13,6 +13,7 @@ export type UseMyRoomsScreenReturn = {
   loggedIn: boolean;
   rooms: RoomPost[];
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   deleting: boolean;
   bottomPadding: number;
@@ -32,7 +33,13 @@ export type UseMyRoomsScreenReturn = {
 export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
   const router = useRouter();
   const { session } = useSession();
-  const { data: apiRooms, loading, error, reload } = useMyRoommateBoards(!!session);
+  const {
+    data: apiRooms,
+    loading,
+    refreshing,
+    error,
+    reload,
+  } = useMyRoommateBoards(!!session);
   const { deleteBoard, deleting } = useRoommateBoardWriteActions();
   const bottomPadding = useSafeBottomPadding(12, 24);
   const rooms = session ? (apiRooms ?? []) : [];
@@ -73,6 +80,7 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
     loggedIn: !!session,
     rooms,
     loading,
+    refreshing,
     error,
     deleting,
     bottomPadding,

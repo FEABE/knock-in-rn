@@ -172,7 +172,7 @@ export function RoomPostFormView({
                       selected ? 'border-[#256EF4] bg-[#256EF4]/10' : 'border-neutral-200 bg-white'
                     }`}
                   >
-                    <RoomTypeArtwork label={rt.label} size={28} />
+                    <RoomTypeArtwork label={rt.label} image={rt.image} size={28} />
                     <Text
                       className={
                         selected ? 'text-sm font-medium text-[#256EF4]' : 'text-sm text-neutral-700'

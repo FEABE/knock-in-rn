@@ -89,7 +89,9 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const promptBottomPadding = useSafeBottomPadding(24, 32);
   const formBottomPadding = useSafeBottomPadding(12, 24);
   const [state, setState] = useState<PreferencesState>({
-    step: 0,
+    // 마이페이지 진입은 안내 팝업(step 0) 없이 바로 관리 화면으로 들어간다.
+    // 온보딩(탐색 화면 넛지)에서 들어올 때만 참여 여부를 묻는다.
+    step: fromOnboarding ? 0 : 1,
     scales: {},
     choiceValues: {},
     loadedLifestyles: [],
@@ -113,10 +115,8 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
         const byName = priorities.find((priority) => priority.name === condition.name?.trim());
         return byName ? [byName.id] : [];
       });
-      const hasSavedPreferences = loadedLifestyles.length > 0 || nextSelected.length > 0;
       setState((current) => ({
         ...current,
-        step: !fromOnboarding && hasSavedPreferences ? 1 : current.step,
         selected: nextSelected.slice(0, 3),
         loadedLifestyles,
       }));
@@ -124,7 +124,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     return () => {
       mounted = false;
     };
-  }, [fromOnboarding, priorities]);
+  }, [priorities]);
 
   useEffect(() => {
     if (!loadedLifestyles.length) return;
@@ -188,18 +188,20 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
         Alert.alert('입력 확인 필요', '생활 패턴 또는 중요 조건을 하나 이상 선택해주세요.');
         return;
       }
-      const res =
-        !fromOnboarding && modifyItems.length
-          ? await updatePreferenceAll({
-              lifestyles: modifyItems,
-              conditions,
-            })
-          : await savePreferenceAll({
-              lifestyles,
-              conditions,
-            });
+      // 수정(PUT)은 "이미 저장된 문항"만 바꿀 수 있다. 새로 답한 문항이 하나라도 있으면
+      // 그 답이 통째로 누락되므로 전체 저장(POST)으로 다시 만든다.
+      const canModifyAll = !fromOnboarding && modifyItems.length === lifestyles.length;
+      const res = canModifyAll
+        ? await updatePreferenceAll({
+            lifestyles: modifyItems,
+            conditions,
+          })
+        : await savePreferenceAll({
+            lifestyles,
+            conditions,
+          });
       if (res.error || res.status !== 200) {
-        Alert.alert('저장 실패', res.error?.message ?? '잠시 후 다시 시도해주세요.');
+        Alert.alert('저장 실패', saveErrorMessage(res.error, res.status));
         return;
       }
       await markStoredPreferenceComplete();
@@ -264,6 +266,15 @@ type PreferencesState = {
   loadedLifestyles: { id?: number; lifestyleId?: number; value?: string }[];
   selected: number[];
 };
+
+/** 저장 실패 원인을 QA에서 바로 잡을 수 있게 서버 코드/상태까지 함께 보여준다. */
+function saveErrorMessage(
+  error: { code?: string; message: string } | null,
+  status: number,
+): string {
+  if (!error) return `잠시 후 다시 시도해주세요. (status ${status})`;
+  return `${error.message}${error.code ? ` (${error.code})` : ''} (status ${status})`;
+}
 
 /** 서버는 조건 부가 설명을 주지 않는다. 로컬 상수에서 문구만 보완하고 없으면 비운다. */
 function priorityDescription(name: string): string {

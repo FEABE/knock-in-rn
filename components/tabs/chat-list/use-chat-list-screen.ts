@@ -25,16 +25,18 @@ export type ChatListRow = {
 export type UseChatListScreenReturn = {
   rows: ChatListRow[];
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   isLoggedIn: boolean;
   onLoginPress: () => void;
+  reload: () => void;
 };
 
 export function useChatListScreen(): UseChatListScreenReturn {
   const router = useRouter();
   const { session } = useSession();
   const isLoggedIn = !!session;
-  const { data: rooms, loading, error, reload } = useChatRooms(isLoggedIn);
+  const { data: rooms, loading, refreshing, error, reload } = useChatRooms(isLoggedIn);
   const focusedOnceRef = useRef(false);
 
   useFocusEffect(
@@ -82,9 +84,11 @@ export function useChatListScreen(): UseChatListScreenReturn {
   return {
     rows,
     loading,
+    refreshing,
     error,
     isLoggedIn,
     onLoginPress: () => goKakaoLogin(router),
+    reload,
   };
 }
 

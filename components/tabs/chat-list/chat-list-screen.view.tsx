@@ -1,4 +1,4 @@
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
@@ -16,6 +16,7 @@ import {
 import type { ChatListRow, UseChatListScreenReturn } from './use-chat-list-screen';
 
 const chatRowKeyExtractor = (row: ChatListRow) => String(row.room.chatRoomId);
+const EMPTY_ROWS: ChatListRow[] = [];
 
 const renderChatRow = ({ item }: { item: ChatListRow }) => <ChatRoomRow row={item} />;
 
@@ -24,9 +25,11 @@ export type ChatListScreenViewProps = UseChatListScreenReturn;
 export function ChatListScreenView({
   rows,
   loading,
+  refreshing,
   error,
   isLoggedIn,
   onLoginPress,
+  reload,
 }: ChatListScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -40,23 +43,29 @@ export function ChatListScreenView({
             onPress={onLoginPress}
           />
         </View>
-      ) : loading ? (
-        <ReadyLoadingState label="채팅방을 불러오는 중..." />
-      ) : error ? (
-        <ReadyErrorState title="채팅방을 불러오지 못했어요" description={error} />
-      ) : rows.length === 0 ? (
-        <ReadyEmptyState
-          title="아직 채팅방이 없어요"
-          description="마음에 드는 룸메이트에게 먼저 말을 걸어보세요"
-        />
       ) : (
         <FlatList
-          data={rows}
+          data={loading || error ? EMPTY_ROWS : rows}
           keyExtractor={chatRowKeyExtractor}
           renderItem={renderChatRow}
           initialNumToRender={12}
           maxToRenderPerBatch={10}
           windowSize={11}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={reload} tintColor="#256EF4" />
+          }
+          ListEmptyComponent={
+            loading ? (
+              <ReadyLoadingState label="채팅방을 불러오는 중..." />
+            ) : error ? (
+              <ReadyErrorState title="채팅방을 불러오지 못했어요" description={error} />
+            ) : (
+              <ReadyEmptyState
+                title="아직 채팅방이 없어요"
+                description="마음에 드는 룸메이트에게 먼저 말을 걸어보세요"
+              />
+            )
+          }
         />
       )}
     </SafeAreaView>

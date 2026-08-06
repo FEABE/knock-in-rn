@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
@@ -11,9 +11,11 @@ export type BlockedListScreenViewProps = UseBlockedListScreenReturn;
 export function BlockedListScreenView({
   users,
   loading,
+  refreshing,
   error,
   onBack,
   onUnblock,
+  reload,
 }: BlockedListScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -53,7 +55,13 @@ export function BlockedListScreenView({
           <Text className="text-sm text-[#8A8A98]">차단한 회원이 없어요</Text>
         </View>
       ) : (
-        <ScrollView className="mt-4 flex-1" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          className="mt-4 flex-1"
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={reload} tintColor="#256EF4" />
+          }
+        >
           {users.map((user) => (
             <View
               key={user.id}

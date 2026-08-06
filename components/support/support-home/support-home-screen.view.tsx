@@ -4,24 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportHeader } from '@/components/support/support-header';
 import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
+import type { SupportFaqItem } from '@/lib/api';
 
-import type { SupportHomeAction, UseSupportHomeScreenReturn } from './use-support-home-screen';
+import type { UseSupportHomeScreenReturn } from './use-support-home-screen';
 
 export type SupportHomeScreenViewProps = UseSupportHomeScreenReturn;
 
 export function SupportHomeScreenView({
-  actions,
   faqs,
   faqsLoading,
   faqsError,
   retryFaqs,
+  openFaqIds,
+  toggleFaq,
   operatingHoursLabel,
+  onInquiryNew,
+  onInquiryList,
 }: SupportHomeScreenViewProps) {
-  const inquiry = findAction(actions, '문의하기');
-  const inquiries = findAction(actions, '문의내역');
-  const faq = findAction(actions, '자주 묻는 질문');
-  const notice = findAction(actions, '공지사항');
-
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="고객센터" />
@@ -32,88 +31,86 @@ export function SupportHomeScreenView({
             <Text className="text-base font-bold text-[#17171B]">운영팀에게 문의하기</Text>
             <Text className="mt-1 text-sm text-[#696976]">{operatingHoursLabel}</Text>
             <View className="mt-4 flex-row gap-3">
-              <ActionButton action={inquiry} primary label="문의하기" />
-              <ActionButton action={inquiries} label="문의 내역" />
+              <ActionButton onPress={onInquiryNew} primary label="문의하기" />
+              <ActionButton onPress={onInquiryList} label="문의 내역" />
             </View>
           </View>
         </View>
 
+        {/* 디자인(3746:78520)에서 FAQ는 별도 페이지가 아니라 고객센터 홈 안의 아코디언이다. */}
         <View className="gap-3">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm font-semibold text-[#696976]">자주 묻는 질문</Text>
-            <Pressable onPress={faq?.onPress} hitSlop={8}>
-              <Text className="text-xs text-[#AAAABA]">전체보기</Text>
-            </Pressable>
-          </View>
-          <View className="gap-2">
-            {faqsLoading ? (
-              <View className="rounded-md bg-[#F6F6FA] px-4 py-4">
-                <Text className="text-sm text-[#AAAABA]">질문을 불러오는 중...</Text>
-              </View>
-            ) : faqsError ? (
-              <ReadyErrorState
-                title="질문을 불러오지 못했어요"
-                description={faqsError}
-                onRetry={retryFaqs}
-                compact
-                className="rounded-md bg-[#F6F6FA]"
-              />
-            ) : faqs.length === 0 ? (
-              <View className="rounded-md bg-[#F6F6FA] px-4 py-4">
-                <Text className="text-sm text-[#AAAABA]">등록된 질문이 없어요</Text>
-              </View>
-            ) : (
-              faqs.map((item) => (
-                <Pressable
+          <Text className="text-sm font-semibold text-[#696976]">자주 묻는 질문</Text>
+          {faqsLoading ? (
+            <View className="rounded-md bg-[#F6F6FA] px-4 py-4">
+              <Text className="text-sm text-[#AAAABA]">질문을 불러오는 중...</Text>
+            </View>
+          ) : faqsError ? (
+            <ReadyErrorState
+              title="질문을 불러오지 못했어요"
+              description={faqsError}
+              onRetry={retryFaqs}
+              compact
+              className="rounded-md bg-[#F6F6FA]"
+            />
+          ) : faqs.length === 0 ? (
+            <View className="rounded-md bg-[#F6F6FA] px-4 py-4">
+              <Text className="text-sm text-[#AAAABA]">등록된 질문이 없어요</Text>
+            </View>
+          ) : (
+            <View>
+              {faqs.map((item) => (
+                <FaqRow
                   key={item.id}
-                  onPress={faq?.onPress}
-                  className="min-h-11 flex-row items-center rounded-md bg-[#F6F6FA] px-4 py-3 active:opacity-80"
-                >
-                  <Text numberOfLines={1} className="flex-1 text-sm text-[#3F3F47]">
-                    {item.question}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={18} color="#AAAABA" />
-                </Pressable>
-              ))
-            )}
-          </View>
-        </View>
-
-        <View className="gap-3">
-          <Text className="text-sm font-semibold text-[#696976]">공지사항</Text>
-          <Pressable
-            onPress={notice?.onPress}
-            className="flex-row items-center rounded-md bg-[#F6F6FA] px-4 py-4 active:opacity-80"
-          >
-            <View className="flex-1 gap-1">
-              <Text className="text-sm font-bold text-[#17171B]">노크인 서비스 소식</Text>
-              <Text className="text-xs text-[#AAAABA]">공지사항에서 최신 내용을 확인해주세요</Text>
+                  item={item}
+                  open={openFaqIds.includes(item.id)}
+                  onToggle={() => toggleFaq(item.id)}
+                />
+              ))}
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#AAAABA" />
-          </Pressable>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function findAction(actions: SupportHomeAction[], title: string) {
-  return actions.find((action) => action.title === title);
+function FaqRow({
+  item,
+  open,
+  onToggle,
+}: {
+  item: SupportFaqItem;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <View className="border-b border-[#ECECF3]">
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        className="min-h-12 flex-row items-center gap-3 py-4 active:opacity-70"
+      >
+        <Text className="flex-1 text-sm font-medium text-[#17171B]">{item.question}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color="#696976" />
+      </Pressable>
+      {open ? <Text className="pb-4 text-sm leading-6 text-[#696976]">{item.answer}</Text> : null}
+    </View>
+  );
 }
 
 function ActionButton({
-  action,
+  onPress,
   label,
   primary,
 }: {
-  action?: SupportHomeAction;
+  onPress: () => void;
   label: string;
   primary?: boolean;
 }) {
   return (
     <Pressable
-      onPress={action?.onPress}
-      disabled={!action}
+      onPress={onPress}
       className={`h-11 flex-1 items-center justify-center rounded-md border active:opacity-85 ${
         primary ? 'border-[#256EF4] bg-[#256EF4]' : 'border-[#AAAABA] bg-white'
       }`}

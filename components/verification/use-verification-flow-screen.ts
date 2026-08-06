@@ -14,6 +14,18 @@ export type VerificationStatusTone = 'idle' | 'review' | 'complete' | 'error';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * 서버가 보내는 인증 코드는 숫자 6자리가 아니라 길이가 정해지지 않은 영숫자 문자열이다.
+ * 예전에는 입력값을 `replace(/\D/g,'').slice(0,6)` 로 잘라내서, 메일에서 코드를 복사해
+ * 붙여넣으면 숫자만 남고 6자로 잘린 "전혀 다른 코드"가 입력되는 버그가 있었다.
+ * 이제는 붙여넣기한 문자열을 그대로 두고 공백/개행만 제거한다.
+ */
+const MIN_CODE_LENGTH = 6;
+
+function normalizeCode(next: string): string {
+  return next.replace(/\s+/g, '');
+}
+
 export type UseVerificationFlowScreenProps = {
   kind: VerificationKind;
   title: string;
@@ -130,7 +142,7 @@ export function useVerificationFlowScreen(
   ).padStart(2, '0')}`;
   const normalizedEmail = email.trim();
   const canSend = EMAIL_RE.test(normalizedEmail) && !loading;
-  const canVerify = code.length === 6 && remainingSeconds > 0 && !loading;
+  const canVerify = code.length >= MIN_CODE_LENGTH && remainingSeconds > 0 && !loading;
 
   const send = async () => {
     if (!EMAIL_RE.test(normalizedEmail)) {
@@ -167,8 +179,11 @@ export function useVerificationFlowScreen(
       }));
       return;
     }
-    if (code.length < 6) {
-      setState((current) => ({ ...current, error: '6자리 인증 코드를 입력해주세요.' }));
+    if (code.length < MIN_CODE_LENGTH) {
+      setState((current) => ({
+        ...current,
+        error: '메일로 받은 인증 코드를 그대로 입력해주세요.',
+      }));
       return;
     }
     setState((current) => ({ ...current, loading: true, error: null }));
@@ -244,7 +259,7 @@ export function useVerificationFlowScreen(
     setCode: (next) =>
       setState((current) => ({
         ...current,
-        code: next.replace(/\D/g, '').slice(0, 6),
+        code: normalizeCode(next),
         error: null,
       })),
     send,

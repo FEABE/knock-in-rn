@@ -10,6 +10,8 @@ import type { ApiResponse } from './client';
 export type AsyncState<T> = {
   data: T | null;
   loading: boolean;
+  /** 데이터가 이미 있는 상태에서 재조회 중인지(당겨서 새로고침 스피너 제어용). */
+  refreshing: boolean;
   error: string | null;
   reload: () => void;
 };
@@ -56,6 +58,7 @@ export function useApi<T>(
   return {
     data: query.data ?? null,
     loading: enabled && query.isLoading,
+    refreshing: enabled && query.isFetching,
     error: enabled && query.error instanceof Error ? query.error.message : null,
     reload,
   };
