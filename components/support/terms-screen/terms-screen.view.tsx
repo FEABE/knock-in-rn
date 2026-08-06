@@ -20,11 +20,13 @@ export function TermsScreenView({
 }: TermsScreenViewProps) {
   // 전문 화면(3941:49919): 헤더 제목이 약관 이름으로 바뀌고 뒤로가기는 목록으로 돌아간다.
   if (active) {
+    const { heading, rest } = splitBodyHeading(active.body);
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
         <SupportHeader title={active.title} onBack={closeDetail} />
-        <ScrollView contentContainerClassName="px-4 pb-10 pt-2">
-          <Text className="text-sm leading-6 text-[#3F3F47]">{active.body}</Text>
+        <ScrollView contentContainerClassName="gap-3 px-4 pb-10 pt-2">
+          {heading ? <Text className="text-lg font-bold text-[#17171B]">{heading}</Text> : null}
+          <Text className="text-sm leading-6 text-[#3F3F47]">{rest}</Text>
         </ScrollView>
       </SafeAreaView>
     );
@@ -67,4 +69,17 @@ export function TermsScreenView({
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+/**
+ * 약관 본문 첫 줄은 "노크인 이용약관" 같은 문서 제목이다. 굵게 강조해서
+ * 보여주려고 첫 줄과 나머지 본문을 분리한다. 줄바꿈이 없으면 그대로 본문 처리한다.
+ */
+function splitBodyHeading(body: string): { heading: string | null; rest: string } {
+  const newlineIndex = body.indexOf('\n');
+  if (newlineIndex === -1) return { heading: null, rest: body };
+  return {
+    heading: body.slice(0, newlineIndex).trim(),
+    rest: body.slice(newlineIndex + 1).trimStart(),
+  };
 }

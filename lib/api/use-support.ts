@@ -31,6 +31,8 @@ export type SupportNoticeItem = {
   id: string;
   title: string;
   dateLabel: string;
+  /** 목록 카드에 2줄로 보여줄 본문 미리보기. 상세 조회 실패 시 빈 문자열. */
+  bodyPreview: string;
 };
 
 export type SupportNoticeDetail = {
@@ -156,7 +158,7 @@ export function useSupportFaqs(): AsyncState<SupportFaqItem[]> {
 
 export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
   const query = useQuery({
-    queryKey: ['support', 'notices'],
+    queryKey: ['support', 'notices', 'with-preview'],
     retry: false,
     queryFn: async () => {
       const list = await getNotices({ page: 0, size: 20 });
@@ -164,11 +166,23 @@ export function useSupportNotices(): AsyncState<SupportNoticeItem[]> {
         throw new Error(list.error?.message ?? `요청 실패 (status ${list.status})`);
       }
 
-      return (list.data?.notices ?? []).map((notice) => ({
-        id: String(notice.id ?? ''),
-        title: notice.title ?? '공지사항',
-        dateLabel: formatDateLabel(notice.createAt),
-      }));
+      const notices = list.data?.notices ?? [];
+      return Promise.all(
+        notices.map(async (notice) => {
+          const id = String(notice.id ?? '');
+          const detail = id ? await getNoticeDetail(id) : null;
+          const contents =
+            detail && detail.status === 200 && !detail.error
+              ? (detail.data?.notice?.contents ?? '')
+              : '';
+          return {
+            id,
+            title: notice.title ?? '공지사항',
+            dateLabel: formatDateLabel(notice.createAt),
+            bodyPreview: contents,
+          };
+        }),
+      );
     },
   });
 
