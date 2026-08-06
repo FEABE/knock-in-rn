@@ -6,6 +6,7 @@ import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type BoardListQuery,
+  getPreferenceAll,
   regionBackendId,
   roomTypeBackendId,
   useMyRoommateBoards,
@@ -15,7 +16,6 @@ import {
   useRoommateMatchLikeActions,
   useAlarms,
   type RoommateMatchCardModel,
-  getPreferenceAll,
 } from '@/lib/api';
 import { useModeration, useSession, type RoomPost } from '@/lib/domain';
 import { useRequireLogin } from '@/lib/auth';

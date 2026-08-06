@@ -1,5 +1,5 @@
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoomThumbnailPlaceholder } from '@/components/domain';
 import { PriorityArtwork, RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
-import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
 import {
   ReadyActionRow,
   ReadyActionSheet,
@@ -26,6 +25,7 @@ import {
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
 import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
+import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
 import type { ImportantCondition, RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
 import type { LifestyleTile, UseRoomDetailScreenReturn } from './use-room-detail-screen';
@@ -186,6 +186,8 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
           photos={props.photos}
           index={props.photoIndex}
           onIndexChange={props.setPhotoIndex}
+          roomTypeLabel={ROOM_TYPE_LABEL[props.post.roomType] ?? props.post.roomType}
+          showNew={isRecent(props.post.createdAt)}
         />
 
         <TitleBlock post={props.post} />
@@ -337,9 +339,6 @@ const ROOM_DETAIL_TABS: { key: RoomDetailTab; label: string }[] = [
   { key: 'moveIn', label: '입주 가능일' },
   { key: 'description', label: '소개' },
   { key: 'lifestyle', label: '생활 패턴' },
-  { key: 'options', label: '옵션' },
-  { key: 'location', label: '위치' },
-  { key: 'author', label: '등록자 정보' },
 ];
 
 function RoomDetailTabs({
@@ -351,12 +350,15 @@ function RoomDetailTabs({
   active: RoomDetailTab;
   onPress: (tab: RoomDetailTab) => void;
 }) {
+  const { width } = useWindowDimensions();
+  const tabWidth = width / 3;
+
   return (
     <View className="border-b border-[#ECECF3] bg-white">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-3"
+        contentContainerStyle={{ minWidth: tabWidth * tabs.length }}
       >
         {tabs.map((tab) => {
           const selected = active === tab.key;
@@ -369,12 +371,13 @@ function RoomDetailTabs({
               className={`h-11 items-center justify-center border-b-2 px-3 ${
                 selected ? 'border-[#256EF4]' : 'border-transparent'
               }`}
+              style={{ width: tabWidth }}
             >
               <Text
                 className={
                   selected
-                    ? 'text-sm font-semibold text-[#17171B]'
-                    : 'text-sm font-medium text-[#AAAABA]'
+                    ? 'text-[16px] font-semibold leading-6 text-[#17171B]'
+                    : 'text-[16px] font-medium leading-6 text-[#AAAABA]'
                 }
               >
                 {tab.label}
@@ -414,38 +417,46 @@ function PhotoCarousel({
   photos,
   index,
   onIndexChange,
+  roomTypeLabel,
+  showNew,
 }: {
   photos: string[];
   index: number;
   onIndexChange: (next: number) => void;
+  roomTypeLabel: string;
+  showNew: boolean;
 }) {
   const { width } = useWindowDimensions();
   const photoHeight = 180;
 
-  if (photos.length === 0) {
-    return <RoomThumbnailPlaceholder height={photoHeight} />;
-  }
-
   return (
     <View className="relative">
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(event) => {
-          const width = event.nativeEvent.layoutMeasurement.width;
-          onIndexChange(Math.round(event.nativeEvent.contentOffset.x / width));
-        }}
-      >
-        {photos.map((url, index) => (
-          <Image
-            key={`${url}-${index}`}
-            source={{ uri: url }}
-            style={{ width, height: photoHeight }}
-            contentFit="cover"
-          />
-        ))}
-      </ScrollView>
+      {photos.length === 0 ? (
+        <RoomThumbnailPlaceholder height={photoHeight} />
+      ) : (
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => {
+            const width = event.nativeEvent.layoutMeasurement.width;
+            onIndexChange(Math.round(event.nativeEvent.contentOffset.x / width));
+          }}
+        >
+          {photos.map((url, index) => (
+            <Image
+              key={`${url}-${index}`}
+              source={{ uri: url }}
+              style={{ width, height: photoHeight }}
+              contentFit="cover"
+            />
+          ))}
+        </ScrollView>
+      )}
+      <View className="absolute left-4 top-4 flex-row gap-2">
+        {showNew ? <DetailNewPill /> : null}
+        <DetailRoomTypePill label={roomTypeLabel} />
+      </View>
       {photos.length > 1 ? (
         <View className="absolute inset-x-0 bottom-3 flex-row justify-center gap-1.5">
           {photos.map((url, photoIndex) => (
@@ -462,32 +473,63 @@ function PhotoCarousel({
 
 function TitleBlock({ post }: { post: RoomPost }) {
   return (
-    <View className="gap-2 px-4 py-5">
-      <View className="flex-row items-center gap-1.5">
-        <DetailRoomTypePill label={ROOM_TYPE_LABEL[post.roomType] ?? post.roomType} />
-      </View>
-      <Text className="text-xl font-bold text-[#17171B]">{post.title}</Text>
-      <View className="flex-row items-center gap-2">
-        <Text className="text-base font-semibold text-[#17171B]">
-          보증금 {post.deposit.toLocaleString()} / 월세 {post.monthlyRent.toLocaleString()}
+    <View className="gap-2 px-4 py-3">
+      <View className="flex-row items-start justify-between gap-3">
+        <Text className="min-w-0 flex-1 text-[14px] font-semibold leading-[21px] text-[#17171B]">
+          {post.title}
         </Text>
-        {post.maintenanceFee !== undefined ? (
-          <Text className="text-sm text-[#696976]">/ 관리비 {post.maintenanceFee}만원</Text>
-        ) : null}
+        <Text className="text-[12px] font-medium leading-[18px] text-[#AAAABA]">
+          {timeAgo(post.createdAt)}
+        </Text>
       </View>
-      <View className="flex-row items-center gap-3">
-        <View className="flex-row items-center gap-1">
-          <Ionicons name="location-outline" size={13} color="#696976" />
-          <Text className="text-xs text-neutral-500">
-            {post.region.city} {post.region.district}
+      <Text className="text-[12px] font-medium leading-[18px] text-[#696976]">
+        {post.region.city} {post.region.district}
+      </Text>
+      <View className="mt-1 flex-row items-center justify-between gap-3">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2">
+          <ReadyProfileAvatar name={post.author.name} imageUrl={post.author.avatarUrl} size={20} />
+          <Text numberOfLines={1} className="shrink text-[12px] font-medium text-[#696976]">
+            {post.author.name}
+          </Text>
+          <AuthorMetaPill author={post.author} />
+        </View>
+        <View className="flex-row items-baseline gap-1">
+          <Text className="text-[12px] font-medium leading-[18px] text-[#696976]">월세</Text>
+          <Text className="text-[16px] font-bold leading-6 text-[#17171B]">
+            {post.deposit.toLocaleString()}/{post.monthlyRent.toLocaleString()}/
+            {post.maintenanceFee ?? 0}
           </Text>
         </View>
-        <Text className="text-xs text-neutral-400">{fmtDate(post.createdAt)}</Text>
-        <View className="flex-row items-center gap-1">
-          <Ionicons name="information-circle-outline" size={13} color="#AAAABA" />
-          <Text className="text-xs text-neutral-400">{post.views.toLocaleString()}</Text>
-        </View>
       </View>
+    </View>
+  );
+}
+
+function AuthorMetaPill({ author }: { author: UserSummary }) {
+  const genderLabel = GENDER_LABEL[author.gender] ?? '기타';
+  const symbol = author.gender === 'female' ? '♀' : author.gender === 'male' ? '♂' : '';
+  return (
+    <View className="h-[24px] flex-row items-center justify-center rounded bg-[#FDEFEC] px-1.5">
+      <Text className="text-[12px] font-semibold leading-[18px] text-[#DE3412]">
+        {symbol ? `${symbol} ` : ''}
+        {author.age}세 · {genderLabel}
+      </Text>
+    </View>
+  );
+}
+
+function DetailNewPill() {
+  return (
+    <View
+      className="h-[26px] items-center justify-center rounded bg-[#4C87F6] px-1.5"
+      style={DETAIL_BADGE_SHADOW_STYLE}
+    >
+      <Text
+        style={DETAIL_BADGE_TEXT_STYLE}
+        className="text-[14px] font-semibold leading-[21px] text-white"
+      >
+        NEW
+      </Text>
     </View>
   );
 }
@@ -512,7 +554,17 @@ function BasicInfoBlock({ post }: { post: RoomPost }) {
   if (!post.moveInDate) return null;
   return (
     <ReadySection title="입주 가능일">
-      <Row label="입주 가능 시기" value={fmtDate(post.moveInDate)} />
+      <View className="h-[49px] flex-row items-center justify-between rounded-lg border border-[#DADAE8] px-4">
+        <View className="flex-row items-center gap-2">
+          <Ionicons name="calendar-outline" size={22} color="#17171B" />
+          <Text className="text-[14px] leading-[21px] text-[#17171B]">
+            {fmtDate(post.moveInDate)}
+          </Text>
+        </View>
+        <View className="h-[26px] items-center justify-center rounded bg-[#ECF2FE] px-2">
+          <Text className="text-[13px] font-medium leading-[19px] text-[#4C87F6]">협의 불가능</Text>
+        </View>
+      </View>
     </ReadySection>
   );
 }
@@ -577,7 +629,9 @@ function OptionsBlock({ options }: { options: RoomOption[] }) {
           return (
             <View key={option.id} className="min-w-[72px] flex-1 items-center gap-2">
               <RoomOptionArtwork label={label} image={fromMeta?.image} size={40} />
-              <Text className="text-center text-xs text-[#696976]">{label}</Text>
+              <Text className="text-center text-[14px] font-medium leading-[21px] text-[#17171B]">
+                {label}
+              </Text>
             </View>
           );
         })}
@@ -597,32 +651,30 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
   ).slice(0, 3);
   const conditionChips = [
     {
-      label:
-        preferred?.genderLabel ??
-        (author.preferredGender
-          ? PREFERRED_GENDER_LABEL[author.preferredGender]
-          : GENDER_LABEL[author.gender]),
-    },
-    {
       label: preferred?.smokingLabel ?? (smoking === 'no' ? '비흡연자' : '흡연 여부 무관'),
+      image: null,
     },
+    ...priorityItems.map((condition) => ({
+      label: conditionName(condition),
+      image: conditionImage(condition),
+    })),
   ].filter((item) => Boolean(item.label));
 
   return (
-    <ReadySection title="룸메이트 조건">
-      <Text className="text-[13px] font-medium leading-5 text-[#AAAABA]">
-        프로필을 점수 산출에 사용해요
-      </Text>
-
+    <ReadySection title="선호 룸메이트 조건">
       <View className="flex-row flex-wrap gap-2">
         {conditionChips.map((condition) => (
-          <PreferredConditionChip key={condition.label} label={condition.label} />
+          <PreferredConditionChip
+            key={condition.label}
+            label={condition.label}
+            image={condition.image}
+          />
         ))}
       </View>
 
       {priorityItems.length ? (
-        <View className="mt-1 gap-2">
-          <Text className="text-[13px] font-semibold leading-5 text-[#256EF4]">우선순위</Text>
+        <View className="mt-3 gap-3">
+          <Text className="text-[15px] font-semibold leading-6 text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
             {priorityItems.map((condition) => (
               <PriorityConditionChip key={conditionName(condition)} condition={condition} />
@@ -634,12 +686,13 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
   );
 }
 
-function PreferredConditionChip({ label }: { label: string }) {
+function PreferredConditionChip({ label, image }: { label: string; image?: string | null }) {
   return (
-    <View className="h-[28px] flex-row items-center justify-center rounded bg-[#F6F6FA] px-2">
+    <View className="h-[34px] flex-row items-center justify-center gap-1.5 rounded-lg border border-[#DADAE8] bg-white px-3">
+      <PriorityArtwork label={label} image={image} size={18} />
       <Text
         style={DETAIL_CHIP_TEXT_STYLE}
-        className="text-[13px] font-medium leading-5 text-[#696976]"
+        className="text-[14px] font-semibold leading-[21px] text-[#696976]"
       >
         {label}
       </Text>
@@ -651,11 +704,11 @@ function PriorityConditionChip({ condition }: { condition: string | ImportantCon
   const label = conditionName(condition);
   const image = conditionImage(condition);
   return (
-    <View className="h-[32px] flex-row items-center justify-center gap-1.5 rounded bg-[#ECF2FE] px-2">
+    <View className="h-[36px] flex-row items-center justify-center gap-1.5 rounded-lg bg-[#ECF2FE] px-3">
       <PriorityArtwork label={label} image={image} size={18} />
       <Text
         style={DETAIL_CHIP_TEXT_STYLE}
-        className="text-[13px] font-medium leading-5 text-[#17171B]"
+        className="text-[14px] font-semibold leading-[21px] text-[#17171B]"
       >
         {label}
       </Text>
@@ -709,64 +762,90 @@ function DescriptionBlock({
   );
 }
 
-const RING_SIZE = 84;
-const RING_STROKE = 9;
+const RING_SIZE = 120;
+const RING_STROKE = 8;
 
 function CompatibilityBlock({ post, isLoggedIn }: { post: RoomPost; isLoggedIn: boolean }) {
   const total = post.compatibilityScore;
-  const subs = post.compatibilityDetails ?? [];
-  const hasScore = isLoggedIn && total !== undefined;
+  const hasScore = isLoggedIn && typeof total === 'number';
+  const normalizedScore = hasScore ? Math.max(0, Math.min(100, total)) : 0;
   const scoreColor = hasScore ? '#256EF4' : '#9CA3AF';
 
   return (
-    <ReadySection title="궁합 점수">
-      <View className="flex-row items-center gap-5 px-4 py-3">
-        <View
-          style={{
-            width: RING_SIZE,
-            height: RING_SIZE,
-            borderRadius: RING_SIZE / 2,
-            borderWidth: RING_STROKE,
-            borderColor: hasScore ? '#256EF4' : '#E5E7EB',
-            borderTopColor: hasScore ? '#DBE6FD' : '#E5E7EB',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text className="text-xl font-bold" style={{ color: scoreColor }}>
-            {hasScore ? `${total}점` : isLoggedIn ? '--점' : '??점'}
+    <ReadySection
+      title="궁합 점수"
+      accessory={
+        <View className="flex-row items-center gap-1">
+          <Text className="text-[13px] font-medium leading-[19px] text-[#AAAABA]">
+            프로필 완성 후 실제 점수 반영
           </Text>
+          <Ionicons name="information-circle" size={18} color="#DADAE8" />
         </View>
-
-        <View className="flex-1 gap-3">
-          {subs.slice(0, 3).map((score) => (
-            <View key={score.label} className="gap-1.5">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-xs text-neutral-500">{score.label}</Text>
-                <Text className="text-sm font-bold" style={{ color: scoreColor }}>
-                  {hasScore ? `${score.score}점` : isLoggedIn ? '--점' : '??점'}
-                </Text>
-              </View>
-              <View className="h-1.5 overflow-hidden rounded-full bg-neutral-100">
-                <View
-                  className="h-full rounded-full"
-                  style={{
-                    width: hasScore ? `${score.score}%` : '0%',
-                    backgroundColor: '#256EF4',
-                  }}
-                />
-              </View>
-            </View>
-          ))}
-          {subs.length === 0 && isLoggedIn ? (
-            <Text className="text-[10px] text-neutral-400">궁합 세부 점수를 계산 중이에요</Text>
-          ) : null}
-          {!isLoggedIn ? (
-            <Text className="text-[10px] text-neutral-400">* 프로필 완성 후 실제 점수 반영</Text>
-          ) : null}
+      }
+    >
+      <View className="items-center py-4">
+        <View
+          className="items-center justify-center"
+          style={{ width: RING_SIZE, height: RING_SIZE }}
+        >
+          <CompatibilityRing progress={normalizedScore} active={hasScore} />
+          <Text className="text-[36px] font-bold leading-[44px]" style={{ color: scoreColor }}>
+            {hasScore ? Math.round(total) : isLoggedIn ? '--' : '??'}
+            <Text className="text-[13px] font-semibold">점</Text>
+          </Text>
         </View>
       </View>
     </ReadySection>
+  );
+}
+
+function CompatibilityRing({ progress, active }: { progress: number; active: boolean }) {
+  const normalized = Math.max(0, Math.min(100, progress));
+  const progressRotation = normalized * 3.6;
+  const trackColor = active ? '#ECF2FE' : '#E5E7EB';
+
+  return (
+    <View
+      className="absolute items-center justify-center"
+      style={{ width: RING_SIZE, height: RING_SIZE }}
+    >
+      <View
+        className="absolute rounded-full"
+        style={{
+          width: RING_SIZE,
+          height: RING_SIZE,
+          borderWidth: RING_STROKE,
+          borderColor: trackColor,
+        }}
+      />
+      {active ? (
+        <>
+          <RingProgressLayer rotation={normalized > 50 ? 45 : progressRotation - 135} />
+          <RingProgressLayer
+            rotation={normalized > 50 ? progressRotation - 135 : -135}
+            color={normalized > 50 ? '#256EF4' : trackColor}
+          />
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+function RingProgressLayer({ rotation, color = '#256EF4' }: { rotation: number; color?: string }) {
+  return (
+    <View
+      className="absolute rounded-full"
+      style={{
+        width: RING_SIZE,
+        height: RING_SIZE,
+        borderWidth: RING_STROKE,
+        borderLeftColor: 'transparent',
+        borderBottomColor: 'transparent',
+        borderRightColor: color,
+        borderTopColor: color,
+        transform: [{ rotate: `${rotation}deg` }],
+      }}
+    />
   );
 }
 
@@ -801,16 +880,16 @@ function LocationBlock({ post }: { post: RoomPost }) {
 function AuthorBlock({ author, onPress }: { author: UserSummary; onPress: () => void }) {
   return (
     <ReadySection title="등록자 정보">
-      <Pressable
-        onPress={onPress}
-        className="flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 active:opacity-90"
-      >
+      <Pressable onPress={onPress} className="flex-row items-center gap-3 active:opacity-90">
         <ReadyProfileAvatar name={author.name} imageUrl={author.avatarUrl} size={58} />
-        <View className="flex-1 gap-1">
-          <Text className="text-sm font-semibold text-neutral-900">
-            {author.name} · {author.age}세 · {GENDER_LABEL[author.gender]}
-          </Text>
-          <View className="flex-row flex-wrap gap-1.5">
+        <View className="flex-1 gap-2">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-[16px] font-semibold leading-6 text-[#17171B]">
+              {author.name}
+            </Text>
+            <AuthorMetaPill author={author} />
+          </View>
+          <View className="flex-row flex-wrap gap-2">
             {author.badges.map((badge) => (
               <ReadyBadge
                 key={badge.kind}
@@ -821,7 +900,6 @@ function AuthorBlock({ author, onPress }: { author: UserSummary; onPress: () => 
             ))}
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#DADAE8" />
       </Pressable>
     </ReadySection>
   );
@@ -855,7 +933,7 @@ function BottomBar({
           accessibilityRole="button"
           accessibilityLabel={liked ? '관심 해제' : '관심 등록'}
           accessibilityState={{ selected: liked }}
-          className={`h-12 w-12 items-center justify-center rounded-xl border ${
+          className={`h-12 w-[50px] items-center justify-center rounded-lg border-[1.5px] ${
             liked ? 'border-[#256EF4]' : 'border-neutral-200'
           }`}
         >
@@ -874,14 +952,14 @@ function BottomBar({
         accessibilityRole="button"
         accessibilityLabel={isOwner ? '게시글 수정' : '채팅하기'}
         accessibilityState={{ disabled: !isOwner && creatingChat }}
-        className={`h-12 flex-1 items-center justify-center rounded-xl bg-[#256EF4] active:opacity-90 ${
+        className={`h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90 ${
           !isOwner && creatingChat ? 'opacity-60' : ''
         }`}
       >
         {!isOwner && creatingChat ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text className="text-sm font-semibold text-white">
+          <Text className="text-[16px] font-bold leading-6 text-white">
             {isOwner ? '게시글 수정' : '채팅하기'}
           </Text>
         )}
@@ -922,6 +1000,20 @@ function levelLabel(value?: number) {
 
 function fmtDate(d: Date): string {
   return formatKstDateLabel(d);
+}
+
+function timeAgo(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const day = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (day <= 0) {
+    const hour = Math.floor(diffMs / (1000 * 60 * 60));
+    if (hour <= 0) return '방금 전';
+    return `${hour}시간 전`;
+  }
+  if (day < 30) return `${day}일 전`;
+  const month = Math.floor(day / 30);
+  if (month < 12) return `${month}달 전`;
+  return `${Math.floor(month / 12)}년 전`;
 }
 
 function isRecent(date: Date): boolean {

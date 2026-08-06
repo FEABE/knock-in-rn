@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import {
   clearStoredAuthSession,
+  markStoredPreferenceComplete,
   markStoredProfileComplete,
   readStoredAuthSession,
   writeStoredAuthSession,
@@ -63,6 +64,7 @@ export type SessionContextValue = {
   signIn: (provider?: SocialProvider) => Promise<SignInResult>;
   signOut: () => Promise<void>;
   markProfileComplete: (identity?: StoredAuthIdentity) => Promise<void>;
+  markPreferenceComplete: () => Promise<void>;
   refreshSessionUser: () => Promise<void>;
   setVisibility: (next: 'public' | 'hidden' | 'matched') => void;
 };
@@ -79,6 +81,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     return {
       user: sessionUserFromProfile(),
       isProfileComplete: true,
+      preferenceInfo: false,
       visibility: 'public',
     };
   });
@@ -108,6 +111,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         setSession({
           user,
           isProfileComplete,
+          preferenceInfo: stored.preferenceInfo === true,
           visibility: 'public',
         });
       });
@@ -125,6 +129,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       setSession({
         user,
         isProfileComplete: true,
+        preferenceInfo: false,
         visibility: 'public',
       });
       return {
@@ -195,6 +200,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       setSession({
         user,
         isProfileComplete,
+        preferenceInfo: res.data.preferenceInfo === true,
         visibility: 'public',
       });
 
@@ -242,6 +248,11 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         : prev,
     );
     await markStoredProfileComplete(identity);
+  }, []);
+
+  const markPreferenceComplete = useCallback(async () => {
+    setSession((prev) => (prev ? { ...prev, preferenceInfo: true } : prev));
+    await markStoredPreferenceComplete();
   }, []);
 
   const refreshSessionUser = useCallback(async () => {
@@ -337,10 +348,19 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       signIn,
       signOut,
       markProfileComplete,
+      markPreferenceComplete,
       refreshSessionUser,
       setVisibility,
     }),
-    [session, signIn, signOut, markProfileComplete, refreshSessionUser, setVisibility],
+    [
+      session,
+      signIn,
+      signOut,
+      markProfileComplete,
+      markPreferenceComplete,
+      refreshSessionUser,
+      setVisibility,
+    ],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { setMypageHomeToast } from '@/components/mypage/mypage-home/mypage-home-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
-import { markStoredPreferenceComplete } from '@/lib/auth/session-storage';
 import {
   EMBEDDED_PREFERENCE_PRIORITIES,
   embeddedPriorityIdFromLabel,
 } from '@/lib/domain/preference-priorities';
+import { useSession } from '@/lib/domain';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   getPreferenceAll,
@@ -64,6 +64,7 @@ export type UsePreferencesScreenReturn = {
 
 export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const router = useRouter();
+  const { markPreferenceComplete } = useSession();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const fromOnboarding = from === 'onboarding';
   const lifestyleOptions = useLifestylePatternOptions();
@@ -204,7 +205,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
         Alert.alert('저장 실패', saveErrorMessage(res.error, res.status));
         return;
       }
-      await markStoredPreferenceComplete();
+      await markPreferenceComplete();
     }
     if (!fromOnboarding) setMypageHomeToast('저장되었어요');
     exit();

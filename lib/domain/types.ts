@@ -119,6 +119,7 @@ export type Notice = {
 export type Session = {
   user: UserSummary;
   isProfileComplete: boolean;
+  preferenceInfo: boolean;
   visibility: 'public' | 'hidden' | 'matched';
 } | null;
 
