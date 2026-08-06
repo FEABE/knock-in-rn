@@ -25,17 +25,10 @@ export type BlockRequest = OpenApiSchema<'org.example.knockin.dto.BlockDto$Reque
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 export type VerificationStatus =
-  OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response$AuthInfo'> & {
-    status?: 'PENDING' | 'ACCEPTED' | 'REJECT';
-  };
+  OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response$AuthInfo'>;
 
-type VerificationsDataBase =
+export type VerificationsData =
   OpenApiSchema<'org.example.knockin.dto.MyVerificationListDto$Response'>;
-
-export type VerificationsData = Omit<VerificationsDataBase, 'studentAuth' | 'employeeAuth'> & {
-  studentAuth?: VerificationStatus;
-  employeeAuth?: VerificationStatus;
-};
 
 export type BlockItem = OpenApiSchema<'org.example.knockin.dto.BlockListDto$Response$Block'> & {
   blockId?: number;
@@ -63,12 +56,12 @@ export type MyReportListData = {
 
 const MOCK_VERIFICATIONS: VerificationsData = {
   studentAuth: {
-    isAccepted: false,
+    status: 'PENDING',
     email: '',
     createAt: '',
   },
   employeeAuth: {
-    isAccepted: true,
+    status: 'ACCEPTED',
     email: 'jimin@company.com',
     createAt: '2026-05-15T09:00:00Z',
   },

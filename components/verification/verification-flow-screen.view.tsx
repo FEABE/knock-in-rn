@@ -96,11 +96,12 @@ export function VerificationFlowScreenView({
             <View className="gap-2">
               <FieldLabel label="인증 코드" />
               <View className="flex-row items-center border-b border-neutral-300 py-2">
-                {/* 코드가 영숫자 혼합이라 number-pad/maxLength를 두지 않는다(복사·붙여넣기 보존). */}
                 <TextField
                   value={code}
                   onChangeValue={setCode}
-                  placeholder="인증 코드 입력"
+                  placeholder="인증 코드 6자리 입력"
+                  keyboardType="number-pad"
+                  maxLength={6}
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="one-time-code"

@@ -37,8 +37,8 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
       retry: false,
     },
   );
-  const schoolVerified = data?.studentAuth?.isAccepted === true;
-  const companyVerified = data?.employeeAuth?.isAccepted === true;
+  const schoolVerified = data?.studentAuth?.status === 'ACCEPTED';
+  const companyVerified = data?.employeeAuth?.status === 'ACCEPTED';
 
   const cards = useMemo<VerificationHomeCard[]>(
     () => [

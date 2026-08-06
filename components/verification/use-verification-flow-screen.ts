@@ -15,16 +15,11 @@ export type VerificationStatusTone = 'idle' | 'review' | 'complete' | 'error';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * 서버가 보내는 인증 코드는 숫자 6자리가 아니라 길이가 정해지지 않은 영숫자 문자열이다.
- * 예전에는 입력값을 `replace(/\D/g,'').slice(0,6)` 로 잘라내서, 메일에서 코드를 복사해
- * 붙여넣으면 숫자만 남고 6자로 잘린 "전혀 다른 코드"가 입력되는 버그가 있었다.
- * 이제는 붙여넣기한 문자열을 그대로 두고 공백/개행만 제거한다.
- */
-const MIN_CODE_LENGTH = 6;
+/** 인증 코드는 숫자 6자리로 고정이다. 숫자가 아닌 문자는 입력에서 제거하고 6자로 제한한다. */
+const CODE_LENGTH = 6;
 
 function normalizeCode(next: string): string {
-  return next.replace(/\s+/g, '');
+  return next.replace(/\D/g, '').slice(0, CODE_LENGTH);
 }
 
 export type UseVerificationFlowScreenProps = {
@@ -144,7 +139,7 @@ export function useVerificationFlowScreen(
   ).padStart(2, '0')}`;
   const normalizedEmail = email.trim();
   const canSend = EMAIL_RE.test(normalizedEmail) && !loading;
-  const canVerify = code.length >= MIN_CODE_LENGTH && remainingSeconds > 0 && !loading;
+  const canVerify = code.length === CODE_LENGTH && remainingSeconds > 0 && !loading;
 
   const send = async () => {
     if (!EMAIL_RE.test(normalizedEmail)) {
@@ -181,10 +176,10 @@ export function useVerificationFlowScreen(
       }));
       return;
     }
-    if (code.length < MIN_CODE_LENGTH) {
+    if (code.length !== CODE_LENGTH) {
       setState((current) => ({
         ...current,
-        error: '메일로 받은 인증 코드를 그대로 입력해주세요.',
+        error: '인증 코드 6자리를 입력해주세요.',
       }));
       return;
     }
@@ -240,9 +235,10 @@ export function useVerificationFlowScreen(
       ...current,
       step: verificationStep(status),
       loading: false,
-      error: status?.isAccepted
-        ? null
-        : (res.error?.message ?? '아직 인증 검토가 완료되지 않았어요.'),
+      error:
+        status?.status === 'ACCEPTED'
+          ? null
+          : (res.error?.message ?? '아직 인증 검토가 완료되지 않았어요.'),
     }));
   };
 
@@ -292,6 +288,6 @@ function verificationForKind(
 
 function verificationStep(status?: VerificationStatus | null): VerificationFlowStep {
   if (status?.status === 'REJECT') return 'rejected';
-  if (status?.isAccepted || status?.status === 'ACCEPTED') return 'complete';
+  if (status?.status === 'ACCEPTED') return 'complete';
   return 'review';
 }
