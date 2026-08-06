@@ -40,7 +40,7 @@ export function RoomTypeFilterBody({
   };
 
   return (
-    <View className="gap-3 pb-1">
+    <View className="pb-1">
       {showHint ? <Text className="text-xs text-[#AAAABA]">최대 3개 선택 가능</Text> : null}
       <View className="flex-row flex-wrap gap-2">
         <Pressable
@@ -65,7 +65,7 @@ export function RoomTypeFilterBody({
               key={rt.value}
               onPress={() => toggle(rt.value)}
               disabled={disabled}
-              className={`h-9 items-center justify-center rounded-full border px-3 active:opacity-80 ${
+              className={`items-center justify-center rounded-full border px-[8.5px] py-[7px] active:opacity-80 ${
                 selected
                   ? 'border-[#256EF4] bg-[#256EF4]/10'
                   : disabled

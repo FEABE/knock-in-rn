@@ -51,8 +51,8 @@ export function RegionFilterBody({
                   <Text
                     className={
                       selected
-                        ? 'text-[15px] font-semibold text-[#17171B]'
-                        : 'text-[15px] text-[#696976]'
+                        ? 'text-[16px] font-semibold text-[#17171B]'
+                        : 'text-[16px] text-[#696976]'
                     }
                   >
                     {city.label}
@@ -78,7 +78,7 @@ export function RegionFilterBody({
                   className="h-12 flex-row items-center justify-between px-5"
                 >
                   <Text
-                    className={`text-[15px] ${selected ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'}`}
+                    className={`text-[16px] ${selected ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'}`}
                   >
                     {r.district}
                   </Text>
@@ -92,8 +92,9 @@ export function RegionFilterBody({
 
       <View className="gap-3 pt-3">
         <View className="flex-row items-center justify-between">
-          <Text className="text-xs leading-[18px] text-[#696976]">
-            선택 지역 {value.length}/{maxSelection}
+          <Text className="text-s leading-[18px] text-[#696976]">
+            선택 지역 <Text className="text-[#17171B]">{value.length}</Text>
+            <Text className="text-[#AAAABA]">/{maxSelection}</Text>
           </Text>
           <Pressable
             onPress={() => onChange([])}
@@ -115,8 +116,8 @@ export function RegionFilterBody({
                 onPress={() => toggleRegion(r)}
                 className="h-8 flex-row items-center gap-1 rounded-full bg-[#F6F6FA] px-3"
               >
-                <Text className="text-[13px] text-[#696976]">{r.district}</Text>
-                <Ionicons name="close" size={13} color="#AAAABA" />
+                <Text className="text-[14px] text-[#696976]">{r.district}</Text>
+                <Ionicons name="close" size={18} color="#AAAABA" />
               </Pressable>
             ))}
           </ScrollView>

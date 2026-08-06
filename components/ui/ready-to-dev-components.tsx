@@ -83,12 +83,18 @@ export function ReadyScreenHeader({
   );
 }
 
-/**
- * 검색 입력의 아이콘/플레이스홀더 세로 가운데 정렬용.
- * TextInput 에 lineHeight 를 주면 Android 에서 글자가 위로 붙어 보이므로
- * lineHeight 대신 입력 높이를 컨테이너와 맞추고 폰트 패딩을 끈다.
- */
-const SEARCH_GLYPH_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
+const SEARCH_INPUT_STYLE = {
+  includeFontPadding: false,
+  lineHeight: 21,
+  paddingBottom: 0,
+  paddingTop: 0,
+  textAlignVertical: 'center',
+} as const;
+
+const SEARCH_PLACEHOLDER_STYLE = {
+  includeFontPadding: false,
+  lineHeight: 21,
+} as const;
 
 export function ReadySearchHeader({
   value,
@@ -122,19 +128,32 @@ export function ReadySearchHeader({
       </Pressable>
       <View className="h-[38px] flex-1 flex-row items-center gap-1 rounded bg-[#F6F6FA] px-3">
         {value.length === 0 ? (
-          <Ionicons name="search-outline" size={17} color="#AAAABA" style={SEARCH_GLYPH_STYLE} />
+          <View className="h-[18px] w-[18px] items-center justify-center">
+            <Ionicons name="search-outline" size={18} color="#AAAABA" />
+          </View>
         ) : null}
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          onSubmitEditing={onSubmit}
-          placeholder={placeholder}
-          placeholderTextColor="#AAAABA"
-          returnKeyType="search"
-          autoFocus={autoFocus}
-          style={SEARCH_GLYPH_STYLE}
-          className="h-[38px] flex-1 p-0 text-sm text-[#17171B]"
-        />
+        <View className="h-[38px] flex-1 justify-center">
+          {value.length === 0 ? (
+            <Text
+              pointerEvents="none"
+              numberOfLines={1}
+              style={SEARCH_PLACEHOLDER_STYLE}
+              className="absolute left-0 right-0 text-[14px] font-medium text-[#AAAABA]"
+            >
+              {placeholder}
+            </Text>
+          ) : null}
+          <TextInput
+            value={value}
+            onChangeText={onChangeText}
+            onSubmitEditing={onSubmit}
+            placeholder=""
+            returnKeyType="search"
+            autoFocus={autoFocus}
+            style={SEARCH_INPUT_STYLE}
+            className="h-[21px] w-full p-0 text-[14px] font-medium text-[#17171B]"
+          />
+        </View>
         {value.length > 0 ? (
           <Pressable
             onPress={onClear}

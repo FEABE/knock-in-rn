@@ -379,7 +379,7 @@ export function NegotiableSelector({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <View className="flex-row gap-3">
+    <View className="flex-row gap-4">
       <NegotiableOption
         label="가능해요"
         selected={value === true}
@@ -412,15 +412,13 @@ function NegotiableOption({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-lg border ${
+      className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-lg border ${
         selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
       } active:opacity-80`}
     >
       {icon}
       <Text
-        className={
-          selected ? 'text-[15px] font-semibold text-[#256EF4]' : 'text-[15px] text-[#404047]'
-        }
+        className={selected ? 'text-base font-semibold text-[#256EF4]' : 'text-base text-[#696976]'}
       >
         {label}
       </Text>

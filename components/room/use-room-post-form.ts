@@ -57,6 +57,8 @@ const PAGE_STEP: Record<RoomWizardPage, number> = {
   intro: 2,
 };
 
+const STEP_FIRST_PAGE_INDEX = [0, 1, 6] as const;
+
 const TITLE_TOAST_MESSAGE = `제목은 최소 ${MIN_ROOM_TITLE_LENGTH}자 이상 입력해주세요`;
 const TOAST_DURATION_MS = 2000;
 
@@ -88,11 +90,13 @@ export type UseRoomPostFormReturn = {
   moveInDate: Date | null;
   page: RoomWizardPage;
   stepIndex: number;
+  visitedStepIndex: number;
   isFirstPage: boolean;
   isLastPage: boolean;
   canProceed: boolean;
   goNext: () => void;
   goPrev: () => void;
+  goToStep: (stepIndex: number) => void;
   toastMessage: string | null;
   setTitle: (next: string) => void;
   setDeposit: (next: string) => void;
@@ -126,9 +130,11 @@ export function useRoomPostForm({
     selectingPhotos: false,
     regionSheetOpen: false,
     pageIndex: 0,
+    maxVisitedPageIndex: 0,
     toastMessage: null as string | null,
   }));
-  const { draft, selectingPhotos, regionSheetOpen, pageIndex, toastMessage } = state;
+  const { draft, selectingPhotos, regionSheetOpen, pageIndex, maxVisitedPageIndex, toastMessage } =
+    state;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -159,6 +165,8 @@ export function useRoomPostForm({
   const page = ROOM_WIZARD_PAGES[pageIndex];
   const canProceed = isPageValid(page, draft);
   const isLastPage = pageIndex === ROOM_WIZARD_PAGES.length - 1;
+  const stepIndex = PAGE_STEP[page];
+  const visitedStepIndex = PAGE_STEP[ROOM_WIZARD_PAGES[maxVisitedPageIndex]];
 
   const submit = () => {
     if (!isRoomTitleLongEnough(draft)) {
@@ -193,7 +201,8 @@ export function useRoomPostForm({
     setRegionSheetOpen: (open) => setState((current) => ({ ...current, regionSheetOpen: open })),
     moveInDate: parseDate(draft.moveInDate) ?? null,
     page,
-    stepIndex: PAGE_STEP[page],
+    stepIndex,
+    visitedStepIndex,
     isFirstPage: pageIndex === 0,
     isLastPage,
     canProceed,
@@ -206,10 +215,23 @@ export function useRoomPostForm({
       setState((current) => ({
         ...current,
         pageIndex: Math.min(current.pageIndex + 1, ROOM_WIZARD_PAGES.length - 1),
+        maxVisitedPageIndex: Math.max(
+          current.maxVisitedPageIndex,
+          Math.min(current.pageIndex + 1, ROOM_WIZARD_PAGES.length - 1),
+        ),
       }));
     },
     goPrev: () =>
       setState((current) => ({ ...current, pageIndex: Math.max(current.pageIndex - 1, 0) })),
+    goToStep: (nextStepIndex) =>
+      setState((current) => {
+        const targetPageIndex = STEP_FIRST_PAGE_INDEX[nextStepIndex as 0 | 1 | 2];
+        if (targetPageIndex === undefined) return current;
+        const targetStepIndex = PAGE_STEP[ROOM_WIZARD_PAGES[targetPageIndex]];
+        const currentVisitedStepIndex = PAGE_STEP[ROOM_WIZARD_PAGES[current.maxVisitedPageIndex]];
+        if (targetStepIndex > currentVisitedStepIndex) return current;
+        return { ...current, pageIndex: targetPageIndex };
+      }),
     toastMessage,
     setTitle: (next) => patch({ title: next }),
     setDeposit: (next) => patch({ deposit: next }),
@@ -219,7 +241,11 @@ export function useRoomPostForm({
     selectRegion: (next) => patch({ regions: [next] }),
     setMoveInDate: (next) => patch({ moveInDate: next }),
     selectMoveInDate: (next) => patch({ moveInDate: formatDraftDate(next) }),
-    setNegotiable: (next) => patch({ negotiable: next }),
+    setNegotiable: (next) =>
+      patch({
+        negotiable: next,
+        moveInDate: next ? '' : draft.moveInDate,
+      }),
     addPhotos: async () => {
       // 서버 policy.board.image-max-count=10. 초과분은 애초에 고르지 못하게 막는다.
       const remaining = MAX_ROOM_PHOTOS - draft.imageUris.length;

@@ -8,6 +8,11 @@ export type VerificationBadge = {
   verifiedAt: Date;
 };
 
+export type ImportantCondition = {
+  name: string;
+  image?: string | null;
+};
+
 export type UserSummary = {
   id: string;
   name: string;
@@ -62,7 +67,7 @@ export type RoomPost = {
   preferredRoommate?: {
     genderLabel?: string;
     smokingLabel?: string;
-    importantConditions: string[];
+    importantConditions: Array<string | ImportantCondition>;
   };
 };
 

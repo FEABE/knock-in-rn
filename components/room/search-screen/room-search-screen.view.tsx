@@ -37,10 +37,12 @@ export function RoomSearchScreenView({
   onResultLikeChange,
 }: RoomSearchScreenViewProps) {
   const popularSection = (
-    <View className="gap-4">
-      <View className="flex-row items-center justify-between">
-        <Text className="text-[17px] font-bold text-[#17171B]">인기 검색어</Text>
-        <Text className="text-[15px] text-[#696976]">전체 유저 기반</Text>
+    <View className="gap-3">
+      <View className="h-6 flex-row items-center justify-between">
+        <Text className="text-[16px] font-bold leading-6 text-[#17171B]">인기 검색어</Text>
+        <Text className="text-[14px] font-medium leading-[21px] text-[#AAAABA]">
+          전체 유저 기반
+        </Text>
       </View>
       <View className="flex-row flex-wrap gap-2">
         {popularLoading ? (
@@ -60,9 +62,9 @@ export function RoomSearchScreenView({
             <Pressable
               key={term}
               onPress={() => submit(term)}
-              className="rounded-full bg-[#E9F0FE] px-3 py-1.5 active:opacity-80"
+              className="rounded-full bg-[#ECF2FE] px-3 py-[7px] active:opacity-80"
             >
-              <Text className="text-[15px] text-[#256EF4]">{term}</Text>
+              <Text className="text-[15px] font-medium leading-[23px] text-[#4C87F6]">{term}</Text>
             </Pressable>
           ))
         )}
@@ -111,25 +113,33 @@ export function RoomSearchScreenView({
           ))}
         </ScrollView>
       ) : recent.length === 0 ? (
-        <View className="flex-1 px-4 pb-24 pt-2">
-          <ReadyEmptyState
-            title="최근 검색어가 없어요"
-            description="원하는 지역이나 동을 검색해 보세요"
-            className="flex-1"
-          />
-          {popular.length > 0 ? popularSection : null}
+        <View className="gap-[42px] px-4 pb-24 pt-2">
+          <View className="gap-6">
+            <View className="h-6 flex-row items-center justify-between">
+              <Text className="text-[16px] font-bold leading-6 text-[#17171B]">최근 검색어</Text>
+              <Text className="text-[14px] font-medium leading-[21px] text-[#AAAABA]">
+                전체삭제
+              </Text>
+            </View>
+            <Text className="w-full text-center text-[14px] font-medium leading-[21px] text-[#AAAABA]">
+              최근 검색어가 없어요
+            </Text>
+          </View>
+          {popularSection}
         </View>
       ) : (
         <ScrollView
-          contentContainerClassName="gap-8 px-4 pb-24 pt-2"
+          contentContainerClassName="gap-[42px] px-4 pb-24 pt-2"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          <View className="gap-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-[17px] font-bold text-[#17171B]">최근 검색어</Text>
+          <View className="gap-6">
+            <View className="h-6 flex-row items-center justify-between">
+              <Text className="text-[16px] font-bold leading-6 text-[#17171B]">최근 검색어</Text>
               <Pressable onPress={clearRecent} hitSlop={6}>
-                <Text className="text-[15px] text-[#696976]">전체삭제</Text>
+                <Text className="text-[14px] font-medium leading-[21px] text-[#AAAABA]">
+                  전체삭제
+                </Text>
               </Pressable>
             </View>
             <View className="flex-row flex-wrap gap-2">

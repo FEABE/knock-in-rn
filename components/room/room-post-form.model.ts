@@ -98,7 +98,9 @@ export function isBudgetSectionValid(draft: RoomFormDraft): boolean {
 }
 
 export function isMoveInSectionValid(draft: RoomFormDraft): boolean {
-  return parseDate(draft.moveInDate) !== undefined && draft.negotiable !== null;
+  if (draft.negotiable === true) return true;
+  if (draft.negotiable === false) return parseDate(draft.moveInDate) !== undefined;
+  return false;
 }
 
 export function isLocationSectionValid(draft: RoomFormDraft): boolean {
@@ -123,7 +125,6 @@ export function isRoomFormDraftValid(draft: RoomFormDraft): boolean {
     isBudgetSectionValid(draft) &&
     isRoomTypeSectionValid(draft) &&
     isLocationSectionValid(draft) &&
-    // 서버는 comeableDate를 필수로 받는다. 입주일 미선택 제출을 막는다.
     isMoveInSectionValid(draft) &&
     isIntroSectionValid(draft)
   );

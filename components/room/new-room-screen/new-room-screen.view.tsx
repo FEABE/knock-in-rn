@@ -58,6 +58,8 @@ export function NewRoomScreenView({
   onConfirmEditProfile,
   form,
 }: NewRoomScreenViewProps) {
+  const footerReserve = form.isFirstPage ? form.bottomPadding + 156 : form.bottomPadding + 96;
+
   if (!session) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -80,10 +82,15 @@ export function NewRoomScreenView({
         <Text className="text-base font-semibold text-neutral-900">게시글 등록</Text>
       </View>
 
-      <StepTabs activeStep={form.stepIndex} />
+      <StepTabs
+        activeStep={form.stepIndex}
+        visitedStep={form.visitedStepIndex}
+        onTabPress={form.goToStep}
+      />
 
       <ScrollView
-        contentContainerClassName="flex-grow px-5 pb-8 pt-6"
+        contentContainerClassName="flex-grow px-5 pt-6"
+        contentContainerStyle={{ paddingBottom: footerReserve }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         automaticallyAdjustKeyboardInsets
@@ -113,7 +120,7 @@ export function NewRoomScreenView({
       </ScrollView>
 
       <View
-        className="border-t border-neutral-100 bg-white px-5 pt-3"
+        className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"
         style={{ paddingBottom: form.bottomPadding }}
       >
         {form.isFirstPage ? (
@@ -143,6 +150,7 @@ export function NewRoomScreenView({
               onPress={form.goNext}
               disabled={!form.canProceed || submitting}
               loading={form.isLastPage && submitting}
+              grow
             />
           </View>
         )}
@@ -176,33 +184,47 @@ export function NewRoomScreenView({
   );
 }
 
-function StepTabs({ activeStep }: { activeStep: number }) {
+function StepTabs({
+  activeStep,
+  visitedStep,
+  onTabPress,
+}: {
+  activeStep: number;
+  visitedStep: number;
+  onTabPress: (stepIndex: number) => void;
+}) {
   return (
     <View className="flex-row border-b border-[#ECECF3]">
       {STEP_TABS.map((tab, index) => {
         const active = index === activeStep;
+        const visited = index <= visitedStep;
+        const enabled = index <= visitedStep;
         return (
-          <View
+          <Pressable
             key={tab.no}
+            onPress={() => onTabPress(index)}
+            disabled={!enabled}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active, disabled: !enabled }}
             className={`flex-1 gap-0.5 px-5 pb-2.5 pt-3 ${
               active ? 'border-b-2 border-[#256EF4]' : ''
             }`}
           >
             <Text
               className={
-                active ? 'text-[13px] font-semibold text-[#17171B]' : 'text-[13px] text-[#AAAABA]'
+                visited ? 'text-[13px] font-semibold text-[#17171B]' : 'text-[13px] text-[#AAAABA]'
               }
             >
               {tab.no}
             </Text>
             <Text
               className={
-                active ? 'text-[15px] font-semibold text-[#17171B]' : 'text-[15px] text-[#AAAABA]'
+                visited ? 'text-[15px] font-semibold text-[#17171B]' : 'text-[15px] text-[#AAAABA]'
               }
             >
               {tab.label}
             </Text>
-          </View>
+          </Pressable>
         );
       })}
     </View>
@@ -214,11 +236,13 @@ function WizardButton({
   onPress,
   disabled,
   loading,
+  grow,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  grow?: boolean;
 }) {
   return (
     <Pressable
@@ -226,7 +250,7 @@ function WizardButton({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={`h-12 flex-1 items-center justify-center rounded-lg ${
+      className={`h-12 ${grow ? 'flex-1' : 'w-full'} items-center justify-center rounded-lg ${
         disabled ? 'bg-[#F1F1F6]' : 'bg-[#256EF4] active:opacity-85'
       }`}
     >
@@ -355,12 +379,13 @@ function RoomTypePage({ form }: { form: UseRoomPostFormReturn }) {
                 onPress={() => form.selectRoomType(roomType.value)}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                className={`aspect-square w-[31%] items-center justify-center gap-2 rounded-lg border ${
+                className={`aspect-square w-[31%] items-center py-[8px] px-[7px] gap-2 rounded-lg border ${
                   selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
                 } active:opacity-80`}
               >
                 <RoomTypeArtwork label={roomType.label} image={roomType.image} size={60} />
                 <Text
+                  style={{ includeFontPadding: false, lineHeight: 18 }}
                   className={
                     selected
                       ? 'text-center text-[13px] font-semibold text-[#256EF4]'
@@ -388,7 +413,7 @@ function LocationPage({ form }: { form: UseRoomPostFormReturn }) {
           onPress={() => form.setRegionSheetOpen(true)}
         />
       </View>
-      <View className="mt-6 items-center rounded-lg bg-[#F6F6FA] py-10">
+      <View className="mt-4 items-center rounded-lg">
         <RoomLocationArtwork size={180} />
       </View>
     </View>
@@ -462,21 +487,25 @@ function MoneyField({
 }
 
 function MoveInPage({ form }: { form: UseRoomPostFormReturn }) {
+  const needsMoveInDate = form.draft.negotiable === false;
+
   return (
     <View>
       <Headline>입주 가능일을{'\n'}입력해주세요</Headline>
-      <View className="mt-8 gap-2">
-        <Text className="text-[15px] font-bold text-[#17171B]">입주 가능일</Text>
-        <CalendarField
-          value={form.moveInDate}
-          onChange={form.selectMoveInDate}
-          placeholder="날짜 선택"
-        />
-      </View>
       <View className="mt-8 gap-3">
         <Text className="text-[15px] font-bold text-[#17171B]">협의 가능 여부</Text>
         <NegotiableSelector value={form.draft.negotiable} onChange={form.setNegotiable} />
       </View>
+      {needsMoveInDate ? (
+        <View className="mt-[38px] gap-2">
+          <Text className="text-[15px] font-bold text-[#17171B]">입주 가능일</Text>
+          <CalendarField
+            value={form.moveInDate}
+            onChange={form.selectMoveInDate}
+            placeholder="날짜 선택"
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -498,7 +527,7 @@ function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
           compact
         />
       ) : (
-        <View className="mt-6 flex-row flex-wrap gap-2">
+        <View className="mt-5 flex-row flex-wrap gap-3 items-center justify-center">
           {form.roomOptions.map((option) => {
             const selected = form.draft.options.includes(option.value);
             return (
@@ -507,7 +536,7 @@ function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
                 onPress={() => form.toggleOption(option.value)}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                className={`aspect-square w-[31%] items-center justify-center gap-2 rounded-lg border px-2 ${
+                className={`aspect-square w-[31%] gap-3 items-center justify-center rounded-lg border px-2 ${
                   selected ? 'border-[#256EF4] bg-[#ECF2FE]' : 'border-[#DADAE8] bg-white'
                 } active:opacity-80`}
               >
@@ -515,8 +544,8 @@ function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
                 <Text
                   className={
                     selected
-                      ? 'text-center text-[13px] font-semibold text-[#256EF4]'
-                      : 'text-center text-[13px] text-[#696976]'
+                      ? 'text-center text-[14px] text-[#256EF4]'
+                      : 'text-center text-[14px] text-[#696976]'
                   }
                 >
                   {option.label}

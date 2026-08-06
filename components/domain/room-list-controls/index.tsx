@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text } from 'react-native';
 
 import type { RoomFilterValue } from '@/components/room/filters';
 import { ReadyFilterChip } from '@/components/ui/ready-to-dev-components';
+import { ROOM_TYPE_BACKEND_LABELS } from '@/lib/api';
 
 export type RoomListFilterKey = 'region' | 'gender' | 'budget' | 'roomType';
 
@@ -31,6 +32,15 @@ function withMoreSuffix(first: string, total: number): string {
   return total > 1 ? `${first} 외 ${total - 1}개` : first;
 }
 
+function regionChipLabel(region: RoomFilterValue['regions'][number]): string {
+  return region.district || region.city || region.id;
+}
+
+function roomTypeChipLabel(roomType: RoomFilterValue['roomTypes'][number]): string {
+  const backendLabel = ROOM_TYPE_BACKEND_LABELS[Number(roomType)];
+  return backendLabel ?? ROOM_TYPE_CHIP_LABEL[roomType] ?? roomType;
+}
+
 /**
  * 검색창의 아이콘/플레이스홀더를 세로 가운데로 맞춘다.
  * Android 기본 includeFontPadding 이 글리프 위쪽에 비대칭 여백을 넣어
@@ -57,10 +67,7 @@ export function RoomListControls({
 
   const regionLabel =
     filter.regions.length > 0
-      ? withMoreSuffix(
-          `${filter.regions[0].city} ${filter.regions[0].district}`,
-          filter.regions.length,
-        )
+      ? withMoreSuffix(regionChipLabel(filter.regions[0]), filter.regions.length)
       : '지역';
 
   const genderLabel =
@@ -71,10 +78,7 @@ export function RoomListControls({
 
   const roomTypeLabel =
     filter.roomTypes.length > 0
-      ? withMoreSuffix(
-          ROOM_TYPE_CHIP_LABEL[filter.roomTypes[0]] ?? filter.roomTypes[0],
-          filter.roomTypes.length,
-        )
+      ? withMoreSuffix(roomTypeChipLabel(filter.roomTypes[0]), filter.roomTypes.length)
       : '방 형태';
 
   return (

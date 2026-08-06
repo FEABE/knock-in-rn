@@ -13,7 +13,7 @@ export type AsyncState<T> = {
   /** 데이터가 이미 있는 상태에서 재조회 중인지(당겨서 새로고침 스피너 제어용). */
   refreshing: boolean;
   error: string | null;
-  reload: () => void;
+  reload: () => void | Promise<void>;
 };
 
 /**
@@ -51,14 +51,14 @@ export function useApi<T>(
   const { refetch } = query;
 
   const reload = useCallback(() => {
-    if (!enabled) return;
-    void refetch();
+    if (!enabled) return Promise.resolve();
+    return refetch().then(() => undefined);
   }, [enabled, refetch]);
 
   return {
     data: query.data ?? null,
     loading: enabled && query.isLoading,
-    refreshing: enabled && query.isFetching,
+    refreshing: enabled && query.isFetching && !query.isLoading,
     error: enabled && query.error instanceof Error ? query.error.message : null,
     reload,
   };

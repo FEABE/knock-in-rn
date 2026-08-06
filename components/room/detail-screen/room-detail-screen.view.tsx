@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
+import { RoomThumbnailPlaceholder } from '@/components/domain';
+import { PriorityArtwork, RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
 import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
 import {
   ReadyActionRow,
@@ -25,7 +26,7 @@ import {
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
 import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
-import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
+import type { ImportantCondition, RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
 import type { LifestyleTile, UseRoomDetailScreenReturn } from './use-room-detail-screen';
 
@@ -55,6 +56,19 @@ const PREFERRED_GENDER_LABEL: Record<string, string> = {
   same: '동일 성별만',
   any: '성별 무관',
 };
+
+const DETAIL_BADGE_SHADOW_STYLE = {
+  shadowColor: '#696976',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.15,
+  shadowRadius: 2,
+  elevation: 2,
+} as const;
+
+const DETAIL_BADGE_TEXT_STYLE = {
+  includeFontPadding: false,
+  textAlignVertical: 'center',
+} as const;
 
 export type RoomDetailScreenViewProps = UseRoomDetailScreenReturn;
 
@@ -409,12 +423,7 @@ function PhotoCarousel({
   const photoHeight = 180;
 
   if (photos.length === 0) {
-    return (
-      <View style={{ height: photoHeight }} className="items-center justify-center bg-neutral-100">
-        <Ionicons name="image-outline" size={32} color="#AAAABA" />
-        <Text className="mt-2 text-sm text-neutral-400">등록된 방 사진이 없어요</Text>
-      </View>
-    );
+    return <RoomThumbnailPlaceholder height={photoHeight} />;
   }
 
   return (
@@ -455,8 +464,7 @@ function TitleBlock({ post }: { post: RoomPost }) {
   return (
     <View className="gap-2 px-4 py-5">
       <View className="flex-row items-center gap-1.5">
-        {isRecent(post.createdAt) ? <ReadyBadge label="NEW" tone="red" /> : null}
-        <ReadyBadge label={ROOM_TYPE_LABEL[post.roomType] ?? post.roomType} tone="blue" />
+        <DetailRoomTypePill label={ROOM_TYPE_LABEL[post.roomType] ?? post.roomType} />
       </View>
       <Text className="text-xl font-bold text-[#17171B]">{post.title}</Text>
       <View className="flex-row items-center gap-2">
@@ -480,6 +488,22 @@ function TitleBlock({ post }: { post: RoomPost }) {
           <Text className="text-xs text-neutral-400">{post.views.toLocaleString()}</Text>
         </View>
       </View>
+    </View>
+  );
+}
+
+function DetailRoomTypePill({ label }: { label: string }) {
+  return (
+    <View
+      className="h-[26px] items-center justify-center rounded bg-[#ECF2FE] px-1.5"
+      style={DETAIL_BADGE_SHADOW_STYLE}
+    >
+      <Text
+        style={DETAIL_BADGE_TEXT_STYLE}
+        className="text-[14px] font-semibold leading-[21px] text-[#4C87F6]"
+      >
+        {label}
+      </Text>
     </View>
   );
 }
@@ -566,32 +590,91 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
   const { author } = post;
   const smoking = author.lifestyle?.smoking;
   const preferred = post.preferredRoommate;
-  const importantLabels = (
+  const priorityItems = (
     preferred?.importantConditions.length
       ? preferred.importantConditions
       : author.importantConditions
   ).slice(0, 3);
+  const conditionChips = [
+    {
+      label:
+        preferred?.genderLabel ??
+        (author.preferredGender
+          ? PREFERRED_GENDER_LABEL[author.preferredGender]
+          : GENDER_LABEL[author.gender]),
+    },
+    {
+      label: preferred?.smokingLabel ?? (smoking === 'no' ? '비흡연자' : '흡연 여부 무관'),
+    },
+  ].filter((item) => Boolean(item.label));
+
   return (
     <ReadySection title="룸메이트 조건">
-      <View className="gap-3 rounded bg-[#F6F6FA] p-4">
-        <KeyValueRow
-          label="선호 성별"
-          value={
-            preferred?.genderLabel ??
-            (author.preferredGender
-              ? PREFERRED_GENDER_LABEL[author.preferredGender]
-              : GENDER_LABEL[author.gender])
-          }
-        />
-        <KeyValueRow
-          label="흡연 여부"
-          value={preferred?.smokingLabel ?? (smoking === 'no' ? '비흡연자' : '제한 없음')}
-        />
-        <KeyValueRow label="중요 조건" value={importantLabels.join(' · ') || '없음'} />
+      <Text className="text-[13px] font-medium leading-5 text-[#AAAABA]">
+        프로필을 점수 산출에 사용해요
+      </Text>
+
+      <View className="flex-row flex-wrap gap-2">
+        {conditionChips.map((condition) => (
+          <PreferredConditionChip key={condition.label} label={condition.label} />
+        ))}
       </View>
+
+      {priorityItems.length ? (
+        <View className="mt-1 gap-2">
+          <Text className="text-[13px] font-semibold leading-5 text-[#256EF4]">우선순위</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {priorityItems.map((condition) => (
+              <PriorityConditionChip key={conditionName(condition)} condition={condition} />
+            ))}
+          </View>
+        </View>
+      ) : null}
     </ReadySection>
   );
 }
+
+function PreferredConditionChip({ label }: { label: string }) {
+  return (
+    <View className="h-[28px] flex-row items-center justify-center rounded bg-[#F6F6FA] px-2">
+      <Text
+        style={DETAIL_CHIP_TEXT_STYLE}
+        className="text-[13px] font-medium leading-5 text-[#696976]"
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function PriorityConditionChip({ condition }: { condition: string | ImportantCondition }) {
+  const label = conditionName(condition);
+  const image = conditionImage(condition);
+  return (
+    <View className="h-[32px] flex-row items-center justify-center gap-1.5 rounded bg-[#ECF2FE] px-2">
+      <PriorityArtwork label={label} image={image} size={18} />
+      <Text
+        style={DETAIL_CHIP_TEXT_STYLE}
+        className="text-[13px] font-medium leading-5 text-[#17171B]"
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function conditionName(condition: string | ImportantCondition): string {
+  return typeof condition === 'string' ? condition : condition.name;
+}
+
+function conditionImage(condition: string | ImportantCondition): string | null | undefined {
+  return typeof condition === 'string' ? undefined : condition.image;
+}
+
+const DETAIL_CHIP_TEXT_STYLE = {
+  includeFontPadding: false,
+  textAlignVertical: 'center',
+} as const;
 
 function DescriptionBlock({
   description,

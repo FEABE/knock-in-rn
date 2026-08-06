@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
 import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
@@ -7,6 +8,7 @@ import {
   type BoardListQuery,
   regionBackendId,
   roomTypeBackendId,
+  useMyRoommateBoards,
   useRoommateBoardLikeActions,
   useRoommateBoards,
   useRoommateMatchCards,
@@ -124,17 +126,40 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const {
     data: posts,
     loading: roomsLoading,
-    refreshing: roomsRefreshing,
     error: roomsError,
-    reload: reloadRooms,
+    reload: reloadPublicRooms,
   } = useRoommateBoards(boardQuery);
+  const {
+    data: myPosts,
+    loading: myRoomsLoading,
+    reload: reloadMyRooms,
+  } = useMyRoommateBoards(Boolean(session));
+  const [roomsPullRefreshing, setRoomsPullRefreshing] = useState(false);
+
+  const reloadRoomLists = useCallback(
+    () =>
+      Promise.all([Promise.resolve(reloadPublicRooms()), Promise.resolve(reloadMyRooms())]).then(
+        () => undefined,
+      ),
+    [reloadPublicRooms, reloadMyRooms],
+  );
+
+  const refreshRoomLists = useCallback(() => {
+    setRoomsPullRefreshing(true);
+    void reloadRoomLists().finally(() => setRoomsPullRefreshing(false));
+  }, [reloadRoomLists]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadRoomLists();
+    }, [reloadRoomLists]),
+  );
 
   const visiblePosts = useMemo(() => {
-    const safe = (posts ?? []).filter(
-      (post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
-    );
-    return sortPosts(filterRoomsBySearch(safe, searchQuery), sort);
-  }, [posts, isPostBlocked, isUserBlocked, searchQuery, sort]);
+    const merged = mergeRoomPosts(posts ?? [], myPosts ?? []);
+    const safe = merged.filter((post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id));
+    return sortPosts(filterRoomsBySearch(filterRoomsByFilter(safe, filter), searchQuery), sort);
+  }, [posts, myPosts, isPostBlocked, isUserBlocked, filter, searchQuery, sort]);
 
   const {
     data: matchList,
@@ -192,8 +217,8 @@ export function useExploreScreen(): UseExploreScreenReturn {
     openSheet,
     visiblePosts,
     visibleMatches,
-    roomsLoading,
-    roomsRefreshing,
+    roomsLoading: roomsLoading || myRoomsLoading,
+    roomsRefreshing: roomsPullRefreshing,
     roomsError,
     matchesLoading,
     matchesRefreshing,
@@ -201,7 +226,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     hasUnreadAlarms: (alarms ?? []).some((alarm) => !alarm.isRead),
     preferenceNudgeOpen,
     preferenceNudgeSnooze,
-    reloadRooms,
+    reloadRooms: refreshRoomLists,
     reloadMatches,
     setSort,
     setOpenSheet,
@@ -260,14 +285,47 @@ function filterRoomsBySearch(posts: RoomPost[], query: string): RoomPost[] {
   );
 }
 
+function filterRoomsByFilter(posts: RoomPost[], filter: ExploreFilter): RoomPost[] {
+  return posts.filter((post) => {
+    const matchesRegion =
+      filter.regions.length === 0 ||
+      filter.regions.some(
+        (region) =>
+          region.id === post.region.id ||
+          (region.city === post.region.city && region.district === post.region.district),
+      );
+    const matchesRoomType =
+      filter.roomTypes.length === 0 || filter.roomTypes.includes(post.roomType);
+    const matchesBudget =
+      post.deposit >= filter.depositMin &&
+      post.deposit <= filter.depositMax &&
+      post.monthlyRent >= filter.rentMin &&
+      post.monthlyRent <= filter.rentMax;
+    return matchesRegion && matchesRoomType && matchesBudget;
+  });
+}
+
+function mergeRoomPosts(posts: RoomPost[], myPosts: RoomPost[]): RoomPost[] {
+  const byId = new Map<string, RoomPost>();
+  for (const post of posts) byId.set(post.id, post);
+  for (const post of myPosts) byId.set(post.id, post);
+  return [...byId.values()];
+}
+
 function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
+  const defaultBudget =
+    filter.depositMin === INITIAL_EXPLORE_FILTER.depositMin &&
+    filter.depositMax === INITIAL_EXPLORE_FILTER.depositMax &&
+    filter.rentMin === INITIAL_EXPLORE_FILTER.rentMin &&
+    filter.rentMax === INITIAL_EXPLORE_FILTER.rentMax;
+
   return {
     regionIds: filter.regions.map(regionBackendId).filter((id): id is number => id !== undefined),
     gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
-    minDeposit: filter.depositMin,
-    maxDeposit: filter.depositMax,
-    minMounthRent: filter.rentMin,
-    maxMounthRent: filter.rentMax,
+    minDeposit: defaultBudget ? undefined : filter.depositMin,
+    maxDeposit: defaultBudget ? undefined : filter.depositMax,
+    minMounthRent: defaultBudget ? undefined : filter.rentMin,
+    maxMounthRent: defaultBudget ? undefined : filter.rentMax,
     roomTypeIds: filter.roomTypes
       .map(roomTypeBackendId)
       .filter((id): id is number => id !== undefined),

@@ -7,13 +7,13 @@
  */
 import {
   API_BASE_URL,
-  type ApiResponse,
-  type PageParams,
-  type UpdatedAt,
   mockOk,
   mockUpdatedAt,
   request,
   USE_MOCK,
+  type ApiResponse,
+  type PageParams,
+  type UpdatedAt,
 } from './client';
 import type { OpenApiSchema } from './openapi-types';
 
@@ -60,7 +60,7 @@ export const WS_CHAT_ENDPOINT = '/ws-chat';
 export function wsChatUrl(): string {
   // ws(s):// 스킴으로 변환. SockJS는 브라우저 전용(window/document 참조)이라 React Native에서
   // 생성 시점에 크래시나므로, /websocket 서브패스로 SockJS 협상 없이 순수 WebSocket으로 붙는다.
-  return `${API_BASE_URL.replace(/^http/, 'ws')}${WS_CHAT_ENDPOINT}/websocket`;
+  return `${API_BASE_URL.replace(/^http/, 'ws')}${WS_CHAT_ENDPOINT}`;
 }
 
 /** SUB: 채팅 메시지와 룸메이트 요청 이벤트를 함께 받는 토픽. */

@@ -567,6 +567,7 @@ function normalizeMatchListItem(
 
 function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | 'update'): FormData {
   const images = body.images ?? [];
+  const comeableDate = body.comeableDate ?? body.comeableAt;
   const files = images
     .map((image, index) => ({
       image,
@@ -586,8 +587,8 @@ function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | '
           managementCost: body.managementCost,
           roomTypeId: body.roomTypeId ?? body.roomType ?? 0,
           regionId: body.regionId ?? body.region ?? 0,
-          comeableDateNegotiable: body.comeableDateNegotiable ?? false,
-          comeableDate: body.comeableDate ?? body.comeableAt,
+          comeableDateNegotiable: body.comeableDateNegotiable,
+          comeableDate,
           extraOptionIds: body.extraOptionIds ?? body.roomOption ?? [],
           images: files.map((entry) => ({
             fileIndex: entry.fileIndex,
@@ -602,8 +603,8 @@ function boardWriteRequestToFormData(body: BoardWriteRequest, mode: 'create' | '
           managementCost: body.managementCost,
           roomTypeId: body.roomTypeId ?? body.roomType ?? 0,
           regionId: body.regionId ?? body.region ?? 0,
-          comeableDateNegotiable: body.comeableDateNegotiable ?? false,
-          comeableDate: body.comeableDate ?? body.comeableAt,
+          comeableDateNegotiable: body.comeableDateNegotiable,
+          comeableDate,
           deleteExtraOptionIds: body.deleteExtraOptionIds ?? [],
           newExtraOptionIds: body.newExtraOptionIds ?? body.roomOption ?? [],
           existingImages: body.existingImages ?? [],
