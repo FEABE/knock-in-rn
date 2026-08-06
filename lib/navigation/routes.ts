@@ -40,6 +40,10 @@ export function resetToExplore(router: RouterLike) {
   reset(router, '/explore');
 }
 
+export function resetToMypage(router: RouterLike) {
+  reset(router, '/mypage');
+}
+
 export function goExploreSearch(router: RouterLike, query: string) {
   replace(router, `/explore?q=${encodeURIComponent(query)}`);
 }
@@ -152,6 +156,10 @@ export function goSupportNoticeDetail(router: RouterLike, id: string) {
 
 export function goSupportInquiries(router: RouterLike) {
   navigate(router, '/support/inquiries');
+}
+
+export function goSupportInquiryDetail(router: RouterLike, id: string) {
+  navigate(router, `/support/inquiries/${id}`);
 }
 
 export function goSupportInquiryNew(router: RouterLike) {

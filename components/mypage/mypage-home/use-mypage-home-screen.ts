@@ -29,10 +29,11 @@ import { consumeMypageHomeToast } from './mypage-home-toast';
 const TOAST_DURATION_MS = 2500;
 
 /**
- * "협업 및 제휴 제안" 외부 링크(구글 폼/노션 등). 디자인·코드 어디에도 실제 URL이 없어
- * 환경변수로 뺐다. 값이 비어 있으면 안내 후 아무 것도 하지 않는다.
+ * "협업 및 제휴 제안" 외부 링크(구글 폼). 환경변수로 덮어쓸 수 있게 남겨두되,
+ * 기본값을 실제 폼 URL로 채워서 별도 설정 없이도 바로 열리게 한다.
  */
-const PARTNERSHIP_URL = process.env.EXPO_PUBLIC_PARTNERSHIP_URL ?? '';
+const PARTNERSHIP_URL =
+  process.env.EXPO_PUBLIC_PARTNERSHIP_URL || 'https://forms.gle/MtNqe3w1gPyLb4Vx7';
 
 async function openPartnershipLink() {
   if (!PARTNERSHIP_URL) {

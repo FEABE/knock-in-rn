@@ -173,8 +173,8 @@ export function useMyVerificationSummary(enabled = true): AsyncState<MyVerificat
     () =>
       state.data
         ? (() => {
-            const schoolVerified = isAccepted(state.data.studentAuth?.isAccepted);
-            const companyVerified = isAccepted(state.data.employeeAuth?.isAccepted);
+            const schoolVerified = state.data.studentAuth?.status === 'ACCEPTED';
+            const companyVerified = state.data.employeeAuth?.status === 'ACCEPTED';
             return {
               verified: schoolVerified || companyVerified,
               schoolVerified,

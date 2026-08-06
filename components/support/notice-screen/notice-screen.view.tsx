@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,7 +21,7 @@ export function NoticeScreenView({
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="공지사항" />
       <ScrollView
-        contentContainerClassName="gap-3 p-5"
+        contentContainerClassName="gap-7 p-5"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={retry} tintColor="#256EF4" />
         }
@@ -59,13 +58,15 @@ export function NoticeScreenView({
               key={notice.id}
               onPress={() => onNoticePress(notice.id)}
               accessibilityRole="button"
-              className="flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-5 active:opacity-80"
+              className="gap-2 active:opacity-70"
             >
-              <View className="flex-1 gap-2">
-                <Text className="text-base font-semibold text-neutral-900">{notice.title}</Text>
-                <Text className="text-xs text-neutral-400">{notice.dateLabel}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#AAAABA" />
+              <Text className="text-base font-bold text-[#17171B]">{notice.title}</Text>
+              {notice.bodyPreview ? (
+                <Text numberOfLines={2} className="text-sm leading-5 text-[#696976]">
+                  {notice.bodyPreview}
+                </Text>
+              ) : null}
+              <Text className="text-xs text-[#AAAABA]">{notice.dateLabel}</Text>
             </Pressable>
           ))
         )}

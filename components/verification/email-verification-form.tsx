@@ -115,7 +115,9 @@ export function EmailVerificationForm({
                 </View>
                 <TextField
                   value={code}
-                  onChangeValue={(t) => setCode(t.replace(/[^0-9a-zA-Z]/g, '').slice(0, codeLength))}
+                  onChangeValue={(t) =>
+                    setCode(t.replace(/[^0-9a-zA-Z]/g, '').slice(0, codeLength))
+                  }
                   placeholder="인증코드 입력"
                   keyboardType="default"
                   autoCapitalize="none"

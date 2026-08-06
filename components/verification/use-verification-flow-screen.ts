@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   confirmVerificationCode,
@@ -10,20 +11,14 @@ import {
 } from '@/lib/api';
 
 export type VerificationFlowStep = 'entry' | 'code' | 'review' | 'complete' | 'rejected';
-export type VerificationStatusTone = 'idle' | 'review' | 'complete' | 'error';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * 서버가 보내는 인증 코드는 숫자 6자리가 아니라 길이가 정해지지 않은 영숫자 문자열이다.
- * 예전에는 입력값을 `replace(/\D/g,'').slice(0,6)` 로 잘라내서, 메일에서 코드를 복사해
- * 붙여넣으면 숫자만 남고 6자로 잘린 "전혀 다른 코드"가 입력되는 버그가 있었다.
- * 이제는 붙여넣기한 문자열을 그대로 두고 공백/개행만 제거한다.
- */
-const MIN_CODE_LENGTH = 6;
+/** 인증 코드는 숫자 6자리로 고정이다. 숫자가 아닌 문자는 입력에서 제거하고 6자로 제한한다. */
+const CODE_LENGTH = 6;
 
 function normalizeCode(next: string): string {
-  return next.replace(/\s+/g, '');
+  return next.replace(/\D/g, '').slice(0, CODE_LENGTH);
 }
 
 export type UseVerificationFlowScreenProps = {
@@ -42,10 +37,9 @@ export type UseVerificationFlowScreenReturn = UseVerificationFlowScreenProps & {
   code: string;
   loading: boolean;
   error: string | null;
-  statusLabel: string;
-  statusTone: VerificationStatusTone;
+  /** 화면 상단 큰 제목. 단계별로 문구가 다르다(이메일 입력/코드 입력/검토중/완료/반려). */
+  heading: string;
   description: string;
-  reviewTitle: string;
   timerLabel: string;
   canSend: boolean;
   canVerify: boolean;
@@ -59,6 +53,7 @@ export type UseVerificationFlowScreenReturn = UseVerificationFlowScreenProps & {
 export function useVerificationFlowScreen(
   props: UseVerificationFlowScreenProps,
 ): UseVerificationFlowScreenReturn {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<VerificationFlowState>({
     step: 'entry',
     email: props.defaultEmail,
@@ -105,44 +100,33 @@ export function useVerificationFlowScreen(
     return () => clearInterval(timer);
   }, [expiresAt, step]);
 
-  const statusLabel =
-    step === 'complete'
-      ? '인증 완료'
-      : step === 'review'
-        ? '검토중'
-        : step === 'rejected'
-          ? '반려'
-          : '미인증';
-  const statusTone: VerificationStatusTone =
-    step === 'complete'
-      ? 'complete'
-      : step === 'review'
-        ? 'review'
-        : step === 'rejected'
-          ? 'error'
-          : 'idle';
+  const shortLabel = props.kind === 'student' ? '학교' : '회사';
+  const heading =
+    step === 'entry'
+      ? '이메일을 입력해주세요'
+      : step === 'code'
+        ? '인증 코드를 입력해주세요'
+        : step === 'review'
+          ? '신청하신 이메일을 검토하는 중이에요'
+          : step === 'rejected'
+            ? '인증 신청이 반려됐어요'
+            : '인증이 완료됐어요';
   const description =
     step === 'entry'
-      ? `사용 중인 ${props.label}을 입력하면 인증 코드를 보내드려요.`
+      ? '인증 코드 발송을 위해 이메일을 입력해주세요'
       : step === 'code'
-        ? '입력하신 이메일로 인증 코드를 발송했어요. 코드를 입력해주세요.'
+        ? '입력하신 이메일로 전송받으신 코드를 입력해주세요'
         : step === 'review'
-          ? '신청하신 이메일을 검토하는 중이에요. 완료되면 알림으로 알려드릴게요.'
+          ? '처리까지 최대 3일까지 소요될 수 있어요\n완료되면 앱 내 알림으로 알려드릴게요'
           : step === 'rejected'
             ? '인증이 반려됐어요. 이메일을 다시 확인한 뒤 재신청해주세요.'
-            : `이제 프로필에 ${props.label} 인증 배지가 표시돼요.`;
-  const reviewTitle =
-    step === 'complete'
-      ? `${props.label} 인증이 완료됐어요`
-      : step === 'rejected'
-        ? '인증 신청이 반려됐어요'
-        : '인증 신청이 접수됐어요';
+            : `이제 프로필에 ${shortLabel} 인증 뱃지가 표시돼요\n인증을 취소하려면 고객센터로 문의해주세요`;
   const timerLabel = `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(
     remainingSeconds % 60,
   ).padStart(2, '0')}`;
   const normalizedEmail = email.trim();
   const canSend = EMAIL_RE.test(normalizedEmail) && !loading;
-  const canVerify = code.length >= MIN_CODE_LENGTH && remainingSeconds > 0 && !loading;
+  const canVerify = code.length === CODE_LENGTH && remainingSeconds > 0 && !loading;
 
   const send = async () => {
     if (!EMAIL_RE.test(normalizedEmail)) {
@@ -179,10 +163,10 @@ export function useVerificationFlowScreen(
       }));
       return;
     }
-    if (code.length < MIN_CODE_LENGTH) {
+    if (code.length !== CODE_LENGTH) {
       setState((current) => ({
         ...current,
-        error: '메일로 받은 인증 코드를 그대로 입력해주세요.',
+        error: '인증 코드 6자리를 입력해주세요.',
       }));
       return;
     }
@@ -223,22 +207,11 @@ export function useVerificationFlowScreen(
       }));
       return;
     }
-    if (step === 'complete') {
-      props.onDone();
-      return;
-    }
-    setState((current) => ({ ...current, loading: true, error: null }));
-    const res = await getVerifications();
-    const status =
-      res.status === 200 && !res.error ? verificationForKind(props.kind, res.data) : null;
-    setState((current) => ({
-      ...current,
-      step: verificationStep(status),
-      loading: false,
-      error: status?.isAccepted
-        ? null
-        : (res.error?.message ?? '아직 인증 검토가 완료되지 않았어요.'),
-    }));
+    // review/complete 모두 '확인' 한 번으로 닫힌다. 인증 홈 화면은 스택에 남아있는 채로
+    // 뒤로가기되므로 리마운트되지 않는데, 캐시를 무효화해두지 않으면 진입 때 받아온
+    // 이전 상태가 그대로 남는다. 최신 검토 결과는 홈으로 돌아가 다시 조회한다.
+    await queryClient.invalidateQueries({ queryKey: ['profile', 'verifications'] });
+    props.onDone();
   };
 
   return {
@@ -248,10 +221,8 @@ export function useVerificationFlowScreen(
     code,
     loading,
     error,
-    statusLabel,
-    statusTone,
+    heading,
     description,
-    reviewTitle,
     timerLabel,
     canSend,
     canVerify,
@@ -287,6 +258,6 @@ function verificationForKind(
 
 function verificationStep(status?: VerificationStatus | null): VerificationFlowStep {
   if (status?.status === 'REJECT') return 'rejected';
-  if (status?.isAccepted || status?.status === 'ACCEPTED') return 'complete';
+  if (status?.status === 'ACCEPTED') return 'complete';
   return 'review';
 }

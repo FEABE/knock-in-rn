@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -7,6 +8,8 @@ import {
   useSupportCategories,
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
+import { setMypageHomeToast } from '@/components/mypage/mypage-home/mypage-home-toast';
+import { resetToMypage } from '@/lib/navigation/routes';
 
 export type UseInquiryFormScreenReturn = {
   title: string;
@@ -16,7 +19,6 @@ export type UseInquiryFormScreenReturn = {
   loadingCategories: boolean;
   submitError: string | null;
   canSubmit: boolean;
-  submitted: boolean;
   submitting: boolean;
   setCategoryId: (next: string) => void;
   setTitle: (next: string) => void;
@@ -25,14 +27,14 @@ export type UseInquiryFormScreenReturn = {
 };
 
 export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
+  const router = useRouter();
   const [state, setState] = useState({
     title: '',
     body: '',
-    submitted: false,
     categoryId: '',
     submitError: null as string | null,
   });
-  const { title, body, submitted, categoryId, submitError } = state;
+  const { title, body, categoryId, submitError } = state;
   const { session, requireLogin } = useRequireLogin();
   const { data: categories, loading: loadingCategories } = useSupportCategories(Boolean(session));
   const { submitInquiry, submitting } = useCreateSupportInquiryAction();
@@ -73,13 +75,9 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
         title: title.trim(),
         contents: body.trim(),
       });
-      setState((current) => ({
-        ...current,
-        submitted: true,
-        title: '',
-        body: '',
-      }));
-      Alert.alert('접수 완료', '운영자가 확인 후 답변드릴게요.');
+      // 제출 후엔 문의 폼에 머무르지 않고 마이페이지로 돌아가 토스트로 알린다.
+      setMypageHomeToast('문의가 제출되었어요');
+      resetToMypage(router);
     } catch (error) {
       const message = error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.';
       setState((current) => ({ ...current, submitError: message }));
@@ -95,7 +93,6 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
     loadingCategories,
     submitError,
     canSubmit,
-    submitted,
     submitting,
     setCategoryId: (next) => setState((current) => ({ ...current, categoryId: next })),
     setTitle: (next) => setState((current) => ({ ...current, title: next })),

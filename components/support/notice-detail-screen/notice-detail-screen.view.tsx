@@ -31,10 +31,10 @@ export function NoticeDetailScreenView({
         </View>
       ) : (
         <ScrollView contentContainerClassName="gap-2 p-5">
-          <Text className="text-lg font-bold text-neutral-900">{title}</Text>
-          <Text className="text-xs text-neutral-400">{dateLabel}</Text>
+          <Text className="text-xl font-bold text-[#17171B]">{title}</Text>
+          <Text className="text-xs text-[#AAAABA]">{dateLabel}</Text>
           {bodyUnavailable ? (
-            <View className="mt-3">
+            <View className="mt-4">
               <ReadyErrorState
                 title="공지 본문을 불러오지 못했어요"
                 description="잠시 후 다시 시도해주세요."
@@ -43,7 +43,7 @@ export function NoticeDetailScreenView({
               />
             </View>
           ) : (
-            <Text className="mt-3 text-sm leading-6 text-neutral-700">{body}</Text>
+            <Text className="mt-4 text-sm leading-6 text-[#3A3A44]">{body}</Text>
           )}
         </ScrollView>
       )}

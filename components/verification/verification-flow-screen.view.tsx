@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,28 +9,20 @@ import {
 } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
+import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
 
-import type {
-  UseVerificationFlowScreenReturn,
-  VerificationStatusTone,
-} from './use-verification-flow-screen';
+import type { UseVerificationFlowScreenReturn } from './use-verification-flow-screen';
 
 export type VerificationFlowScreenViewProps = UseVerificationFlowScreenReturn;
 
 export function VerificationFlowScreenView({
   step,
-  title,
-  label,
-  iconName,
-  placeholder,
+  heading,
+  description,
   email,
   code,
   loading,
   error,
-  statusLabel,
-  statusTone,
-  description,
-  reviewTitle,
   timerLabel,
   canSend,
   canVerify,
@@ -52,23 +43,9 @@ export function VerificationFlowScreenView({
         keyboardDismissMode="interactive"
         automaticallyAdjustKeyboardInsets
       >
-        <View className="flex-row items-center gap-3">
-          <View className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100">
-            <Ionicons name={iconName} size={18} color="#525252" />
-          </View>
-          <Text className="text-base font-semibold text-neutral-900">{title}</Text>
-        </View>
-
-        <View className="gap-3">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-2">
-              <Ionicons name={iconName} size={18} color="#111827" />
-              <Text className="text-base font-bold text-neutral-900">{label}</Text>
-            </View>
-            <StatusPill label={statusLabel} tone={statusTone} />
-          </View>
-
-          <Text className="text-sm leading-5 text-neutral-500">{description}</Text>
+        <View className="gap-2">
+          <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{heading}</Text>
+          <Text className="text-sm leading-5 text-[#696976]">{description}</Text>
         </View>
 
         {step === 'entry' ? (
@@ -77,13 +54,17 @@ export function VerificationFlowScreenView({
             <TextField
               value={email}
               onChangeValue={setEmail}
-              placeholder={placeholder}
+              placeholder="example@gmail.com"
               autoCapitalize="none"
               keyboardType="email-address"
               className="border-b border-neutral-300 py-2 text-base text-neutral-900"
             />
+            <View className="gap-1">
+              <Bullet text="개인 이메일은 인증할 수 없어요" />
+              <Bullet text="인증 처리까지 최대 3일 소요될 수 있어요" />
+            </View>
             <PrimaryButton
-              label="인증 코드 받기"
+              label="인증 메일 발송"
               loading={loading}
               disabled={!canSend}
               onPress={send}
@@ -96,11 +77,12 @@ export function VerificationFlowScreenView({
             <View className="gap-2">
               <FieldLabel label="인증 코드" />
               <View className="flex-row items-center border-b border-neutral-300 py-2">
-                {/* 코드가 영숫자 혼합이라 number-pad/maxLength를 두지 않는다(복사·붙여넣기 보존). */}
                 <TextField
                   value={code}
                   onChangeValue={setCode}
-                  placeholder="인증 코드 입력"
+                  placeholder="인증코드 6자리 입력"
+                  keyboardType="number-pad"
+                  maxLength={6}
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="one-time-code"
@@ -136,45 +118,10 @@ export function VerificationFlowScreenView({
         ) : null}
 
         {step === 'review' || step === 'complete' || step === 'rejected' ? (
-          <View className="gap-5">
-            <View className="flex-row items-center gap-4 rounded-lg bg-neutral-50 px-4 py-3">
-              <View
-                className={`h-10 w-10 items-center justify-center rounded-full ${
-                  step === 'complete'
-                    ? 'bg-emerald-100'
-                    : step === 'rejected'
-                      ? 'bg-rose-100'
-                      : 'bg-amber-100'
-                }`}
-              >
-                <Ionicons
-                  name={
-                    step === 'complete'
-                      ? 'checkmark'
-                      : step === 'rejected'
-                        ? 'close'
-                        : 'time-outline'
-                  }
-                  size={20}
-                  color={
-                    step === 'complete' ? '#047857' : step === 'rejected' ? '#BE123C' : '#B45309'
-                  }
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-neutral-900">{reviewTitle}</Text>
-                <Text className="text-xs text-neutral-500">{email}</Text>
-              </View>
-            </View>
-
+          <View className="items-center gap-8 pt-6">
+            <EmptyHouseArtwork size={180} />
             <PrimaryButton
-              label={
-                step === 'review'
-                  ? '인증 상태 새로고침'
-                  : step === 'rejected'
-                    ? '다시 인증하기'
-                    : '확인'
-              }
+              label={step === 'rejected' ? '다시 인증하기' : '확인'}
               loading={loading}
               onPress={completeReview}
             />
@@ -184,31 +131,6 @@ export function VerificationFlowScreenView({
         {error ? <Text className="text-sm text-rose-500">{error}</Text> : null}
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function StatusPill({ label, tone }: { label: string; tone: VerificationStatusTone }) {
-  const bgClass =
-    tone === 'complete'
-      ? 'bg-emerald-50'
-      : tone === 'review'
-        ? 'bg-amber-50'
-        : tone === 'error'
-          ? 'bg-rose-50'
-          : 'bg-neutral-100';
-  const textClass =
-    tone === 'complete'
-      ? 'text-emerald-700'
-      : tone === 'review'
-        ? 'text-amber-700'
-        : tone === 'error'
-          ? 'text-rose-700'
-          : 'text-neutral-500';
-
-  return (
-    <View className={`rounded-full px-3 py-1 ${bgClass}`}>
-      <Text className={`text-xs font-semibold ${textClass}`}>{label}</Text>
-    </View>
   );
 }
 
@@ -240,7 +162,7 @@ function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={loading || disabled}
-      className={`h-12 items-center justify-center rounded-lg ${
+      className={`h-12 w-full items-center justify-center rounded-lg ${
         loading || !disabled ? 'bg-[#256EF4] active:opacity-90' : 'bg-[#ECECF3]'
       }`}
     >

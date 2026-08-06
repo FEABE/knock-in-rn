@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { ReadyErrorState, ReadyLoadingState } from '@/components/ui/ready-to-dev-feedback';
+import { CompanyBadgeArtwork, SchoolBadgeArtwork } from '@/components/ui/ready-to-dev-assets';
 
 import type {
   UseVerificationHomeScreenReturn,
@@ -42,36 +43,28 @@ export function VerificationHomeScreenView({
           onRetry={onRetry}
         />
       ) : (
-        <ScrollView contentContainerClassName="gap-5 px-4 pb-28 pt-5">
+        <ScrollView contentContainerClassName="gap-5 px-4 pb-10 pt-5">
           <View className="gap-2">
-            <Text className="text-xl font-bold text-[#17171B]">인증 방식을 선택해주세요</Text>
+            <Text className="text-xl font-bold text-[#17171B]">인증할 항목을 선택해주세요</Text>
             <Text className="text-sm leading-5 text-[#696976]">
-              인증 시 프로필에 배지가 표시되며, 상대에게 신뢰를 줄 수 있어요
+              인증을 완료하면 프로필에 뱃지가 표시되어 신뢰를 높일 수 있어요
             </Text>
           </View>
 
           <View className="gap-3">
             {cards.map((card) => (
-              <VerificationCard key={card.id} card={card} />
+              <VerificationCard key={card.id} card={card} onPress={card.onPress} />
             ))}
           </View>
 
-          <View className="flex-row items-start gap-3 rounded-md bg-[#E9F0FE] px-4 py-4">
-            <Ionicons name="information-circle-outline" size={21} color="#256EF4" />
-            <Text className="flex-1 text-sm leading-5 text-[#256EF4]">
-              인증 종류별로 각각 배지가 표시돼요{`\n`}하나만 인증해도 배지가 노출돼요
+          <View className="flex-row items-start gap-3 rounded-md bg-[#FFF7E8] px-4 py-4">
+            <Ionicons name="information-circle-outline" size={21} color="#C77800" />
+            <Text className="flex-1 text-sm leading-5 text-[#A15C00]">
+              인증 종류별로 각각 뱃지가 표시돼요{`\n`}하나만 인증해도 프로필에 노출돼요
             </Text>
           </View>
         </ScrollView>
       )}
-
-      {isLoggedIn && !loading && !error ? (
-        <View className="absolute inset-x-0 bottom-0 bg-white px-4 pb-5 pt-3">
-          <View className="h-12 items-center justify-center rounded-lg bg-[#ECECF3]">
-            <Text className="text-base font-semibold text-[#AAAABA]">다음으로</Text>
-          </View>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }
@@ -88,14 +81,19 @@ function Header({ onBack }: { onBack: () => void }) {
   );
 }
 
-function VerificationCard({ card }: { card: VerificationHomeCard }) {
+function VerificationCard({ card, onPress }: { card: VerificationHomeCard; onPress: () => void }) {
   return (
     <Pressable
-      onPress={card.onPress}
+      onPress={onPress}
+      accessibilityRole="button"
       className="min-h-[92px] flex-row items-center gap-4 rounded-md bg-[#F6F6FA] px-5 py-4 active:opacity-80"
     >
-      <View className="h-[52px] w-[52px] items-center justify-center bg-[#E1E2EB]">
-        <Ionicons name={card.icon} size={25} color="#696976" />
+      <View className="h-[52px] w-[52px] items-center justify-center rounded-full bg-[#E1E2EB]">
+        {card.id === 'school' ? (
+          <SchoolBadgeArtwork size={28} />
+        ) : (
+          <CompanyBadgeArtwork size={28} />
+        )}
       </View>
       <View className="flex-1 gap-1">
         <Text className="text-base font-bold text-[#17171B]">{card.title}</Text>
@@ -104,9 +102,15 @@ function VerificationCard({ card }: { card: VerificationHomeCard }) {
         </Text>
       </View>
       <View className="items-end gap-2">
-        <View className={`rounded px-3 py-1 ${card.verified ? 'bg-emerald-50' : 'bg-[#ECECF3]'}`}>
-          <Text className={`text-xs ${card.verified ? 'text-emerald-700' : 'text-[#AAAABA]'}`}>
-            {card.verified ? '인증완료' : '미인증'}
+        <View
+          className={`rounded px-3 py-1 ${
+            card.verified ? 'bg-[#256EF4]' : 'border border-[#DADAE8] bg-white'
+          }`}
+        >
+          <Text
+            className={`text-xs font-medium ${card.verified ? 'text-white' : 'text-[#696976]'}`}
+          >
+            {card.verified ? '인증 완료' : '인증 필요'}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color="#AAAABA" />

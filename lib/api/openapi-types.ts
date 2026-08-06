@@ -820,7 +820,7 @@ export interface OpenApiComponents {
         "employeeAuth"?: OpenApiComponents["schemas"]["org.example.knockin.dto.MyVerificationListDto$Response$AuthInfo"];
       };
     "org.example.knockin.dto.MyVerificationListDto$Response$AuthInfo": {
-        "isAccepted"?: boolean;
+        "status"?: "PENDING" | "ACCEPTED" | "REJECT";
         "email"?: string;
         "createAt"?: string;
       };

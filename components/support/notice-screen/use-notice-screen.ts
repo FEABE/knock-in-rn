@@ -7,6 +7,7 @@ export type NoticeListItem = {
   id: string;
   title: string;
   dateLabel: string;
+  bodyPreview: string;
 };
 
 export type UseNoticeScreenReturn = {

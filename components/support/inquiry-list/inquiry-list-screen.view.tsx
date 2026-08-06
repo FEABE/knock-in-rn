@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,31 +10,16 @@ export type InquiryListScreenViewProps = UseInquiryListScreenReturn;
 
 export function InquiryListScreenView({
   inquiries,
-  totalCount,
   loading,
   error,
   retry,
-  onCreatePress,
+  onItemPress,
 }: InquiryListScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <SupportHeader title="문의내역" />
+      <SupportHeader title="문의 내역" />
 
-      <ScrollView contentContainerClassName="gap-5 p-5">
-        <View className="flex-row items-center justify-between">
-          <View className="gap-1">
-            <Text className="text-base font-semibold text-neutral-900">전체 문의 {totalCount}</Text>
-            <Text className="text-xs text-neutral-400">문의 상태를 확인해요</Text>
-          </View>
-          <Pressable
-            onPress={onCreatePress}
-            className="h-10 flex-row items-center gap-1.5 rounded-full bg-[#256EF4] px-4 active:opacity-90"
-          >
-            <Ionicons name="create-outline" size={16} color="#ffffff" />
-            <Text className="text-xs font-semibold text-white">문의하기</Text>
-          </Pressable>
-        </View>
-
+      <ScrollView contentContainerClassName="gap-3 p-5">
         {loading ? (
           <View className="items-center gap-3 p-10">
             <ActivityIndicator color="#256EF4" />
@@ -54,46 +38,61 @@ export function InquiryListScreenView({
             <Text className="text-xs text-neutral-400">궁금한 점을 운영팀에 남겨주세요</Text>
           </View>
         ) : (
-          <View className="gap-3">
-            {inquiries.map((inquiry) => (
-              <InquiryCard key={inquiry.id} inquiry={inquiry} />
-            ))}
-          </View>
+          inquiries.map((inquiry) => (
+            <InquiryCard
+              key={inquiry.id}
+              inquiry={inquiry}
+              onPress={() => onItemPress(inquiry.id)}
+            />
+          ))
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function InquiryCard({ inquiry }: { inquiry: InquiryListItem }) {
+function InquiryCard({ inquiry, onPress }: { inquiry: InquiryListItem; onPress: () => void }) {
   return (
-    <View className="gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-      <View className="flex-row items-center justify-between gap-3">
-        <Text className="flex-1 text-sm font-semibold text-neutral-900">{inquiry.title}</Text>
-        <View
-          className={`rounded-full px-2 py-0.5 ${
-            inquiry.answered ? 'bg-emerald-50' : 'bg-neutral-100'
-          }`}
-        >
-          <Text
-            className={`text-[10px] ${inquiry.answered ? 'text-emerald-700' : 'text-neutral-500'}`}
-          >
-            {inquiry.statusLabel}
-          </Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      className="gap-2 rounded-xl border border-[#ECECF3] bg-white p-4 active:bg-[#F7F7FA]"
+    >
+      <View className="flex-row items-center justify-between gap-2">
+        <View className="rounded-md border border-[#DADAE8] px-2 py-1">
+          <Text className="text-[11px] font-medium text-[#696976]">{inquiry.categoryLabel}</Text>
         </View>
+        <StatusBadge answered={inquiry.answered} label={inquiry.statusLabel} />
       </View>
 
-      <Text className="text-xs text-neutral-500">
-        {inquiry.authorName} · {inquiry.dateLabel} · {inquiry.categoryLabel}
-      </Text>
-      <Text className="text-sm leading-5 text-neutral-700">{inquiry.body}</Text>
+      <Text className="text-[15px] font-bold text-[#17171B]">{inquiry.title}</Text>
 
       {inquiry.answer ? (
-        <View className="gap-1 rounded-lg bg-neutral-50 p-3">
-          <Text className="text-[10px] font-semibold text-[#256EF4]">운영자 답변</Text>
-          <Text className="text-sm leading-5 text-neutral-700">{inquiry.answer}</Text>
+        <View className="gap-1 rounded-lg bg-[#F0F5FF] p-3">
+          <Text className="text-xs font-semibold text-[#256EF4]">답변</Text>
+          <Text className="text-sm leading-5 text-[#696976]" numberOfLines={2}>
+            {inquiry.answer}
+          </Text>
         </View>
       ) : null}
+
+      <Text className="text-xs text-[#AAAABA]">{inquiry.dateLabel}</Text>
+    </Pressable>
+  );
+}
+
+function StatusBadge({ answered, label }: { answered: boolean; label: string }) {
+  return (
+    <View
+      className={`rounded-full px-2 py-0.5 ${
+        answered ? 'bg-emerald-50' : 'border border-[#DADAE8] bg-white'
+      }`}
+    >
+      <Text
+        className={`text-[11px] font-medium ${answered ? 'text-emerald-700' : 'text-[#696976]'}`}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
