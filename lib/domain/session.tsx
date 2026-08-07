@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Platform } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -21,6 +22,7 @@ import {
   type StoredAuthIdentity,
 } from '@/lib/auth/session-storage';
 import { signInWithAppleSdk } from '@/lib/auth/apple-native';
+import { signInWithAppleWeb } from '@/lib/auth/apple-web';
 import {
   subscribeToPushTokenRefresh,
   syncPushDevice,
@@ -141,7 +143,15 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     }
 
     try {
-      const res = provider === 'kakao' ? await signInWithKakaoSdk() : await signInWithAppleSdk();
+      // Apple은 iOS만 네이티브 SDK를 쓸 수 있어서, 안드로이드는 백엔드의 웹 OAuth 플로우를
+      // 브라우저로 태운다(apple-web.ts). 두 경로 모두 동일한 ApiResponse<LoginData>를 돌려주므로
+      // 아래 후처리(탈퇴/정지 분기, 세션 저장)는 그대로 공유된다.
+      const res =
+        provider === 'kakao'
+          ? await signInWithKakaoSdk()
+          : Platform.OS === 'ios'
+            ? await signInWithAppleSdk()
+            : await signInWithAppleWeb();
 
       if (__DEV__) {
         console.info('[auth] social login exchange completed', {

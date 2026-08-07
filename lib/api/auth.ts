@@ -18,10 +18,15 @@ export type KakaoAuthObj = {
   refresh_token: string;
 };
 
-/** Apple SDK 인증 후 백엔드에서 검증할 자격 증명. */
+/**
+ * Apple SDK 인증 후 백엔드에서 검증할 자격 증명.
+ * 백엔드 AppleSdkRequest.AuthObj는 카카오와 동일하게 `access_token`(필수) 필드를 받고,
+ * 그 값(Apple identityToken JWT)의 페이로드를 서버에서 직접 디코드한다.
+ */
 export type AppleAuthObj = {
-  identity_token: string;
-  authorization_code?: string;
+  /** Apple identityToken JWT. */
+  access_token: string;
+  refresh_token?: string;
 };
 
 export type AuthObj = KakaoAuthObj | AppleAuthObj;

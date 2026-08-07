@@ -38,6 +38,7 @@ export function LoginScreenView({
         </View>
 
         <View className="gap-3">
+          {/* iOS는 Apple 네이티브 SDK, 안드로이드는 브라우저 웹 OAuth로 처리하므로 두 OS 모두 노출한다. */}
           <ProviderButton
             provider="apple"
             label="Apple 로그인"

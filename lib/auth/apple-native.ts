@@ -22,9 +22,10 @@ export async function signInWithAppleSdk() {
     );
   }
 
+  // 백엔드는 authObj.access_token 자리에 identityToken JWT를 받아 서버에서 디코드한다.
+  // (identity_token 같은 다른 필드명으로 보내면 "액세스 토큰은 필수입니다." 400이 난다.)
   return socialLoginSdk('apple', {
-    identity_token: credential.identityToken,
-    authorization_code: credential.authorizationCode ?? undefined,
+    access_token: credential.identityToken,
   });
 }
 
