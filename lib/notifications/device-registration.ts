@@ -18,6 +18,14 @@ const MAX_DEVICE_ID_LENGTH = 50;
 const MAX_FCM_TOKEN_LENGTH = 512;
 
 let memoryDeviceId: string | null = null;
+let deviceIdPromise: Promise<string> | null = null;
+let lastRegisteredFcmToken: string | null = null;
+let inFlightRegistration:
+  | {
+      fcmToken: string;
+      promise: Promise<PushDeviceSyncResult>;
+    }
+  | null = null;
 
 export type PushDeviceSyncResult =
   | { status: 'registered' }
@@ -32,15 +40,30 @@ export async function syncPushDevice(options: {
   requestPermission: boolean;
 }): Promise<PushDeviceSyncResult> {
   try {
+    console.log('[PushDevice] checking notification permission', {
+      platform: Platform.OS,
+      platformVersion: Platform.Version,
+      requestPermission: options.requestPermission,
+    });
     const permissionGranted = await ensureNotificationPermission(options.requestPermission);
+    console.log('[PushDevice] notification permission result', { permissionGranted });
     if (!permissionGranted) return { status: 'permission-denied' };
 
+    console.log('[PushDevice] getting Firebase Messaging token');
     const messaging = getMessaging();
     await registerDeviceForRemoteMessages(messaging);
     const fcmToken = await getToken(messaging);
+    console.log('[PushDevice] Firebase Messaging token received', {
+      fcmToken: maskToken(fcmToken),
+      fcmTokenLength: fcmToken.length,
+    });
     return registerTokenWithBackend(fcmToken);
   } catch (error: unknown) {
-    return registrationFailure(error);
+    const failure = registrationFailure(error);
+    console.log(
+      `[PushDevice] sync failed before backend registration status=${failure.status} code=${failure.code ?? '-'} message=${failure.message}`,
+    );
+    return failure;
   }
 }
 
@@ -51,9 +74,17 @@ export function subscribeToPushTokenRefresh(): () => void {
   try {
     const messaging = getMessaging();
     return onTokenRefresh(messaging, (fcmToken) => {
+      console.log('[PushDevice] Firebase Messaging token refreshed', {
+        fcmToken: maskToken(fcmToken),
+        fcmTokenLength: fcmToken.length,
+      });
       void registerTokenWithBackend(fcmToken);
     });
-  } catch {
+  } catch (error: unknown) {
+    const failure = registrationFailure(error);
+    console.log(
+      `[PushDevice] token refresh subscription unavailable code=${failure.code ?? '-'} message=${failure.message}`,
+    );
     return () => {};
   }
 }
@@ -67,46 +98,88 @@ async function registerTokenWithBackend(fcmToken: string): Promise<PushDeviceSyn
     };
   }
 
+  if (lastRegisteredFcmToken === fcmToken) {
+    console.log('[PushDevice] registration skipped, token already registered');
+    return { status: 'registered' };
+  }
+
+  if (inFlightRegistration?.fcmToken === fcmToken) {
+    console.log('[PushDevice] registration skipped, same token registration already in flight');
+    return inFlightRegistration.promise;
+  }
+
+  const promise = registerTokenWithBackendOnce(fcmToken).finally(() => {
+    if (inFlightRegistration?.promise === promise) inFlightRegistration = null;
+  });
+  inFlightRegistration = { fcmToken, promise };
+  return promise;
+}
+
+async function registerTokenWithBackendOnce(fcmToken: string): Promise<PushDeviceSyncResult> {
   const body: DeviceRegistrationRequest = {
     deviceId: await getOrCreateDeviceId(),
     fcmToken,
     platform: platformForBackend(),
   };
+  console.log('[PushDevice] POST /users/me/devices', {
+    deviceId: maskToken(body.deviceId),
+    fcmToken: maskToken(body.fcmToken),
+    fcmTokenLength: body.fcmToken.length,
+    platform: body.platform,
+  });
   const response = await registerMyDevice(body);
-  if (response.status === 200 && !response.error) return { status: 'registered' };
+  console.log('[PushDevice] POST /users/me/devices response', {
+    status: response.status,
+    error: response.error,
+  });
+  if (response.status === 200 && !response.error) {
+    lastRegisteredFcmToken = fcmToken;
+    return { status: 'registered' };
+  }
 
-  return {
+  const failure = {
     status: 'failed',
     code: response.error?.code,
     message: response.error?.message ?? `기기 등록에 실패했습니다. (${response.status})`,
-  };
+  } satisfies PushDeviceSyncResult;
+  console.log(
+    `[PushDevice] backend registration failed code=${failure.code ?? '-'} message=${failure.message}`,
+  );
+  return failure;
 }
 
 async function getOrCreateDeviceId(): Promise<string> {
   if (memoryDeviceId) return memoryDeviceId;
+  if (deviceIdPromise) return deviceIdPromise;
 
-  try {
-    if (await SecureStore.isAvailableAsync()) {
-      const stored = await SecureStore.getItemAsync(DEVICE_ID_KEY);
-      if (stored && stored.length <= MAX_DEVICE_ID_LENGTH) {
-        memoryDeviceId = stored;
-        return stored;
+  deviceIdPromise = (async () => {
+    try {
+      if (await SecureStore.isAvailableAsync()) {
+        const stored = await SecureStore.getItemAsync(DEVICE_ID_KEY);
+        if (stored && stored.length <= MAX_DEVICE_ID_LENGTH) {
+          memoryDeviceId = stored;
+          return stored;
+        }
       }
+    } catch {
+      // SecureStore를 사용할 수 없는 환경에서는 현재 실행 동안 같은 ID를 유지한다.
     }
-  } catch {
-    // SecureStore를 사용할 수 없는 환경에서는 현재 실행 동안 같은 ID를 유지한다.
-  }
 
-  const generated = Crypto.randomUUID();
-  memoryDeviceId = generated;
-  try {
-    if (await SecureStore.isAvailableAsync()) {
-      await SecureStore.setItemAsync(DEVICE_ID_KEY, generated);
+    const generated = Crypto.randomUUID();
+    memoryDeviceId = generated;
+    try {
+      if (await SecureStore.isAvailableAsync()) {
+        await SecureStore.setItemAsync(DEVICE_ID_KEY, generated);
+      }
+    } catch {
+      // 메모리 값으로 현재 실행의 기기 식별은 계속할 수 있다.
     }
-  } catch {
-    // 메모리 값으로 현재 실행의 기기 식별은 계속할 수 있다.
-  }
-  return generated;
+    return generated;
+  })().finally(() => {
+    deviceIdPromise = null;
+  });
+
+  return deviceIdPromise;
 }
 
 async function ensureNotificationPermission(shouldRequest: boolean): Promise<boolean> {
@@ -130,6 +203,11 @@ async function ensureNotificationPermission(shouldRequest: boolean): Promise<boo
 
 function platformForBackend(): DevicePlatform {
   return Platform.OS === 'android' ? 'ANDROID' : 'IOS';
+}
+
+function maskToken(value: string): string {
+  if (value.length <= 12) return `${value.slice(0, 3)}...`;
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
 function registrationFailure(error: unknown): PushDeviceSyncResult {
