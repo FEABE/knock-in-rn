@@ -299,10 +299,8 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     if (!sessionUserId || USE_MOCK) return;
 
     let cancelled = false;
-    console.log('[PushDevice] session detected, syncing device', { sessionUserId });
-    void syncPushDevice({ requestPermission: true }).then((result) => {
+    void syncPushDevice({ requestPermission: true }).then(() => {
       if (cancelled) return;
-      console.log('[PushDevice] sync result', result);
     });
 
     try {
