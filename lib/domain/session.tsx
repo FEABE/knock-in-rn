@@ -161,6 +161,12 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         }
 
         const serverUnavailable = res.status >= 500;
+        console.warn('[auth] social login api failed', {
+          provider,
+          status: res.status,
+          code: res.error?.code ?? `HTTP_${res.status}`,
+          message: res.error?.message,
+        });
         return {
           status: serverUnavailable
             ? 'network'
@@ -210,6 +216,12 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     } catch (e: any) {
       const code = typeof e?.code === 'string' ? e.code : undefined;
       const message = typeof e?.message === 'string' ? e.message : undefined;
+      console.warn('[auth] social login threw', {
+        provider,
+        code,
+        message,
+        name: typeof e?.name === 'string' ? e.name : undefined,
+      });
       return {
         status: classifyThrownError(code, message),
         provider,
