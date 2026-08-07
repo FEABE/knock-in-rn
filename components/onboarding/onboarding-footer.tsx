@@ -1,4 +1,5 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Keyboard, Platform, Text, View } from 'react-native';
 
 import { AnalyticsEvent, logEvent, ONBOARDING_STEP_META } from '@/lib/analytics';
 import { Button } from '@/components/ui/headless';
@@ -14,6 +15,8 @@ export type OnboardingFooterProps = {
   showBack?: boolean;
   /** 제출(API 호출) 진행 중. 버튼 비활성 + 스피너 표시. */
   loading?: boolean;
+  /** 키보드가 떠 있을 때 버튼을 키보드 바로 위에 붙인다. */
+  keyboardAware?: boolean;
 };
 
 export function OnboardingFooter({
@@ -23,12 +26,29 @@ export function OnboardingFooter({
   helper,
   showBack = false,
   loading = false,
+  keyboardAware = false,
 }: OnboardingFooterProps) {
   const { isLast, goNext, goPrev, currentStep } = useOnboarding();
   const handlePress = onPress ?? goNext;
   const label = primaryLabel ?? (isLast ? '완료' : '다음으로');
   const disabled = !canProceed || loading;
   const bottomPadding = useSafeBottomPadding(12, 16);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    if (!keyboardAware) return;
+
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardAware]);
+
+  const resolvedBottomPadding = keyboardAware && keyboardVisible ? 8 : bottomPadding;
 
   // 뒤로가기 탭: 어느 질문에서 망설임이 많은지 파악.
   const handleBack = () => {
@@ -43,7 +63,7 @@ export function OnboardingFooter({
   return (
     <View
       className="gap-2 border-t border-[#ECECF3] bg-white px-4 pt-4"
-      style={{ paddingBottom: bottomPadding }}
+      style={{ paddingBottom: resolvedBottomPadding }}
     >
       {helper ? <Text className="text-xs text-neutral-500">{helper}</Text> : null}
       <View className="flex-row gap-3">

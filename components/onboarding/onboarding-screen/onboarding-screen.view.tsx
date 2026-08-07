@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileBasicStep } from '@/components/onboarding/steps/profile-basic-step';
 import { ProfileLifestyleStep } from '@/components/onboarding/steps/profile-lifestyle-step';
 import { RoomInfoStep } from '@/components/onboarding/steps/roominfo-step';
+import { OnboardingCompleteStep } from '@/components/onboarding/steps/onboarding-complete-step';
 
 import type { UseOnboardingScreenReturn } from './use-onboarding-screen';
 
@@ -16,6 +17,7 @@ export function OnboardingScreenView({ currentStep }: OnboardingScreenViewProps)
         {currentStep === 'profile-basic' ? <ProfileBasicStep /> : null}
         {currentStep === 'profile-lifestyle' ? <ProfileLifestyleStep /> : null}
         {currentStep === 'roominfo' ? <RoomInfoStep /> : null}
+        {currentStep === 'complete' ? <OnboardingCompleteStep /> : null}
       </View>
     </SafeAreaView>
   );

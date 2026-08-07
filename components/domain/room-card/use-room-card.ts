@@ -19,6 +19,7 @@ export type UseRoomCardReturn = {
   roomTypeLabel: string;
   regionLabel: string;
   authorMetaLabel: string | null;
+  authorMetaTone: 'male' | 'female' | 'neutral';
   badge: RoomCardBadge;
   timeAgoLabel: string;
 };
@@ -65,6 +66,12 @@ function buildAuthorMetaLabel(age: number, gender: string): string | null {
   return `${meta.symbol} ${ageLabel} · ${meta.label}`;
 }
 
+function authorMetaTone(gender: string): UseRoomCardReturn['authorMetaTone'] {
+  if (gender === 'male') return 'male';
+  if (gender === 'female') return 'female';
+  return 'neutral';
+}
+
 export function useRoomCard({
   post,
   onPress: onPressProp,
@@ -98,6 +105,10 @@ export function useRoomCard({
     () => buildAuthorMetaLabel(post.author.age, post.author.gender),
     [post.author.age, post.author.gender],
   );
+  const authorMetaToneValue = useMemo(
+    () => authorMetaTone(post.author.gender),
+    [post.author.gender],
+  );
 
   const badge = useMemo(() => pickBadge(post), [post]);
   const timeAgoLabel = useMemo(() => timeAgo(post.createdAt), [post.createdAt]);
@@ -111,6 +122,7 @@ export function useRoomCard({
     roomTypeLabel,
     regionLabel,
     authorMetaLabel,
+    authorMetaTone: authorMetaToneValue,
     badge,
     timeAgoLabel,
   };

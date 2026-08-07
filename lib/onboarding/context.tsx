@@ -13,24 +13,26 @@ import {
   type TermsAgreement,
 } from './types';
 
-export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo';
+export type OnboardingStep = 'profile-basic' | 'profile-lifestyle' | 'roominfo' | 'complete';
 
 /**
- * 가입 온보딩 필수 흐름: 기본정보·약관 → 생활패턴 → 방 조건.
+ * 가입 온보딩 필수 흐름: 기본정보·약관 → 생활패턴 → 방 조건 → 완료.
  *
- * 선호조건(preferences)은 필수 플로우에서 분리됐다. 방 조건 완료 시점에 온보딩을
+ * 선호조건(preferences)은 필수 플로우에서 분리됐다. 방 조건 뒤 완료 화면에서 온보딩을
  * 완료 처리하고, 선호조건은 탐색 탭의 유도 모달 → 마이페이지 선호 설정 경로로만 입력받는다.
  */
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   'profile-basic',
   'profile-lifestyle',
   'roominfo',
+  'complete',
 ];
 
 export const STEP_LABELS: Record<OnboardingStep, string> = {
   'profile-basic': '기본 정보',
   'profile-lifestyle': '생활패턴',
   roominfo: '방 유무 여부',
+  complete: '완료',
 };
 
 function emptyTerms(): TermsAgreement {
@@ -155,15 +157,13 @@ export function OnboardingProvider({
   }, []);
 
   const goNext = useCallback(() => {
-    setCurrentStep((prev) => {
-      const idx = ONBOARDING_STEPS.indexOf(prev);
-      if (idx === ONBOARDING_STEPS.length - 1) {
-        onComplete?.(values);
-        return prev;
-      }
-      return ONBOARDING_STEPS[idx + 1];
-    });
-  }, [onComplete, values]);
+    const idx = ONBOARDING_STEPS.indexOf(currentStep);
+    if (idx === ONBOARDING_STEPS.length - 1) {
+      onComplete?.(values);
+      return;
+    }
+    setCurrentStep(ONBOARDING_STEPS[idx + 1]);
+  }, [currentStep, onComplete, values]);
 
   const goPrev = useCallback(() => {
     setCurrentStep((prev) => {

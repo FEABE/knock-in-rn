@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRegionOptions } from '@/lib/api';
 import type { Region } from '@/lib/onboarding';
@@ -17,6 +17,15 @@ export function useRegionFilterBody({
   const regionOptions = useRegionOptions();
   const cities = regionOptions.cities;
   const [activeCity, setActiveCity] = useState<string | null>(cities[0]?.id ?? null);
+  const [limitToastVisible, setLimitToastVisible] = useState(false);
+  const limitToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (limitToastTimer.current) clearTimeout(limitToastTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!activeCity && cities[0]) setActiveCity(cities[0].id);
@@ -33,7 +42,14 @@ export function useRegionFilterBody({
       onChange(value.filter((r) => r.id !== region.id));
       return;
     }
-    if (value.length < maxSelection) onChange([...value, region]);
+    if (value.length < maxSelection) {
+      onChange([...value, region]);
+      return;
+    }
+
+    setLimitToastVisible(true);
+    if (limitToastTimer.current) clearTimeout(limitToastTimer.current);
+    limitToastTimer.current = setTimeout(() => setLimitToastVisible(false), 1800);
   };
 
   return {
@@ -42,6 +58,7 @@ export function useRegionFilterBody({
     districts,
     loading: regionOptions.loading,
     error: regionOptions.error,
+    limitToastVisible,
     reload: regionOptions.reload,
     setActiveCity,
     toggleRegion,

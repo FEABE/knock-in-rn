@@ -38,10 +38,11 @@ export type PreferencePriority = {
   image: string | null;
 };
 
-export type PreferencesStep = 0 | 1 | 2;
+export type PreferencesStep = 0 | 1;
 
 export type UsePreferencesScreenReturn = {
   step: PreferencesStep;
+  isPreferenceComplete: boolean;
   scales: Record<string, number>;
   choiceValues: Record<string, string>;
   scaleOptions: LifestyleScaleOption[];
@@ -64,7 +65,7 @@ export type UsePreferencesScreenReturn = {
 
 export function usePreferencesScreen(): UsePreferencesScreenReturn {
   const router = useRouter();
-  const { markPreferenceComplete } = useSession();
+  const { session, markPreferenceComplete } = useSession();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const fromOnboarding = from === 'onboarding';
   const lifestyleOptions = useLifestylePatternOptions();
@@ -150,8 +151,6 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
 
   useEffect(() => {
     if (step === 1) logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'lifestyle_preference' });
-    else if (step === 2)
-      logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'priority_selection' });
   }, [step]);
 
   const togglePriority = (id: number) => {
@@ -213,6 +212,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
 
   return {
     step,
+    isPreferenceComplete: session?.preferenceInfo === true,
     scales,
     choiceValues,
     scaleOptions: lifestyleOptions.scaleOptions,
@@ -241,10 +241,6 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
       exit();
     },
     goBackStep: () => {
-      if (step === 2) {
-        setState((current) => ({ ...current, step: 1 }));
-        return;
-      }
       if (fromOnboarding) {
         setState((current) => ({ ...current, step: 0 }));
         return;
@@ -253,7 +249,7 @@ export function usePreferencesScreen(): UsePreferencesScreenReturn {
     },
     goPriorityStep: () => {
       logEvent(AnalyticsEvent.PREFERENCE_STEP_NEXT, { step: 'lifestyle_preference' });
-      setState((current) => ({ ...current, step: 2 }));
+      logEvent(AnalyticsEvent.PREFERENCE_STEP_VIEW, { step: 'priority_selection' });
     },
     togglePriority,
     save,

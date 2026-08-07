@@ -88,6 +88,17 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
     // 차단 필터(isUserBlocked)가 실제 memberId 로 동작하도록 이름이 아닌 id 를 쓴다.
     author: minimalUser(item.writer ?? item.memberName ?? '익명', region, {
       id: item.memberId != null ? String(item.memberId) : undefined,
+      age: item.memberAge ?? 0,
+      avatarUrl: item.memberProfileImageUrl,
+      gender: item.gender === 'FEMALE' ? 'female' : item.gender === 'MALE' ? 'male' : 'other',
+      badges: [
+        ...(hasAuthentication(item.authentications, 'STUDENT')
+          ? [{ kind: 'school' as const, label: '학생 인증', verifiedAt: new Date() }]
+          : []),
+        ...(hasAuthentication(item.authentications, 'COMPANY')
+          ? [{ kind: 'company' as const, label: '직장 인증', verifiedAt: new Date() }]
+          : []),
+      ],
     }),
     description: '',
     liked: bool(item.interested ?? item.isLike),

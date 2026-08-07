@@ -1,9 +1,12 @@
 import { forwardRef, type ReactNode } from 'react';
 import {
+  Platform,
   TextInput,
   View,
+  type StyleProp,
   type TextInputProps,
   type TextInput as RNTextInput,
+  type TextStyle,
   type ViewProps,
 } from 'react-native';
 
@@ -32,10 +35,23 @@ export const TextFieldView = forwardRef<RNTextInput, TextFieldViewProps>(functio
     selectionColor = '#256EF4',
     multiline,
     textAlignVertical = multiline ? 'top' : 'center',
+    style,
     ...inputProps
   },
   ref,
 ) {
+  const normalizedStyle: StyleProp<TextStyle> = [
+    !multiline
+      ? {
+          includeFontPadding: false,
+          paddingBottom: 0,
+          paddingTop: 0,
+          ...(Platform.OS === 'ios' ? { lineHeight: undefined } : null),
+        }
+      : null,
+    style,
+  ];
+
   return (
     <TextInput
       ref={ref}
@@ -43,6 +59,7 @@ export const TextFieldView = forwardRef<RNTextInput, TextFieldViewProps>(functio
       selectionColor={selectionColor}
       multiline={multiline}
       textAlignVertical={textAlignVertical}
+      style={normalizedStyle}
       {...inputProps}
     />
   );

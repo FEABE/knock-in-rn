@@ -17,8 +17,17 @@ export function RegionFilterBody({
   onChange: (next: Region[]) => void;
   maxSelection?: number;
 }) {
-  const { cities, activeCity, districts, loading, error, reload, setActiveCity, toggleRegion } =
-    useRegionFilterBody({ value, onChange, maxSelection });
+  const {
+    cities,
+    activeCity,
+    districts,
+    loading,
+    error,
+    limitToastVisible,
+    reload,
+    setActiveCity,
+    toggleRegion,
+  } = useRegionFilterBody({ value, onChange, maxSelection });
 
   if (loading) return <ReadyLoadingState label="지역을 불러오는 중..." compact />;
   if (error) {
@@ -33,9 +42,9 @@ export function RegionFilterBody({
   }
 
   return (
-    <>
-      <View className="flex-row overflow-hidden border-b border-[#ECECF3]" style={{ height: 330 }}>
-        <View className="w-[132px] bg-white">
+    <View>
+      <View className="h-[336px] flex-row overflow-hidden border-b border-[#ECECF3]">
+        <View className="w-1/2 bg-white">
           <ScrollView showsVerticalScrollIndicator={false}>
             {cities.map((city) => {
               const selected = city.id === activeCity;
@@ -46,7 +55,7 @@ export function RegionFilterBody({
                 <Pressable
                   key={city.id}
                   onPress={() => setActiveCity(city.id)}
-                  className={`h-12 flex-row items-center justify-between px-3 ${selected ? 'bg-[#F6F6FA]' : 'bg-white'}`}
+                  className={`h-12 flex-row items-center gap-1 px-4 ${selected ? 'bg-[#F6F6FA]' : 'bg-white'}`}
                 >
                   <Text
                     className={
@@ -66,7 +75,7 @@ export function RegionFilterBody({
           </ScrollView>
         </View>
 
-        <View className="flex-1 border-l border-[#ECECF3] bg-white">
+        <View className="w-1/2 bg-white">
           <ScrollView showsVerticalScrollIndicator={false}>
             {districts.map((option) => {
               const r = option.region;
@@ -75,14 +84,13 @@ export function RegionFilterBody({
                 <Pressable
                   key={r.id}
                   onPress={() => toggleRegion(r)}
-                  className="h-12 flex-row items-center justify-between px-5"
+                  className="h-12 flex-row items-center px-4"
                 >
                   <Text
                     className={`text-[16px] ${selected ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'}`}
                   >
                     {r.district}
                   </Text>
-                  {selected ? <Ionicons name="checkmark" size={17} color="#256EF4" /> : null}
                 </Pressable>
               );
             })}
@@ -92,7 +100,7 @@ export function RegionFilterBody({
 
       <View className="gap-3 pt-3">
         <View className="flex-row items-center justify-between">
-          <Text className="text-s leading-[18px] text-[#696976]">
+          <Text className="text-xs leading-[18px] text-[#696976]">
             선택 지역 <Text className="text-[#17171B]">{value.length}</Text>
             <Text className="text-[#AAAABA]">/{maxSelection}</Text>
           </Text>
@@ -123,7 +131,23 @@ export function RegionFilterBody({
           </ScrollView>
         ) : null}
       </View>
-    </>
+
+      {limitToastVisible ? (
+        <View
+          pointerEvents="none"
+          className="absolute bottom-[68px] left-0 right-0 z-10 items-center px-4"
+        >
+          <View className="min-h-[34px] flex-row items-center justify-center gap-2 rounded-lg bg-[#696976] px-4 py-2">
+            <View className="h-4 w-4 items-center justify-center rounded-full bg-[#FFB114]">
+              <Text className="text-[11px] font-bold leading-4 text-[#8A5C00]">!</Text>
+            </View>
+            <Text className="text-[13px] leading-5 text-white">
+              지역은 최대 {maxSelection}개까지 선택 가능해요
+            </Text>
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }
 

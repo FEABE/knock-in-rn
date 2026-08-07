@@ -82,7 +82,7 @@ function RangeFieldControl({
   const [trackWidth, setTrackWidth] = useState(0);
   const trackRef = useRef<View>(null);
   const trackLeft = useRef(0);
-  const activeThumb = useRef<0 | 1>(0);
+  const activeThumb = useRef<0 | 1 | null>(0);
   const { value, percents, setStart, setEnd, min, max } = slider;
 
   const measureTrack = (event: LayoutChangeEvent) => {
@@ -113,15 +113,26 @@ function RangeFieldControl({
           const nextRatio = valueToRatio(next, scaleStops, min, max);
           const startRatio = valueToRatio(value[0], scaleStops, min, max);
           const endRatio = valueToRatio(value[1], scaleStops, min, max);
-          activeThumb.current =
-            Math.abs(nextRatio - startRatio) <= Math.abs(nextRatio - endRatio) ? 0 : 1;
+
+          if (startRatio === endRatio) {
+            // 두 손잡이가 겹친 경우 같은 위치의 터치만으로는 방향을 알 수 없다.
+            // 다음 move에서 왼쪽은 시작, 오른쪽은 끝 손잡이로 분리한다.
+            activeThumb.current = nextRatio < startRatio ? 0 : nextRatio > endRatio ? 1 : null;
+          } else {
+            activeThumb.current =
+              Math.abs(nextRatio - startRatio) <= Math.abs(nextRatio - endRatio) ? 0 : 1;
+          }
+
           if (activeThumb.current === 0) setStart(next);
-          else setEnd(next);
+          if (activeThumb.current === 1) setEnd(next);
         },
         onPanResponderMove: (event: GestureResponderEvent) => {
           const next = valueAt(event.nativeEvent.pageX);
+          if (activeThumb.current === null) {
+            activeThumb.current = next < value[0] ? 0 : 1;
+          }
           if (activeThumb.current === 0) setStart(next);
-          else setEnd(next);
+          if (activeThumb.current === 1) setEnd(next);
         },
         onPanResponderTerminationRequest: () => false,
       }),

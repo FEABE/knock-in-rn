@@ -71,13 +71,7 @@ export function useMyRoommateBoards(enabled = true): AsyncState<RoomPost[]> {
     { enabled, retry: false },
   );
   const posts = useMemo(
-    () =>
-      state.data?.boards?.map((board) =>
-        boardListItemToRoomPost({
-          ...board,
-          writer: '나',
-        }),
-      ) ?? null,
+    () => state.data?.boards?.map((board) => boardListItemToRoomPost(board)) ?? null,
     [state.data],
   );
   return { ...state, data: posts };

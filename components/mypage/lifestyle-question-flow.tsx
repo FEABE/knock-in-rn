@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import {
@@ -100,6 +100,12 @@ export function QuestionFlowTabStrip({
             onPress={() => onSelect?.(index)}
             onLayout={(event) => {
               offsets.current[index] = event.nativeEvent.layout.x;
+              if (index === activeIndex) {
+                scrollRef.current?.scrollTo({
+                  x: Math.max(0, event.nativeEvent.layout.x - 16),
+                  animated: true,
+                });
+              }
             }}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
@@ -144,6 +150,10 @@ type LifestyleQuestionFlowProps = {
   trailingTabLabel?: string;
   /** 위 탭을 눌렀을 때(= 다음 단계로 이동). */
   onTrailingTab?: () => void;
+  /** 마지막 탭에서 같은 질문 플로우 안에 렌더링할 내용. */
+  trailingContent?: ReactNode;
+  trailingSaveEnabled?: boolean;
+  displayMode?: 'initial' | 'management';
 };
 
 export function LifestyleQuestionFlow({
@@ -159,14 +169,18 @@ export function LifestyleQuestionFlow({
   onSave,
   trailingTabLabel,
   onTrailingTab,
+  trailingContent,
+  trailingSaveEnabled = false,
+  displayMode = 'management',
 }: LifestyleQuestionFlowProps) {
   const questions = useMemo(
     () => lifestylePatternQuestions({ scaleOptions, choiceGroups }),
     [choiceGroups, scaleOptions],
   );
   const [questionIndex, setQuestionIndex] = useState(0);
+  const trailingActive = Boolean(trailingTabLabel) && questionIndex >= questions.length;
   const safeIndex = Math.min(questionIndex, Math.max(0, questions.length - 1));
-  const question = questions[safeIndex];
+  const question = trailingActive ? undefined : questions[safeIndex];
   const tabs = useMemo<QuestionFlowTab[]>(
     () => [
       ...questions.map((item) => ({
@@ -184,23 +198,87 @@ export function LifestyleQuestionFlow({
       : Boolean(choiceValues[question.key])
     : false;
   // 시안 기준: 마지막 문항까지 답해야 저장(또는 다음 단계)이 열린다.
-  const canSave = questions.length > 0 && safeIndex === questions.length - 1 && answered;
+  const canSave = trailingActive
+    ? trailingSaveEnabled
+    : questions.length > 0 && safeIndex === questions.length - 1 && answered;
+
+  const enterTrailingTab = () => {
+    if (!trailingTabLabel) return;
+    setQuestionIndex(questions.length);
+    onTrailingTab?.();
+  };
 
   const selectTab = (index: number) => {
     if (index >= questions.length) {
-      onTrailingTab?.();
+      enterTrailingTab();
       return;
     }
     setQuestionIndex(index);
   };
 
+  const goBack = () => {
+    onBack();
+  };
+
+  const saveOrContinue = () => {
+    if (!trailingActive && trailingTabLabel) {
+      enterTrailingTab();
+      return;
+    }
+    onSave();
+  };
+
   return (
     <View className="flex-1 bg-white">
-      <QuestionFlowHeader title={title} onBack={onBack} onSave={onSave} saveEnabled={canSave} />
+      {displayMode === 'management' ? (
+        <>
+          <QuestionFlowHeader
+            title={title}
+            onBack={goBack}
+            onSave={saveOrContinue}
+            saveEnabled={canSave}
+          />
+          <QuestionFlowTabStrip
+            tabs={tabs}
+            activeIndex={trailingActive ? questions.length : safeIndex}
+            onSelect={selectTab}
+          />
+        </>
+      ) : (
+        <InitialQuestionHeader
+          title={trailingActive ? (trailingTabLabel ?? '') : (question?.label ?? '')}
+          progress={(trailingActive ? questions.length : safeIndex) + 1}
+          total={tabs.length}
+          onBack={goBack}
+        />
+      )}
 
-      <QuestionFlowTabStrip tabs={tabs} activeIndex={safeIndex} onSelect={selectTab} />
-
-      {question ? (
+      {trailingActive ? (
+        <View className="flex-1">
+          {trailingContent}
+          {displayMode === 'initial' ? (
+            <View className="border-t border-[#ECECF3] bg-white px-4 pb-3 pt-4">
+              <Pressable
+                onPress={onSave}
+                disabled={!trailingSaveEnabled}
+                accessibilityRole="button"
+                accessibilityLabel="완료하기"
+                className={`h-12 items-center justify-center rounded-lg ${
+                  trailingSaveEnabled ? 'bg-[#256EF4] active:opacity-85' : 'bg-[#ECECF3]'
+                }`}
+              >
+                <Text
+                  className={`text-[15px] font-bold ${
+                    trailingSaveEnabled ? 'text-white' : 'text-[#AAAABA]'
+                  }`}
+                >
+                  완료하기
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      ) : question ? (
         <ScrollView
           className="flex-1"
           contentContainerClassName="px-4 pb-8 pt-7"
@@ -234,7 +312,11 @@ export function LifestyleQuestionFlow({
                       onChoiceChange(question.key, String(option.value));
                     }
                     // 하단 이전/다음 버튼이 없는 시안이라 선택하면 다음 문항으로 넘어간다.
-                    if (safeIndex < questions.length - 1) setQuestionIndex(safeIndex + 1);
+                    if (safeIndex < questions.length - 1) {
+                      setQuestionIndex(safeIndex + 1);
+                    } else if (trailingTabLabel) {
+                      enterTrailingTab();
+                    }
                   }}
                   className={`h-[52px] justify-center rounded-lg border px-5 ${
                     selected
@@ -264,6 +346,38 @@ export function LifestyleQuestionFlow({
           </Text>
         </View>
       )}
+    </View>
+  );
+}
+
+function InitialQuestionHeader({
+  title,
+  progress,
+  total,
+  onBack,
+}: {
+  title: string;
+  progress: number;
+  total: number;
+  onBack: () => void;
+}) {
+  return (
+    <View className="h-14 flex-row items-center px-3">
+      <Pressable
+        onPress={onBack}
+        hitSlop={12}
+        accessibilityRole="button"
+        accessibilityLabel="이전으로"
+        className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
+      >
+        <Ionicons name="chevron-back" size={24} color="#696976" />
+      </Pressable>
+      <Text className="pointer-events-none absolute left-14 right-14 text-center text-[17px] font-medium text-[#242429]">
+        {title}
+      </Text>
+      <Text className="ml-auto px-2 text-[15px] text-[#AAAABA]">
+        {progress}/{total}
+      </Text>
     </View>
   );
 }

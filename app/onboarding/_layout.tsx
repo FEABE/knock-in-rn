@@ -7,13 +7,11 @@ import {
   compactNumbers,
   formatApiCalendarDate,
   getAccessToken,
-  getNotificationSettings,
   getProfileAll,
   lifestyleIdsFromPatternOptions,
   regionBackendId,
   roomTypeBackendId,
   saveProfileAll,
-  updateNotificationSetting,
   updateVisibility,
   withComeableAtNegotiable,
   type ProfileAllRuntimeRequest,
@@ -23,7 +21,6 @@ import {
 import { useSession } from '@/lib/domain';
 import {
   ONBOARDING_WRITE_ENABLED,
-  MARKETING_PUSH_TERM_KEY,
   ONBOARDING_STEPS,
   OnboardingProvider,
   agreedTermBackendIds,
@@ -147,37 +144,6 @@ function validationMessage(missing: string[]): string {
   return `다음 항목을 입력해주세요.\n\n${missing.map((item) => `- ${item}`).join('\n')}`;
 }
 
-async function saveMarketingNotificationConsent(enabled: boolean): Promise<string | null> {
-  const settingsRes = await getNotificationSettings();
-  if (settingsRes.error || settingsRes.status !== 200) {
-    return settingsRes.error?.message ?? '알림 설정을 불러오지 못했습니다.';
-  }
-
-  const availableSettings = (settingsRes.data?.alarmsSettings ?? []).flatMap((setting) => {
-    const settingId = Number(setting.id);
-    const name = setting.name?.replace(/\s/g, '').toLowerCase() ?? '';
-    return Number.isFinite(settingId) ? [{ settingId, name }] : [];
-  });
-  const marketingSettings = availableSettings.filter(({ name }) =>
-    ['마케팅', '정보성', '프로모션', '이벤트'].some((keyword) => name.includes(keyword)),
-  );
-  // 현재 백엔드는 세부 타입 없이 NOTIFICATION("알림") 한 항목만 내려준다.
-  // 별도 정보성 항목이 생기면 그 항목을 우선하고, 지금 계약에서는 단일 알림 ID를 사용한다.
-  const targetSettings = marketingSettings.length
-    ? marketingSettings
-    : availableSettings.filter(({ name }) => name === '알림' || name === 'notification');
-
-  if (!targetSettings.length) {
-    return '백엔드 알림 설정 항목을 찾지 못했습니다.';
-  }
-
-  const responses = await Promise.all(
-    targetSettings.map(({ settingId }) => updateNotificationSetting({ settingId, enabled })),
-  );
-  const failed = responses.find((response) => response.error || response.status !== 200);
-  return failed ? (failed.error?.message ?? '정보성 알림 동의를 저장하지 못했습니다.') : null;
-}
-
 function profileSaveErrorMessage(
   message: string | undefined,
   request: ProfileAllRuntimeRequest,
@@ -230,15 +196,15 @@ export default function OnboardingLayout() {
       return;
     }
 
-    // 마지막 스텝 "완료" 탭 = 온보딩 완료 시점.
+    // 완료 화면의 "시작하기" 탭 = 온보딩 완료 시점.
     logEvent(AnalyticsEvent.ONBOARDING_STEP_NEXT, {
-      step_index: 15,
+      step_index: 12,
       step_name: 'room_status',
       time_on_step_ms: onboardingTiming.timeOnStepMs(),
     });
     logEvent(AnalyticsEvent.ONBOARDING_COMPLETE, {
       duration_ms: onboardingTiming.durationMs(),
-      total_steps: 15,
+      total_steps: 12,
     });
 
     if (ONBOARDING_WRITE_ENABLED && !getAccessToken()) {
@@ -282,13 +248,6 @@ export default function OnboardingLayout() {
       });
       if (visibilityRes.error || visibilityRes.status !== 200) {
         Alert.alert('저장 실패', visibilityRes.error?.message ?? '잠시 후 다시 시도해주세요.');
-        return;
-      }
-      const notificationError = await saveMarketingNotificationConsent(
-        values.terms[MARKETING_PUSH_TERM_KEY] === true,
-      );
-      if (notificationError) {
-        Alert.alert('알림 설정 저장 실패', notificationError);
         return;
       }
       await markProfileComplete({

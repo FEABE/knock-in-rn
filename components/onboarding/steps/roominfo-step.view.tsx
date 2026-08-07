@@ -1,50 +1,41 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
-import { BottomSheet, TextField } from '@/components/ui/headless';
+import { RegionFilterSheet } from '@/components/room/filters';
+import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
+import { TextField } from '@/components/ui/headless';
 import { RangeField } from '@/components/ui/range-field';
 import {
   RoomLocationArtwork,
   RoomPresenceArtwork,
   RoomTypeArtwork,
 } from '@/components/ui/ready-to-dev-assets';
+import { ONBOARDING_PROGRESS_TOTAL } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
-import {
-  MAX_PREF_ROOM_TYPES,
-  MAX_REGIONS,
-  type RegionDraft,
-  type UseRoomInfoStepReturn,
-} from './use-roominfo-step';
+import { MAX_PREF_ROOM_TYPES, MAX_REGIONS, type UseRoomInfoStepReturn } from './use-roominfo-step';
 
 export function RoomInfoStepView({
   room,
-  draft,
-  cityOptions,
-  gugunOptions,
   roomTypeOptions,
   roomTypeLoading,
   roomTypeError,
   regionPickerOpen,
-  regionLoading,
-  regionError,
   stage,
   stageTitle,
   stageProgress,
   hasRoom,
   noRoom,
   canProceed,
-  toast,
   submitting,
   submitError,
   onBack,
   onNext,
   setHasRoom,
   setRegionPickerOpen,
-  reloadRegions,
   reloadRoomTypes,
-  selectSido,
-  selectGugun,
+  setRegion,
+  setRegions,
   removeRegion,
   setDeposit,
   setMonthlyRent,
@@ -53,6 +44,8 @@ export function RoomInfoStepView({
   setBudgetRent,
   toggleRoomType,
 }: UseRoomInfoStepReturn) {
+  const hasRegionSelection = hasRoom ? room.region != null : room.regions.length > 0;
+
   return (
     <View className="flex-1 bg-white">
       <View className="h-12 flex-row items-center justify-between px-4">
@@ -66,7 +59,10 @@ export function RoomInfoStepView({
           <Ionicons name="chevron-back" size={24} color="#6B6B76" />
         </Pressable>
         <Text className="text-[18px] font-medium text-[#1E1E24]">{stageTitle}</Text>
-        <Text className="w-14 text-right text-base text-[#8B8B9B]">{stageProgress}/15</Text>
+        <Text className="w-14 text-right text-base">
+          <Text className="text-[#17171B]">{stageProgress}</Text>
+          <Text className="text-[#8B8B9B]">/{ONBOARDING_PROGRESS_TOTAL}</Text>
+        </Text>
       </View>
 
       <ScrollView
@@ -106,12 +102,15 @@ export function RoomInfoStepView({
                   ? `${room.region.city} ${room.region.district}`.trim()
                   : '지역 선택하기'
               }
+              selected={hasRoom ? room.region != null : room.regions.length > 0}
               onPress={() => setRegionPickerOpen(true)}
             />
 
-            <View className="flex-1 items-center justify-center">
-              <RoomLocationArtwork size={180} />
-            </View>
+            {!hasRegionSelection ? (
+              <View className="flex-1 items-center justify-center">
+                <RoomLocationArtwork size={180} />
+              </View>
+            ) : null}
 
             {noRoom && room.regions.length > 0 ? (
               <SelectedRegions regions={room.regions} max={MAX_REGIONS} onRemove={removeRegion} />
@@ -207,25 +206,21 @@ export function RoomInfoStepView({
         />
       ) : null}
 
-      <RegionPickerSheet
-        open={regionPickerOpen}
-        onOpenChange={setRegionPickerOpen}
-        draft={draft}
-        cityOptions={cityOptions}
-        districtOptions={gugunOptions}
-        loading={regionLoading}
-        error={regionError}
-        onRetry={reloadRegions}
-        onSelectCity={selectSido}
-        onSelectDistrict={selectGugun}
-      />
-
-      {toast ? (
-        <View pointerEvents="none" className="absolute inset-x-0 bottom-28 items-center px-5">
-          <View className="rounded-full bg-neutral-800/90 px-4 py-2">
-            <Text className="text-sm text-white">{toast}</Text>
-          </View>
-        </View>
+      {hasRoom ? (
+        <RoomRegionSheet
+          open={regionPickerOpen}
+          onOpenChange={setRegionPickerOpen}
+          value={room.region}
+          onSelect={setRegion}
+        />
+      ) : noRoom ? (
+        <RegionFilterSheet
+          open={regionPickerOpen}
+          onOpenChange={setRegionPickerOpen}
+          value={room.regions}
+          onChange={setRegions}
+          maxSelection={MAX_REGIONS}
+        />
       ) : null}
     </View>
   );
@@ -258,11 +253,9 @@ function StageIntro({ stage, hasRoom }: { stage: 0 | 1 | 2 | 3; hasRoom: boolean
     stage === 0
       ? ['현재 머물고 있는', '방이 있으신가요?', '언제든 마이페이지에서 변경할 수 있어요']
       : stage === 1
-        ? [
-            hasRoom ? '거주하고 있는' : '거주하고 싶은',
-            '집의 주소를 선택해주세요',
-            '언제든 마이페이지에서 변경할 수 있어요',
-          ]
+        ? hasRoom
+          ? ['거주하고 있는', '집의 주소를 선택해주세요', '언제든 마이페이지에서 변경할 수 있어요']
+          : ['거주하고 싶은', '집의 주소를 선택해주세요', '언제든 마이페이지에서 변경할 수 있어요']
         : stage === 2
           ? [
               hasRoom ? '거주하고 있는 집의' : '희망하는 예산을',
@@ -367,15 +360,28 @@ function RoomChoice({
   );
 }
 
-function RegionSelectButton({ label, onPress }: { label: string; onPress: () => void }) {
+function RegionSelectButton({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${label}, 지역 선택`}
-      className="h-[46px] flex-row items-center justify-center gap-1.5 rounded-lg border border-[#DADAE8] bg-white px-3 active:bg-[#F6F6FA]"
+      className="h-[52px] flex-row items-center justify-center gap-1 rounded-lg border border-[#DADAE8] bg-white px-4 active:bg-[#F6F6FA]"
     >
-      <Text className="text-[15px] font-medium text-[#696976]" numberOfLines={1}>
+      <Text
+        className={
+          selected ? 'text-[15px] font-medium text-[#17171B]' : 'text-[15px] text-[#696976]'
+        }
+        numberOfLines={1}
+      >
         {label}
       </Text>
       <Ionicons name="chevron-down" size={16} color="#696976" />
@@ -412,146 +418,16 @@ function SelectedRegions({
             onPress={() => onRemove(region.id)}
             accessibilityRole="button"
             accessibilityLabel={`${region.city} ${region.district} 삭제`}
-            className="h-[42px] flex-row items-center gap-0.5 rounded-full bg-[#ECF2FE] px-3 active:opacity-80"
+            className="h-10 flex-row items-center gap-1 rounded-full bg-[#ECF2FE] px-4 active:opacity-80"
           >
             <Text className="text-[15px] font-medium text-[#256EF4]">
               {region.city} {region.district}
             </Text>
-            <Ionicons name="close" size={17} color="#8AAFF8" />
+            <Ionicons name="close" size={18} color="#AAAABA" />
           </Pressable>
         ))}
       </ScrollView>
     </View>
-  );
-}
-
-function RegionPickerSheet({
-  open,
-  onOpenChange,
-  draft,
-  cityOptions,
-  districtOptions,
-  loading,
-  error,
-  onRetry,
-  onSelectCity,
-  onSelectDistrict,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  draft: RegionDraft;
-  cityOptions: { id: string; label: string }[];
-  districtOptions: { id: string; label: string }[];
-  loading: boolean;
-  error: string | null;
-  onRetry: () => void;
-  onSelectCity: (v: string) => void;
-  onSelectDistrict: (v: string) => void;
-}) {
-  const selectingDistrict = Boolean(draft.sido);
-
-  return (
-    <BottomSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      showHandle={false}
-      contentClassName="rounded-t-[20px] bg-white px-6 pb-6 pt-5"
-    >
-      <View className="mb-5 flex-row items-center justify-between">
-        <View className="flex-row items-center gap-2">
-          {selectingDistrict ? (
-            <Pressable
-              onPress={() => onSelectCity('')}
-              hitSlop={8}
-              accessibilityLabel="시·도 다시 선택"
-            >
-              <Ionicons name="chevron-back" size={22} color="#696976" />
-            </Pressable>
-          ) : null}
-          <Text className="text-lg font-bold text-[#17171B]">
-            {selectingDistrict ? '구·군 선택' : '지역 선택'}
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => onOpenChange(false)}
-          hitSlop={10}
-          accessibilityLabel="지역 선택 닫기"
-        >
-          <Ionicons name="close" size={24} color="#696976" />
-        </Pressable>
-      </View>
-
-      {loading ? (
-        <View className="h-28 items-center justify-center gap-2">
-          <ActivityIndicator color="#256EF4" />
-          <Text className="text-sm text-[#696976]">지역 정보를 불러오는 중이에요.</Text>
-        </View>
-      ) : error ? (
-        <View className="h-28 items-center justify-center gap-3">
-          <Text className="text-sm text-[#696976]">지역 정보를 불러오지 못했어요.</Text>
-          <Pressable onPress={onRetry} className="rounded-lg bg-[#ECF2FE] px-4 py-2">
-            <Text className="text-sm font-medium text-[#256EF4]">다시 시도</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <RegionOptionGrid
-          items={selectingDistrict ? districtOptions : cityOptions}
-          selected={selectingDistrict ? draft.gugun : draft.sido}
-          emptyLabel={selectingDistrict ? '선택할 구·군이 없어요.' : '선택할 지역이 없어요.'}
-          onPick={selectingDistrict ? onSelectDistrict : onSelectCity}
-        />
-      )}
-    </BottomSheet>
-  );
-}
-
-function RegionOptionGrid({
-  items,
-  selected,
-  emptyLabel,
-  onPick,
-}: {
-  items: { id: string; label: string }[];
-  selected: string | null;
-  emptyLabel: string;
-  onPick: (v: string) => void;
-}) {
-  if (items.length === 0) {
-    return (
-      <View className="h-28 items-center justify-center">
-        <Text className="text-sm text-[#AAAABA]">{emptyLabel}</Text>
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
-      <View className="flex-row flex-wrap">
-        {items.map((item) => {
-          const active = item.id === selected;
-          return (
-            <Pressable
-              key={item.id}
-              onPress={() => onPick(item.id)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              className="h-10 items-center justify-center"
-              style={{ width: '20%' }}
-            >
-              <Text
-                className={`text-base ${
-                  active ? 'font-semibold text-[#256EF4]' : 'font-medium text-[#17171B]'
-                }`}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </ScrollView>
   );
 }
 

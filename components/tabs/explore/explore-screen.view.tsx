@@ -18,6 +18,7 @@ import {
   ReadyErrorState,
   ReadyLoadingState,
 } from '@/components/ui/ready-to-dev-feedback';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import type { RoommateMatchCardModel } from '@/lib/api';
 import type { RoomPost } from '@/lib/domain';
 
@@ -297,10 +298,15 @@ function PreferenceNudgeModal({
   onClose: () => void;
   onSetup: () => void;
 }) {
+  const bottomPadding = useSafeBottomPadding(12, 20);
+
   return (
     <Modal transparent animationType="slide" visible={open} onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-[#17171B]/40">
-        <View className="rounded-t-[20px] bg-white px-[26px] pb-5 pt-5">
+        <View
+          className="rounded-t-[20px] bg-white px-[26px] pt-5"
+          style={{ paddingBottom: bottomPadding }}
+        >
           <Pressable
             onPress={onClose}
             hitSlop={12}

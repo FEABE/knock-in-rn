@@ -3,9 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
 import { goExplore } from '@/lib/navigation/routes';
-import { STEP_LABELS, useOnboarding, type OnboardingStep } from '@/lib/onboarding';
+import {
+  ONBOARDING_PROGRESS_TOTAL,
+  ROOM_INFO_PROGRESS_START,
+  STEP_LABELS,
+  useOnboarding,
+  type OnboardingStep,
+} from '@/lib/onboarding';
 
-const DESIGN_PROGRESS: Record<Exclude<OnboardingStep, 'roominfo'>, number> = {
+const DESIGN_PROGRESS: Record<Exclude<OnboardingStep, 'roominfo' | 'complete'>, number> = {
   'profile-basic': 1,
   'profile-lifestyle': 3,
 };
@@ -13,7 +19,12 @@ const DESIGN_PROGRESS: Record<Exclude<OnboardingStep, 'roominfo'>, number> = {
 export function OnboardingHeader() {
   const { currentStep, isFirst, goPrev } = useOnboarding();
   const router = useRouter();
-  const progress = currentStep === 'roominfo' ? 11 : DESIGN_PROGRESS[currentStep];
+  const progress =
+    currentStep === 'roominfo'
+      ? ROOM_INFO_PROGRESS_START
+      : currentStep === 'complete'
+        ? ONBOARDING_PROGRESS_TOTAL
+        : DESIGN_PROGRESS[currentStep];
 
   const goBack = () => {
     if (!isFirst) {
@@ -41,7 +52,10 @@ export function OnboardingHeader() {
         <Text className="text-[18px] font-medium text-[#1E1E24]">{STEP_LABELS[currentStep]}</Text>
       </View>
       <View className="w-12 items-end">
-        <Text className="text-base text-[#8B8B9B]">{progress}/15</Text>
+        <Text className="text-base">
+          <Text className="text-[#17171B]">{progress}</Text>
+          <Text className="text-[#8B8B9B]">/{ONBOARDING_PROGRESS_TOTAL}</Text>
+        </Text>
       </View>
     </View>
   );

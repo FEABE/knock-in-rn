@@ -1,23 +1,20 @@
 import { useGlobalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
+import { useRegionOptions, useRoomTypeOptions, type RoomTypeOption } from '@/lib/api';
 import {
-  useRegionOptions,
-  useRoomTypeOptions,
-  type RegionSelectOption,
-  type RoomTypeOption,
-} from '@/lib/api';
-import { useOnboarding, useOnboardingRoom, type Region, type RoomType } from '@/lib/onboarding';
+  ROOM_INFO_PROGRESS_START,
+  useOnboarding,
+  useOnboardingRoom,
+  type Region,
+  type RoomType,
+} from '@/lib/onboarding';
 
 export const MAX_PREF_ROOM_TYPES = 3;
 export const MAX_REGIONS = 10;
 export const ROOM_INFO_STAGE_TITLES = ['방 유무 여부', '방 유무 여부', '예산', '방 형태'] as const;
 export type RoomInfoStage = 0 | 1 | 2 | 3;
-
-export type RegionDraft = { sido: string | null; gugun: string | null };
-
-const EMPTY_DRAFT: RegionDraft = { sido: null, gugun: null };
 
 export type UseRoomInfoStepProps = {
   onComplete?: () => void;
@@ -25,32 +22,25 @@ export type UseRoomInfoStepProps = {
 
 export type UseRoomInfoStepReturn = {
   room: ReturnType<typeof useOnboardingRoom>['room'];
-  draft: RegionDraft;
-  cityOptions: RegionSelectOption[];
-  gugunOptions: RegionSelectOption[];
   roomTypeOptions: RoomTypeOption[];
   roomTypeLoading: boolean;
   roomTypeError: string | null;
   regionPickerOpen: boolean;
-  regionLoading: boolean;
-  regionError: string | null;
   stage: RoomInfoStage;
   stageTitle: (typeof ROOM_INFO_STAGE_TITLES)[RoomInfoStage];
   stageProgress: number;
   hasRoom: boolean;
   noRoom: boolean;
   canProceed: boolean;
-  toast: string | null;
   submitting: boolean;
   submitError: string | null;
   onBack: () => void;
   onNext: () => void;
   setHasRoom: (next: boolean) => void;
   setRegionPickerOpen: (open: boolean) => void;
-  reloadRegions: () => void;
   reloadRoomTypes: () => void;
-  selectSido: (value: string) => void;
-  selectGugun: (value: string) => void;
+  setRegion: (region: Region) => void;
+  setRegions: (regions: Region[]) => void;
   removeRegion: (id: string) => void;
   setDeposit: (value: number | null) => void;
   setMonthlyRent: (value: number | null) => void;
@@ -68,9 +58,13 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
   const regions = useRegionOptions();
   const roomTypes = useRoomTypeOptions();
   const [regionPickerOpen, setRegionPickerOpen] = useState(false);
-  const [stage, setStage] = useState<RoomInfoStage>(() =>
-    __DEV__ ? (parseRoomInfoStage(roomStage) ?? 0) : 0,
-  );
+  const [stage, setStage] = useState<RoomInfoStage>(() => {
+    if (__DEV__) {
+      const previewStage = parseRoomInfoStage(roomStage);
+      if (previewStage !== null) return previewStage;
+    }
+    return room.roomType != null || room.roomTypes.length > 0 ? 3 : 0;
+  });
 
   useEffect(() => {
     if (!__DEV__) return;
@@ -85,22 +79,16 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
 
   const hasRoom = room.hasRoom === true;
   const noRoom = room.hasRoom === false;
-
-  const [draft, setDraft] = useState<RegionDraft>(() => {
-    if (room.hasRoom === true && room.region) {
-      const selected = regions.getOption(room.region.id);
-      return { sido: selected?.parentId ?? null, gugun: room.region.id };
-    }
-    return EMPTY_DRAFT;
-  });
-  const gugunOptions = draft.sido ? regions.getChildren(draft.sido) : [];
+  const selectedRoomRegion = regions.getOption(room.region?.id);
+  const selectedRoomRegionParent = regions.getOption(selectedRoomRegion?.parentId);
+  const hasNeighborhoodRegion = selectedRoomRegionParent?.parentId != null;
 
   const canProceed =
     stage === 0
       ? hasRoom || noRoom
       : stage === 1
         ? hasRoom
-          ? room.region != null
+          ? room.region != null && hasNeighborhoodRegion
           : room.regions.length > 0
         : stage === 2
           ? hasRoom
@@ -111,15 +99,6 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
               ? !roomTypes.error && room.roomType != null
               : !roomTypes.error && room.roomTypes.length > 0
             : true;
-
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2000);
-  };
 
   const onNext = () => {
     if (!canProceed) return;
@@ -139,54 +118,18 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     goPrev();
   };
 
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    [],
-  );
-
-  const commitDraft = (next: RegionDraft) => {
-    const region = regionFromDraft(next, regions.getOption);
-    if (!region) {
-      setDraft(next);
-      return;
-    }
-    if (hasRoom) {
-      patch({ region });
-      setDraft(next);
-    } else {
-      const dup = room.regions.some((r) => r.id === region.id);
-      if (dup) {
-        // no-op
-      } else if (room.regions.length >= MAX_REGIONS) {
-        showToast(`최대 ${MAX_REGIONS}개까지만 선택 가능합니다.`);
-      } else {
-        patch({ regions: [...room.regions, region] });
-      }
-      setDraft(EMPTY_DRAFT);
-    }
-    setRegionPickerOpen(false);
-  };
-
   return {
     room,
-    draft,
-    cityOptions: regions.cities,
-    gugunOptions,
     roomTypeOptions: roomTypes.options,
     roomTypeLoading: roomTypes.loading,
     roomTypeError: roomTypes.error,
     regionPickerOpen,
-    regionLoading: regions.loading,
-    regionError: regions.error,
     stage,
     stageTitle: ROOM_INFO_STAGE_TITLES[stage],
-    stageProgress: Math.min(11 + stage, 15),
+    stageProgress: ROOM_INFO_PROGRESS_START + stage,
     hasRoom,
     noRoom,
     canProceed,
-    toast,
     submitting: false,
     submitError: null,
     onBack,
@@ -196,10 +139,9 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
       setStage(1);
     },
     setRegionPickerOpen,
-    reloadRegions: regions.reload,
     reloadRoomTypes: roomTypes.reload,
-    selectSido: (value) => setDraft({ sido: value || null, gugun: null }),
-    selectGugun: (value) => commitDraft({ ...draft, gugun: value }),
+    setRegion: (region) => patch({ region }),
+    setRegions: (regions) => patch({ regions }),
     removeRegion: (id) => patch({ regions: room.regions.filter((r) => r.id !== id) }),
     setDeposit: (value) => patch({ deposit: value }),
     setMonthlyRent: (value) => patch({ monthlyRent: value }),
@@ -220,13 +162,4 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
 function parseRoomInfoStage(value: string | undefined): RoomInfoStage | null {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 && parsed <= 3 ? (parsed as RoomInfoStage) : null;
-}
-
-function regionFromDraft(
-  d: RegionDraft,
-  getOption: (id: string | null | undefined) => RegionSelectOption | undefined,
-): Region | null {
-  if (!d.sido) return null;
-  if (!d.gugun) return null;
-  return getOption(d.gugun)?.region ?? null;
 }

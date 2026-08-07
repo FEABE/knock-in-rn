@@ -1,51 +1,12 @@
-import type { ImportantCondition, Region, RoomType, Term, TermKey, TermsAgreement } from './types';
-
-export const MARKETING_PUSH_TERM_KEY = 'marketing-push';
-
-/**
- * 로컬 약관 key → 백엔드 약관 정수 ID 매핑.
- *
- * 현재 백엔드 GET /terms 는 게시된 필수 약관만 내려준다.
- * 선택 약관은 앱 로컬 동의값으로만 유지하고, 서버 저장 시에는 보내지 않는다.
- */
-export const TERM_BACKEND_IDS: Partial<Record<TermKey, number>> = {
-  'terms-of-service': 1,
-  'privacy-policy': 4,
-};
+import type { ImportantCondition, Region, RoomType, TermsAgreement } from './types';
 
 export function agreedTermBackendIds(terms: TermsAgreement): number[] {
   const ids = Object.entries(terms).flatMap(([key, agreed]) => {
-    const direct = Number(key);
-    const id = Number.isFinite(direct) ? direct : TERM_BACKEND_IDS[key as TermKey];
-    return agreed && id !== undefined ? [id] : [];
+    const id = Number(key);
+    return agreed && Number.isInteger(id) && id > 0 ? [id] : [];
   });
   return [...new Set(ids)];
 }
-
-export const TERMS: Term[] = [
-  {
-    key: 'terms-of-service',
-    label: '서비스 이용약관 및 운영정책 동의',
-    required: true,
-    href: 'https://example.com/terms',
-  },
-  {
-    key: 'privacy-policy',
-    label: '개인정보 처리방침 동의',
-    required: true,
-    href: 'https://example.com/privacy',
-  },
-  {
-    key: MARKETING_PUSH_TERM_KEY,
-    label: '알림 수신 동의',
-    required: false,
-  },
-  {
-    key: 'location',
-    label: '현재 위치 동의',
-    required: false,
-  },
-];
 
 export const REGIONS: Region[] = [
   { id: 'seoul-gangnam', city: '서울', district: '강남구' },

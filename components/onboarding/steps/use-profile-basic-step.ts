@@ -7,7 +7,6 @@ import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { getTerms, useApi } from '@/lib/api';
 import { goKakaoLogin } from '@/lib/navigation/routes';
 import {
-  MARKETING_PUSH_TERM_KEY,
   PROFILE_NAME_MAX_LENGTH,
   isValidProfileEmail,
   isValidProfileName,
@@ -38,15 +37,6 @@ type ProfileBasicPreview =
 
 const PROFILE_BASIC_STAGES: ProfileBasicStage[] = ['intro', 'name', 'birth', 'gender', 'email'];
 const UNDERAGE_ERROR = '만 14세 미만은 가입할 수 없어요';
-const OPTIONAL_NOTIFICATION_TERM: Term = {
-  key: MARKETING_PUSH_TERM_KEY,
-  label: '정보성 알림 동의',
-  required: false,
-};
-const FALLBACK_REQUIRED_TERMS: Term[] = [
-  { key: 'terms-of-service', label: '서비스 이용약관', required: true },
-  { key: 'privacy-policy', label: '개인정보 처리방침', required: true },
-];
 
 export type UseProfileBasicStepReturn = {
   profile: ReturnType<typeof useOnboardingProfile>['profile'];
@@ -88,24 +78,21 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
   const { profile, patch } = useOnboardingProfile();
   const { terms, setTerms } = useOnboardingTerms();
   const termsQuery = useApi(['meta', 'terms'], () => getTerms(), { retry: false });
-  const termOptions = useMemo<Term[]>(() => {
-    const requiredTerms = (termsQuery.data?.terms ?? []).flatMap((term) =>
-      term.id === undefined || !term.title
-        ? []
-        : [
-            {
-              key: String(term.id),
-              label: normalizeTermLabel(term.title),
-              required: true,
-            },
-          ],
-    );
-
-    return [
-      ...(requiredTerms.length ? requiredTerms : FALLBACK_REQUIRED_TERMS),
-      OPTIONAL_NOTIFICATION_TERM,
-    ];
-  }, [termsQuery.data?.terms]);
+  const termOptions = useMemo<Term[]>(
+    () =>
+      (termsQuery.data?.terms ?? []).flatMap((term) =>
+        term.id === undefined || !term.title
+          ? []
+          : [
+              {
+                key: String(term.id),
+                label: normalizeTermLabel(term.title),
+                required: true,
+              },
+            ],
+      ),
+    [termsQuery.data?.terms],
+  );
   const [stage, setStage] = useState<ProfileBasicStage>(() =>
     __DEV__ && isProfileBasicStage(basicStage) ? basicStage : 'intro',
   );

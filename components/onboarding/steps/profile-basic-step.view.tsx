@@ -1,6 +1,7 @@
-import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 
 import { BottomSheet, Modal, TermsAgreement, TextField } from '@/components/ui/headless';
 import { IdentityVerificationArtwork } from '@/components/ui/ready-to-dev-assets';
@@ -45,6 +46,13 @@ export function ProfileBasicStepView({
   onTermDetailPress,
 }: ProfileBasicStepViewProps) {
   const [genderOpen, setGenderOpen] = useState(false);
+  const keyboard = useAnimatedKeyboard({
+    isStatusBarTranslucentAndroid: true,
+    isNavigationBarTranslucentAndroid: true,
+  });
+  const keyboardAvoidingStyle = useAnimatedStyle(() => ({
+    paddingBottom: keyboard.height.value,
+  }));
 
   if (stage === 'intro') {
     return (
@@ -56,7 +64,7 @@ export function ProfileBasicStepView({
               노크인을 시작하기 위해{'\n'}기본 정보를 입력해주세요
             </Text>
           </View>
-          <View className="mt-14">
+          <View className="w-full flex-1 items-center justify-center">
             <IdentityVerificationArtwork size={226} />
           </View>
         </View>
@@ -66,118 +74,110 @@ export function ProfileBasicStepView({
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <Animated.View className="flex-1 bg-white" style={keyboardAvoidingStyle}>
       <BasicInfoHeader onBack={onBack} />
-      <KeyboardAvoidingView
+      <ScrollView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
+        contentContainerClassName="px-4 pb-8 pt-6"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-4 pb-8 pt-6"
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          automaticallyAdjustKeyboardInsets
-        >
-          <Text className="text-[20px] font-bold leading-[30px] text-[#17171B]">
-            {STAGE_PROMPTS[stage]}
-          </Text>
+        <Text className="text-[20px] font-bold leading-[30px] text-[#17171B]">
+          {STAGE_PROMPTS[stage]}
+        </Text>
 
-          <View className="mt-9">
-            {stage === 'name' ? (
-              <TextField
-                key="name"
-                autoFocus
-                value={profile.name}
-                onChangeValue={onNameChange}
-                placeholder="이름"
-                maxLength={PROFILE_NAME_MAX_LENGTH}
-                invalid={Boolean(fieldError)}
-                returnKeyType="next"
-                onSubmitEditing={onContinue}
-                className={inputClassName(Boolean(fieldError))}
-              />
-            ) : null}
+        <View className="mt-9">
+          {stage === 'name' ? (
+            <TextField
+              key="name"
+              autoFocus
+              value={profile.name}
+              onChangeValue={onNameChange}
+              placeholder="이름"
+              maxLength={PROFILE_NAME_MAX_LENGTH}
+              invalid={Boolean(fieldError)}
+              returnKeyType="next"
+              onSubmitEditing={onContinue}
+              className={inputClassName(Boolean(fieldError))}
+            />
+          ) : null}
 
-            {stage === 'birth' ? (
-              <TextField
-                key="birth"
-                autoFocus
-                value={birthText}
-                onChangeValue={onBirthChange}
-                placeholder="생년월일 8자리"
-                keyboardType="number-pad"
-                invalid={Boolean(fieldError)}
-                returnKeyType="next"
-                onSubmitEditing={onContinue}
-                className={inputClassName(Boolean(fieldError))}
-              />
-            ) : null}
+          {stage === 'birth' ? (
+            <TextField
+              key="birth"
+              autoFocus
+              value={birthText}
+              onChangeValue={onBirthChange}
+              placeholder="생년월일 8자리"
+              keyboardType="number-pad"
+              invalid={Boolean(fieldError)}
+              returnKeyType="next"
+              onSubmitEditing={onContinue}
+              className={inputClassName(Boolean(fieldError))}
+            />
+          ) : null}
 
-            {stage === 'gender' ? (
-              <Pressable
-                onPress={() => setGenderOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="성별 선택"
-                className={inputClassName(Boolean(fieldError))}
+          {stage === 'gender' ? (
+            <Pressable
+              onPress={() => setGenderOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="성별 선택"
+              className={inputClassName(Boolean(fieldError))}
+            >
+              <Text
+                className={`flex-1 text-xl ${profile.gender ? 'text-[#17171B]' : 'text-[#AAAABA]'}`}
               >
-                <Text
-                  className={`flex-1 text-xl ${
-                    profile.gender ? 'text-[#17171B]' : 'text-[#AAAABA]'
-                  }`}
-                >
-                  {genderLabel(profile.gender) ?? '성별'}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="#AAAABA" />
-              </Pressable>
-            ) : null}
-
-            {stage === 'email' ? (
-              <TextField
-                key="email"
-                autoFocus
-                value={profile.email}
-                onChangeValue={onEmailChange}
-                placeholder="이메일"
-                keyboardType="email-address"
-                invalid={Boolean(fieldError)}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="done"
-                onSubmitEditing={onContinue}
-                className={inputClassName(Boolean(fieldError))}
-              />
-            ) : null}
-
-            {fieldError ? (
-              <Text className="mt-1.5 text-xs font-medium leading-[18px] text-[#D63D4A]">
-                {fieldError}
+                {genderLabel(profile.gender) ?? '성별'}
               </Text>
-            ) : null}
-          </View>
+              <Ionicons name="chevron-down" size={20} color="#AAAABA" />
+            </Pressable>
+          ) : null}
 
-          <CompletedBasicFields
-            stage={stage}
-            name={profile.name}
-            birth={birthText}
-            gender={profile.gender}
-          />
-        </ScrollView>
+          {stage === 'email' ? (
+            <TextField
+              key="email"
+              autoFocus
+              value={profile.email}
+              onChangeValue={onEmailChange}
+              placeholder="이메일"
+              keyboardType="email-address"
+              invalid={Boolean(fieldError)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={onContinue}
+              className={inputClassName(Boolean(fieldError))}
+            />
+          ) : null}
 
-        {submitError ? (
-          <View className="px-4 pb-1">
-            <Text className="text-sm text-[#E5484D]">{submitError}</Text>
-          </View>
-        ) : null}
+          {fieldError ? (
+            <Text className="mt-1.5 text-xs font-medium leading-[18px] text-[#D63D4A]">
+              {fieldError}
+            </Text>
+          ) : null}
+        </View>
 
-        <OnboardingFooter
-          canProceed={canProceed}
-          primaryLabel="다음으로"
-          loading={submitting}
-          onPress={onContinue}
+        <CompletedBasicFields
+          stage={stage}
+          name={profile.name}
+          birth={birthText}
+          gender={profile.gender}
         />
-      </KeyboardAvoidingView>
+      </ScrollView>
+
+      {submitError ? (
+        <View className="px-4 pb-1">
+          <Text className="text-sm text-[#E5484D]">{submitError}</Text>
+        </View>
+      ) : null}
+
+      <OnboardingFooter
+        canProceed={canProceed}
+        primaryLabel="다음으로"
+        loading={submitting}
+        onPress={onContinue}
+        keyboardAware
+      />
 
       <BottomSheet
         open={genderOpen}
@@ -231,7 +231,7 @@ export function ProfileBasicStepView({
       />
 
       <BasicInfoDialog variant={dialog} onClose={onDialogClose} onExit={onExit} />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -261,7 +261,7 @@ function BasicInfoHeader({ onBack }: { onBack: () => void }) {
 }
 
 function inputClassName(invalid: boolean): string {
-  return `h-[34px] w-full flex-row items-center border-b border-[#256EF4] p-0 text-xl leading-[30px] text-[#17171B] ${
+  return `h-[40px] w-full flex-row items-center border-b border-[#256EF4] p-0 text-xl text-[#17171B] ${
     invalid ? 'border-[#256EF4]' : ''
   }`;
 }
@@ -381,7 +381,7 @@ function TermsBottomSheet({
             <TermsAgreement.Item
               key={term.key}
               termKey={term.key}
-              className="h-[23px] flex-row items-center gap-3.5"
+              className="h-8 flex-row items-center gap-3.5"
             >
               {({ checked, required, label }) => (
                 <>
@@ -399,7 +399,11 @@ function TermsBottomSheet({
 
       {error ? (
         <Text className="mt-2 text-xs leading-[18px] text-[#D63D4A]">
-          서버 약관을 불러오지 못해 기본 약관을 표시했어요.
+          약관을 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+        </Text>
+      ) : !loading && termOptions.length === 0 ? (
+        <Text className="mt-2 text-xs leading-[18px] text-[#D63D4A]">
+          서버에 등록된 약관이 없어요.
         </Text>
       ) : null}
 
@@ -427,14 +431,18 @@ function TermDetailLink({
   onPress: (termKey: string) => void;
 }) {
   return (
-    <Text
-      accessibilityRole="link"
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel="약관 상세 보기"
-      className="text-xs text-[#AAAABA] underline"
-      onPress={() => onPress(termKey)}
+      hitSlop={8}
+      className="h-8 w-8 items-center justify-center active:opacity-60"
+      onPress={(event) => {
+        event.stopPropagation();
+        onPress(termKey);
+      }}
     >
-      보기
-    </Text>
+      <Ionicons name="chevron-forward" size={24} color="#AAAABA" />
+    </Pressable>
   );
 }
 

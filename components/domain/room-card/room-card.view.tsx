@@ -29,6 +29,7 @@ export function RoomCardView({
   roomTypeLabel,
   regionLabel,
   authorMetaLabel,
+  authorMetaTone,
   badge,
   timeAgoLabel,
 }: RoomCardViewProps) {
@@ -100,9 +101,7 @@ export function RoomCardView({
             </Text>
             {verified ? <Ionicons name="checkmark-circle" size={16} color={BRAND} /> : null}
             {authorMetaLabel ? (
-              <View className="rounded-sm bg-[#FFF1ED] px-1.5 py-0.5">
-                <Text className="text-[10px] font-medium text-[#F15B4A]">{authorMetaLabel}</Text>
-              </View>
+              <AuthorMetaPill label={authorMetaLabel} tone={authorMetaTone} />
             ) : null}
           </View>
           <View className="flex-row items-baseline gap-1">
@@ -112,6 +111,32 @@ export function RoomCardView({
         </View>
       </View>
     </Pressable>
+  );
+}
+
+function AuthorMetaPill({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: 'male' | 'female' | 'neutral';
+}) {
+  const isMale = tone === 'male';
+  const isFemale = tone === 'female';
+  return (
+    <View
+      className={`rounded-sm px-1.5 py-0.5 ${
+        isMale ? 'bg-[#E7F4FE]' : isFemale ? 'bg-[#FFF1ED]' : 'bg-[#F6F6FA]'
+      }`}
+    >
+      <Text
+        className={`text-[10px] font-medium ${
+          isMale ? 'text-[#0B78CB]' : isFemale ? 'text-[#F15B4A]' : 'text-[#696976]'
+        }`}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 

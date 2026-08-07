@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { LifestyleIntroArtwork } from '@/components/ui/ready-to-dev-assets';
 import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 import { lifestylePatternQuestions } from '@/lib/api';
+import { ONBOARDING_PROGRESS_TOTAL } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import type { UseProfileLifestyleStepReturn } from './use-profile-lifestyle-step';
@@ -81,7 +82,7 @@ export function ProfileLifestyleStepView({
   if (!question) {
     return (
       <View className="flex-1 bg-white">
-        <LifestyleHeader progress={questionIndex + 1} total={questions.length} onBack={goBack} />
+        <LifestyleHeader progress={questionIndex + 1} onBack={goBack} />
         <View className="flex-1 items-center justify-center gap-3 px-6">
           {submitting ? <ActivityIndicator color="#256EF4" /> : null}
           <Text
@@ -115,7 +116,7 @@ export function ProfileLifestyleStepView({
 
   return (
     <View className="flex-1 bg-white">
-      <LifestyleHeader progress={questionIndex + 1} total={questions.length} onBack={goBack} />
+      <LifestyleHeader progress={questionIndex + 1} onBack={goBack} />
       <View className="flex-1 px-4 pt-6">
         <View className="gap-2">
           <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
@@ -168,15 +169,7 @@ export function ProfileLifestyleStepView({
   );
 }
 
-function LifestyleHeader({
-  progress,
-  total,
-  onBack,
-}: {
-  progress?: number;
-  total?: number;
-  onBack: () => void;
-}) {
+function LifestyleHeader({ progress, onBack }: { progress?: number; onBack: () => void }) {
   return (
     <View className="h-12 flex-row items-center justify-between px-4">
       <Pressable
@@ -193,7 +186,7 @@ function LifestyleHeader({
         {progress ? (
           <>
             <Text className="text-[#17171B]">{progress}</Text>
-            <Text className="text-[#8B8B9B]">/{total ?? progress}</Text>
+            <Text className="text-[#8B8B9B]">/{ONBOARDING_PROGRESS_TOTAL}</Text>
           </>
         ) : (
           ''

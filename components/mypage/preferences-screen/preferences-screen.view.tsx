@@ -3,11 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LifestyleIntroArtwork, PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 
-import {
-  LifestyleQuestionFlow,
-  QuestionFlowHeader,
-  QuestionFlowTabStrip,
-} from '../lifestyle-question-flow';
+import { LifestyleQuestionFlow } from '../lifestyle-question-flow';
 import type { UsePreferencesScreenReturn } from './use-preferences-screen';
 
 export type PreferencesScreenViewProps = UsePreferencesScreenReturn;
@@ -36,15 +32,25 @@ export function PreferencesScreenView(props: PreferencesScreenViewProps) {
           onScaleChange={props.setScale}
           onChoiceChange={props.setChoice}
           onBack={props.goBackStep}
-          onSave={props.goPriorityStep}
+          onSave={() => void props.save()}
           trailingTabLabel="우선순위"
           onTrailingTab={props.goPriorityStep}
+          trailingSaveEnabled
+          displayMode={props.isPreferenceComplete ? 'management' : 'initial'}
+          trailingContent={
+            <PriorityContent
+              priorities={props.priorities}
+              selected={props.selected}
+              togglePriority={props.togglePriority}
+              formBottomPadding={props.formBottomPadding}
+            />
+          }
         />
       </SafeAreaView>
     );
   }
 
-  return <PriorityStep {...props} />;
+  return null;
 }
 
 function PromptStep({
@@ -99,110 +105,88 @@ function PromptStep({
   );
 }
 
-function PriorityStep({
+function PriorityContent({
   priorities,
-  questionLabels,
   selected,
-  goBackStep,
   togglePriority,
-  save,
   formBottomPadding,
-}: PreferencesScreenViewProps) {
-  // 탭 스트립도 서버 문항 목록에서 만든다(하드코딩 06~09 제거). 마지막 '우선순위'가 현재 단계.
-  const tabs = [...questionLabels, '우선순위'].map((label, index) => ({
-    key: `${index}-${label}`,
-    label,
-  }));
+}: Pick<
+  PreferencesScreenViewProps,
+  'priorities' | 'selected' | 'togglePriority' | 'formBottomPadding'
+>) {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <QuestionFlowHeader
-        title="선호 룸메이트 관리"
-        onBack={goBackStep}
-        onSave={() => void save()}
-        saveEnabled={selected.length > 0}
-      />
+    <ScrollView
+      className="flex-1"
+      contentContainerClassName="px-4 pt-7"
+      contentContainerStyle={{ paddingBottom: formBottomPadding }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
+        룸메이트를 선택할 때{`\n`}가장 중요한 조건은 무엇인가요?
+      </Text>
+      <Text className="mt-1 text-sm leading-5 text-[#696976]">
+        가장 중요한 조건을 최대 3개까지 선택해주세요
+      </Text>
 
-      <QuestionFlowTabStrip
-        tabs={tabs}
-        activeIndex={tabs.length - 1}
-        onSelect={(index) => {
-          if (index < tabs.length - 1) goBackStep();
-        }}
-      />
-
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-4 pt-7"
-        contentContainerStyle={{ paddingBottom: formBottomPadding }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
-          룸메이트를 선택할 때{`\n`}가장 중요한 조건은 무엇인가요?
-        </Text>
-        <Text className="mt-1 text-sm leading-5 text-[#696976]">
-          가장 중요한 조건을 최대 3개까지 선택해주세요
-        </Text>
-
-        <View className="mt-7 flex-row flex-wrap gap-3">
-          {priorities.map((priority) => {
-            const on = selected.includes(priority.id);
-            const disabled = !on && selected.length >= 3;
-            const rank = selected.indexOf(priority.id) + 1;
-            return (
-              <Pressable
-                key={priority.id}
-                disabled={disabled}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: on, disabled }}
-                onPress={() => togglePriority(priority.id)}
-                className={`h-[42px] flex-row items-center justify-center gap-2 rounded-lg border px-3 ${
-                  on
-                    ? 'border-[#256EF4] bg-[#EEF4FF]'
-                    : disabled
-                      ? 'border-[#ECECF3] bg-[#F7F7FA] opacity-40'
-                      : 'border-[#DADAE8] bg-white'
-                }`}
+      <View className="mt-7 flex-row flex-wrap gap-3">
+        {priorities.map((priority) => {
+          const on = selected.includes(priority.id);
+          const disabled = !on && selected.length >= 3;
+          const rank = selected.indexOf(priority.id) + 1;
+          return (
+            <Pressable
+              key={priority.id}
+              disabled={disabled}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: on, disabled }}
+              onPress={() => togglePriority(priority.id)}
+              className={`h-[42px] flex-row items-center justify-center gap-2 rounded-lg border px-3 ${
+                on
+                  ? 'border-[#256EF4] bg-[#EEF4FF]'
+                  : disabled
+                    ? 'border-[#ECECF3] bg-[#F7F7FA] opacity-40'
+                    : 'border-[#DADAE8] bg-white'
+              }`}
+            >
+              <PriorityArtwork label={priority.name} image={priority.image} size={22} />
+              <Text
+                className={`text-[14px] font-medium ${on ? 'text-[#256EF4]' : 'text-[#696976]'}`}
               >
-                <PriorityArtwork label={priority.name} image={priority.image} size={22} />
-                <Text
-                  className={`text-[14px] font-medium ${on ? 'text-[#256EF4]' : 'text-[#696976]'}`}
-                >
-                  {priority.name}
-                </Text>
-                {on ? (
-                  <View className="h-5 w-5 items-center justify-center rounded-full bg-[#256EF4]">
-                    <Text className="text-[11px] font-bold text-white">{rank}</Text>
-                  </View>
-                ) : null}
-              </Pressable>
+                {priority.name}
+              </Text>
+              {on ? (
+                <View className="h-5 w-5 items-center justify-center rounded-full bg-[#256EF4]">
+                  <Text className="text-[11px] font-bold text-white">{rank}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {selected.length > 0 ? (
+        <View className="mt-8 rounded-xl bg-[#F7F7FA] p-4">
+          <Text className="text-xs font-semibold text-[#696976]">선택한 우선 순위</Text>
+          {selected.map((id, index) => {
+            const priority = priorities.find((item) => item.id === id);
+            if (!priority) return null;
+            return (
+              <View key={id} className="mt-3 flex-row items-center gap-3">
+                <View className="h-6 w-6 items-center justify-center rounded-full bg-[#256EF4]">
+                  <Text className="text-xs font-bold text-white">{index + 1}</Text>
+                </View>
+                <PriorityArtwork label={priority.name} image={priority.image} size={25} />
+                <View className="flex-1">
+                  <Text className="text-sm font-semibold text-[#242429]">{priority.name}</Text>
+                  {priority.desc ? (
+                    <Text className="mt-0.5 text-xs text-[#8A8A98]">{priority.desc}</Text>
+                  ) : null}
+                </View>
+              </View>
             );
           })}
         </View>
-
-        {selected.length > 0 ? (
-          <View className="mt-8 rounded-xl bg-[#F7F7FA] p-4">
-            <Text className="text-xs font-semibold text-[#696976]">선택한 우선 순위</Text>
-            {selected.map((id, index) => {
-              const priority = priorities.find((item) => item.id === id);
-              if (!priority) return null;
-              return (
-                <View key={id} className="mt-3 flex-row items-center gap-3">
-                  <View className="h-6 w-6 items-center justify-center rounded-full bg-[#256EF4]">
-                    <Text className="text-xs font-bold text-white">{index + 1}</Text>
-                  </View>
-                  <PriorityArtwork label={priority.name} image={priority.image} size={25} />
-                  <View className="flex-1">
-                    <Text className="text-sm font-semibold text-[#242429]">{priority.name}</Text>
-                    {priority.desc ? (
-                      <Text className="mt-0.5 text-xs text-[#8A8A98]">{priority.desc}</Text>
-                    ) : null}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        ) : null}
-      </ScrollView>
-    </SafeAreaView>
+      ) : null}
+    </ScrollView>
   );
 }

@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -17,20 +16,28 @@ export type RoomRegionSheetProps = {
 
 /**
  * 게시글 등록/수정용 지역 선택 바텀시트.
- * 필터의 RegionFilterBody와 같은 시·도/구·군 2단 리스트 구조를 단일 선택 모드로 재구성했다.
+ * 방이 있는 경우 실제 주소를 저장하므로 시·도/구·군/동 3단계를 모두 선택한다.
  * (RegionFilterBody는 다중 선택 배열 + 최대 선택 수 카운터가 고정이라 그대로 재사용하지 않았다.)
  */
 export function RoomRegionSheet({ open, onOpenChange, value, onSelect }: RoomRegionSheetProps) {
   const { cities, getChildren, getOption, loading, error, reload } = useRegionOptions();
-  const [draft, setDraft] = useState<Region | null>(value);
+  const [draft, setDraft] = useState<Region | null>(null);
   const [activeCityId, setActiveCityId] = useState<string | null>(null);
+  const [activeDistrictId, setActiveDistrictId] = useState<string | null>(null);
+  const [step, setStep] = useState<'district' | 'neighborhood'>('district');
 
   // 시트를 열 때마다 현재 선택값 기준으로 초기화한다.
   useEffect(() => {
     if (!open) return;
-    setDraft(value);
-    const parentId = value ? getOption(value.id)?.parentId : null;
-    setActiveCityId((current) => parentId ?? current ?? cities[0]?.id ?? null);
+    const selected = value ? getOption(value.id) : undefined;
+    const parent = getOption(selected?.parentId);
+    const grandParent = getOption(parent?.parentId);
+    const isNeighborhood = Boolean(grandParent);
+
+    setDraft(isNeighborhood ? value : null);
+    setActiveCityId(grandParent?.id ?? parent?.id ?? cities[0]?.id ?? null);
+    setActiveDistrictId(grandParent ? (parent?.id ?? null) : (selected?.id ?? null));
+    setStep(isNeighborhood ? 'neighborhood' : 'district');
   }, [cities, getOption, open, value]);
 
   useEffect(() => {
@@ -41,6 +48,10 @@ export function RoomRegionSheet({ open, onOpenChange, value, onSelect }: RoomReg
     () => (activeCityId ? getChildren(activeCityId) : []),
     [activeCityId, getChildren],
   );
+  const neighborhoods = useMemo(
+    () => (activeDistrictId ? getChildren(activeDistrictId) : []),
+    [activeDistrictId, getChildren],
+  );
 
   const confirm = () => {
     if (!draft) return;
@@ -49,7 +60,19 @@ export function RoomRegionSheet({ open, onOpenChange, value, onSelect }: RoomReg
   };
 
   return (
-    <FilterSheet open={open} onOpenChange={onOpenChange} title="지역 선택">
+    <FilterSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      onBack={
+        step === 'neighborhood'
+          ? () => {
+              setStep('district');
+              setDraft(null);
+            }
+          : undefined
+      }
+      title="지역 선택"
+    >
       {loading ? (
         <ReadyLoadingState label="지역을 불러오는 중..." compact />
       ) : error ? (
@@ -61,76 +84,87 @@ export function RoomRegionSheet({ open, onOpenChange, value, onSelect }: RoomReg
         />
       ) : (
         <>
-          <View
-            className="flex-row overflow-hidden border-b border-[#ECECF3]"
-            style={{ height: 330 }}
-          >
-            <View className="w-[132px] bg-white">
+          <View className="h-[336px] flex-row overflow-hidden border-b border-[#ECECF3]">
+            <View className="w-1/2 bg-white">
               <ScrollView showsVerticalScrollIndicator={false}>
-                {cities.map((city) => {
-                  const active = city.id === activeCityId;
-                  const hasSelection = draft?.city === city.region.city;
+                {(step === 'district' ? cities : districts).map((option) => {
+                  const active =
+                    step === 'district'
+                      ? option.id === activeCityId
+                      : option.id === activeDistrictId;
                   return (
                     <Pressable
-                      key={city.id}
-                      onPress={() => setActiveCityId(city.id)}
-                      className={`h-12 flex-row items-center justify-between px-3 ${
-                        active ? 'bg-[#F6F6FA]' : 'bg-white'
+                      key={option.id}
+                      onPress={() => {
+                        if (step === 'district') {
+                          setActiveCityId(option.id);
+                          setActiveDistrictId(null);
+                          setDraft(null);
+                          return;
+                        }
+                        setActiveDistrictId(option.id);
+                        setDraft(null);
+                      }}
+                      className={`h-12 flex-row items-center px-4 ${
+                        active && step === 'district' ? 'bg-[#F6F6FA]' : 'bg-white'
                       }`}
                     >
                       <Text
-                        className={
+                        className={`text-[15px] ${
                           active
-                            ? 'text-[15px] font-semibold text-[#17171B]'
-                            : 'text-[15px] text-[#696976]'
-                        }
+                            ? step === 'neighborhood'
+                              ? 'font-semibold text-[#256EF4]'
+                              : 'font-semibold text-[#17171B]'
+                            : 'text-[#696976]'
+                        }`}
                       >
-                        {city.label}
+                        {step === 'district' ? option.label : option.region.district}
                       </Text>
-                      {hasSelection ? (
-                        <Ionicons name="checkmark" size={15} color="#256EF4" />
-                      ) : null}
                     </Pressable>
                   );
                 })}
               </ScrollView>
             </View>
 
-            <View className="flex-1 border-l border-[#ECECF3] bg-white">
+            <View className="w-1/2 bg-white">
               <ScrollView showsVerticalScrollIndicator={false}>
-                {districts.map((option) => {
-                  const region = option.region;
-                  const selected = draft?.id === region.id;
-                  return (
-                    <Pressable
-                      key={region.id}
-                      onPress={() => setDraft(region)}
-                      className="h-12 flex-row items-center justify-between px-5"
-                    >
-                      <Text
-                        className={`text-[15px] ${
-                          selected ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'
-                        }`}
+                {step === 'neighborhood' && activeDistrictId && neighborhoods.length === 0 ? (
+                  <View className="h-24 items-center justify-center px-3">
+                    <Text className="text-center text-xs text-[#AAAABA]">등록된 동이 없어요.</Text>
+                  </View>
+                ) : (
+                  (step === 'district' ? districts : neighborhoods).map((option) => {
+                    const region = option.region;
+                    const selected = draft?.id === region.id;
+                    return (
+                      <Pressable
+                        key={region.id}
+                        onPress={() => {
+                          if (step === 'district') {
+                            setActiveDistrictId(option.id);
+                            setDraft(null);
+                            setStep('neighborhood');
+                            return;
+                          }
+                          setDraft(region);
+                        }}
+                        className="h-12 flex-row items-center px-4"
                       >
-                        {region.district}
-                      </Text>
-                      {selected ? <Ionicons name="checkmark" size={17} color="#256EF4" /> : null}
-                    </Pressable>
-                  );
-                })}
+                        <Text
+                          className={`text-[15px] ${
+                            selected ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'
+                          }`}
+                          numberOfLines={1}
+                        >
+                          {option.label.split(' ').at(-1)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })
+                )}
               </ScrollView>
             </View>
           </View>
-
-          {draft ? (
-            <View className="flex-row pt-3">
-              <View className="h-8 flex-row items-center gap-1 rounded-full bg-[#F6F6FA] px-3">
-                <Text className="text-[13px] text-[#696976]">
-                  {draft.city} {draft.district}
-                </Text>
-              </View>
-            </View>
-          ) : null}
 
           <Pressable
             onPress={confirm}
