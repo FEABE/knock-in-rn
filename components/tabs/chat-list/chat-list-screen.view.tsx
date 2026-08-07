@@ -45,6 +45,8 @@ export function ChatListScreenView({
         </View>
       ) : (
         <FlatList
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
           data={loading || error ? EMPTY_ROWS : rows}
           keyExtractor={chatRowKeyExtractor}
           renderItem={renderChatRow}

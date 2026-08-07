@@ -1,14 +1,19 @@
 import { useRef, useState } from 'react';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ReadyActionRow,
   ReadyActionSheet,
-  ReadyBadge,
   ReadyDivider,
-  ReadyMetadataTile,
   ReadyMoreButton,
   ReadyProfileAvatar,
   ReadyScreenHeader,
@@ -27,6 +32,10 @@ type DetailTab = 'compatibility' | 'condition' | 'room' | 'lifestyle';
 /** 인증 뱃지 색상 (Figma: SealCheck 초록 / BagSimple 파랑). */
 const AUTH_BADGE_GREEN = '#3FA654';
 const AUTH_BADGE_BLUE = '#4C87F6';
+const RING_SIZE = 120;
+const RING_STROKE = 8;
+const RING_SEGMENTS = 120;
+const RING_SEGMENT_WIDTH = 7;
 
 export function RoommateDetailScreenView({
   data,
@@ -183,27 +192,25 @@ function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
   const roomBadge = data.roomStatusLabel.split('·')[0]?.trim();
   const ageGender = ageGenderLabel(data.age, data.genderLabel);
   return (
-    <View className="flex-row items-center gap-3 px-4 py-4">
-      <ReadyProfileAvatar name={data.name || data.initial} imageUrl={data.profileImageUrl} />
+    <View className="flex-row items-center gap-3 px-4 pb-7 pt-4">
+      <ReadyProfileAvatar
+        name={data.name || data.initial}
+        imageUrl={data.profileImageUrl}
+        size={62}
+      />
 
       <View className="flex-1 gap-2">
-        <View className="flex-row items-center gap-1">
-          <Text className="text-base font-semibold text-[#17171B]">{data.name}</Text>
+        <View className="flex-row items-center gap-0.5">
+          <Text className="text-[16px] font-semibold leading-6 text-[#17171B]">{data.name}</Text>
           <AuthBadgeIcons
             isAuthStudent={data.isAuthStudent}
             isAuthEmployee={data.isAuthEmployee}
             size={18}
           />
         </View>
-        <View className="flex-row flex-wrap gap-1.5">
-          {ageGender ? (
-            <ReadyBadge
-              label={ageGender}
-              tone={data.genderLabel === '남성' ? 'blue' : 'red'}
-              icon={genderIconName(data.genderLabel)}
-            />
-          ) : null}
-          {roomBadge ? <ReadyBadge label={roomBadge} tone="blue" icon="home" /> : null}
+        <View className="flex-row flex-wrap gap-2">
+          {ageGender ? <GenderMetaChip label={ageGender} genderLabel={data.genderLabel} /> : null}
+          {roomBadge ? <RoomStatusChip label={roomBadge} /> : null}
         </View>
       </View>
     </View>
@@ -233,18 +240,58 @@ function AuthBadgeIcons({
   );
 }
 
-function genderIconName(genderLabel?: string): 'female' | 'male' | undefined {
-  if (genderLabel === '여성') return 'female';
-  if (genderLabel === '남성') return 'male';
-  return undefined;
-}
-
 /** 나이/성별을 하나의 칩 문구로 합친다. (Figma: "24세 · 여성") */
 function ageGenderLabel(age?: number, genderLabel?: string): string {
   return [age ? `${age}세` : null, genderLabel].filter(Boolean).join(' · ');
 }
 
+function GenderMetaChip({ label, genderLabel }: { label: string; genderLabel?: string }) {
+  const isMale = genderLabel === '남성';
+  return (
+    <View
+      className={`h-[22px] flex-row items-center justify-center gap-1 rounded px-[5px] ${
+        isMale ? 'bg-[#E7F4FE]' : 'bg-[#FDEFEC]'
+      }`}
+    >
+      <Ionicons
+        name={isMale ? 'male' : 'female'}
+        size={12}
+        color={isMale ? '#0B78CB' : '#DE3412'}
+      />
+      <Text
+        className={`text-[12px] font-semibold leading-[18px] ${
+          isMale ? 'text-[#0B78CB]' : 'text-[#DE3412]'
+        }`}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function RoomStatusChip({ label }: { label: string }) {
+  const hasRoom = label.includes('있');
+  return (
+    <View
+      className={`h-[22px] flex-row items-center justify-center gap-1 rounded px-2 ${
+        hasRoom ? 'bg-[#ECF2FE]' : 'bg-[#F6F6FA]'
+      }`}
+    >
+      <Ionicons name="home" size={16} color={hasRoom ? '#4C87F6' : '#696976'} />
+      <Text
+        className={`text-[12px] font-semibold leading-[17px] ${
+          hasRoom ? 'text-[#4C87F6]' : 'text-[#696976]'
+        }`}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 function DetailTabs({ active, onPress }: { active: DetailTab; onPress: (tab: DetailTab) => void }) {
+  const { width } = useWindowDimensions();
+  const tabWidth = width / 3;
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'compatibility', label: '궁합 점수' },
     { key: 'condition', label: '룸메이트 조건' },
@@ -252,67 +299,120 @@ function DetailTabs({ active, onPress }: { active: DetailTab; onPress: (tab: Det
     { key: 'lifestyle', label: '생활 패턴' },
   ];
   return (
-    <View className="flex-row border-b border-[#ECECF3] bg-white">
-      {tabs.map((tab) => {
-        const selected = active === tab.key;
-        return (
-          <Pressable
-            key={tab.key}
-            onPress={() => onPress(tab.key)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            className={`h-11 flex-1 items-center justify-center border-b-2 px-0.5 ${
-              selected ? 'border-[#256EF4]' : 'border-transparent'
-            }`}
-          >
-            <Text
-              numberOfLines={1}
-              className={
-                selected
-                  ? 'text-[13px] font-semibold text-[#17171B]'
-                  : 'text-[13px] font-medium text-[#AAAABA]'
-              }
+    <View className="border-b border-[#ECECF3] bg-white">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ minWidth: tabWidth * tabs.length }}
+      >
+        {tabs.map((tab) => {
+          const selected = active === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => onPress(tab.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              className={`h-11 items-center justify-center border-b-2 px-1 ${
+                selected ? 'border-[#256EF4]' : 'border-transparent'
+              }`}
+              style={{ width: tabWidth }}
             >
-              {tab.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+              <Text
+                numberOfLines={1}
+                className={
+                  selected
+                    ? 'text-[16px] font-semibold leading-6 text-[#17171B]'
+                    : 'text-[16px] font-medium leading-6 text-[#AAAABA]'
+                }
+              >
+                {tab.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
 function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
   const score = data.compatibility.score;
+  const hasScore = typeof score === 'number';
   return (
     <ReadySection
       title="궁합 점수"
       accessory={
         <View className="flex-row items-center gap-1">
-          <Text className="text-xs text-[#AAAABA]">프로필 완성 후 실제 점수 반영</Text>
-          <Ionicons name="information-circle" size={14} color="#C8C8D4" />
+          <Text className="text-[13px] font-medium leading-[19px] text-[#AAAABA]">
+            프로필 완성 후 실제 점수 반영
+          </Text>
+          <Ionicons name="information-circle" size={18} color="#DADAE8" />
         </View>
       }
     >
-      <View className="items-center py-6">
+      <View className="items-center py-4">
         <View
-          className={`h-28 w-28 items-center justify-center rounded-full border-[5px] ${
-            score === undefined ? 'border-[#E9E9F0]' : 'border-[#256EF4]'
-          }`}
+          className="items-center justify-center"
+          style={{ width: RING_SIZE, height: RING_SIZE }}
         >
-          <View className="flex-row items-end">
-            <Text
-              className={`text-[30px] font-bold ${
-                score === undefined ? 'text-[#AAAABA]' : 'text-[#175CD3]'
-              }`}
-            >
-              {score === undefined ? '--' : score}
-            </Text>
-            <Text className="mb-1 text-xs font-semibold text-[#175CD3]">점</Text>
-          </View>
+          <CompatibilityRing progress={hasScore ? score : 0} active={hasScore} />
+          <Text
+            className={`text-[36px] font-bold leading-[44px] ${
+              hasScore ? 'text-[#256EF4]' : 'text-[#AAAABA]'
+            }`}
+          >
+            {hasScore ? Math.round(score) : '--'}
+            <Text className="text-[13px] font-semibold">점</Text>
+          </Text>
         </View>
       </View>
     </ReadySection>
+  );
+}
+
+function CompatibilityRing({ progress, active }: { progress: number; active: boolean }) {
+  const normalized = Math.max(0, Math.min(100, progress));
+  const activeSegments = Math.round((normalized / 100) * RING_SEGMENTS);
+  const trackColor = active ? '#ECF2FE' : '#E5E7EB';
+
+  return (
+    <View
+      className="absolute items-center justify-center"
+      style={{ width: RING_SIZE, height: RING_SIZE }}
+    >
+      <View
+        className="absolute rounded-full"
+        style={{
+          width: RING_SIZE,
+          height: RING_SIZE,
+          borderWidth: RING_STROKE,
+          borderColor: trackColor,
+        }}
+      />
+      {active
+        ? Array.from({ length: activeSegments }).map((_, index) => (
+            <View
+              key={index}
+              className="absolute items-center"
+              style={{
+                width: RING_SIZE,
+                height: RING_SIZE,
+                transform: [{ rotate: `${index * (360 / RING_SEGMENTS)}deg` }],
+              }}
+            >
+              <View
+                style={{
+                  width: RING_SEGMENT_WIDTH,
+                  height: RING_STROKE,
+                  borderRadius: RING_STROKE / 2,
+                  backgroundColor: '#256EF4',
+                }}
+              />
+            </View>
+          ))
+        : null}
+    </View>
   );
 }
 
@@ -339,15 +439,15 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
 
       {priorities.length ? (
         <View className="gap-2">
-          <Text className="text-xs font-semibold text-[#256EF4]">우선순위</Text>
+          <Text className="text-[15px] font-semibold leading-[22px] text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
             {priorities.map((priority) => (
               <View
                 key={priority}
-                className="flex-row items-center gap-1.5 rounded bg-[#EEF4FF] px-3 py-2"
+                className="h-[42px] flex-row items-center gap-2 rounded-lg bg-[#ECF2FE] px-3.5"
               >
-                <PriorityArtwork label={priority} size={20} />
-                <Text className="text-sm font-medium text-[#17171B]">{priority}</Text>
+                <PriorityArtwork label={priority} size={22} />
+                <Text className="text-[16px] font-medium leading-6 text-[#17171B]">{priority}</Text>
               </View>
             ))}
           </View>
@@ -360,7 +460,7 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
 function RoomIntroductionBlock({ data }: { data: RoommateMatchDetailModel }) {
   return (
     <ReadySection title="방 소개">
-      <View className="gap-3">
+      <View className="gap-2">
         {data.livingRows.map((row) => (
           <KeyVal key={row.label} label={row.label} value={row.value} />
         ))}
@@ -384,7 +484,7 @@ function LifestyleBlock({
       {items.length ? (
         <View className="flex-row flex-wrap gap-3">
           {items.map((lifestyle) => (
-            <ReadyMetadataTile key={lifestyle.id} label={lifestyle.name} value={lifestyle.value} />
+            <LifestyleTile key={lifestyle.id} label={lifestyle.name} value={lifestyle.value} />
           ))}
         </View>
       ) : (
@@ -394,6 +494,15 @@ function LifestyleBlock({
         <ReadyMoreButton expanded={expanded} onPress={onToggle} />
       ) : null}
     </ReadySection>
+  );
+}
+
+function LifestyleTile({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="h-[76px] min-w-[47%] flex-1 justify-center gap-0.5 rounded bg-[#F6F6FA] px-5 py-[13px]">
+      <Text className="text-[13px] font-medium leading-[19px] text-[#696976]">{label}</Text>
+      <Text className="text-[16px] font-semibold leading-6 text-[#17171B]">{value}</Text>
+    </View>
   );
 }
 
@@ -412,14 +521,14 @@ function BottomBar({
 }) {
   return (
     <View
-      className="absolute inset-x-0 bottom-0 flex-row items-center gap-2 border-t border-[#ECECF3] bg-white px-4 pt-3"
+      className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-[#ECECF3] bg-white px-4 pt-4"
       style={{ paddingBottom: bottomPadding }}
     >
       <Pressable
         onPress={onLike}
         accessibilityRole="button"
         accessibilityLabel={liked ? '관심 해제' : '관심 등록'}
-        className="h-12 w-12 items-center justify-center rounded-lg border border-[#DADAE8]"
+        className="h-12 w-[50px] items-center justify-center rounded-lg border-[1.5px] border-[#DADAE8]"
       >
         <Ionicons
           name={liked ? 'heart' : 'heart-outline'}
@@ -440,7 +549,7 @@ function BottomBar({
         {creatingChat ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text className="text-base font-semibold text-white">채팅하기</Text>
+          <Text className="text-[16px] font-bold leading-6 text-white">채팅하기</Text>
         )}
       </Pressable>
     </View>
@@ -476,8 +585,9 @@ function ReportSheet({
 
 function ConditionChip({ label }: { label: string }) {
   return (
-    <View className="rounded border border-[#DADAE8] bg-white px-3 py-2">
-      <Text className="text-sm text-[#696976]">{label}</Text>
+    <View className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8]/80 bg-white px-3">
+      <PriorityArtwork label={label} size={22} />
+      <Text className="text-[16px] font-medium leading-6 text-[#696976]">{label}</Text>
     </View>
   );
 }
@@ -485,8 +595,10 @@ function ConditionChip({ label }: { label: string }) {
 function KeyVal({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between">
-      <Text className="text-sm text-[#696976]">{label}</Text>
-      <Text className="max-w-[65%] text-right text-sm font-semibold text-[#17171B]">{value}</Text>
+      <Text className="text-[15px] font-medium leading-[22px] text-[#696976]">{label}</Text>
+      <Text className="max-w-[70%] text-right text-[16px] font-semibold leading-6 text-[#17171B]">
+        {value}
+      </Text>
     </View>
   );
 }

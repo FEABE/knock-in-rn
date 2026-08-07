@@ -113,12 +113,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
   if (props.loading) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-        <Header
-          title="게시글 상세"
-          onBack={props.onBack}
-          onShare={props.onShare}
-          onMenu={() => props.setMenuOpen(true)}
-        />
+        <Header title="게시글 상세" onBack={props.onBack} onMenu={() => props.setMenuOpen(true)} />
         <View className="flex-1 items-center justify-center gap-3">
           <ActivityIndicator color="#256EF4" />
           <Text className="text-sm text-neutral-400">게시글을 불러오는 중...</Text>
@@ -130,12 +125,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
   if (props.error || !props.post) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-        <Header
-          title="게시글 상세"
-          onBack={props.onBack}
-          onShare={props.onShare}
-          onMenu={() => props.setMenuOpen(true)}
-        />
+        <Header title="게시글 상세" onBack={props.onBack} onMenu={() => props.setMenuOpen(true)} />
         <View className="flex-1 items-center justify-center gap-3 p-10">
           <Text className="text-base text-neutral-500">
             {props.error ?? '게시글을 찾을 수 없어요'}
@@ -151,12 +141,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
   if (props.blocked) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-        <Header
-          title="게시글 상세"
-          onBack={props.onBack}
-          onShare={props.onShare}
-          onMenu={() => props.setMenuOpen(true)}
-        />
+        <Header title="게시글 상세" onBack={props.onBack} onMenu={() => props.setMenuOpen(true)} />
         <View className="flex-1 items-center justify-center gap-3 p-10">
           <Text className="text-base text-neutral-500">차단한 게시글이에요</Text>
           <Pressable onPress={props.onBack} className="rounded-full bg-neutral-100 px-5 py-3">
@@ -172,14 +157,13 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
       <Header
         title={props.post.title}
         onBack={props.onBack}
-        onShare={props.onShare}
         onMenu={() => props.setMenuOpen(true)}
       />
 
       <ScrollView
         ref={scrollRef}
         className="flex-1"
-        contentContainerClassName="pb-28"
+        contentContainerClassName={props.isOwner ? 'pb-6' : 'pb-28'}
         stickyHeaderIndices={[2]}
       >
         <PhotoCarousel
@@ -276,15 +260,15 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         </View>
       </ScrollView>
 
-      <BottomBar
-        isOwner={props.isOwner}
-        liked={props.liked}
-        onLike={props.onLike}
-        onChat={props.onChat}
-        creatingChat={props.creatingChat}
-        onEdit={props.onEdit}
-        bottomPadding={props.bottomPadding}
-      />
+      {!props.isOwner ? (
+        <BottomBar
+          liked={props.liked}
+          onLike={props.onLike}
+          onChat={props.onChat}
+          creatingChat={props.creatingChat}
+          bottomPadding={props.bottomPadding}
+        />
+      ) : null}
 
       <ReadyActionSheet open={props.menuOpen} onOpenChange={props.setMenuOpen}>
         <View>
@@ -393,22 +377,17 @@ function RoomDetailTabs({
 function Header({
   title,
   onBack,
-  onShare,
   onMenu,
 }: {
   title: string;
   onBack: () => void;
-  onShare: () => void;
   onMenu: () => void;
 }) {
   return (
     <ReadyScreenHeader
       title={title}
       onBack={onBack}
-      actions={[
-        { icon: 'share-outline', label: '게시글 공유', onPress: onShare },
-        { icon: 'ellipsis-horizontal', label: '게시글 메뉴', onPress: onMenu },
-      ]}
+      actions={[{ icon: 'ellipsis-horizontal', label: '게시글 메뉴', onPress: onMenu }]}
     />
   );
 }
@@ -764,6 +743,8 @@ function DescriptionBlock({
 
 const RING_SIZE = 120;
 const RING_STROKE = 8;
+const RING_SEGMENTS = 120;
+const RING_SEGMENT_WIDTH = 7;
 
 function CompatibilityBlock({ post, isLoggedIn }: { post: RoomPost; isLoggedIn: boolean }) {
   const total = post.compatibilityScore;
@@ -801,7 +782,7 @@ function CompatibilityBlock({ post, isLoggedIn }: { post: RoomPost; isLoggedIn: 
 
 function CompatibilityRing({ progress, active }: { progress: number; active: boolean }) {
   const normalized = Math.max(0, Math.min(100, progress));
-  const progressRotation = normalized * 3.6;
+  const activeSegments = Math.round((normalized / 100) * RING_SEGMENTS);
   const trackColor = active ? '#ECF2FE' : '#E5E7EB';
 
   return (
@@ -818,34 +799,29 @@ function CompatibilityRing({ progress, active }: { progress: number; active: boo
           borderColor: trackColor,
         }}
       />
-      {active ? (
-        <>
-          <RingProgressLayer rotation={normalized > 50 ? 45 : progressRotation - 135} />
-          <RingProgressLayer
-            rotation={normalized > 50 ? progressRotation - 135 : -135}
-            color={normalized > 50 ? '#256EF4' : trackColor}
-          />
-        </>
-      ) : null}
+      {active
+        ? Array.from({ length: activeSegments }).map((_, index) => (
+            <View
+              key={index}
+              className="absolute items-center"
+              style={{
+                width: RING_SIZE,
+                height: RING_SIZE,
+                transform: [{ rotate: `${index * (360 / RING_SEGMENTS)}deg` }],
+              }}
+            >
+              <View
+                style={{
+                  width: RING_SEGMENT_WIDTH,
+                  height: RING_STROKE,
+                  borderRadius: RING_STROKE / 2,
+                  backgroundColor: '#256EF4',
+                }}
+              />
+            </View>
+          ))
+        : null}
     </View>
-  );
-}
-
-function RingProgressLayer({ rotation, color = '#256EF4' }: { rotation: number; color?: string }) {
-  return (
-    <View
-      className="absolute rounded-full"
-      style={{
-        width: RING_SIZE,
-        height: RING_SIZE,
-        borderWidth: RING_STROKE,
-        borderLeftColor: 'transparent',
-        borderBottomColor: 'transparent',
-        borderRightColor: color,
-        borderTopColor: color,
-        transform: [{ rotate: `${rotation}deg` }],
-      }}
-    />
   );
 }
 
@@ -906,20 +882,16 @@ function AuthorBlock({ author, onPress }: { author: UserSummary; onPress: () => 
 }
 
 function BottomBar({
-  isOwner,
   liked,
   onLike,
   onChat,
   creatingChat,
-  onEdit,
   bottomPadding,
 }: {
-  isOwner: boolean;
   liked: boolean;
   onLike: () => void;
   onChat: () => void;
   creatingChat: boolean;
-  onEdit: () => void;
   bottomPadding: number;
 }) {
   return (
@@ -927,41 +899,37 @@ function BottomBar({
       className="absolute inset-x-0 bottom-0 flex-row items-center gap-3 border-t border-neutral-100 bg-white px-5 pt-3"
       style={{ paddingBottom: bottomPadding }}
     >
-      {!isOwner ? (
-        <Pressable
-          onPress={onLike}
-          accessibilityRole="button"
-          accessibilityLabel={liked ? '관심 해제' : '관심 등록'}
-          accessibilityState={{ selected: liked }}
-          className={`h-12 w-[50px] items-center justify-center rounded-lg border-[1.5px] ${
-            liked ? 'border-[#256EF4]' : 'border-neutral-200'
-          }`}
-        >
-          {/* 선택 시 카드 하트와 동일하게 Primary/50 채움 하트로 표시한다. */}
-          <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
-            size={23}
-            color={liked ? '#256EF4' : '#AAAABA'}
-            style={{ includeFontPadding: false, textAlignVertical: 'center' }}
-          />
-        </Pressable>
-      ) : null}
       <Pressable
-        onPress={isOwner ? onEdit : onChat}
-        disabled={!isOwner && creatingChat}
+        onPress={onLike}
         accessibilityRole="button"
-        accessibilityLabel={isOwner ? '게시글 수정' : '채팅하기'}
-        accessibilityState={{ disabled: !isOwner && creatingChat }}
-        className={`h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90 ${
-          !isOwner && creatingChat ? 'opacity-60' : ''
+        accessibilityLabel={liked ? '관심 해제' : '관심 등록'}
+        accessibilityState={{ selected: liked }}
+        className={`h-12 w-[50px] items-center justify-center rounded-lg border-[1.5px] ${
+          liked ? 'border-[#256EF4]' : 'border-neutral-200'
         }`}
       >
-        {!isOwner && creatingChat ? (
+        {/* 선택 시 카드 하트와 동일하게 Primary/50 채움 하트로 표시한다. */}
+        <Ionicons
+          name={liked ? 'heart' : 'heart-outline'}
+          size={23}
+          color={liked ? '#256EF4' : '#AAAABA'}
+          style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+        />
+      </Pressable>
+      <Pressable
+        onPress={onChat}
+        disabled={creatingChat}
+        accessibilityRole="button"
+        accessibilityLabel="채팅하기"
+        accessibilityState={{ disabled: creatingChat }}
+        className={`h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90 ${
+          creatingChat ? 'opacity-60' : ''
+        }`}
+      >
+        {creatingChat ? (
           <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text className="text-[16px] font-bold leading-6 text-white">
-            {isOwner ? '게시글 수정' : '채팅하기'}
-          </Text>
+          <Text className="text-[16px] font-bold leading-6 text-white">채팅하기</Text>
         )}
       </Pressable>
     </View>

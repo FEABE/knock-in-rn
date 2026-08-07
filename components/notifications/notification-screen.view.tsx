@@ -88,6 +88,8 @@ export function NotificationScreenView({
         />
       ) : (
         <ScrollView
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
           contentContainerClassName="pb-12"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRetry} tintColor="#256EF4" />

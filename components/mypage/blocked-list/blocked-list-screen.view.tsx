@@ -57,6 +57,8 @@ export function BlockedListScreenView({
       ) : (
         <ScrollView
           className="mt-4 flex-1"
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={reload} tintColor="#256EF4" />

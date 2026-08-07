@@ -45,7 +45,7 @@ function RoomListSeparator() {
 }
 
 function MatchListSeparator() {
-  return <View className="h-4" />;
+  return <View className="h-[18px]" />;
 }
 
 export type ExploreScreenViewProps = UseExploreScreenReturn;
@@ -134,6 +134,8 @@ export function ExploreScreenView({
 
           <FlatList
             className="flex-1"
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
             contentContainerClassName="px-4 pb-24"
             data={roomsLoading || roomsError ? EMPTY_ROOM_POSTS : visiblePosts}
             keyExtractor={roomKeyExtractor}
@@ -145,11 +147,13 @@ export function ExploreScreenView({
             maxToRenderPerBatch={4}
             windowSize={7}
             refreshControl={
-              <RefreshControl
-                refreshing={roomsRefreshing}
-                onRefresh={reloadRooms}
-                tintColor="#256EF4"
-              />
+              activeTab === 'rooms' ? (
+                <RefreshControl
+                  refreshing={roomsRefreshing}
+                  onRefresh={reloadRooms}
+                  tintColor="#256EF4"
+                />
+              ) : undefined
             }
             ListEmptyComponent={
               roomsLoading ? (
@@ -186,7 +190,9 @@ export function ExploreScreenView({
         <Tabs.Content value="roommates" className="flex-1">
           <FlatList
             className="flex-1 bg-[#F7F8FC]"
-            contentContainerClassName="px-4 pb-24 pt-5"
+            automaticallyAdjustContentInsets={false}
+            contentInsetAdjustmentBehavior="never"
+            contentContainerClassName="px-4 pb-24 pt-8"
             data={matchesLoading || matchesError ? EMPTY_MATCHES : visibleMatches}
             keyExtractor={matchKeyExtractor}
             renderItem={({ item }) => (
@@ -201,11 +207,13 @@ export function ExploreScreenView({
             maxToRenderPerBatch={5}
             windowSize={7}
             refreshControl={
-              <RefreshControl
-                refreshing={matchesRefreshing}
-                onRefresh={reloadMatches}
-                tintColor="#256EF4"
-              />
+              activeTab === 'roommates' ? (
+                <RefreshControl
+                  refreshing={matchesRefreshing}
+                  onRefresh={reloadMatches}
+                  tintColor="#256EF4"
+                />
+              ) : undefined
             }
             ListEmptyComponent={
               matchesLoading ? (

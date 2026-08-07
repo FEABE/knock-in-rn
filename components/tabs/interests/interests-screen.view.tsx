@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -55,6 +56,8 @@ export function InterestsScreenView({
   onRoommatePress,
   onRoommateLikeChange,
 }: InterestsScreenViewProps) {
+  const [activeTab, setActiveTab] = useState<'rooms' | 'roommates'>('rooms');
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <ReadyPageTitle title="관심" />
@@ -68,7 +71,11 @@ export function InterestsScreenView({
           />
         </View>
       ) : (
-        <Tabs.Root defaultValue="rooms" className="flex-1">
+        <Tabs.Root
+          value={activeTab}
+          onValueChange={(next) => setActiveTab(next as typeof activeTab)}
+          className="flex-1"
+        >
           <Tabs.List className="flex-row">
             {INTERESTS_TABS.map((tab) => (
               <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 pt-3">
@@ -95,6 +102,8 @@ export function InterestsScreenView({
 
           <Tabs.Content value="rooms" className="flex-1">
             <FlatList
+              automaticallyAdjustContentInsets={false}
+              contentInsetAdjustmentBehavior="never"
               contentContainerClassName="px-4 pb-24 pt-1"
               data={roomsLoading || roomsError ? EMPTY_ROOM_POSTS : rooms}
               keyExtractor={roomKeyExtractor}
@@ -106,11 +115,13 @@ export function InterestsScreenView({
               maxToRenderPerBatch={4}
               windowSize={7}
               refreshControl={
-                <RefreshControl
-                  refreshing={roomsRefreshing}
-                  onRefresh={reloadRooms}
-                  tintColor="#256EF4"
-                />
+                activeTab === 'rooms' ? (
+                  <RefreshControl
+                    refreshing={roomsRefreshing}
+                    onRefresh={reloadRooms}
+                    tintColor="#256EF4"
+                  />
+                ) : undefined
               }
               ListEmptyComponent={
                 roomsLoading ? (
@@ -135,6 +146,8 @@ export function InterestsScreenView({
 
           <Tabs.Content value="roommates" className="flex-1">
             <FlatList
+              automaticallyAdjustContentInsets={false}
+              contentInsetAdjustmentBehavior="never"
               contentContainerClassName="p-5"
               data={matchesLoading || matchesError ? EMPTY_MATCHES : likedMatches}
               keyExtractor={matchKeyExtractor}
@@ -150,11 +163,13 @@ export function InterestsScreenView({
               maxToRenderPerBatch={5}
               windowSize={7}
               refreshControl={
-                <RefreshControl
-                  refreshing={matchesRefreshing}
-                  onRefresh={reloadMatches}
-                  tintColor="#256EF4"
-                />
+                activeTab === 'roommates' ? (
+                  <RefreshControl
+                    refreshing={matchesRefreshing}
+                    onRefresh={reloadMatches}
+                    tintColor="#256EF4"
+                  />
+                ) : undefined
               }
               ListEmptyComponent={
                 matchesLoading ? (

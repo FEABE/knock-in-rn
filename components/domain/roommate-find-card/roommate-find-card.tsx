@@ -5,10 +5,8 @@ import { Pressable, Text, View } from 'react-native';
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 import type { RoommateMatchCardModel } from '@/lib/api';
 
-/** 리스트 셀이 마운트될 때마다 새로 만들지 않도록 모듈 상수로 공유한다. */
-const PROFILE_IMAGE_STYLE = { width: 48, height: 48, borderRadius: 24 } as const;
+const PROFILE_IMAGE_STYLE = { width: 62, height: 62, borderRadius: 31 } as const;
 
-/** 인증 뱃지 색상 (Figma: SealCheck 초록 / BagSimple 파랑). */
 const AUTH_BADGE_GREEN = '#3FA654';
 const AUTH_BADGE_BLUE = '#4C87F6';
 
@@ -18,17 +16,23 @@ export type RoommateFindCardProps = {
   onLikeChange?: (match: RoommateMatchCardModel, liked: boolean) => void;
 };
 
-/**
- * 와이어프레임 "탐색_룸메이트 찾기" 리스트 카드.
- */
 export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindCardProps) {
+  const score = Math.max(0, Math.min(100, match.compatibilityScore));
+
   return (
     <Pressable
       onPress={() => onPress?.(match)}
-      className="gap-3 rounded border border-[#E1E5F0] bg-white p-2 active:opacity-90"
       accessibilityRole="button"
+      className="gap-3 rounded-lg border border-[#D8E5FD]/70 bg-white px-[14px] py-4 active:opacity-90"
+      style={{
+        shadowColor: '#ECF2FE',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 1,
+      }}
     >
-      <View className="flex-row items-start gap-2">
+      <View className="flex-row items-center gap-3">
         {match.profileImageUrl ? (
           <Image
             source={{ uri: match.profileImageUrl }}
@@ -36,92 +40,76 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
             contentFit="cover"
           />
         ) : (
-          <View className="h-12 w-12 items-center justify-center rounded-full border border-[#DADAE8] bg-white">
-            <Ionicons name="person" size={34} color="#DADAE8" />
+          <View className="h-[62px] w-[62px] items-center justify-center rounded-full border border-[#DADAE8] bg-white">
+            <Ionicons name="person" size={43} color="#DADAE8" />
           </View>
         )}
-        <View className="flex-1 gap-1.5 pt-0.5">
-          <View className="flex-row items-center gap-1">
-            <Text className="text-sm font-bold text-[#17171B]">{match.name}</Text>
-            {match.isAuthStudent ? (
-              <MaterialIcons name="verified" size={14} color={AUTH_BADGE_GREEN} />
-            ) : null}
-            {match.isAuthEmployee ? (
-              <MaterialIcons name="work" size={13} color={AUTH_BADGE_BLUE} />
-            ) : null}
-          </View>
-          <View className="flex-row gap-1">
-            {match.age || match.genderLabel ? (
-              <View
-                className={`flex-row items-center gap-0.5 rounded-sm px-1.5 py-0.5 ${
-                  match.gender === 'male' ? 'bg-[#E7F4FE]' : 'bg-[#FDEFEC]'
-                }`}
+
+        <View className="min-w-0 flex-1 gap-2">
+          <View className="flex-row items-center justify-between gap-2">
+            <View className="min-w-0 flex-1 flex-row items-center gap-0.5">
+              <Text
+                numberOfLines={1}
+                className="text-[16px] font-semibold leading-6 text-[#17171B]"
               >
-                {match.gender ? (
-                  <Ionicons
-                    name={match.gender === 'male' ? 'male' : 'female'}
-                    size={10}
-                    color={match.gender === 'male' ? '#4C87F6' : '#DE3412'}
-                  />
-                ) : null}
-                <Text
-                  className={`text-[10px] ${
-                    match.gender === 'male' ? 'text-[#4C87F6]' : 'text-[#DE3412]'
-                  }`}
-                >
-                  {[match.age ? `${match.age}세` : null, match.genderLabel]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
-              </View>
-            ) : null}
-            <View className="rounded-sm bg-[#E9F0FE] px-1.5 py-0.5">
-              <Text className="text-[10px] text-[#5B8EF6]">
-                {match.hasRoom ? '방 있음' : '방 없음'}
+                {match.name}
               </Text>
+              {match.isAuthStudent ? (
+                <MaterialIcons name="verified" size={18} color={AUTH_BADGE_GREEN} />
+              ) : null}
+              {match.isAuthEmployee ? (
+                <MaterialIcons name="work" size={18} color={AUTH_BADGE_BLUE} />
+              ) : null}
             </View>
+
+            <Pressable
+              onPress={() => onLikeChange?.(match, !match.liked)}
+              hitSlop={8}
+              className="h-8 w-8 items-center justify-center"
+              accessibilityLabel={match.liked ? '관심 해제' : '관심 등록'}
+            >
+              <Ionicons
+                name={match.liked ? 'heart' : 'heart-outline'}
+                size={28}
+                color={match.liked ? '#256EF4' : '#AAAABA'}
+              />
+            </Pressable>
+          </View>
+
+          <View className="flex-row flex-wrap gap-2">
+            {match.age || match.genderLabel ? <GenderChip match={match} /> : null}
+            <RoomStatusChip hasRoom={match.hasRoom} />
           </View>
         </View>
-        <Pressable
-          onPress={() => onLikeChange?.(match, !match.liked)}
-          hitSlop={8}
-          className="h-8 w-8 items-center justify-center"
-          accessibilityLabel={match.liked ? '관심 해제' : '관심 등록'}
-        >
-          <Ionicons
-            name={match.liked ? 'heart' : 'heart-outline'}
-            size={24}
-            color={match.liked ? '#256EF4' : '#AAAABA'}
-          />
-        </Pressable>
       </View>
 
-      <View className="flex-row items-center gap-2">
-        <View className="h-1 flex-1 overflow-hidden rounded-full bg-[#E7E8F0]">
-          <View
-            style={{ width: `${Math.min(100, match.compatibilityScore)}%` }}
-            className="h-full rounded-full bg-[#256EF4]"
-          />
+      <View className="flex-row items-center justify-between">
+        <View className="h-[7px] flex-1 overflow-hidden rounded bg-[#ECECF3]">
+          <View style={{ width: `${score}%` }} className="h-full rounded bg-[#256EF4]" />
         </View>
-        <Text className="text-xs font-bold text-[#1358D8]">{match.compatibilityScore}점</Text>
+        <Text className="ml-5 w-[33px] text-right text-[15px] font-semibold leading-[22px] text-[#083891]">
+          {match.compatibilityScore}점
+        </Text>
       </View>
 
-      <View className="gap-1.5 rounded-lg bg-[#F6F6FA] px-3 py-2.5">
+      <View className="h-[107px] justify-center gap-2 rounded-lg bg-[#F6F6FA] px-[14px] py-3">
         <InfoRow label="예산" value={match.depositRentLabel.replace(/\s\/\s/g, '/')} />
-        <InfoRow label="입주 가능일" value={match.moveInLabel} />
         <InfoRow label="방 형태" value={match.roomTypeLabel} />
         <InfoRow label="위치" value={match.regionLabel} />
       </View>
 
       {match.lifestyleChips.length > 0 ? (
-        <View className="flex-row gap-1 overflow-hidden">
+        <View className="flex-row gap-2 overflow-hidden">
           {match.lifestyleChips.slice(0, 3).map((chip) => (
             <View
               key={chip}
-              className="max-w-[104px] flex-row items-center gap-1 rounded border border-[#E1E5F0] px-1.5 py-1"
+              className="h-9 max-w-[149px] shrink-0 flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8]/80 bg-white px-[15px]"
             >
-              <PriorityArtwork label={chip} size={16} />
-              <Text numberOfLines={1} className="text-[10px] text-[#696976]">
+              <PriorityArtwork label={chip} size={22} />
+              <Text
+                numberOfLines={1}
+                className="text-[14px] font-medium leading-[21px] text-[#696976]"
+              >
                 {chip}
               </Text>
             </View>
@@ -132,11 +120,58 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
   );
 }
 
+function GenderChip({ match }: { match: RoommateMatchCardModel }) {
+  const isMale = match.gender === 'male';
+  return (
+    <View
+      className={`h-[22px] flex-row items-center justify-center gap-1 rounded px-[5px] ${
+        isMale ? 'bg-[#E7F4FE]' : 'bg-[#FDEFEC]'
+      }`}
+    >
+      {match.gender ? (
+        <Ionicons
+          name={isMale ? 'male' : 'female'}
+          size={12}
+          color={isMale ? '#0B78CB' : '#DE3412'}
+        />
+      ) : null}
+      <Text
+        className={`text-[12px] font-semibold leading-[18px] ${
+          isMale ? 'text-[#0B78CB]' : 'text-[#DE3412]'
+        }`}
+      >
+        {[match.age ? `${match.age}세` : null, match.genderLabel].filter(Boolean).join(' · ')}
+      </Text>
+    </View>
+  );
+}
+
+function RoomStatusChip({ hasRoom }: { hasRoom: boolean }) {
+  return (
+    <View
+      className={`h-[22px] flex-row items-center justify-center gap-1 rounded px-2 ${
+        hasRoom ? 'bg-[#ECF2FE]' : 'bg-[#F6F6FA]'
+      }`}
+    >
+      <Ionicons name="home" size={16} color={hasRoom ? '#4C87F6' : '#696976'} />
+      <Text
+        className={`text-[12px] font-semibold leading-[17px] ${
+          hasRoom ? 'text-[#4C87F6]' : 'text-[#696976]'
+        }`}
+      >
+        {hasRoom ? '방 있음' : '방 없음'}
+      </Text>
+    </View>
+  );
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between">
-      <Text className="text-[10px] text-[#696976]">{label}</Text>
-      <Text className="text-[11px] font-medium text-[#17171B]">{value}</Text>
+      <Text className="text-[14px] font-medium leading-[21px] text-[#696976]">{label}</Text>
+      <Text className="max-w-[70%] text-right text-[14px] font-medium leading-[21px] text-[#17171B]">
+        {value}
+      </Text>
     </View>
   );
 }

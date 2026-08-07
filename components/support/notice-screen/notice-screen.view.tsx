@@ -21,6 +21,8 @@ export function NoticeScreenView({
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="공지사항" />
       <ScrollView
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
         contentContainerClassName="gap-7 p-5"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={retry} tintColor="#256EF4" />

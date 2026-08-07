@@ -211,9 +211,9 @@ export function toRoommateMatchDetailModel(
     ? [
         {
           label: '예산',
-          value: `보증금 ${numberValue(data.offerProfile?.deposit ?? data.deposit).toLocaleString()}만원 / 월세 ${numberValue(
+          value: `${numberValue(data.offerProfile?.deposit ?? data.deposit).toLocaleString()}/${numberValue(
             data.offerProfile?.monthlyRent ?? data.mounthRent,
-          ).toLocaleString()}만원`,
+          ).toLocaleString()}`,
         },
         { label: '방 형태', value: roomTypeLabel },
         {
@@ -224,11 +224,9 @@ export function toRoommateMatchDetailModel(
     : [
         {
           label: '예산',
-          value: `보증금 ${numberValue(
-            data.seekerProfile?.maxDeposit ?? data.maxDeposit,
-          ).toLocaleString()}만원 / 월세 ${numberValue(
+          value: `${numberValue(data.seekerProfile?.maxDeposit ?? data.maxDeposit).toLocaleString()}/${numberValue(
             data.seekerProfile?.maxMonthlyRent ?? data.maxMounthRent,
-          ).toLocaleString()}만원 이하`,
+          ).toLocaleString()}`,
         },
         { label: '방 형태', value: roomTypeLabel },
         {

@@ -60,6 +60,8 @@ export function MyRoomsScreenView({
       ) : (
         <ScrollView
           className="flex-1 bg-[#F7F8FC]"
+          automaticallyAdjustContentInsets={false}
+          contentInsetAdjustmentBehavior="never"
           contentContainerClassName="gap-5 px-4 pb-28 pt-5"
           showsVerticalScrollIndicator={false}
           refreshControl={
