@@ -1,7 +1,7 @@
 import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
-  name: 'knock-in-rn',
+  name: '노크인',
   slug: 'knock-in-rn',
   owner: 'chl09jaes-team',
   version: '1.0.0',
