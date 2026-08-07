@@ -5,7 +5,7 @@ import {
 } from '@/lib/api/backend-ids';
 
 import type { MatchDetailData, MatchListItem } from '../roommate-boards';
-import { booleanValue, definedLabels, formatDateLabel, numberValue, stringValue } from './common';
+import { booleanValue, formatDateLabel, numberValue, stringValue } from './common';
 
 export type RoommateMatchCardModel = {
   id: string;
@@ -29,14 +29,21 @@ export type RoommateMatchCardModel = {
   roomTypeLabel: string;
   regionLabels: string[];
   regionLabel: string;
-  lifestyleChips: string[];
-  conditionChips: string[];
+  lifestyleChips: RoommateChipModel[];
+  conditionChips: RoommateChipModel[];
+};
+
+export type RoommateChipModel = {
+  key: string;
+  label: string;
+  image?: string | null;
 };
 
 export type RoommateDetailLifestyleModel = {
   id: string;
   name: string;
   value: string;
+  image?: string | null;
 };
 
 export type RoommateDetailCompatibilityModel = {
@@ -62,8 +69,8 @@ export type RoommateMatchDetailModel = {
   isAuthEmployee: boolean;
   lifeStyles: RoommateDetailLifestyleModel[];
   livingRows: { label: string; value: string }[];
-  preferenceRows: { key: string; label: string; value: string }[];
-  conditionText: string;
+  preferenceRows: (RoommateChipModel & { value: string })[];
+  conditionChips: RoommateChipModel[];
   compatibility: RoommateDetailCompatibilityModel;
 };
 
@@ -145,8 +152,8 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     roomTypeLabel: roomTypeLabel || '-',
     regionLabels,
     regionLabel: region ?? '-',
-    lifestyleChips: definedLabels((match.lifeStyles ?? []).slice(0, 4).map((item) => item.name)),
-    conditionChips: definedLabels((match.conditions ?? []).map((item) => item.name)),
+    lifestyleChips: toChipModels(match.lifeStyles, 'lifestyle').slice(0, 4),
+    conditionChips: toChipModels(match.conditions, 'condition'),
   };
 }
 
@@ -254,16 +261,19 @@ export function toRoommateMatchDetailModel(
       id: stringValue(item.lifestyleId, `lifestyle-${index}`),
       name: item.name?.trim() || '-',
       value: lifestyleDisplayValue(item),
+      image: item.imageUrl ?? null,
     })),
     livingRows,
-    preferenceRows: (data.preferences ?? []).map((preference, index) => ({
-      key: stringValue(preference.preferencesId, `preference-${index}`),
-      label: preference.name ?? '-',
+    preferenceRows: (data.conditions ?? data.preferences ?? []).map((preference, index) => ({
+      key: stringValue(
+        'preferencesId' in preference ? preference.preferencesId : preference.conditionId,
+        `preference-${index}`,
+      ),
+      label: preference.name?.trim() || '-',
       value: preference.description?.trim() || preference.value?.trim() || '-',
+      image: preference.imageUrl ?? null,
     })),
-    conditionText: definedLabels(
-      (data.conditionWeights ?? []).map((condition) => condition.name),
-    ).join(' · '),
+    conditionChips: toChipModels(data.conditionWeights, 'condition-weight'),
     compatibility: {
       score:
         compatibility?.totalScore !== undefined ? numberValue(compatibility.totalScore) : undefined,
@@ -279,6 +289,32 @@ export function toRoommateMatchDetailModel(
       }),
     },
   };
+}
+
+function toChipModels(
+  items:
+    | {
+        name?: string;
+        imageUrl?: string;
+        lifestyleId?: number;
+        conditionId?: number;
+        conditionWeightId?: number;
+      }[]
+    | undefined,
+  keyPrefix: string,
+): RoommateChipModel[] {
+  return (items ?? []).flatMap((item, index) => {
+    const label = item.name?.trim();
+    if (!label) return [];
+    const id = item.lifestyleId ?? item.conditionId ?? item.conditionWeightId;
+    return [
+      {
+        key: stringValue(id, `${keyPrefix}-${index}`),
+        label,
+        image: item.imageUrl ?? null,
+      },
+    ];
+  });
 }
 
 function formatMoneyValue(value: number | undefined): string {

@@ -417,10 +417,7 @@ function CompatibilityRing({ progress, active }: { progress: number; active: boo
 }
 
 function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
-  const priorities = data.conditionText
-    .split('·')
-    .map((value) => value.trim())
-    .filter(Boolean);
+  const priorities = data.conditionChips;
 
   return (
     <ReadySection title="선호 룸메이트 조건">
@@ -430,6 +427,7 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
             <ConditionChip
               key={preference.key}
               label={preference.value === '-' ? preference.label : preference.value}
+              image={preference.image}
             />
           ))}
         </View>
@@ -443,11 +441,13 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
           <View className="flex-row flex-wrap gap-2">
             {priorities.map((priority) => (
               <View
-                key={priority}
+                key={priority.key}
                 className="h-[42px] flex-row items-center gap-2 rounded-lg bg-[#ECF2FE] px-3.5"
               >
-                <PriorityArtwork label={priority} size={22} />
-                <Text className="text-[16px] font-medium leading-6 text-[#17171B]">{priority}</Text>
+                <PriorityArtwork label={priority.label} image={priority.image} size={22} />
+                <Text className="text-[16px] font-medium leading-6 text-[#17171B]">
+                  {priority.label}
+                </Text>
               </View>
             ))}
           </View>
@@ -583,10 +583,10 @@ function ReportSheet({
   );
 }
 
-function ConditionChip({ label }: { label: string }) {
+function ConditionChip({ label, image }: { label: string; image?: string | null }) {
   return (
     <View className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8]/80 bg-white px-3">
-      <PriorityArtwork label={label} size={22} />
+      <PriorityArtwork label={label} image={image} size={22} />
       <Text className="text-[16px] font-medium leading-6 text-[#696976]">{label}</Text>
     </View>
   );

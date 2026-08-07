@@ -102,15 +102,15 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
         <View className="flex-row gap-2 overflow-hidden">
           {match.lifestyleChips.slice(0, 3).map((chip) => (
             <View
-              key={chip}
+              key={chip.key}
               className="h-9 max-w-[149px] shrink-0 flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8]/80 bg-white px-[15px]"
             >
-              <PriorityArtwork label={chip} size={22} />
+              <PriorityArtwork label={chip.label} image={chip.image} size={22} />
               <Text
                 numberOfLines={1}
                 className="text-[14px] font-medium leading-[21px] text-[#696976]"
               >
-                {chip}
+                {chip.label}
               </Text>
             </View>
           ))}

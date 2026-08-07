@@ -194,6 +194,11 @@ function preferredRoommateFromDetail(data: BoardDetailData): RoomPost['preferred
   const conditions = data.conditions ?? [];
   const gender = conditions.find((item) => item.name?.includes('성별'));
   const smoking = conditions.find((item) => item.name?.includes('흡연'));
+  const conditionItems = conditions.flatMap((item) => {
+    if (item.name?.includes('성별')) return [];
+    const name = conditionDisplayValue(item);
+    return name ? [{ name, image: item.imageUrl ?? null }] : [];
+  });
   const importantConditions = (data.conditionWeights ?? [])
     .map((item) => {
       const name = item.name?.trim();
@@ -204,6 +209,8 @@ function preferredRoommateFromDetail(data: BoardDetailData): RoomPost['preferred
   return {
     genderLabel: conditionDisplayValue(gender),
     smokingLabel: conditionDisplayValue(smoking),
+    smokingImage: smoking?.imageUrl ?? null,
+    conditions: conditionItems,
     importantConditions,
   };
 }

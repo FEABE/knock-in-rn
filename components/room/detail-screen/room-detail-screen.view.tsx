@@ -628,16 +628,17 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
       ? preferred.importantConditions
       : author.importantConditions
   ).slice(0, 3);
-  const conditionChips = [
-    {
-      label: preferred?.smokingLabel ?? (smoking === 'no' ? '비흡연자' : '흡연 여부 무관'),
-      image: null,
-    },
-    ...priorityItems.map((condition) => ({
-      label: conditionName(condition),
-      image: conditionImage(condition),
-    })),
-  ].filter((item) => Boolean(item.label));
+  const conditionChips = preferred?.conditions.length
+    ? preferred.conditions.map((condition) => ({
+        label: condition.name,
+        image: condition.image,
+      }))
+    : [
+        {
+          label: preferred?.smokingLabel ?? (smoking === 'no' ? '비흡연자' : '흡연 여부 무관'),
+          image: preferred?.smokingImage ?? null,
+        },
+      ];
 
   return (
     <ReadySection title="선호 룸메이트 조건">

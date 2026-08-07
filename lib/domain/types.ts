@@ -67,7 +67,9 @@ export type RoomPost = {
   preferredRoommate?: {
     genderLabel?: string;
     smokingLabel?: string;
-    importantConditions: Array<string | ImportantCondition>;
+    smokingImage?: string | null;
+    conditions: ImportantCondition[];
+    importantConditions: (string | ImportantCondition)[];
   };
 };
 

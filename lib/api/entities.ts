@@ -19,6 +19,7 @@ export type PreferenceItem = {
   value: string;
   description: string;
   type: 'SCALE' | 'BOOLEAN' | 'SINGLE_CHOICE';
+  imageUrl?: string;
 };
 
 /** 조건(conditions) 항목. */
