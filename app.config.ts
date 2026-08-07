@@ -18,6 +18,7 @@ const config: ExpoConfig = {
     usesAppleSignIn: true,
     entitlements: {
       'aps-environment': 'development',
+      'com.apple.developer.applesignin': ['Default'],
     },
     infoPlist: {
       UIBackgroundModes: ['remote-notification'],
@@ -41,6 +42,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    './plugins/with-kakao-android-queries',
     'expo-font',
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
