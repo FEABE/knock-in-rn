@@ -51,20 +51,9 @@ export function subscribeToPushTokenRefresh(): () => void {
   try {
     const messaging = getMessaging();
     return onTokenRefresh(messaging, (fcmToken) => {
-      void registerTokenWithBackend(fcmToken).then((result) => {
-        if (__DEV__ && result.status !== 'registered') {
-          console.warn('[push] refreshed FCM token was not registered', {
-            status: result.status,
-            code: result.status === 'failed' ? result.code : undefined,
-            message: result.status === 'failed' ? result.message : undefined,
-          });
-        }
-      });
+      void registerTokenWithBackend(fcmToken);
     });
-  } catch (error: unknown) {
-    if (__DEV__) {
-      console.warn('[push] token refresh subscription is unavailable', registrationFailure(error));
-    }
+  } catch {
     return () => {};
   }
 }

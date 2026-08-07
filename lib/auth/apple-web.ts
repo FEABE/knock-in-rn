@@ -71,14 +71,6 @@ export async function signInWithAppleWeb(): Promise<ApiResponse<LoginData>> {
   }
 
   const params = parseCallbackParams(result.url);
-
-  if (__DEV__) {
-    console.info('[auth] Apple web login callback', {
-      keys: Object.keys(params),
-      hasAccessToken: Boolean(pickParam(params, 'accessToken', 'access_token', 'token')),
-    });
-  }
-
   return toLoginResponse(params);
 }
 

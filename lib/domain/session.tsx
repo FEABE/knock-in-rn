@@ -153,19 +153,6 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
             ? await signInWithAppleSdk()
             : await signInWithAppleWeb();
 
-      if (__DEV__) {
-        console.info('[auth] social login exchange completed', {
-          provider,
-          status: res.status,
-          errorCode: res.error?.code,
-          errorMessage: res.error?.message,
-          hasAccessToken: Boolean(res.data?.accessToken),
-          basicInfo: res.data?.basicInfo,
-          preferenceInfo: res.data?.preferenceInfo,
-          deleteInfo: res.data?.deleteInfo,
-        });
-      }
-
       if (res.error || res.status !== 200 || !res.data?.accessToken) {
         // 탈퇴/정지는 error가 아니라 deleteInfo로만 통보되므로 가장 먼저 확인한다.
         const blocked = classifyDeleteInfo(res.data?.deleteInfo);
@@ -223,13 +210,6 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     } catch (e: any) {
       const code = typeof e?.code === 'string' ? e.code : undefined;
       const message = typeof e?.message === 'string' ? e.message : undefined;
-      if (__DEV__) {
-        console.warn('[auth] social login failed before session persistence', {
-          provider,
-          code,
-          message,
-        });
-      }
       return {
         status: classifyThrownError(code, message),
         provider,
@@ -296,19 +276,15 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         try {
           try {
             await signOut();
-          } catch (error) {
-            if (__DEV__) {
-              console.warn('[auth] failed to clear expired session', error);
-            }
+          } catch {
+            // 세션 정리에 실패해도 만료 처리 라우팅은 계속 진행한다.
           }
           if (router.canDismiss()) {
             router.dismissAll();
           }
           goKakaoLogin(router, 'replace');
-        } catch (error) {
-          if (__DEV__) {
-            console.warn('[auth] failed to route after session expiration', error);
-          }
+        } catch {
+          // 라우터 상태가 바뀐 경우에는 다음 인증 이벤트에서 다시 처리된다.
         } finally {
           authFailureHandlingRef.current = false;
         }
@@ -323,18 +299,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     if (!sessionUserId || USE_MOCK) return;
 
     let cancelled = false;
-    if (__DEV__) {
-      console.info('[push] session device registration started');
-    }
-    void syncPushDevice({ requestPermission: true }).then((result) => {
-      if (cancelled || !__DEV__) return;
-      const failure = result.status === 'failed' ? result : null;
-      console.info('[push] session device registration completed', {
-        status: result.status,
-        code: failure?.code,
-        message: failure?.message,
-      });
-    });
+    void syncPushDevice({ requestPermission: true });
 
     try {
       const unsubscribe = subscribeToPushTokenRefresh();
@@ -342,10 +307,8 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         cancelled = true;
         unsubscribe();
       };
-    } catch (error) {
-      if (__DEV__) {
-        console.warn('[push] failed to subscribe to FCM token refresh', error);
-      }
+    } catch {
+      // Firebase가 초기화되지 않은 개발 환경에서는 토큰 갱신 구독 없이 진행한다.
     }
     return () => {
       cancelled = true;
@@ -385,24 +348,7 @@ export function useSession(): SessionContextValue {
 }
 
 async function signInWithKakaoSdk() {
-  let result;
-  try {
-    result = await kakaoLogin();
-  } catch (error: any) {
-    if (__DEV__) {
-      console.warn('[auth] Kakao SDK login rejected', {
-        code: typeof error?.code === 'string' ? error.code : undefined,
-        message: typeof error?.message === 'string' ? error.message : undefined,
-      });
-    }
-    throw error;
-  }
-  if (__DEV__) {
-    console.info('[auth] Kakao SDK login resolved', {
-      hasAccessToken: Boolean(result.accessToken),
-      hasRefreshToken: Boolean(result.refreshToken),
-    });
-  }
+  const result = await kakaoLogin();
   return socialLoginSdk('kakao', {
     access_token: result.accessToken,
     refresh_token: result.refreshToken,

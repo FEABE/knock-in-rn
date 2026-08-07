@@ -47,16 +47,10 @@ export function PushNotificationBridge() {
           .then((message) => {
             if (message) openNotifications();
           })
-          .catch((error: unknown) => {
-            if (__DEV__) {
-              console.warn('[push] failed to read initial notification', pushErrorMessage(error));
-            }
-          });
+          .catch(() => {});
       }
-    } catch (error: unknown) {
-      if (__DEV__) {
-        console.warn('[push] notification bridge is unavailable', pushErrorMessage(error));
-      }
+    } catch {
+      // Firebase가 초기화되지 않은 환경에서는 알림 브릿지 없이 앱을 계속 실행한다.
     }
 
     return () => {
@@ -66,9 +60,4 @@ export function PushNotificationBridge() {
   }, [queryClient, router, session]);
 
   return null;
-}
-
-function pushErrorMessage(error: unknown): string {
-  const candidate = error as { message?: unknown } | null;
-  return typeof candidate?.message === 'string' ? candidate.message : '알 수 없는 오류';
 }
