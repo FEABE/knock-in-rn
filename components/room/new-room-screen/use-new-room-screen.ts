@@ -8,26 +8,18 @@ import {
   useMyLifestyleOverview,
   useRoommateBoardWriteActions,
   type LifestyleSummaryItem,
+  type PreferencePrioritySummaryItem,
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { goKakaoLogin, goMypageProfile } from '@/lib/navigation/routes';
 
 const SUCCESS_TOAST_MS = 1200;
 
-/** 01 생활패턴 스텝에서 항상 노출하는 4타일. 서버 값이 없으면 '미입력'으로 채운다. */
-const LIFESTYLE_TILES = [
-  { id: 'sleep', label: '취침 시간' },
-  { id: 'cleanliness', label: '청결 민감도' },
-  { id: 'noise', label: '소음 민감도' },
-  { id: 'smoking', label: '흡연 여부' },
-] as const;
-
-const EMPTY_VALUE = '미입력';
-
 export type LifestyleTileViewModel = {
   id: string;
   label: string;
   value: string;
+  image?: string | null;
 };
 
 export type UseNewRoomScreenReturn = {
@@ -35,12 +27,12 @@ export type UseNewRoomScreenReturn = {
   submitting: boolean;
   successToastVisible: boolean;
   mypageDialogOpen: boolean;
-  /** 내 생활패턴 4타일 (취침/청결/소음/흡연). */
+  /** 서버 메타 순서대로 구성한 내 생활패턴 전체. */
   lifestyleTiles: LifestyleTileViewModel[];
   /** 선호 룸메이트 조건. */
   preferredLifestyles: LifestyleSummaryItem[];
-  /** 중요 조건 이름. */
-  importantConditions: string[];
+  /** 우선순위 조건. */
+  importantConditions: PreferencePrioritySummaryItem[];
   lifestyleLoading: boolean;
   lifestyleError: string | null;
   reloadLifestyle: () => void;
@@ -90,20 +82,12 @@ export function useNewRoomScreen(): UseNewRoomScreenReturn {
     backTimer.current = setTimeout(() => router.back(), SUCCESS_TOAST_MS);
   };
 
-  const valueById = new Map(
-    (lifestyleOverview.data?.lifestyles ?? []).map((item) => [item.id, item.value]),
-  );
-
   return {
     session,
     submitting,
     successToastVisible,
     mypageDialogOpen,
-    lifestyleTiles: LIFESTYLE_TILES.map((tile) => ({
-      id: tile.id,
-      label: tile.label,
-      value: valueById.get(tile.id) ?? EMPTY_VALUE,
-    })),
+    lifestyleTiles: lifestyleOverview.data?.lifestyles ?? [],
     preferredLifestyles: lifestyleOverview.data?.preferredLifestyles ?? [],
     importantConditions: lifestyleOverview.data?.importantConditions ?? [],
     lifestyleLoading: lifestyleOverview.loading,

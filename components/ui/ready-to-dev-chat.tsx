@@ -30,6 +30,7 @@ export function ReadyChatBubble({
   timeLabel,
   peerName,
   peerImageUrl,
+  onPressImage,
 }: {
   mine: boolean;
   body?: string;
@@ -37,6 +38,8 @@ export function ReadyChatBubble({
   timeLabel?: string;
   peerName?: string;
   peerImageUrl?: string;
+  /** 있으면 이미지 버블만 탭 가능해진다(텍스트 버블은 영향 없음). */
+  onPressImage?: () => void;
 }) {
   return (
     <View className={mine ? 'items-end' : 'items-start'}>
@@ -48,11 +51,18 @@ export function ReadyChatBubble({
           className={`max-w-[82%] flex-row items-end gap-1.5 ${mine ? 'flex-row-reverse' : ''}`}
         >
           {imageUrl ? (
-            <Image
-              source={{ uri: imageUrl }}
-              style={{ width: 220, height: 220, borderRadius: 12 }}
-              contentFit="cover"
-            />
+            onPressImage ? (
+              <Pressable
+                onPress={onPressImage}
+                accessibilityRole="imagebutton"
+                accessibilityLabel="사진 크게 보기"
+                className="active:opacity-85"
+              >
+                <ChatBubbleImage imageUrl={imageUrl} />
+              </Pressable>
+            ) : (
+              <ChatBubbleImage imageUrl={imageUrl} />
+            )
           ) : (
             <View
               className={`rounded-b-lg px-3 py-2 ${
@@ -70,6 +80,16 @@ export function ReadyChatBubble({
         </View>
       </View>
     </View>
+  );
+}
+
+function ChatBubbleImage({ imageUrl }: { imageUrl: string }) {
+  return (
+    <Image
+      source={{ uri: imageUrl }}
+      style={{ width: 220, height: 220, borderRadius: 12 }}
+      contentFit="cover"
+    />
   );
 }
 

@@ -6,10 +6,10 @@ import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type BoardListQuery,
+  getAccessTokenMemberId,
   getPreferenceAll,
   regionBackendId,
   roomTypeBackendId,
-  useMyRoommateBoards,
   useRoommateBoardLikeActions,
   useRoommateBoards,
   useRoommateMatchCards,
@@ -132,39 +132,48 @@ export function useExploreScreen(): UseExploreScreenReturn {
     data: posts,
     loading: roomsLoading,
     error: roomsError,
-    reload: reloadPublicRooms,
+    reload: reloadRooms,
   } = useRoommateBoards(boardQuery);
-  const {
-    data: myPosts,
-    loading: myRoomsLoading,
-    reload: reloadMyRooms,
-  } = useMyRoommateBoards(Boolean(session));
   const [roomsPullRefreshing, setRoomsPullRefreshing] = useState(false);
 
-  const reloadRoomLists = useCallback(
-    () =>
-      Promise.all([Promise.resolve(reloadPublicRooms()), Promise.resolve(reloadMyRooms())]).then(
-        () => undefined,
-      ),
-    [reloadPublicRooms, reloadMyRooms],
-  );
-
-  const refreshRoomLists = useCallback(() => {
+  const refreshRooms = useCallback(() => {
     setRoomsPullRefreshing(true);
-    void reloadRoomLists().finally(() => setRoomsPullRefreshing(false));
-  }, [reloadRoomLists]);
+    void Promise.resolve(reloadRooms()).finally(() => setRoomsPullRefreshing(false));
+  }, [reloadRooms]);
 
   useFocusEffect(
     useCallback(() => {
-      void reloadRoomLists();
-    }, [reloadRoomLists]),
+      void reloadRooms();
+    }, [reloadRooms]),
   );
 
+  const currentMemberId = getAccessTokenMemberId() ?? session?.user.id;
   const visiblePosts = useMemo(() => {
-    const merged = mergeRoomPosts(posts ?? [], myPosts ?? []);
-    const safe = merged.filter((post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id));
-    return sortPosts(filterRoomsBySearch(filterRoomsByFilter(safe, filter), searchQuery), sort);
-  }, [posts, myPosts, isPostBlocked, isUserBlocked, filter, searchQuery, sort]);
+    const currentUserAvatar = session?.user.avatarUrl?.trim();
+    const postsWithCurrentUserAvatar = (posts ?? []).map((post) => {
+      const isCurrentUser =
+        (currentMemberId != null && String(currentMemberId) === String(post.author.id)) ||
+        session?.user.name === post.author.name;
+      if (!isCurrentUser || post.author.avatarUrl?.trim() || !currentUserAvatar) return post;
+      return {
+        ...post,
+        author: { ...post.author, avatarUrl: currentUserAvatar },
+      };
+    });
+    const safe = postsWithCurrentUserAvatar.filter(
+      (post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
+    );
+    return sortPosts(filterRoomsBySearch(safe, searchQuery), sort);
+  }, [
+    posts,
+    currentMemberId,
+    session?.user.avatarUrl,
+    session?.user.name,
+    isPostBlocked,
+    isUserBlocked,
+    searchQuery,
+    sort,
+  ]);
 
   const {
     data: matchList,
@@ -222,7 +231,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     openSheet,
     visiblePosts,
     visibleMatches,
-    roomsLoading: roomsLoading || myRoomsLoading,
+    roomsLoading,
     roomsRefreshing: roomsPullRefreshing,
     roomsError,
     matchesLoading,
@@ -231,7 +240,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     hasUnreadAlarms: (alarms ?? []).some((alarm) => !alarm.isRead),
     preferenceNudgeOpen,
     preferenceNudgeSnooze,
-    reloadRooms: refreshRoomLists,
+    reloadRooms: refreshRooms,
     reloadMatches,
     setSort,
     setOpenSheet,
@@ -288,33 +297,6 @@ function filterRoomsBySearch(posts: RoomPost[], query: string): RoomPost[] {
       ].join(' '),
     ).includes(normalized),
   );
-}
-
-function filterRoomsByFilter(posts: RoomPost[], filter: ExploreFilter): RoomPost[] {
-  return posts.filter((post) => {
-    const matchesRegion =
-      filter.regions.length === 0 ||
-      filter.regions.some(
-        (region) =>
-          region.id === post.region.id ||
-          (region.city === post.region.city && region.district === post.region.district),
-      );
-    const matchesRoomType =
-      filter.roomTypes.length === 0 || filter.roomTypes.includes(post.roomType);
-    const matchesBudget =
-      post.deposit >= filter.depositMin &&
-      post.deposit <= filter.depositMax &&
-      post.monthlyRent >= filter.rentMin &&
-      post.monthlyRent <= filter.rentMax;
-    return matchesRegion && matchesRoomType && matchesBudget;
-  });
-}
-
-function mergeRoomPosts(posts: RoomPost[], myPosts: RoomPost[]): RoomPost[] {
-  const byId = new Map<string, RoomPost>();
-  for (const post of posts) byId.set(post.id, post);
-  for (const post of myPosts) byId.set(post.id, post);
-  return [...byId.values()];
 }
 
 function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {

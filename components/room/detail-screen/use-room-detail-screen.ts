@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Share } from 'react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
@@ -17,7 +17,7 @@ import {
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { useModeration, useSession, type RoomPost } from '@/lib/domain';
-import { goChatRoom, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
+import { goChatRoom, goExplore, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
 
 export type LifestyleTile = { label: string; value: string };
 
@@ -39,7 +39,6 @@ export type UseRoomDetailScreenReturn = {
   bottomPadding: number;
   deleting: boolean;
   deleteDialogOpen: boolean;
-  deleteToastVisible: boolean;
   setMenuOpen: (next: boolean) => void;
   setPhotoIndex: (next: number) => void;
   toggleDescription: () => void;
@@ -63,7 +62,22 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const boardId = typeof id === 'string' ? id : '';
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
-  const { data: post, loading, error } = useRoommateBoardDetail(boardId);
+  const { data: fetchedPost, loading, error } = useRoommateBoardDetail(boardId);
+  const currentMemberId = getAccessTokenMemberId() ?? session?.user.id;
+  const post = useMemo(() => {
+    if (!fetchedPost) return null;
+    const isFetchedPostOwner =
+      (currentMemberId != null && String(currentMemberId) === String(fetchedPost.author.id)) ||
+      session?.user.name === fetchedPost.author.name;
+    const sessionAvatar = session?.user.avatarUrl?.trim();
+    if (!isFetchedPostOwner || fetchedPost.author.avatarUrl?.trim() || !sessionAvatar) {
+      return fetchedPost;
+    }
+    return {
+      ...fetchedPost,
+      author: { ...fetchedPost.author, avatarUrl: sessionAvatar },
+    };
+  }, [currentMemberId, fetchedPost, session?.user.avatarUrl, session?.user.name]);
   // 생활 패턴 8종 타일은 서버 라벨/값을 그대로 쓰기 위해 명세 원본 응답을 함께 구독한다.
   // useRoommateBoardDetail 과 같은 쿼리 키라 추가 네트워크 요청은 발생하지 않는다.
   const { data: rawDetail } = useApi(
@@ -92,22 +106,12 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const [descExpanded, setDescExpanded] = useState(false);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteToastVisible, setDeleteToastVisible] = useState(false);
-  const deleteBackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (deleteBackTimer.current) clearTimeout(deleteBackTimer.current);
-    },
-    [],
-  );
 
   const photos = post?.photoUrls?.length
     ? post.photoUrls
     : post?.thumbnailUrl
       ? [post.thumbnailUrl]
       : [];
-  const currentMemberId = getAccessTokenMemberId() ?? session?.user.id;
   const isOwner =
     !!post &&
     ((currentMemberId != null && String(currentMemberId) === String(post.author.id)) ||
@@ -136,7 +140,6 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     bottomPadding,
     deleting,
     deleteDialogOpen,
-    deleteToastVisible,
     setMenuOpen,
     setPhotoIndex,
     toggleDescription: () => setDescExpanded((prev) => !prev),
@@ -165,10 +168,8 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
         );
         return;
       }
-      // 삭제 성공: 토스트를 잠시 보여준 뒤 목록으로 복귀한다.
       setDeleteDialogOpen(false);
-      setDeleteToastVisible(true);
-      deleteBackTimer.current = setTimeout(() => router.back(), 1200);
+      goExplore(router, 'replace', 'rooms');
     },
     onAuthorPress: () => {
       if (!post) return;

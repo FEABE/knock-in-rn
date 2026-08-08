@@ -18,6 +18,7 @@ import {
 import type { UseRoomPostFormReturn } from '@/components/room/use-room-post-form';
 import { TextField } from '@/components/ui/headless';
 import {
+  PriorityArtwork,
   RoomLocationArtwork,
   RoomOptionArtwork,
   RoomTypeArtwork,
@@ -184,7 +185,7 @@ export function NewRoomScreenView({
   );
 }
 
-function StepTabs({
+export function StepTabs({
   activeStep,
   visitedStep,
   onTabPress,
@@ -269,7 +270,7 @@ function Headline({ children }: { children: ReactNode }) {
   return <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{children}</Text>;
 }
 
-function LifestylePage({
+export function LifestylePage({
   tiles,
   preferredLifestyles,
   importantConditions,
@@ -279,7 +280,7 @@ function LifestylePage({
 }: {
   tiles: UseNewRoomScreenReturn['lifestyleTiles'];
   preferredLifestyles: UseNewRoomScreenReturn['preferredLifestyles'];
-  importantConditions: string[];
+  importantConditions: UseNewRoomScreenReturn['importantConditions'];
   loading: boolean;
   error: string | null;
   onRetry: () => void;
@@ -308,11 +309,14 @@ function LifestylePage({
 
           <Text className="mt-8 text-[15px] font-bold text-[#17171B]">선호 룸메이트 조건</Text>
           {preferredLifestyles.length ? (
-            <View className="mt-3 gap-2 rounded-lg bg-[#F6F6FA] px-4 py-4">
+            <View className="mt-3 flex-row flex-wrap gap-2">
               {preferredLifestyles.map((item) => (
-                <View key={item.id} className="flex-row items-start justify-between gap-3">
-                  <Text className="text-[13px] text-[#696976]">{item.label}</Text>
-                  <Text className="flex-1 text-right text-[13px] font-semibold text-[#17171B]">
+                <View
+                  key={item.id}
+                  className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8] bg-white px-3"
+                >
+                  <PriorityArtwork label={item.value} image={item.image} size={22} />
+                  <Text className="text-[14px] font-medium leading-[21px] text-[#696976]">
                     {item.value}
                   </Text>
                 </View>
@@ -322,17 +326,23 @@ function LifestylePage({
             <EmptyNotice message="아직 선호 룸메이트 조건을 입력하지 않았어요" />
           )}
 
-          <Text className="mt-8 text-[15px] font-bold text-[#17171B]">중요 조건</Text>
+          <Text className="mt-8 text-[15px] font-semibold text-[#256EF4]">우선순위</Text>
           {importantConditions.length ? (
             <View className="mt-3 flex-row flex-wrap gap-2">
               {importantConditions.map((condition) => (
-                <View key={condition} className="rounded-full bg-[#ECF2FE] px-3 py-1.5">
-                  <Text className="text-[13px] font-medium text-[#256EF4]">{condition}</Text>
+                <View
+                  key={condition.id}
+                  className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg bg-[#ECF2FE] px-3"
+                >
+                  <PriorityArtwork label={condition.name} image={condition.image} size={22} />
+                  <Text className="text-[14px] font-medium leading-[21px] text-[#17171B]">
+                    {condition.name}
+                  </Text>
                 </View>
               ))}
             </View>
           ) : (
-            <EmptyNotice message="아직 중요 조건을 선택하지 않았어요" />
+            <EmptyNotice message="아직 우선순위를 선택하지 않았어요" />
           )}
         </>
       )}
@@ -357,7 +367,7 @@ function LifestyleTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RoomTypePage({ form }: { form: UseRoomPostFormReturn }) {
+export function RoomTypePage({ form }: { form: UseRoomPostFormReturn }) {
   return (
     <View>
       <Headline>거주하고 있는{'\n'}방 형태를 선택해주세요</Headline>
@@ -403,7 +413,7 @@ function RoomTypePage({ form }: { form: UseRoomPostFormReturn }) {
   );
 }
 
-function LocationPage({ form }: { form: UseRoomPostFormReturn }) {
+export function LocationPage({ form }: { form: UseRoomPostFormReturn }) {
   return (
     <View>
       <Headline>거주하고 있는{'\n'}집의 주소를 선택해주세요</Headline>
@@ -420,7 +430,7 @@ function LocationPage({ form }: { form: UseRoomPostFormReturn }) {
   );
 }
 
-function BudgetPage({ form }: { form: UseRoomPostFormReturn }) {
+export function BudgetPage({ form }: { form: UseRoomPostFormReturn }) {
   return (
     <View>
       <Headline>거주하고 있는 집의{'\n'}예산을 선택해주세요</Headline>
@@ -486,7 +496,7 @@ function MoneyField({
   );
 }
 
-function MoveInPage({ form }: { form: UseRoomPostFormReturn }) {
+export function MoveInPage({ form }: { form: UseRoomPostFormReturn }) {
   const needsMoveInDate = form.draft.negotiable === false;
 
   return (
@@ -510,7 +520,7 @@ function MoveInPage({ form }: { form: UseRoomPostFormReturn }) {
   );
 }
 
-function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
+export function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
   return (
     <View>
       <Headline>
@@ -559,7 +569,7 @@ function OptionsPage({ form }: { form: UseRoomPostFormReturn }) {
   );
 }
 
-function IntroPage({ form }: { form: UseRoomPostFormReturn }) {
+export function IntroPage({ form }: { form: UseRoomPostFormReturn }) {
   return (
     <View>
       <Headline>방을{'\n'}자유롭게 소개해주세요</Headline>

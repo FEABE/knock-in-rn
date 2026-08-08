@@ -46,7 +46,7 @@ function RoomListSeparator() {
 }
 
 function MatchListSeparator() {
-  return <View className="h-[18px]" />;
+  return <View className="h-3" />;
 }
 
 export type ExploreScreenViewProps = UseExploreScreenReturn;
@@ -137,7 +137,7 @@ export function ExploreScreenView({
             className="flex-1"
             automaticallyAdjustContentInsets={false}
             contentInsetAdjustmentBehavior="never"
-            contentContainerClassName="px-4 pb-24"
+            contentContainerClassName="px-4 pb-5"
             data={roomsLoading || roomsError ? EMPTY_ROOM_POSTS : visiblePosts}
             keyExtractor={roomKeyExtractor}
             renderItem={({ item }) => (
@@ -190,10 +190,10 @@ export function ExploreScreenView({
 
         <Tabs.Content value="roommates" className="flex-1">
           <FlatList
-            className="flex-1 bg-[#F7F8FC]"
+            className="flex-1 bg-[#F6F6FA]"
             automaticallyAdjustContentInsets={false}
             contentInsetAdjustmentBehavior="never"
-            contentContainerClassName="px-4 pb-24 pt-8"
+            contentContainerClassName="px-4 py-4"
             data={matchesLoading || matchesError ? EMPTY_MATCHES : visibleMatches}
             keyExtractor={matchKeyExtractor}
             renderItem={({ item }) => (

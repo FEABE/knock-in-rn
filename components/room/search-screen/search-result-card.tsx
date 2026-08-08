@@ -2,7 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
-import { RoomThumbnailPlaceholder, useRoomCard, type UseRoomCardProps } from '@/components/domain';
+import {
+  HotBadgePill,
+  RoomThumbnailPlaceholder,
+  RoomTypePill,
+  useRoomCard,
+  type UseRoomCardProps,
+} from '@/components/domain';
 
 const BRAND = '#256EF4';
 
@@ -32,8 +38,6 @@ export function SearchResultCard({ keyword, ...hookProps }: SearchResultCardProp
     badge,
     timeAgoLabel,
   } = useRoomCard(hookProps);
-  const verified = post.author.badges.length > 0;
-
   return (
     <Pressable onPress={onPress} className="bg-white active:opacity-90" accessibilityRole="button">
       <View className="relative overflow-hidden rounded">
@@ -49,30 +53,8 @@ export function SearchResultCard({ keyword, ...hookProps }: SearchResultCardProp
         )}
 
         <View className="absolute left-2.5 top-3 flex-row gap-1">
-          {badge === 'hot' ? (
-            <View
-              className="h-[26px] items-center justify-center rounded bg-[#D63D4A] px-1.5"
-              style={CHIP_SHADOW_STYLE}
-            >
-              <Text
-                style={CHIP_TEXT_STYLE}
-                className="text-[14px] font-semibold leading-[21px] text-white"
-              >
-                HOT
-              </Text>
-            </View>
-          ) : null}
-          <View
-            className="h-[26px] items-center justify-center rounded bg-[#ECF2FE] px-1.5"
-            style={CHIP_SHADOW_STYLE}
-          >
-            <Text
-              style={CHIP_TEXT_STYLE}
-              className="text-[14px] font-semibold leading-[21px] text-[#4C87F6]"
-            >
-              {roomTypeLabel}
-            </Text>
-          </View>
+          {badge === 'hot' ? <HotBadgePill /> : null}
+          <RoomTypePill label={roomTypeLabel} />
         </View>
 
         <Pressable
@@ -124,7 +106,6 @@ export function SearchResultCard({ keyword, ...hookProps }: SearchResultCardProp
             <Text numberOfLines={1} className="shrink text-xs text-neutral-600">
               {post.author.name}
             </Text>
-            {verified ? <Ionicons name="checkmark-circle" size={16} color={BRAND} /> : null}
             {authorMetaLabel ? (
               <AuthorMetaPill label={authorMetaLabel} tone={authorMetaTone} />
             ) : null}
@@ -164,16 +145,6 @@ function AuthorMetaPill({
     </View>
   );
 }
-
-const CHIP_SHADOW_STYLE = {
-  shadowColor: '#696976',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.15,
-  shadowRadius: 2,
-  elevation: 2,
-} as const;
-
-const CHIP_TEXT_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
 
 type TitleSegment = { text: string; match: boolean };
 

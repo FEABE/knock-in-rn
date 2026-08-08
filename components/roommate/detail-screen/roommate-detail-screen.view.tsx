@@ -319,17 +319,7 @@ function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
   const score = data.compatibility.score;
   const hasScore = typeof score === 'number';
   return (
-    <ReadySection
-      title="궁합 점수"
-      accessory={
-        <View className="flex-row items-center gap-1">
-          <Text className="text-[13px] font-medium leading-[19px] text-[#AAAABA]">
-            프로필 완성 후 실제 점수 반영
-          </Text>
-          <Ionicons name="information-circle" size={18} color="#DADAE8" />
-        </View>
-      }
-    >
+    <ReadySection title="궁합 점수">
       <View className="items-center py-4">
         <View
           className="items-center justify-center"

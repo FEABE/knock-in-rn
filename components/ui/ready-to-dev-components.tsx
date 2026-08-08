@@ -316,6 +316,7 @@ export function ReadyProfileAvatar({
 const BADGE_PALETTE = {
   neutral: ['bg-[#F1F1F6]', '#696976'],
   blue: ['bg-[#ECF2FE]', '#4C87F6'],
+  sky: ['bg-[#E7F4FE]', '#0B78CB'],
   red: ['bg-[#FDEFEC]', '#DE3412'],
   green: ['bg-[#EAF7F1]', '#249F6A'],
   dark: ['bg-[#696976]', '#FFFFFF'],
@@ -327,7 +328,7 @@ export function ReadyBadge({
   icon,
 }: {
   label: string;
-  tone?: 'neutral' | 'blue' | 'red' | 'green' | 'dark';
+  tone?: 'neutral' | 'blue' | 'sky' | 'red' | 'green' | 'dark';
   icon?: keyof typeof Ionicons.glyphMap;
 }) {
   const [backgroundClass, color] = BADGE_PALETTE[tone];
