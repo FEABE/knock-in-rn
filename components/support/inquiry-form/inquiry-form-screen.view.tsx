@@ -15,7 +15,6 @@ export function InquiryFormScreenView({
   body,
   categories,
   categoryId,
-  loadingCategories,
   submitError,
   canSubmit,
   submitting,
@@ -47,20 +46,16 @@ export function InquiryFormScreenView({
 
           <View className="gap-3">
             <FieldLabel label="문의 유형" muted />
-            {loadingCategories ? (
-              <Text className="text-[15px] text-[#AAAABA]">유형을 불러오는 중...</Text>
-            ) : (
-              <View className="flex-row flex-wrap gap-2">
-                {categories.map((category) => (
-                  <CategoryChip
-                    key={category.id}
-                    label={category.name}
-                    selected={categoryId === category.id}
-                    onPress={() => setCategoryId(category.id)}
-                  />
-                ))}
-              </View>
-            )}
+            <View className="flex-row flex-wrap gap-2">
+              {categories.map((category) => (
+                <CategoryChip
+                  key={category.id}
+                  label={category.name}
+                  selected={categoryId === category.id}
+                  onPress={() => setCategoryId(category.id)}
+                />
+              ))}
+            </View>
           </View>
 
           <View className="gap-3">
