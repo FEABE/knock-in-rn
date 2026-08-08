@@ -186,7 +186,7 @@ export function DefaultProfileArtwork({ size = 80 }: ArtworkProps) {
   );
 }
 
-/** 원본이 26x26px로 작아 확대 시 흐릿할 수 있다. */
+/** 원본이 28x25px로 작아 확대 시 흐릿할 수 있다. */
 export function SchoolBadgeArtwork({ size = 28 }: ArtworkProps) {
   return (
     <Image
@@ -197,7 +197,7 @@ export function SchoolBadgeArtwork({ size = 28 }: ArtworkProps) {
   );
 }
 
-/** 원본이 28x25px로 작아 확대 시 흐릿할 수 있다. */
+/** 원본이 26x26px로 작아 확대 시 흐릿할 수 있다. */
 export function CompanyBadgeArtwork({ size = 28 }: ArtworkProps) {
   return (
     <Image

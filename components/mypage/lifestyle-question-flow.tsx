@@ -197,10 +197,19 @@ export function LifestyleQuestionFlow({
       ? scales[question.key] !== undefined
       : Boolean(choiceValues[question.key])
     : false;
-  // 시안 기준: 마지막 문항까지 답해야 저장(또는 다음 단계)이 열린다.
+  const allAnswered =
+    questions.length > 0 &&
+    questions.every((item) =>
+      item.kind === 'scale' ? scales[item.key] !== undefined : Boolean(choiceValues[item.key]),
+    );
+  // 최초 진입(initial)은 시안대로 마지막 문항까지 순서대로 답해야 다음 단계로 넘어간다.
+  // 관리(management, 수정) 화면은 이미 값이 채워져 있는 상태라, 어느 탭에서든
+  // 값을 바꾸면 바로 저장이 열려야 한다 — 마지막 탭까지 다시 넘길 필요가 없다.
   const canSave = trailingActive
     ? trailingSaveEnabled
-    : questions.length > 0 && safeIndex === questions.length - 1 && answered;
+    : displayMode === 'management'
+      ? allAnswered
+      : questions.length > 0 && safeIndex === questions.length - 1 && answered;
 
   const enterTrailingTab = () => {
     if (!trailingTabLabel) return;
