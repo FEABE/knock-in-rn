@@ -42,9 +42,10 @@ export function useAccountSettingsScreen(): UseAccountSettingsScreenReturn {
           } catch {
             // 서버 로그아웃 실패가 기기 로그아웃을 막으면 사용자가 빠져나갈 수 없다.
           } finally {
+            resetToExplore(router);
             await signOut();
+            resetToExplore(router);
           }
-          resetToExplore(router);
         },
       },
     ]);

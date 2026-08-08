@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { useAccountActions } from '@/lib/api';
 import { useSession } from '@/lib/domain';
-import { goExplore } from '@/lib/navigation/routes';
+import { resetToExplore } from '@/lib/navigation/routes';
 
 export type UseWithdrawScreenReturn = {
   submitting: boolean;
@@ -34,8 +34,9 @@ export function useWithdrawScreen(): UseWithdrawScreenReturn {
       return;
     }
     setConfirmOpen(false);
+    resetToExplore(router);
     await signOut();
-    goExplore(router, 'replace');
+    resetToExplore(router);
   };
 
   return {

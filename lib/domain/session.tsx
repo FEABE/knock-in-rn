@@ -77,6 +77,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
   const router = useRouter();
   const queryClient = useQueryClient();
   const authFailureHandlingRef = useRef(false);
+  const manualSignOutRef = useRef(false);
   const [session, setSession] = useState<Session>(() => {
     if (initial !== undefined) return initial;
     if (!USE_MOCK) return null;
@@ -232,11 +233,15 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
   }, []);
 
   const signOut = useCallback(async () => {
+    manualSignOutRef.current = true;
     setAccessToken(null);
-    setSession(null);
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await clearStoredAuthSession();
+    try {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      await clearStoredAuthSession();
+    } finally {
+      setSession(null);
+    }
   }, [queryClient]);
 
   const markProfileComplete = useCallback(async (identity?: StoredAuthIdentity) => {
@@ -281,6 +286,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
 
   useEffect(() => {
     setAuthFailureHandler(() => {
+      if (manualSignOutRef.current) return;
       if (authFailureHandlingRef.current) return;
       authFailureHandlingRef.current = true;
 
@@ -304,6 +310,10 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     });
     return () => setAuthFailureHandler(null);
   }, [router, signOut]);
+
+  useEffect(() => {
+    if (session) manualSignOutRef.current = false;
+  }, [session]);
 
   const sessionUserId = session?.user.id;
 
