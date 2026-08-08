@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RegionFilterSheet } from '@/components/room/filters';
+import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
 import { RangeField } from '@/components/ui/range-field';
 import {
   RoomLocationArtwork,
@@ -127,11 +128,26 @@ function RoomConditionFlow({
               accessibilityLabel="지역 선택하기"
               className="h-[46px] flex-row items-center justify-center gap-1.5 rounded-lg border border-[#DADAE8] bg-white px-3 active:bg-[#F6F6FA]"
             >
-              <Text className="text-[15px] font-medium text-[#696976]">지역 선택하기</Text>
+              <Text
+                numberOfLines={1}
+                className={`text-[15px] ${
+                  isOffer && regions[0]
+                    ? 'font-medium text-[#17171B]'
+                    : 'font-medium text-[#696976]'
+                }`}
+              >
+                {isOffer && regions[0]
+                  ? `${regions[0].city} ${regions[0].district}`.trim()
+                  : '지역 선택하기'}
+              </Text>
               <Ionicons name="chevron-down" size={16} color="#696976" />
             </Pressable>
 
-            {regions.length > 0 ? (
+            {regions.length === 0 ? (
+              <View className="flex-1 items-center justify-center py-8">
+                <RoomLocationArtwork size={150} />
+              </View>
+            ) : !isOffer ? (
               <View className="flex-1 justify-end pb-2 pt-6">
                 <SelectedRegions
                   regions={regions}
@@ -141,11 +157,7 @@ function RoomConditionFlow({
                   }
                 />
               </View>
-            ) : (
-              <View className="flex-1 items-center justify-center py-8">
-                <RoomLocationArtwork size={150} />
-              </View>
-            )}
+            ) : null}
           </View>
         ) : null}
 
@@ -240,13 +252,22 @@ function RoomConditionFlow({
         </Pressable>
       </View>
 
-      <RegionFilterSheet
-        open={regionOpen}
-        onOpenChange={setRegionOpen}
-        value={regions}
-        maxSelection={maxRegions}
-        onChange={(next) => setRegions(isOffer ? next.slice(-1) : next.slice(0, maxRegions))}
-      />
+      {isOffer ? (
+        <RoomRegionSheet
+          open={regionOpen}
+          onOpenChange={setRegionOpen}
+          value={regions[0] ?? null}
+          onSelect={(next) => setRegions([next])}
+        />
+      ) : (
+        <RegionFilterSheet
+          open={regionOpen}
+          onOpenChange={setRegionOpen}
+          value={regions}
+          maxSelection={maxRegions}
+          onChange={(next) => setRegions(next.slice(0, maxRegions))}
+        />
+      )}
     </View>
   );
 }
