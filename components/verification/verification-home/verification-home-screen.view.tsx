@@ -43,23 +43,25 @@ export function VerificationHomeScreenView({
           onRetry={onRetry}
         />
       ) : (
-        <ScrollView contentContainerClassName="gap-5 px-4 pb-10 pt-5">
+        <ScrollView contentContainerClassName="px-4 pb-10 pt-6">
           <View className="gap-2">
-            <Text className="text-xl font-bold text-[#17171B]">인증할 항목을 선택해주세요</Text>
-            <Text className="text-sm leading-5 text-[#696976]">
+            <Text className="text-xl font-bold leading-[30px] text-[#17171B]">
+              인증할 항목을 선택해주세요
+            </Text>
+            <Text className="text-sm leading-[21px] text-[#696976]">
               인증을 완료하면 프로필에 뱃지가 표시되어 신뢰를 높일 수 있어요
             </Text>
           </View>
 
-          <View className="gap-3">
+          <View className="mt-6 gap-3">
             {cards.map((card) => (
               <VerificationCard key={card.id} card={card} onPress={card.onPress} />
             ))}
           </View>
 
-          <View className="flex-row items-start gap-3 rounded-md bg-[#FFF7E8] px-4 py-4">
-            <Ionicons name="information-circle-outline" size={21} color="#C77800" />
-            <Text className="flex-1 text-sm leading-5 text-[#A15C00]">
+          <View className="mt-3 flex-row items-start gap-2 rounded-lg bg-[#FFF3DB] py-3 pl-[14px] pr-3">
+            <Ionicons name="information-circle-outline" size={18} color="#9E6A00" />
+            <Text className="flex-1 text-xs font-medium leading-[18px] text-[#9E6A00]">
               인증 종류별로 뱃지가 표시되며, 하나만 인증해도 프로필에 노출돼요
             </Text>
           </View>
@@ -75,7 +77,7 @@ function Header({ onBack }: { onBack: () => void }) {
       <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
         <Ionicons name="chevron-back" size={24} color="#696976" />
       </Pressable>
-      <Text className="flex-1 text-center text-base font-medium text-[#17171B]">신원 인증</Text>
+      <Text className="flex-1 text-center text-[17px] font-medium text-[#17171B]">신원 인증</Text>
       <View className="w-10" />
     </View>
   );
@@ -86,27 +88,33 @@ function VerificationCard({ card, onPress }: { card: VerificationHomeCard; onPre
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      className="min-h-[92px] flex-row items-center gap-4 rounded-md bg-[#F6F6FA] px-5 py-4 active:opacity-80"
+      className="flex-row items-center justify-between gap-3 rounded-lg bg-[#F6F6FA] px-4 py-5 active:opacity-80"
     >
-      {card.id === 'school' ? <SchoolBadgeArtwork size={40} /> : <CompanyBadgeArtwork size={40} />}
-      <View className="flex-1 gap-1">
-        <Text className="text-base font-bold text-[#17171B]">{card.title}</Text>
-        <Text numberOfLines={1} className="text-sm text-[#696976]">
+      <View className="flex-1 gap-[6px]">
+        <View className="flex-row items-center gap-2">
+          {card.id === 'school' ? (
+            <SchoolBadgeArtwork size={28} />
+          ) : (
+            <CompanyBadgeArtwork size={26} />
+          )}
+          <Text className="text-[17px] font-bold leading-[26px] text-[#17171B]">{card.title}</Text>
+        </View>
+        <Text numberOfLines={1} className="text-[13px] leading-[20px] text-[#696976]">
           {card.description}
         </Text>
       </View>
-      <View className="items-end gap-2">
-        <View
-          className={`h-[28px] w-[72px] items-center justify-center rounded px-2 pb-[5px] pt-1 ${
-            card.verified ? 'bg-[#256EF4]' : 'border border-dashed border-[#256EF4] bg-[#EAF1FE]'
+      <View
+        className={`h-[28px] w-[72px] items-center justify-center rounded px-2 ${
+          card.verified ? 'bg-[#4C87F6]' : 'border border-dashed border-[#B1CEFB] bg-[#ECF2FE]'
+        }`}
+      >
+        <Text
+          className={`text-[13px] font-semibold leading-[18px] ${
+            card.verified ? 'text-white' : 'text-[#86AFF9]'
           }`}
         >
-          <Text
-            className={`text-xs font-medium ${card.verified ? 'text-white' : 'text-[#256EF4]'}`}
-          >
-            {card.verified ? '인증 완료' : '인증 필요'}
-          </Text>
-        </View>
+          {card.verified ? '인증 완료' : '인증 필요'}
+        </Text>
       </View>
     </Pressable>
   );
