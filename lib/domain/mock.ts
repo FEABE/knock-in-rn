@@ -292,6 +292,7 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     peer: MOCK_USERS[1],
     matched: true,
     acceptedRequest: true,
+    opponentHasRoommate: false,
     messages: [
       {
         id: 'u-2-sys',
@@ -342,6 +343,7 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     peer: MOCK_USERS[2],
     matched: false,
     acceptedRequest: false,
+    opponentHasRoommate: false,
     messages: [
       {
         id: 'u-3-sys',
@@ -392,6 +394,7 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     peer: MOCK_USERS[3],
     matched: false,
     acceptedRequest: false,
+    opponentHasRoommate: true,
     messages: [
       {
         id: 'u-4-sys',
@@ -435,6 +438,7 @@ export const MOCK_CHAT_ROOMS: ChatRoom[] = [
     peer: MOCK_USERS[4],
     matched: false,
     acceptedRequest: false,
+    opponentHasRoommate: false,
     messages: [
       {
         id: 'u-5-sys',

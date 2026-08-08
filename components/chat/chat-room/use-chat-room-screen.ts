@@ -6,8 +6,10 @@ import { Alert, type ScrollView } from 'react-native';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
+  apiErrorCode,
   type ChatSocketEnvelope,
   type ChatSocketStatus,
+  getMyRoommate,
   parseServerDate,
   USE_MOCK,
   useChatRoomActions,
@@ -24,9 +26,26 @@ import {
 
 export type ChatRoomBubble = ChatMessage & { mine: boolean };
 
+/**
+ * 대화 흐름에 섞여 들어가는 아이템. 룸메이트 요청 카드는 항상 맨 아래가 아니라
+ * 요청이 생성된 시각에 앵커링되어, 이후 주고받은 메시지가 카드 아래에 오도록 한다.
+ */
+export type ChatTimelineItem =
+  | { kind: 'message'; message: ChatRoomBubble; at: Date }
+  | { kind: 'request-card'; at: Date }
+  | { kind: 'matched-pill'; at: Date };
+
+/** 같은 시각일 때의 렌더 순서: 메시지 → 요청 카드 → 매칭 칩. */
+const TIMELINE_KIND_ORDER: Record<ChatTimelineItem['kind'], number> = {
+  message: 0,
+  'request-card': 1,
+  'matched-pill': 2,
+};
+
 export type UseChatRoomScreenReturn = {
   room: DomainChatRoom | null;
   messages: ChatRoomBubble[];
+  timeline: ChatTimelineItem[];
   draft: string;
   setDraft: (next: string) => void;
   canSend: boolean;
@@ -34,6 +53,8 @@ export type UseChatRoomScreenReturn = {
   error: string | null;
   currentUserId: string;
   blocked: boolean;
+  /** 내가 이미 다른 룸메이트와 매칭되어 있는지. 이 방이 매칭된 방이면 항상 false. */
+  selfHasRoommate: boolean;
   socketStatus: ChatSocketStatus;
   socketError: string | null;
   retrySocket: () => void;
@@ -54,6 +75,20 @@ export type UseChatRoomScreenReturn = {
   pickAndSendImage: () => Promise<void>;
   onLeave: () => void;
 };
+
+/** 양쪽 중 한 명이라도 이미 룸메이트가 있을 때 서버가 409로 내려주는 코드. */
+const ROOMMATE_ALREADY_EXISTS = 'ROOMMATE_ALREADY_EXISTS';
+
+/** 내가 이미 다른 룸메이트와 매칭되어 있는지. 실패는 조용히 false(화면 흐름을 막지 않는다). */
+async function fetchSelfHasRoommate(): Promise<boolean> {
+  if (USE_MOCK) return false;
+  try {
+    const res = await getMyRoommate();
+    return !res.error && Boolean(res.data?.myRoommateInfo);
+  } catch {
+    return false;
+  }
+}
 
 export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const router = useRouter();
@@ -79,6 +114,23 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [requestSheetVisible, setRequestSheetVisible] = useState(false);
+  const [selfHasRoommate, setSelfHasRoommate] = useState(false);
+
+  // 룸메이트 요청 가능 여부 판정에는 "내가 이미 매칭됐는지"가 필요하다.
+  // 방이 바뀔 때마다 1회만 조회하고, 실패는 조용히 false로 둔다(화면 흐름을 막지 않는다).
+  const roomId = room?.id;
+  const roomMatched = room?.matched === true;
+  useEffect(() => {
+    setSelfHasRoommate(false);
+    if (!roomId || roomMatched || USE_MOCK) return;
+    let cancelled = false;
+    fetchSelfHasRoommate().then((has) => {
+      if (!cancelled) setSelfHasRoommate(has);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId, roomMatched]);
 
   useEffect(() => {
     if (!room) return;
@@ -117,6 +169,42 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     () => messages.map((message) => ({ ...message, mine: message.authorId === currentUserId })),
     [currentUserId, messages],
   );
+
+  // room 객체는 소켓 reload마다 새 참조가 되므로 원시값으로 좁혀서 의존한다.
+  const requestStatus = room?.roommateRequest?.status;
+  const requestCreatedMs = room?.roommateRequest?.createdAt?.getTime();
+  const requestUpdatedMs = room?.roommateRequest?.updatedAt?.getTime();
+
+  const timeline = useMemo<ChatTimelineItem[]>(() => {
+    const items: ChatTimelineItem[] = bubbles.map((message) => ({
+      kind: 'message',
+      message,
+      at: message.sentAt,
+    }));
+
+    if (requestStatus) {
+      // createdAt이 없으면 기존 동작대로 맨 아래에 둔다.
+      const lastMessageAt = bubbles.length > 0 ? bubbles[bubbles.length - 1].sentAt : undefined;
+      const cardAt =
+        requestCreatedMs != null ? new Date(requestCreatedMs) : (lastMessageAt ?? new Date());
+      items.push({ kind: 'request-card', at: cardAt });
+
+      if (roomMatched && requestStatus === 'ACCEPTED') {
+        // 칩은 어떤 경우에도 카드보다 앞설 수 없다.
+        const pillMs = requestUpdatedMs ?? requestCreatedMs;
+        const pillAt =
+          pillMs != null && pillMs > cardAt.getTime() ? new Date(pillMs) : new Date(cardAt);
+        items.push({ kind: 'matched-pill', at: pillAt });
+      }
+    }
+
+    // Array.prototype.sort는 안정 정렬이므로 같은 시각의 메시지 순서는 그대로 유지된다.
+    return items.sort(
+      (a, b) =>
+        a.at.getTime() - b.at.getTime() ||
+        TIMELINE_KIND_ORDER[a.kind] - TIMELINE_KIND_ORDER[b.kind],
+    );
+  }, [bubbles, requestCreatedMs, requestStatus, requestUpdatedMs, roomMatched]);
 
   const appendOptimisticMessage = useCallback(
     (id: string, body: string, kind: ChatMessage['kind'], imageUrl?: string) => {
@@ -207,9 +295,16 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     try {
       await acceptRoommateRequest(room.roommateRequest.id);
     } catch (requestError) {
+      // 이미 한쪽이 매칭된 뒤의 수락은 서버가 409로 막는다. 알럿 대신 최신 상태를 다시 받아와
+      // 배너/카드가 "이미 매칭됨"을 그대로 보여주게 한다.
+      if (apiErrorCode(requestError) === ROOMMATE_ALREADY_EXISTS) {
+        reload();
+        fetchSelfHasRoommate().then(setSelfHasRoommate);
+        return;
+      }
       showRequestError(requestError);
     }
-  }, [acceptRoommateRequest, room?.roommateRequest]);
+  }, [acceptRoommateRequest, reload, room?.roommateRequest]);
 
   const confirmRequestAction = useCallback(
     (kind: 'reject' | 'cancel') => {
@@ -247,6 +342,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   return {
     room,
     messages: bubbles,
+    timeline,
     draft,
     setDraft,
     canSend: draft.trim().length > 0 && (USE_MOCK || socket.status === 'connected'),
@@ -254,6 +350,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     error,
     currentUserId,
     blocked,
+    selfHasRoommate,
     socketStatus: USE_MOCK ? 'connected' : socket.status,
     socketError: socket.error,
     retrySocket: socket.retry,

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { GenderAgeChip } from '@/components/ui/gender-age-chip';
 import {
   ReadyChatBubble,
   ReadyChatComposer,
@@ -25,7 +26,11 @@ import {
 import { formatKstTime, isSameKstDay, kstClock, type ChatSocketStatus } from '@/lib/api';
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
-import type { ChatRoomBubble, UseChatRoomScreenReturn } from './use-chat-room-screen';
+import type {
+  ChatRoomBubble,
+  ChatTimelineItem,
+  UseChatRoomScreenReturn,
+} from './use-chat-room-screen';
 
 export type ChatRoomScreenViewProps = Omit<UseChatRoomScreenReturn, 'room'> & {
   room: DomainChatRoom;
@@ -35,10 +40,11 @@ export function ChatRoomScreenView({
   room,
   scrollRef,
   requestSheetVisible,
-  messages,
+  timeline,
   draft,
   setDraft,
   canSend,
+  selfHasRoommate,
   socketStatus,
   socketError,
   retrySocket,
@@ -68,6 +74,8 @@ export function ChatRoomScreenView({
         matched={room.matched}
         request={room.roommateRequest}
         processing={processingRequest}
+        selfHasRoommate={selfHasRoommate}
+        opponentHasRoommate={room.opponentHasRoommate}
         onOpenRequestSheet={openRequestSheet}
       />
 
@@ -78,14 +86,19 @@ export function ChatRoomScreenView({
         className="flex-1 bg-white"
         contentContainerClassName="gap-5 px-4 py-3"
       >
-        <MessageList messages={messages} peer={room.peer} />
-        <RoommateRequestCard
-          request={room.roommateRequest}
-          peerName={room.peer.name}
-          processing={processingRequest}
-          onAccept={acceptRequest}
-          onReject={rejectRequest}
-          onCancel={cancelRequest}
+        <TimelineList
+          timeline={timeline}
+          peer={room.peer}
+          card={{
+            request: room.roommateRequest,
+            peer: room.peer,
+            processing: processingRequest,
+            selfHasRoommate,
+            opponentHasRoommate: room.opponentHasRoommate,
+            onAccept: acceptRequest,
+            onReject: rejectRequest,
+            onCancel: cancelRequest,
+          }}
         />
       </ScrollView>
 
@@ -124,7 +137,14 @@ export function ChatRoomBlockedView({
       <ChatHeader peer={peer} matched={false} onBack={onBack} onLeave={onBack} />
       <ReadyChatRestrictionBanner kind="blocked" />
       <ScrollView className="flex-1 bg-white" contentContainerClassName="gap-5 px-4 py-3">
-        <MessageList messages={messages} peer={peer} />
+        <TimelineList
+          timeline={messages.map((message) => ({
+            kind: 'message',
+            message,
+            at: message.sentAt,
+          }))}
+          peer={peer}
+        />
       </ScrollView>
       <ReadyChatComposer value="" disabled placeholder="차단한 사용자에요" />
     </View>
@@ -160,31 +180,59 @@ function SocketStatusBanner({
   );
 }
 
-function MessageList({ messages, peer }: { messages: ChatRoomBubble[]; peer: UserSummary }) {
+function TimelineList({
+  timeline,
+  peer,
+  card,
+}: {
+  timeline: ChatTimelineItem[];
+  peer: UserSummary;
+  card?: RoommateRequestCardProps;
+}) {
   return (
     <>
-      {messages.map((message, index) => {
-        const previous = index > 0 ? messages[index - 1] : null;
-        const showDateDivider = !previous || !isSameKstDay(previous.sentAt, message.sentAt);
+      {timeline.map((item, index) => {
+        const previous = index > 0 ? timeline[index - 1] : null;
+        const showDateDivider = !previous || !isSameKstDay(previous.at, item.at);
         return (
-          <View key={message.id} className="gap-5">
-            {showDateDivider ? <ReadyChatDateDivider label={fmtDate(message.sentAt)} /> : null}
-            {message.kind === 'system' ? (
-              <ReadyChatSystemNotice label={message.body} />
-            ) : (
-              <ReadyChatBubble
-                mine={message.mine}
-                body={message.body}
-                imageUrl={message.kind === 'image' ? message.imageUrl : undefined}
-                timeLabel={fmtTime(message.sentAt)}
-                peerName={peer.name}
-                peerImageUrl={peer.avatarUrl}
-              />
-            )}
+          <View key={timelineKey(item)} className="gap-5">
+            {showDateDivider ? <ReadyChatDateDivider label={fmtDate(item.at)} /> : null}
+            {item.kind === 'message' ? <MessageItem message={item.message} peer={peer} /> : null}
+            {item.kind === 'request-card' && card ? <RoommateRequestCard {...card} /> : null}
+            {item.kind === 'matched-pill' ? <MatchedPill /> : null}
           </View>
         );
       })}
     </>
+  );
+}
+
+function timelineKey(item: ChatTimelineItem): string {
+  return item.kind === 'message' ? `message-${item.message.id}` : item.kind;
+}
+
+function MessageItem({ message, peer }: { message: ChatRoomBubble; peer: UserSummary }) {
+  if (message.kind === 'system') return <ReadyChatSystemNotice label={message.body} />;
+  return (
+    <ReadyChatBubble
+      mine={message.mine}
+      body={message.body}
+      imageUrl={message.kind === 'image' ? message.imageUrl : undefined}
+      timeLabel={fmtTime(message.sentAt)}
+      peerName={peer.name}
+      peerImageUrl={peer.avatarUrl}
+    />
+  );
+}
+
+/** 요청이 수락되어 매칭이 성사된 시점에 대화 흐름 가운데 남는 칩. */
+function MatchedPill() {
+  return (
+    <View className="items-center">
+      <View className="rounded-full bg-[#ECF2FE] px-5 py-1">
+        <Text className="text-[13px] font-medium text-[#4C87F6]">룸메이트가 되었어요</Text>
+      </View>
+    </View>
   );
 }
 
@@ -199,8 +247,6 @@ function ChatHeader({
   onBack: () => void;
   onLeave: () => void;
 }) {
-  const genderSymbol = peer.gender === 'female' ? '♀' : peer.gender === 'male' ? '♂' : '';
-  const genderLabel = peer.gender === 'female' ? '여성' : peer.gender === 'male' ? '남성' : '';
   return (
     <View className="flex-row items-center gap-2 border-b border-[#F1F1F6] px-3 pb-2.5 pt-1">
       <Pressable
@@ -217,12 +263,7 @@ function ChatHeader({
           {peer.name}
         </Text>
         <View className="flex-row items-center gap-1.5">
-          {peer.age > 0 ? (
-            <ReadyBadge
-              label={`${genderSymbol} ${peer.age}세${genderLabel ? `·${genderLabel}` : ''}`.trim()}
-              tone="red"
-            />
-          ) : null}
+          <GenderAgeChip age={peer.age} gender={peer.gender} />
           {matched ? (
             <ReadyBadge label="룸메이트" tone="neutral" />
           ) : peer.compatibilityScore != null ? (
@@ -246,28 +287,44 @@ function RequestStatusBanner({
   matched,
   request,
   processing,
+  selfHasRoommate,
+  opponentHasRoommate,
   onOpenRequestSheet,
 }: {
   matched: boolean;
   request: DomainChatRoom['roommateRequest'];
   processing: boolean;
+  selfHasRoommate: boolean;
+  opponentHasRoommate: boolean;
   onOpenRequestSheet: () => void;
 }) {
   if (matched || request?.status === 'ACCEPTED') return null;
-  if (request?.status === 'PENDING' && request.role === 'requestee') return null;
 
-  if (request?.status === 'PENDING') {
+  // 한쪽이 이미 매칭된 방에서는 요청 CTA 자체를 없애 서버가 막을 요청을 미리 차단한다.
+  if (selfHasRoommate) {
     return (
-      <Banner title="룸메이트를 요청했어요" subtitle="상대방이 수락하면 룸메이트가 될 수 있어요" />
+      <Banner
+        tone="red"
+        title="이미 다른 분과 룸메이트가 되었어요"
+        subtitle="나와 잘 맞는 다른 룸메이트를 찾아보세요"
+      />
     );
   }
 
-  if (request?.status === 'EXPIRED') {
+  if (opponentHasRoommate) {
     return (
       <Banner
+        tone="red"
         title="상대방이 다른 분과 룸메이트가 되었어요"
         subtitle="나와 잘 맞는 다른 룸메이트를 찾아보세요"
       />
+    );
+  }
+
+  if (request?.status === 'PENDING') {
+    if (request.role === 'requestee') return null;
+    return (
+      <Banner title="룸메이트를 요청했어요" subtitle="상대방이 수락하면 룸메이트가 될 수 있어요" />
     );
   }
 
@@ -296,118 +353,201 @@ function Banner({
   title,
   subtitle,
   action,
+  tone = 'blue',
 }: {
   title: string;
   subtitle: string;
   action?: ReactNode;
+  tone?: 'blue' | 'red';
 }) {
+  const red = tone === 'red';
   return (
-    <View className="flex-row items-center gap-3 bg-[#ECF2FE] px-4 py-3.5">
+    <View
+      className={`flex-row items-center gap-3 ${
+        red ? 'bg-[#FBEFF0] px-[18px] py-3' : 'bg-[#ECF2FE] px-4 py-3.5'
+      }`}
+    >
       <View className="flex-1 gap-0.5">
-        <Text className="text-[15px] font-bold leading-[22px] text-[#17171B]">{title}</Text>
-        <Text className="text-xs leading-[18px] text-[#696976]">{subtitle}</Text>
+        <Text
+          className={`text-[15px] font-bold leading-[22px] ${red ? 'text-[#D63D4A]' : 'text-[#17171B]'}`}
+        >
+          {title}
+        </Text>
+        <Text className={`leading-[18px] text-[#696976] ${red ? 'text-[13px]' : 'text-xs'}`}>
+          {subtitle}
+        </Text>
       </View>
       {action}
     </View>
   );
 }
 
-function RoommateRequestCard({
-  request,
-  peerName,
-  processing,
-  onAccept,
-  onReject,
-  onCancel,
-}: {
+type RoommateRequestCardProps = {
   request: DomainChatRoom['roommateRequest'];
-  peerName: string;
+  peer: UserSummary;
   processing: boolean;
+  /** 내가 이미 다른 사람과 매칭된 상태 — 받은 요청을 수락할 수 없다. */
+  selfHasRoommate: boolean;
+  /** 상대가 이미 다른 사람과 매칭된 상태 — 보낸 요청은 성사될 수 없다. */
+  opponentHasRoommate: boolean;
   onAccept: () => void;
   onReject: () => void;
   onCancel: () => void;
-}) {
+};
+
+function RoommateRequestCard({ request, peer, ...actions }: RoommateRequestCardProps) {
   if (!request) return null;
-  if (request.status === 'EXPIRED') return null;
 
   const incoming = request.role === 'requestee';
-  const title = incoming ? `${peerName}님이 룸메이트를 요청했어요!` : '룸메이트를 요청했어요!';
+  const title = incoming ? `${peer.name}님이 룸메이트를 요청했어요!` : '룸메이트를 요청했어요!';
 
   return (
-    <View className="mb-1 overflow-hidden rounded-xl border border-[#4C87F6] bg-white">
-      <View className="bg-[#4C87F6] px-4 py-2">
-        <Text className="text-[13px] font-bold text-white">룸메이트 요청</Text>
-      </View>
-      <View className="gap-3 px-4 pb-4 pt-3">
-        <View className="gap-1">
-          <Text className="text-[15px] font-bold leading-[23px] text-[#17171B]">{title}</Text>
-          <Text className="text-[11px] leading-4 text-[#AAAABA]">
-            *채팅방 생성 시점의 궁합 점수로,{'\n'}이후 프로필 변경으로 실제 궁합과 달라질 수 있어요
-          </Text>
+    <View className={incoming ? 'flex-row items-start gap-2' : 'items-end'}>
+      {incoming ? (
+        <ReadyProfileAvatar name={peer.name} imageUrl={peer.avatarUrl} size={42} />
+      ) : null}
+      <View
+        className={`w-[278px] overflow-hidden rounded-bl-lg rounded-br-lg border border-[#DADAE8] bg-white ${
+          incoming ? 'rounded-tl-none rounded-tr-lg' : 'rounded-tl-lg rounded-tr-none'
+        }`}
+      >
+        <View className="bg-[#4C87F6] px-4 py-1.5">
+          <Text className="text-[13px] font-medium text-white">룸메이트 요청</Text>
         </View>
-
-        {request.status === 'PENDING' && incoming ? (
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={onReject}
-              disabled={processing}
-              accessibilityRole="button"
-              accessibilityLabel="룸메이트 요청 거절하기"
-              className={`h-10 flex-1 items-center justify-center rounded-lg bg-[#F6F6FA] ${
-                processing ? 'opacity-50' : 'active:opacity-85'
-              }`}
-            >
-              <Text className="text-sm font-semibold text-[#696976]">거절하기</Text>
-            </Pressable>
-            <Pressable
-              onPress={onAccept}
-              disabled={processing}
-              accessibilityRole="button"
-              accessibilityLabel="룸메이트 요청 수락하기"
-              className={`h-10 flex-1 items-center justify-center rounded-lg bg-[#256EF4] ${
-                processing ? 'opacity-50' : 'active:opacity-90'
-              }`}
-            >
-              <Text className="text-sm font-semibold text-white">수락하기</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {request.status === 'PENDING' && !incoming ? (
-          <Pressable
-            onPress={onCancel}
-            disabled={processing || request.role === 'unknown'}
-            accessibilityRole="button"
-            accessibilityLabel="룸메이트 요청 취소하기"
-            className={`h-10 items-center justify-center rounded-lg bg-[#F6F6FA] ${
-              processing ? 'opacity-50' : 'active:opacity-85'
-            }`}
-          >
-            <Text className="text-sm font-semibold text-[#696976]">요청 취소하기</Text>
-          </Pressable>
-        ) : null}
-
-        {request.status === 'ACCEPTED' ? (
-          <View className="items-center rounded-lg bg-[#ECF2FE] py-2.5">
-            <Text className="text-sm font-semibold text-[#256EF4]">요청을 수락했어요</Text>
-          </View>
-        ) : null}
-
-        {request.status === 'REJECTED' ? (
-          <View className="items-center rounded-lg bg-[#FDEFEC] py-2.5">
-            <Text className="text-sm font-semibold text-[#DE3412]">
-              {incoming ? '요청을 거절했어요' : '상대방이 요청을 거절했어요'}
+        <View className="gap-3 px-4 pb-3 pt-3">
+          <Text className="text-[15px] font-semibold leading-[23px] text-[#17171B]">{title}</Text>
+          <View className="gap-1.5">
+            <Text className="text-xs leading-[18px] text-[#696976]">
+              *채팅방 생성 시점의 궁합 점수로,
+            </Text>
+            <Text className="text-xs leading-[18px] text-[#696976]">
+              이후 프로필 변경으로 실제 궁합과 달라질 수 있어요
             </Text>
           </View>
-        ) : null}
-
-        {request.status === 'CANCELED' ? (
-          <View className="items-center rounded-lg bg-[#F6F6FA] py-2.5">
-            <Text className="text-sm font-semibold text-[#696976]">룸메이트 요청을 취소했어요</Text>
-          </View>
-        ) : null}
+          <RequestCardFooter request={request} incoming={incoming} {...actions} />
+        </View>
       </View>
     </View>
+  );
+}
+
+function RequestCardFooter({
+  request,
+  incoming,
+  processing,
+  selfHasRoommate,
+  opponentHasRoommate,
+  onAccept,
+  onReject,
+  onCancel,
+}: Omit<RoommateRequestCardProps, 'request' | 'peer'> & {
+  request: NonNullable<DomainChatRoom['roommateRequest']>;
+  incoming: boolean;
+}) {
+  if (request.status === 'PENDING') {
+    if (incoming) {
+      if (selfHasRoommate)
+        return <CardStatusRow tone="warn" label="매칭 후에는 수락할 수 없어요" />;
+      // 상대가 먼저 매칭되면 수락은 서버에서 409로 막힌다. 눌러도 아무 일도 일어나지 않는
+      // 버튼을 남기지 말고 이유를 그대로 보여준다.
+      if (opponentHasRoommate)
+        return <CardStatusRow tone="warn" label="상대방이 매칭된 상태에요" />;
+      return (
+        <View className="flex-row gap-3">
+          <CardButton
+            label="거절하기"
+            tone="neutral"
+            fill
+            disabled={processing}
+            onPress={onReject}
+            accessibilityLabel="룸메이트 요청 거절하기"
+          />
+          <CardButton
+            label="수락하기"
+            tone="primary"
+            fill
+            disabled={processing}
+            onPress={onAccept}
+            accessibilityLabel="룸메이트 요청 수락하기"
+          />
+        </View>
+      );
+    }
+    if (opponentHasRoommate) return <CardStatusRow tone="warn" label="상대방이 매칭된 상태에요" />;
+    return (
+      <CardButton
+        label="요청 취소하기"
+        tone="neutral"
+        disabled={processing || request.role === 'unknown'}
+        onPress={onCancel}
+        accessibilityLabel="룸메이트 요청 취소하기"
+      />
+    );
+  }
+
+  if (request.status === 'ACCEPTED')
+    return <CardStatusRow tone="accent" label="요청을 수락했어요" />;
+  if (request.status === 'REJECTED') {
+    return (
+      <CardStatusRow
+        tone="neutral"
+        label={incoming ? '요청을 거절했어요' : '상대방이 요청을 거절했어요'}
+      />
+    );
+  }
+  if (request.status === 'CANCELED')
+    return <CardStatusRow tone="neutral" label="요청을 취소했어요" />;
+  return null;
+}
+
+const CARD_ROW_CLASS = 'h-10 items-center justify-center rounded-[6.5px]';
+
+function CardStatusRow({ tone, label }: { tone: 'warn' | 'accent' | 'neutral'; label: string }) {
+  const box =
+    tone === 'warn'
+      ? 'bg-[#FDEFEC]'
+      : tone === 'accent'
+        ? 'bg-[#ECF2FE]'
+        : 'border border-[#DADAE8] bg-white';
+  const text =
+    tone === 'warn' ? 'text-[#DE3412]' : tone === 'accent' ? 'text-[#4C87F6]' : 'text-[#AAAABA]';
+  return (
+    <View className={`${CARD_ROW_CLASS} ${box}`}>
+      <Text className={`text-sm font-bold ${text}`}>{label}</Text>
+    </View>
+  );
+}
+
+function CardButton({
+  label,
+  tone,
+  fill,
+  disabled,
+  onPress,
+  accessibilityLabel,
+}: {
+  label: string;
+  tone: 'primary' | 'neutral';
+  fill?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+  accessibilityLabel: string;
+}) {
+  const primary = tone === 'primary';
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      className={`${CARD_ROW_CLASS} ${fill ? 'flex-1' : ''} ${
+        primary ? 'bg-[#4C87F6]' : 'border border-[#DADAE8] bg-white'
+      } ${disabled ? 'opacity-50' : 'active:opacity-85'}`}
+    >
+      <Text className={`text-sm font-bold ${primary ? 'text-white' : 'text-[#AAAABA]'}`}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

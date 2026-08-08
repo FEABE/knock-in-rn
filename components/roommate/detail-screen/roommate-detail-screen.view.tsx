@@ -21,7 +21,9 @@ import {
 } from '@/components/ui/ready-to-dev-components';
 import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
+import { GenderAgeChip } from '@/components/ui/gender-age-chip';
 import type { RoommateMatchDetailModel } from '@/lib/api';
+import type { Gender } from '@/lib/onboarding';
 
 import type { UseRoommateDetailScreenReturn } from './use-roommate-detail-screen';
 
@@ -190,7 +192,6 @@ export function RoommateDetailScreenView({
 
 function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
   const roomBadge = data.roomStatusLabel.split('·')[0]?.trim();
-  const ageGender = ageGenderLabel(data.age, data.genderLabel);
   return (
     <View className="flex-row items-center gap-3 px-4 pb-7 pt-4">
       <ReadyProfileAvatar
@@ -209,7 +210,7 @@ function ProfileHead({ data }: { data: RoommateMatchDetailModel }) {
           />
         </View>
         <View className="flex-row flex-wrap gap-2">
-          {ageGender ? <GenderMetaChip label={ageGender} genderLabel={data.genderLabel} /> : null}
+          <GenderAgeChip age={data.age} gender={genderFromLabel(data.genderLabel)} />
           {roomBadge ? <RoomStatusChip label={roomBadge} /> : null}
         </View>
       </View>
@@ -240,33 +241,11 @@ function AuthBadgeIcons({
   );
 }
 
-/** 나이/성별을 하나의 칩 문구로 합친다. (Figma: "24세 · 여성") */
-function ageGenderLabel(age?: number, genderLabel?: string): string {
-  return [age ? `${age}세` : null, genderLabel].filter(Boolean).join(' · ');
-}
-
-function GenderMetaChip({ label, genderLabel }: { label: string; genderLabel?: string }) {
-  const isMale = genderLabel === '남성';
-  return (
-    <View
-      className={`h-[22px] flex-row items-center justify-center gap-1 rounded px-[5px] ${
-        isMale ? 'bg-[#E7F4FE]' : 'bg-[#FDEFEC]'
-      }`}
-    >
-      <Ionicons
-        name={isMale ? 'male' : 'female'}
-        size={12}
-        color={isMale ? '#0B78CB' : '#DE3412'}
-      />
-      <Text
-        className={`text-[12px] font-semibold leading-[18px] ${
-          isMale ? 'text-[#0B78CB]' : 'text-[#DE3412]'
-        }`}
-      >
-        {label}
-      </Text>
-    </View>
-  );
+/** 상세 모델의 성별 라벨("남성"/"여성")을 도메인 Gender 값으로 되돌린다. */
+function genderFromLabel(genderLabel?: string): Gender {
+  if (genderLabel === '남성') return 'male';
+  if (genderLabel === '여성') return 'female';
+  return 'other';
 }
 
 function RoomStatusChip({ label }: { label: string }) {

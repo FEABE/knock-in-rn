@@ -165,6 +165,30 @@ const MOCK_CHAT_DETAIL: ChatRoomDetailData = {
   matchingRequiredList: [],
 };
 
+/**
+ * mock 상세는 방마다 다른 룸메이트 요청 상태를 확인할 수 있게 변형을 준다.
+ * - 3번 방: 두 메시지 사이 시각에 생성된 PENDING 요청 (카드 앵커링 확인용)
+ * - 4번 방: 상대가 이미 다른 사람과 매칭된 상태
+ */
+function mockChatDetail(chatId: string): ChatRoomDetailData {
+  if (chatId === '3') {
+    return {
+      ...MOCK_CHAT_DETAIL,
+      matchingRequiredList: [
+        {
+          requiredId: 301,
+          requesterMemberId: 1,
+          requesteeMemberId: 2,
+          status: 'PENDING',
+          createdAt: '2026-05-13T09:26:00Z',
+        },
+      ],
+    };
+  }
+  if (chatId === '4') return { ...MOCK_CHAT_DETAIL, opponentHasRoommate: true };
+  return MOCK_CHAT_DETAIL;
+}
+
 // ─── Client ───────────────────────────────────────────────────────────────────
 
 /** GET /chats — 채팅방 목록 조회 */
@@ -191,7 +215,7 @@ export function createChatRoom(
 
 /** GET /chats/{chatId} — 채팅방 상세 조회 */
 export function getChatRoomDetail(chatId: string): Promise<ApiResponse<ChatRoomDetailData>> {
-  if (USE_MOCK) return mockOk(MOCK_CHAT_DETAIL);
+  if (USE_MOCK) return mockOk(mockChatDetail(chatId));
   return request('GET', `/chats/${chatId}`);
 }
 
