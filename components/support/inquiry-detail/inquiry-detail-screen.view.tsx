@@ -1,6 +1,7 @@
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { InquiryCategoryChip, InquiryStatusChip } from '@/components/support/inquiry-chip';
 import { SupportHeader } from '@/components/support/support-header';
 import { ReadyErrorState } from '@/components/ui/ready-to-dev-feedback';
 
@@ -21,7 +22,7 @@ export function InquiryDetailScreenView({
       {loading ? (
         <View className="flex-1 items-center justify-center gap-3">
           <ActivityIndicator color="#256EF4" />
-          <Text className="text-sm text-neutral-400">문의를 불러오는 중...</Text>
+          <Text className="text-sm text-[#AAAABA]">문의를 불러오는 중...</Text>
         </View>
       ) : error || !inquiry ? (
         <ReadyErrorState
@@ -31,44 +32,35 @@ export function InquiryDetailScreenView({
           className="m-5"
         />
       ) : (
-        <ScrollView contentContainerClassName="gap-4 p-5">
-          <View className="flex-row items-center gap-2">
-            <View className="rounded-md border border-[#DADAE8] px-2 py-1">
-              <Text className="text-[11px] font-medium text-[#696976]">
-                {inquiry.categoryLabel}
-              </Text>
+        <ScrollView contentContainerClassName="px-4 pb-10 pt-6">
+          <View className="gap-2">
+            {/* 디자인(3952:51727)에서 두 뱃지는 붙어 있지 않고 카드 좌우 끝으로 벌어진다. */}
+            <View className="flex-row items-center justify-between gap-2">
+              <InquiryCategoryChip label={inquiry.categoryLabel} />
+              <InquiryStatusChip answered={inquiry.answered} label={inquiry.statusLabel} />
             </View>
-            <View
-              className={`rounded-full px-2 py-0.5 ${
-                inquiry.answered ? 'bg-emerald-50' : 'border border-[#DADAE8] bg-white'
-              }`}
-            >
-              <Text
-                className={`text-[11px] font-medium ${
-                  inquiry.answered ? 'text-emerald-700' : 'text-[#696976]'
-                }`}
-              >
-                {inquiry.statusLabel}
-              </Text>
-            </View>
+
+            <Text className="text-base font-bold leading-6 text-[#17171B]">{inquiry.title}</Text>
           </View>
 
-          <Text className="text-lg font-bold text-[#17171B]">{inquiry.title}</Text>
+          <View className="mt-3 gap-[6px]">
+            {inquiry.answer ? (
+              <View className="gap-1 rounded-lg bg-[#F6F9FF] p-4">
+                <Text className="text-sm font-semibold leading-[21px] text-[#256EF4]">답변</Text>
+                <Text className="text-justify text-sm leading-[22px] text-[#17171B]">
+                  {inquiry.answer}
+                </Text>
+              </View>
+            ) : (
+              <View className="rounded-lg bg-[#F6F6FA] p-4">
+                <Text className="text-sm leading-[21px] text-[#696976]">
+                  아직 답변이 등록되지 않았어요. 평균 응답 시간은 1~2 영업일이에요.
+                </Text>
+              </View>
+            )}
 
-          {inquiry.answer ? (
-            <View className="gap-2 rounded-lg bg-[#F0F5FF] p-4">
-              <Text className="text-sm font-semibold text-[#256EF4]">답변</Text>
-              <Text className="text-sm leading-6 text-[#3A3A44]">{inquiry.answer}</Text>
-            </View>
-          ) : (
-            <View className="gap-1 rounded-lg bg-[#F6F6FA] p-4">
-              <Text className="text-sm text-[#696976]">
-                아직 답변이 등록되지 않았어요. 평균 응답 시간은 1~2 영업일이에요.
-              </Text>
-            </View>
-          )}
-
-          <Text className="text-xs text-[#AAAABA]">{inquiry.dateLabel}</Text>
+            <Text className="text-xs leading-[18px] text-[#AAAABA]">{inquiry.dateLabel}</Text>
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>

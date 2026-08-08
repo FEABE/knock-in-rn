@@ -24,13 +24,17 @@ export function SupportHomeScreenView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <SupportHeader title="고객센터" />
-      <ScrollView contentContainerClassName="gap-7 px-4 pb-10 pt-5">
-        <View className="gap-3">
-          <Text className="text-sm font-semibold text-[#696976]">1:1 문의</Text>
-          <View className="rounded-md bg-[#F6F6FA] p-4">
-            <Text className="text-base font-bold text-[#17171B]">운영팀에게 문의하기</Text>
-            <Text className="mt-1 text-sm text-[#696976]">{operatingHoursLabel}</Text>
-            <View className="mt-4 flex-row gap-3">
+      <ScrollView contentContainerClassName="gap-10 px-4 pb-10 pt-6">
+        <View className="gap-2">
+          <SectionLabel label="1:1 문의" />
+          <View className="rounded-lg bg-[#F6F6FA] px-4 py-5">
+            <View className="gap-[3px]">
+              <Text className="text-base font-bold leading-6 text-[#17171B]">
+                운영팀에게 문의하기
+              </Text>
+              <Text className="text-[13px] leading-5 text-[#696976]">{operatingHoursLabel}</Text>
+            </View>
+            <View className="mt-3 flex-row gap-3">
               <ActionButton onPress={onInquiryNew} primary label="문의하기" />
               <ActionButton onPress={onInquiryList} label="문의 내역" />
             </View>
@@ -38,8 +42,8 @@ export function SupportHomeScreenView({
         </View>
 
         {/* 디자인(3746:78520)에서 FAQ는 별도 페이지가 아니라 고객센터 홈 안의 아코디언이다. */}
-        <View className="gap-3">
-          <Text className="text-sm font-semibold text-[#696976]">자주 묻는 질문</Text>
+        <View className="gap-4">
+          <SectionLabel label="자주 묻는 질문" />
           {faqsLoading ? (
             <View className="rounded-md bg-[#F6F6FA] px-4 py-4">
               <Text className="text-sm text-[#AAAABA]">질문을 불러오는 중...</Text>
@@ -57,7 +61,7 @@ export function SupportHomeScreenView({
               <Text className="text-sm text-[#AAAABA]">등록된 질문이 없어요</Text>
             </View>
           ) : (
-            <View>
+            <View className="gap-3">
               {faqs.map((item) => (
                 <FaqRow
                   key={item.id}
@@ -74,6 +78,11 @@ export function SupportHomeScreenView({
   );
 }
 
+/** 디자인(3746:78700)의 섹션 제목. 1:1 문의 / 자주 묻는 질문이 같은 스타일을 쓴다. */
+function SectionLabel({ label }: { label: string }) {
+  return <Text className="text-[15px] font-bold leading-[23px] text-[#696976]">{label}</Text>;
+}
+
 function FaqRow({
   item,
   open,
@@ -84,17 +93,20 @@ function FaqRow({
   onToggle: () => void;
 }) {
   return (
-    <View className="border-b border-[#ECECF3]">
+    <View className="gap-3">
       <Pressable
         onPress={onToggle}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        className="min-h-12 flex-row items-center gap-3 py-4 active:opacity-70"
+        className="min-h-[26px] flex-row items-center gap-3 active:opacity-70"
       >
-        <Text className="flex-1 text-sm font-medium text-[#17171B]">{item.question}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color="#696976" />
+        <Text className="flex-1 text-sm font-medium leading-[21px] text-[#17171B]">
+          {item.question}
+        </Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={24} color="#696976" />
       </Pressable>
-      {open ? <Text className="pb-4 text-sm leading-6 text-[#696976]">{item.answer}</Text> : null}
+      {open ? <Text className="text-sm leading-6 text-[#696976]">{item.answer}</Text> : null}
+      <View className="h-px w-full bg-[#ECECF3]" />
     </View>
   );
 }
@@ -111,11 +123,15 @@ function ActionButton({
   return (
     <Pressable
       onPress={onPress}
-      className={`h-11 flex-1 items-center justify-center rounded-md border active:opacity-85 ${
-        primary ? 'border-[#256EF4] bg-[#256EF4]' : 'border-[#AAAABA] bg-white'
+      className={`h-[42px] flex-1 items-center justify-center rounded-lg active:opacity-85 ${
+        primary ? 'bg-[#256EF4]' : 'border border-[#DADAE8] bg-white'
       }`}
     >
-      <Text className={`text-sm font-semibold ${primary ? 'text-white' : 'text-[#696976]'}`}>
+      <Text
+        className={`text-[15px] leading-[23px] ${
+          primary ? 'font-semibold text-white' : 'font-medium text-[#696976]'
+        }`}
+      >
         {label}
       </Text>
     </Pressable>
