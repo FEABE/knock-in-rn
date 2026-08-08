@@ -22,6 +22,7 @@ export function MyPageHomeScreenView({
   notificationEditable,
   genderLabel,
   genderIcon,
+  hasRoom,
   roomTypeLabel,
   matchingRows,
   accountRows,
@@ -74,9 +75,13 @@ export function MyPageHomeScreenView({
             </View>
             <View className="flex-row gap-1">
               {user.age > 0 ? (
-                <ReadyBadge label={`${user.age}세 · ${genderLabel}`} tone="red" icon={genderIcon} />
+                <ReadyBadge
+                  label={`${user.age}세 · ${genderLabel}`}
+                  tone={user.gender === 'male' ? 'sky' : 'red'}
+                  icon={genderIcon}
+                />
               ) : null}
-              <ReadyBadge label={roomTypeLabel} tone="blue" icon="home" />
+              <ReadyBadge label={roomTypeLabel} tone={hasRoom ? 'blue' : 'neutral'} icon="home" />
             </View>
           </View>
         </Pressable>

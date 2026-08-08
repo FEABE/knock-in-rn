@@ -65,6 +65,7 @@ export type UseMyPageHomeScreenReturn = {
   notificationEditable: boolean;
   genderLabel: string;
   genderIcon: keyof typeof Ionicons.glyphMap | undefined;
+  hasRoom: boolean;
   roomTypeLabel: string;
   matchingRows: MyPageMenuRow[];
   accountRows: MyPageMenuRow[];
@@ -117,6 +118,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     verification.data?.companyVerified ??
     user?.badges.some((badge) => badge.kind === 'company') ??
     false;
+  const hasRoom = profile.data?.hasRoom ?? false;
   const roomTypeLabel = profile.data?.roomTypeLabel ?? '방 없음';
 
   const matchingRows = useMemo<MyPageMenuRow[]>(
@@ -195,6 +197,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     notificationEditable,
     genderLabel: genderLabel(user?.gender),
     genderIcon: genderIcon(user?.gender),
+    hasRoom,
     roomTypeLabel,
     matchingRows,
     accountRows,
