@@ -11,7 +11,7 @@ import {
   RoomTypeArtwork,
 } from '@/components/ui/ready-to-dev-assets';
 
-import { LifestyleQuestionFlow, QuestionFlowHeader } from '../lifestyle-question-flow';
+import { LifestyleQuestionFlow } from '../lifestyle-question-flow';
 import type { UseProfileEditScreenReturn } from './use-profile-edit-screen';
 
 export type ProfileEditScreenViewProps = UseProfileEditScreenReturn;
@@ -69,23 +69,28 @@ function RoomConditionFlow({
   };
 
   // 미입력 상태로는 다음 화면으로 넘어가지 않는다.
-  // 마지막(방 형태) 화면의 "다음으로"는 상단 저장 버튼이 있으므로 항상 비활성이다.
+  // 마지막(방 형태) 화면은 상단 저장 버튼 없이, 이 값으로 "저장하기" 버튼이 열린다.
   const canGoNext =
-    stage === 0 ? hasRoom !== null : stage === 1 ? regions.length > 0 : stage === 2 ? true : false;
+    stage === 0
+      ? hasRoom !== null
+      : stage === 1
+        ? regions.length > 0
+        : stage === 2
+          ? true
+          : roomTypes.length > 0;
 
   const goNext = () => {
-    if (!canGoNext || stage >= lastStage) return;
+    if (!canGoNext) return;
+    if (stage >= lastStage) {
+      void saveRoom();
+      return;
+    }
     setStage((current) => current + 1);
   };
 
   return (
     <View className="flex-1 bg-white">
-      <QuestionFlowHeader
-        title="방 조건 관리"
-        onBack={goBack}
-        onSave={() => void saveRoom()}
-        saveEnabled={stage === lastStage}
-      />
+      <SimpleFlowHeader title="방 조건 관리" onBack={goBack} />
 
       <ScrollView
         className="flex-1"
@@ -230,7 +235,7 @@ function RoomConditionFlow({
           }`}
         >
           <Text className={`text-[15px] font-bold ${canGoNext ? 'text-white' : 'text-[#AAAABA]'}`}>
-            다음으로
+            {stage === lastStage ? '저장하기' : '다음으로'}
           </Text>
         </Pressable>
       </View>
@@ -242,6 +247,25 @@ function RoomConditionFlow({
         maxSelection={maxRegions}
         onChange={(next) => setRegions(isOffer ? next.slice(-1) : next.slice(0, maxRegions))}
       />
+    </View>
+  );
+}
+
+/** 방 조건 관리 전용 헤더. 저장은 상단이 아니라 마지막 단계의 하단 버튼으로만 한다. */
+function SimpleFlowHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <View className="h-14 flex-row items-center px-3">
+      <Pressable
+        onPress={onBack}
+        accessibilityRole="button"
+        accessibilityLabel="이전으로"
+        className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
+      >
+        <Ionicons name="chevron-back" size={24} color="#696976" />
+      </Pressable>
+      <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
+        {title}
+      </Text>
     </View>
   );
 }
