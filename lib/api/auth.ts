@@ -111,9 +111,14 @@ export function socialLoginSdk(
   }).then(normalizeLoginResponse);
 }
 
-/** 로그아웃 — Swagger에는 서버 로그아웃 API가 없어서 기기 세션 삭제만 수행한다. */
-export function logout(_accessToken?: string): Promise<ApiResponse<UpdatedAt>> {
-  return mockUpdatedAt();
+/** 서버의 FCM 토큰을 정리한 뒤 기기 세션은 SessionProvider에서 별도로 삭제한다. */
+export function logout(accessToken: string): Promise<ApiResponse<UpdatedAt>> {
+  if (USE_MOCK) return mockUpdatedAt();
+  return request('POST', '/users/me/logout', {
+    // 수동 로그아웃의 401은 전역 세션 만료 라우팅을 실행하면 안 된다.
+    auth: false,
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
 }
 
 /** 회원 탈퇴 — DELETE /users/me */
