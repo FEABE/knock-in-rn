@@ -448,6 +448,10 @@ function RequestCardFooter({
     if (incoming) {
       if (selfHasRoommate)
         return <CardStatusRow tone="warn" label="매칭 후에는 수락할 수 없어요" />;
+      // 상대가 먼저 매칭되면 수락은 서버에서 409로 막힌다. 눌러도 아무 일도 일어나지 않는
+      // 버튼을 남기지 말고 이유를 그대로 보여준다.
+      if (opponentHasRoommate)
+        return <CardStatusRow tone="warn" label="상대방이 매칭된 상태에요" />;
       return (
         <View className="flex-row gap-3">
           <CardButton
