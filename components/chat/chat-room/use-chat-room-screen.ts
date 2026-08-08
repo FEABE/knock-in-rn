@@ -8,6 +8,7 @@ import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type ChatSocketEnvelope,
   type ChatSocketStatus,
+  getMyRoommate,
   parseServerDate,
   USE_MOCK,
   useChatRoomActions,
@@ -34,6 +35,8 @@ export type UseChatRoomScreenReturn = {
   error: string | null;
   currentUserId: string;
   blocked: boolean;
+  /** 내가 이미 다른 룸메이트와 매칭되어 있는지. 이 방이 매칭된 방이면 항상 false. */
+  selfHasRoommate: boolean;
   socketStatus: ChatSocketStatus;
   socketError: string | null;
   retrySocket: () => void;
@@ -79,6 +82,25 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [requestSheetVisible, setRequestSheetVisible] = useState(false);
+  const [selfHasRoommate, setSelfHasRoommate] = useState(false);
+
+  // 룸메이트 요청 가능 여부 판정에는 "내가 이미 매칭됐는지"가 필요하다.
+  // 방이 바뀔 때마다 1회만 조회하고, 실패는 조용히 false로 둔다(화면 흐름을 막지 않는다).
+  const roomId = room?.id;
+  const roomMatched = room?.matched === true;
+  useEffect(() => {
+    setSelfHasRoommate(false);
+    if (!roomId || roomMatched || USE_MOCK) return;
+    let cancelled = false;
+    getMyRoommate()
+      .then((res) => {
+        if (!cancelled) setSelfHasRoommate(!res.error && Boolean(res.data?.myRoommateInfo));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId, roomMatched]);
 
   useEffect(() => {
     if (!room) return;
@@ -254,6 +276,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     error,
     currentUserId,
     blocked,
+    selfHasRoommate,
     socketStatus: USE_MOCK ? 'connected' : socket.status,
     socketError: socket.error,
     retrySocket: socket.retry,

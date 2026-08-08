@@ -138,6 +138,10 @@ export type RoommateRequestState = {
   id: string;
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED' | 'EXPIRED';
   role: 'requester' | 'requestee' | 'unknown';
+  /** 요청 생성 시각. 서버 LocalDateTime(UTC) → parseServerDate 결과. */
+  createdAt?: Date;
+  /** 요청 상태가 마지막으로 바뀐 시각. */
+  updatedAt?: Date;
 };
 
 export type ChatRoom = {
@@ -146,5 +150,7 @@ export type ChatRoom = {
   messages: ChatMessage[];
   matched: boolean;
   acceptedRequest: boolean;
+  /** 상대방이 이미 다른 룸메이트와 매칭된 상태인지. */
+  opponentHasRoommate: boolean;
   roommateRequest?: RoommateRequestState;
 };

@@ -243,6 +243,8 @@ function chatRoomItemToDomainRoom(item: ChatRoomItem): ChatRoom {
     messages,
     matched: item.isAgree === true,
     acceptedRequest: item.isAgree === true,
+    // 목록 응답에는 상대 매칭 여부가 없다. 상세 조회에서만 채워진다.
+    opponentHasRoommate: false,
   };
 }
 
@@ -255,9 +257,15 @@ function chatRoomDetailToDomainRoom(
   const messages = detailMessages(detail, peer.id);
   const matched =
     detail.matchingRequiredList?.some((request) => request.status === 'ACCEPTED') === true;
+  // 서버가 목록 순서를 보장하지 않는다. createdAt 문자열 desc가 1차 키이고,
+  // createdAt이 비어 동률이면 requiredId 숫자 desc로 최신 요청을 고른다.
   const latestRequest = [...(detail.matchingRequiredList ?? [])]
     .filter((request) => request.requiredId != null && request.status != null)
-    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))[0];
+    .sort(
+      (a, b) =>
+        (b.createdAt ?? '').localeCompare(a.createdAt ?? '') ||
+        (b.requiredId ?? 0) - (a.requiredId ?? 0),
+    )[0];
   const role = latestRequest
     ? String(latestRequest.requesterMemberId) === currentMemberId
       ? 'requester'
@@ -271,12 +279,15 @@ function chatRoomDetailToDomainRoom(
     messages,
     matched,
     acceptedRequest: matched,
+    opponentHasRoommate: detail.opponentHasRoommate === true,
     roommateRequest:
       latestRequest?.requiredId != null && latestRequest.status
         ? {
             id: String(latestRequest.requiredId),
             status: latestRequest.status,
             role: role ?? 'unknown',
+            createdAt: parseServerDate(latestRequest.createdAt) ?? undefined,
+            updatedAt: parseServerDate(latestRequest.updatedAt) ?? undefined,
           }
         : undefined,
   };
