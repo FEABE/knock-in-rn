@@ -64,6 +64,10 @@ export type UseChatRoomScreenReturn = {
   modalBottomPadding: number;
   scrollRef: MutableRefObject<ScrollView | null>;
   requestSheetVisible: boolean;
+  /** 전체화면으로 펼쳐 볼 이미지. null이면 뷰어가 닫힌 상태. */
+  imageViewer: { imageUrl: string; title: string } | null;
+  openImageViewer: (message: ChatRoomBubble) => void;
+  closeImageViewer: () => void;
   onBack: () => void;
   openRequestSheet: () => void;
   closeRequestSheet: () => void;
@@ -115,6 +119,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const [draft, setDraft] = useState('');
   const [requestSheetVisible, setRequestSheetVisible] = useState(false);
   const [selfHasRoommate, setSelfHasRoommate] = useState(false);
+  const [imageViewer, setImageViewer] = useState<{ imageUrl: string; title: string } | null>(null);
 
   // 룸메이트 요청 가능 여부 판정에는 "내가 이미 매칭됐는지"가 필요하다.
   // 방이 바뀔 때마다 1회만 조회하고, 실패는 조용히 false로 둔다(화면 흐름을 막지 않는다).
@@ -299,7 +304,11 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
       // 배너/카드가 "이미 매칭됨"을 그대로 보여주게 한다.
       if (apiErrorCode(requestError) === ROOMMATE_ALREADY_EXISTS) {
         reload();
-        fetchSelfHasRoommate().then(setSelfHasRoommate);
+        const self = await fetchSelfHasRoommate();
+        setSelfHasRoommate(self);
+        // 두 플래그 모두 상태를 못 잡으면 배너/카드가 안 바뀌어 무반응이 된다.
+        // 그 경우에만 기존 알럿으로 폴백해 최소한의 피드백을 준다.
+        if (!self && !room.opponentHasRoommate) showRequestError(requestError);
         return;
       }
       showRequestError(requestError);
@@ -334,6 +343,20 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     [cancelRoommateRequest, rejectRoommateRequest, room?.roommateRequest],
   );
 
+  const peerName = room?.peer.name;
+  const myName = session?.user.name;
+  const openImageViewer = useCallback(
+    (message: ChatRoomBubble) => {
+      if (!message.imageUrl) return;
+      setImageViewer({
+        imageUrl: message.imageUrl,
+        title: message.mine ? (myName ?? '나') : (peerName ?? '상대방'),
+      });
+    },
+    [myName, peerName],
+  );
+  const closeImageViewer = useCallback(() => setImageViewer(null), []);
+
   useEffect(() => {
     const timer = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(timer);
@@ -360,6 +383,9 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     modalBottomPadding,
     scrollRef,
     requestSheetVisible,
+    imageViewer,
+    openImageViewer,
+    closeImageViewer,
     onBack: () => router.back(),
     openRequestSheet: () => setRequestSheetVisible(true),
     closeRequestSheet: () => setRequestSheetVisible(false),

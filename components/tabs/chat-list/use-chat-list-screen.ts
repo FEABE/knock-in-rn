@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
@@ -35,8 +35,21 @@ export type UseChatListScreenReturn = {
 export function useChatListScreen(): UseChatListScreenReturn {
   const router = useRouter();
   const { isLoggedIn, requireLogin } = useRequireLogin();
-  const { data: rooms, loading, refreshing, error, reload } = useChatRooms(isLoggedIn);
+  const { data: rooms, loading, error, reload } = useChatRooms(isLoggedIn);
   const focusedOnceRef = useRef(false);
+
+  // RefreshControl은 사용자가 직접 당겼을 때만 돌린다. 탭 재진입 시의 포커스 갱신(reload)도
+  // 내부적으로 isFetching을 올리는데, 그걸 그대로 바인딩하면 채팅방에 다녀올 때마다
+  // 당겨서-새로고침 스피너가 목록 위에 떠 보인다.
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const refreshByPull = useCallback(async () => {
+    setPullRefreshing(true);
+    try {
+      await reload();
+    } finally {
+      setPullRefreshing(false);
+    }
+  }, [reload]);
 
   useFocusEffect(
     useCallback(() => {
@@ -83,11 +96,11 @@ export function useChatListScreen(): UseChatListScreenReturn {
   return {
     rows,
     loading,
-    refreshing,
+    refreshing: pullRefreshing,
     error,
     isLoggedIn,
     onLoginPress: () => requireLogin(() => undefined),
-    reload,
+    reload: refreshByPull,
   };
 }
 

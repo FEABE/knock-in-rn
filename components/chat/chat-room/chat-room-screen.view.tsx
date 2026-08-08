@@ -26,6 +26,7 @@ import {
 import { formatKstTime, isSameKstDay, kstClock, type ChatSocketStatus } from '@/lib/api';
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
+import { ChatImageViewer } from './chat-image-viewer';
 import type {
   ChatRoomBubble,
   ChatTimelineItem,
@@ -62,64 +63,77 @@ export function ChatRoomScreenView({
   cancelRequest,
   sendMessage,
   pickAndSendImage,
+  imageViewer,
+  openImageViewer,
+  closeImageViewer,
 }: ChatRoomScreenViewProps) {
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-white"
-    >
-      <ChatHeader peer={room.peer} matched={room.matched} onBack={onBack} onLeave={onLeave} />
-
-      <RequestStatusBanner
-        matched={room.matched}
-        request={room.roommateRequest}
-        processing={processingRequest}
-        selfHasRoommate={selfHasRoommate}
-        opponentHasRoommate={room.opponentHasRoommate}
-        onOpenRequestSheet={openRequestSheet}
-      />
-
-      <SocketStatusBanner status={socketStatus} error={socketError} onRetry={retrySocket} />
-
-      <ScrollView
-        ref={scrollRef}
+    <>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1 bg-white"
-        contentContainerClassName="gap-5 px-4 py-3"
       >
-        <TimelineList
-          timeline={timeline}
-          peer={room.peer}
-          card={{
-            request: room.roommateRequest,
-            peer: room.peer,
-            processing: processingRequest,
-            selfHasRoommate,
-            opponentHasRoommate: room.opponentHasRoommate,
-            onAccept: acceptRequest,
-            onReject: rejectRequest,
-            onCancel: cancelRequest,
-          }}
+        <ChatHeader peer={room.peer} matched={room.matched} onBack={onBack} onLeave={onLeave} />
+
+        <RequestStatusBanner
+          matched={room.matched}
+          request={room.roommateRequest}
+          processing={processingRequest}
+          selfHasRoommate={selfHasRoommate}
+          opponentHasRoommate={room.opponentHasRoommate}
+          onOpenRequestSheet={openRequestSheet}
         />
-      </ScrollView>
 
-      <ReadyChatComposer
-        value={draft}
-        onChangeText={setDraft}
-        onAdd={pickAndSendImage}
-        onSend={sendMessage}
-        sendDisabled={!canSend}
-        uploading={uploadingImage}
-        bottomPadding={inputBottomPadding}
-      />
+        <SocketStatusBanner status={socketStatus} error={socketError} onRetry={retrySocket} />
 
-      <RoommateRequestModal
-        visible={requestSheetVisible}
-        peerName={room.peer.name}
-        onClose={closeRequestSheet}
-        onConfirm={confirmRequest}
-        bottomPadding={modalBottomPadding}
+        <ScrollView
+          ref={scrollRef}
+          className="flex-1 bg-white"
+          contentContainerClassName="gap-5 px-4 py-3"
+        >
+          <TimelineList
+            timeline={timeline}
+            peer={room.peer}
+            onPressImage={openImageViewer}
+            card={{
+              request: room.roommateRequest,
+              peer: room.peer,
+              processing: processingRequest,
+              selfHasRoommate,
+              opponentHasRoommate: room.opponentHasRoommate,
+              onAccept: acceptRequest,
+              onReject: rejectRequest,
+              onCancel: cancelRequest,
+            }}
+          />
+        </ScrollView>
+
+        <ReadyChatComposer
+          value={draft}
+          onChangeText={setDraft}
+          onAdd={pickAndSendImage}
+          onSend={sendMessage}
+          sendDisabled={!canSend}
+          uploading={uploadingImage}
+          bottomPadding={inputBottomPadding}
+        />
+
+        <RoommateRequestModal
+          visible={requestSheetVisible}
+          peerName={room.peer.name}
+          onClose={closeRequestSheet}
+          onConfirm={confirmRequest}
+          bottomPadding={modalBottomPadding}
+        />
+      </KeyboardAvoidingView>
+
+      <ChatImageViewer
+        visible={imageViewer != null}
+        imageUrl={imageViewer?.imageUrl}
+        title={imageViewer?.title}
+        onClose={closeImageViewer}
       />
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -184,10 +198,12 @@ function TimelineList({
   timeline,
   peer,
   card,
+  onPressImage,
 }: {
   timeline: ChatTimelineItem[];
   peer: UserSummary;
   card?: RoommateRequestCardProps;
+  onPressImage?: (message: ChatRoomBubble) => void;
 }) {
   return (
     <>
@@ -197,7 +213,9 @@ function TimelineList({
         return (
           <View key={timelineKey(item)} className="gap-5">
             {showDateDivider ? <ReadyChatDateDivider label={fmtDate(item.at)} /> : null}
-            {item.kind === 'message' ? <MessageItem message={item.message} peer={peer} /> : null}
+            {item.kind === 'message' ? (
+              <MessageItem message={item.message} peer={peer} onPressImage={onPressImage} />
+            ) : null}
             {item.kind === 'request-card' && card ? <RoommateRequestCard {...card} /> : null}
             {item.kind === 'matched-pill' ? <MatchedPill /> : null}
           </View>
@@ -211,13 +229,23 @@ function timelineKey(item: ChatTimelineItem): string {
   return item.kind === 'message' ? `message-${item.message.id}` : item.kind;
 }
 
-function MessageItem({ message, peer }: { message: ChatRoomBubble; peer: UserSummary }) {
+function MessageItem({
+  message,
+  peer,
+  onPressImage,
+}: {
+  message: ChatRoomBubble;
+  peer: UserSummary;
+  onPressImage?: (message: ChatRoomBubble) => void;
+}) {
   if (message.kind === 'system') return <ReadyChatSystemNotice label={message.body} />;
+  const imageUrl = message.kind === 'image' ? message.imageUrl : undefined;
   return (
     <ReadyChatBubble
       mine={message.mine}
       body={message.body}
-      imageUrl={message.kind === 'image' ? message.imageUrl : undefined}
+      imageUrl={imageUrl}
+      onPressImage={imageUrl && onPressImage ? () => onPressImage(message) : undefined}
       timeLabel={fmtTime(message.sentAt)}
       peerName={peer.name}
       peerImageUrl={peer.avatarUrl}
@@ -407,7 +435,7 @@ function RoommateRequestCard({ request, peer, ...actions }: RoommateRequestCardP
         <ReadyProfileAvatar name={peer.name} imageUrl={peer.avatarUrl} size={42} />
       ) : null}
       <View
-        className={`w-[278px] overflow-hidden rounded-bl-lg rounded-br-lg border border-[#DADAE8] bg-white ${
+        className={`w-[278px] max-w-full shrink overflow-hidden rounded-bl-lg rounded-br-lg border border-[#DADAE8] bg-white ${
           incoming ? 'rounded-tl-none rounded-tr-lg' : 'rounded-tl-lg rounded-tr-none'
         }`}
       >

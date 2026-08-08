@@ -1,22 +1,29 @@
 import { useRouter } from 'expo-router';
 import { Alert } from 'react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import {
-  type SupportCategory,
-  useCreateSupportInquiryAction,
-  useSupportCategories,
-} from '@/lib/api';
+import { type SupportCategory, useCreateSupportInquiryAction } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { setMypageHomeToast } from '@/components/mypage/mypage-home/mypage-home-toast';
 import { resetToMypage } from '@/lib/navigation/routes';
+
+/**
+ * 문의 유형은 서버 enum 고정값이라 `GET /inquiries/categorys`로 받아오지 않는다.
+ * id는 디자인(3748:79225)의 노출 순서와 백엔드 enum 순서가 일치한다는 전제로 1~5를 쓴다.
+ */
+export const INQUIRY_CATEGORIES: SupportCategory[] = [
+  { id: '1', name: '매칭/채팅' },
+  { id: '2', name: '계정/인증' },
+  { id: '3', name: '신고/차단' },
+  { id: '4', name: '기타' },
+  { id: '5', name: '의견 남기기' },
+];
 
 export type UseInquiryFormScreenReturn = {
   title: string;
   body: string;
   categories: SupportCategory[];
   categoryId: string;
-  loadingCategories: boolean;
   submitError: string | null;
   canSubmit: boolean;
   submitting: boolean;
@@ -31,20 +38,12 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
   const [state, setState] = useState({
     title: '',
     body: '',
-    categoryId: '',
+    categoryId: INQUIRY_CATEGORIES[0].id,
     submitError: null as string | null,
   });
   const { title, body, categoryId, submitError } = state;
   const { session, requireLogin } = useRequireLogin();
-  const { data: categories, loading: loadingCategories } = useSupportCategories(Boolean(session));
   const { submitInquiry, submitting } = useCreateSupportInquiryAction();
-  const categoryList = useMemo(() => categories ?? [], [categories]);
-
-  useEffect(() => {
-    if (!categoryId && categoryList[0]?.id) {
-      setState((current) => ({ ...current, categoryId: categoryList[0].id }));
-    }
-  }, [categoryId, categoryList]);
 
   const canSubmit =
     Boolean(session) &&
@@ -88,9 +87,8 @@ export function useInquiryFormScreen(): UseInquiryFormScreenReturn {
   return {
     title,
     body,
-    categories: categoryList,
+    categories: INQUIRY_CATEGORIES,
     categoryId,
-    loadingCategories,
     submitError,
     canSubmit,
     submitting,
