@@ -118,9 +118,14 @@ export function useExploreScreen(): UseExploreScreenReturn {
 
   // 탐색 탭바가 화면 스택에 남아있는 상태에서 다시 진입해도(관심 등 다른 화면에서 특정
   // 탭을 지정해 들어온 경우) 이전에 보던 탭이 아니라 요청받은 탭으로 강제 전환한다.
-  useEffect(() => {
-    if (tab === 'rooms' || tab === 'roommates') setActiveTab(tab);
-  }, [tab]);
+  // 하단 탭 전환은 화면을 언마운트하지 않으므로 `tab` 쿼리값이 지난번과 같으면(예: 관심
+  // 화면에서 매번 rooms로 지정) 일반 useEffect는 재실행되지 않아 전환이 씹힌다.
+  // 포커스를 받을 때마다 다시 적용하도록 useFocusEffect로 처리한다.
+  useFocusEffect(
+    useCallback(() => {
+      if (tab === 'rooms' || tab === 'roommates') setActiveTab(tab);
+    }, [tab]),
+  );
 
   const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
   const {
