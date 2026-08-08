@@ -141,9 +141,11 @@ export function useRoommateRequestAction() {
   const rejectMutation = useMutation({ mutationFn: rejectRoommateRequest });
   const cancelMutation = useMutation({ mutationFn: cancelRoommateRequest });
 
+  // 목록 키만 정확히 무효화한다. 접두사 매칭이면 상세 키 `['chat','rooms', id]` 까지 함께
+  // 무효화되어, 소켓 ROOMMATE_REQUEST → reload() 와 겹친 중복 재조회가 발생한다.
   const refreshRequests = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] }),
+      queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'], exact: true }),
       queryClient.invalidateQueries({ queryKey: ['roommate', 'requests'] }),
     ]);
   };

@@ -15,7 +15,9 @@ export function ChatRoomScreen() {
     );
   }
 
-  if (asks.error || !asks.room) {
+  // 방 데이터가 아예 없을 때만 전체 화면을 대체한다. 이미 로드된 방에서 재조회가 한 번
+  // 실패했다고 대화 내용·입력창까지 사라지면 사용자에게는 "채팅방이 나가진" 것으로 보인다.
+  if (!asks.room) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <StatusView message="채팅방을 불러오지 못했어요" detail={asks.error ?? undefined} />

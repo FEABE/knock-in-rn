@@ -127,12 +127,16 @@ export function ChatRoomScreenView({
         />
       </KeyboardAvoidingView>
 
-      <ChatImageViewer
-        visible={imageViewer != null}
-        imageUrl={imageViewer?.imageUrl}
-        title={imageViewer?.title}
-        onClose={closeImageViewer}
-      />
+      {/* 열 때마다 새로 마운트해 translateY/closingRef/Modal 인스턴스를 초기 상태로 되돌린다.
+          (항상 마운트해 두면 스와이프로 닫은 뒤 stale 애니메이션 값이 남아 두 번째 열기가 깨진다.) */}
+      {imageViewer ? (
+        <ChatImageViewer
+          visible
+          imageUrl={imageViewer.imageUrl}
+          title={imageViewer.title}
+          onClose={closeImageViewer}
+        />
+      ) : null}
     </>
   );
 }

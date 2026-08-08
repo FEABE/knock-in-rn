@@ -144,7 +144,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
         hydratedRoomIdRef.current = room.id;
         return room.messages;
       }
-      return mergeMessages(current, room.messages);
+      return reconcileWithServerMessages(current, room.messages);
     });
   }, [room]);
 
@@ -240,20 +240,26 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     }
   }, [appendOptimisticMessage, chatRoomId, draft, room?.id, socket]);
 
+  // 사진 버튼은 `uploadingImage` 로 잠기지만, OS 피커가 떠 있는 동안에는 아직 업로드 전이라
+  // 잠기지 않는다. 연타로 피커가 두 번 열려 같은 사진이 두 번 전송되는 것을 동기 ref 로 막는다.
+  const pickingImageRef = useRef(false);
+
   const pickAndSendImage = useCallback(async () => {
+    if (pickingImageRef.current) return;
     if (!USE_MOCK && socket.status !== 'connected') {
       Alert.alert('연결 확인', '채팅 서버 연결 후 이미지를 보낼 수 있어요.');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: false,
-      quality: 0.85,
-    });
-    const asset = result.assets?.[0];
-    if (result.canceled || !asset || !room) return;
-
+    pickingImageRef.current = true;
     try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false,
+        quality: 0.85,
+      });
+      const asset = result.assets?.[0];
+      if (result.canceled || !asset || !room) return;
+
       const uploaded = await uploadImage(room.id, {
         uri: asset.uri,
         name: asset.fileName ?? `chat-${Date.now()}.jpg`,
@@ -271,6 +277,8 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
         '이미지 전송 실패',
         uploadError instanceof Error ? uploadError.message : '잠시 후 다시 시도해주세요.',
       );
+    } finally {
+      pickingImageRef.current = false;
     }
   }, [appendOptimisticMessage, room, socket, uploadImage]);
 
@@ -454,6 +462,30 @@ function socketEventToMessage(event: ChatSocketEnvelope): ChatMessage | null {
   };
 }
 
+/**
+ * 이미 하이드레이션된 방을 REST 로 재조회했을 때의 병합 규칙.
+ *
+ * REST 상세는 전체 히스토리를 정본으로 내려주지만 `clientMessageId` 를 포함하지 않아,
+ * 낙관적 버블(id=clientMessageId)과 서버 버블(id=DB PK)이 서로 다른 키가 된다.
+ * 그래서 id 기준 merge 로는 같은 메시지가 두 개로 남는다.
+ *
+ * 따라서 REST 응답을 정본으로 삼고, 로컬 메시지 중 **REST 최신 메시지보다 뒤에 온 것만**
+ * (= 서버 응답이 만들어진 시점 이후의 전송 중/소켓 수신 메시지) 덧붙인다.
+ */
+function reconcileWithServerMessages(
+  current: ChatMessage[],
+  incoming: ChatMessage[],
+): ChatMessage[] {
+  if (incoming.length === 0) return current;
+  const latestServerAt = incoming.reduce(
+    (latest, message) => Math.max(latest, message.sentAt.getTime()),
+    Number.NEGATIVE_INFINITY,
+  );
+  const pending = current.filter((message) => message.sentAt.getTime() > latestServerAt);
+  return [...incoming, ...pending].sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
+}
+
+/** 소켓 단건 병합용. id 가 같은 메시지를 덮어써 낙관적 버블을 서버 응답으로 바꾼다. */
 function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
   const byId = new Map(current.map((message) => [message.id, message]));
   incoming.forEach((message) => byId.set(message.id, { ...byId.get(message.id), ...message }));

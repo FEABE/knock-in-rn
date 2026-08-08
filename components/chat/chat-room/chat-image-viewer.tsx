@@ -51,7 +51,13 @@ export function ChatImageViewer({
       toValue,
       duration: 160,
       useNativeDriver: true,
-    }).start(() => onClose());
+    }).start(() => {
+      // 네이티브 드라이버 애니메이션은 JS 쪽 _value를 갱신하지 않는다.
+      // 닫히는 시점에 직접 0으로 확정해 다음 오픈이 밀린 상태로 시작하지 않게 한다.
+      translateY.setValue(0);
+      closingRef.current = false;
+      onClose();
+    });
   };
 
   const panResponder = useRef(
