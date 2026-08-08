@@ -288,7 +288,7 @@ const MOCK_BOARDS: BoardListItem[] = [
     viewer: 187,
     isPopular: false,
     isNew: false,
-    interested: true,
+    interested: false,
   },
 ];
 
