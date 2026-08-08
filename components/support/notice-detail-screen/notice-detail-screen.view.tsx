@@ -23,18 +23,18 @@ export function NoticeDetailScreenView({
       {loading ? (
         <View className="flex-1 items-center justify-center gap-3">
           <ActivityIndicator color="#256EF4" />
-          <Text className="text-sm text-neutral-400">공지를 불러오는 중...</Text>
+          <Text className="text-sm text-[#AAAABA]">공지를 불러오는 중...</Text>
         </View>
       ) : error ? (
-        <View className="p-5">
+        <View className="px-4 pt-5">
           <ReadyErrorState title="공지를 불러오지 못했어요" description={error} onRetry={retry} />
         </View>
       ) : (
-        <ScrollView contentContainerClassName="gap-2 p-5">
-          <Text className="text-xl font-bold text-[#17171B]">{title}</Text>
-          <Text className="text-xs text-[#AAAABA]">{dateLabel}</Text>
+        <ScrollView contentContainerClassName="px-4 pb-10 pt-5">
+          <Text className="text-[15px] font-semibold leading-[23px] text-[#17171B]">{title}</Text>
+          <Text className="mt-[6px] text-xs leading-[18px] text-[#AAAABA]">{dateLabel}</Text>
           {bodyUnavailable ? (
-            <View className="mt-4">
+            <View className="mt-3">
               <ReadyErrorState
                 title="공지 본문을 불러오지 못했어요"
                 description="잠시 후 다시 시도해주세요."
@@ -43,7 +43,7 @@ export function NoticeDetailScreenView({
               />
             </View>
           ) : (
-            <Text className="mt-4 text-sm leading-6 text-[#3A3A44]">{body}</Text>
+            <Text className="mt-3 text-sm leading-[21px] text-[#17171B]">{body}</Text>
           )}
         </ScrollView>
       )}
