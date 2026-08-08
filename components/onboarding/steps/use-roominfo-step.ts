@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { useRegionOptions, useRoomTypeOptions, type RoomTypeOption } from '@/lib/api';
 import {
+  MAX_ROOM_CONDITION_DEPOSIT,
   ROOM_INFO_PROGRESS_START,
   useOnboarding,
   useOnboardingRoom,
@@ -92,7 +93,9 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
           : room.regions.length > 0
         : stage === 2
           ? hasRoom
-            ? room.deposit != null && room.monthlyRent != null
+            ? room.deposit != null &&
+              room.deposit <= MAX_ROOM_CONDITION_DEPOSIT &&
+              room.monthlyRent != null
             : true
           : stage === 3
             ? hasRoom
@@ -143,7 +146,10 @@ export function useRoomInfoStep({ onComplete }: UseRoomInfoStepProps): UseRoomIn
     setRegion: (region) => patch({ region }),
     setRegions: (regions) => patch({ regions }),
     removeRegion: (id) => patch({ regions: room.regions.filter((r) => r.id !== id) }),
-    setDeposit: (value) => patch({ deposit: value }),
+    setDeposit: (value) =>
+      patch({
+        deposit: value == null ? null : Math.min(MAX_ROOM_CONDITION_DEPOSIT, Math.max(0, value)),
+      }),
     setMonthlyRent: (value) => patch({ monthlyRent: value }),
     toggleSingleRoomType: (value) => patch({ roomType: room.roomType === value ? null : value }),
     setBudgetDeposit: (value) => patch({ budgetDeposit: value }),

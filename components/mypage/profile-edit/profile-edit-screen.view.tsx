@@ -167,12 +167,12 @@ function RoomConditionFlow({
             <RangeField
               label={isOffer ? '보증금' : '예산 보증금'}
               min={0}
-              max={isOffer ? 6000 : MAX_ROOM_CONDITION_DEPOSIT}
+              max={MAX_ROOM_CONDITION_DEPOSIT}
               step={100}
               value={deposit}
               onChange={setDeposit}
               tickLabels={['최소', '400만', '1,200만', '최대']}
-              scaleStops={[0, 400, 1200, isOffer ? 6000 : MAX_ROOM_CONDITION_DEPOSIT]}
+              scaleStops={[0, 400, 1200, MAX_ROOM_CONDITION_DEPOSIT]}
             />
             <RangeField
               label={isOffer ? '월세' : '예산 월세'}

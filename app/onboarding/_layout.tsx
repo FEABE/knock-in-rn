@@ -20,6 +20,7 @@ import {
 } from '@/lib/api';
 import { useSession } from '@/lib/domain';
 import {
+  MAX_ROOM_CONDITION_DEPOSIT,
   ONBOARDING_WRITE_ENABLED,
   ONBOARDING_STEPS,
   OnboardingProvider,
@@ -63,15 +64,15 @@ function toRequest(
       profile.lifestyleChoices,
     ),
     type: isHas ? 'OFFER' : 'SEEKER',
-    minDeposit: isHas ? undefined : room.budgetDeposit.min,
-    maxDeposit: isHas ? undefined : room.budgetDeposit.max,
+    minDeposit: isHas ? undefined : clampDeposit(room.budgetDeposit.min),
+    maxDeposit: isHas ? undefined : clampDeposit(room.budgetDeposit.max),
     minMonthlyRent: isHas ? undefined : seekerBudgetRent.min,
     maxMonthlyRent: isHas ? undefined : seekerBudgetRent.max,
     // 운영 DTO는 협의 가능 여부와 별개로 입주일을 필수로 받는다.
     comeEnableAt: formatApiCalendarDate(moveDate ?? new Date()),
     region: regionIds,
     roomProfile: roomProfileIds,
-    deposit: isHas ? (room.deposit ?? 0) : undefined,
+    deposit: isHas ? clampDeposit(room.deposit ?? 0) : undefined,
     monthlyRent: isHas ? (room.monthlyRent ?? 0) : undefined,
     comeableAtNegotiable: isMoveDateNegotiable,
   });
@@ -127,6 +128,9 @@ function validateOnboarding(
     if (!room.region) missing.push('방 정보: 방 위치');
     else if (!regionIds.length) missing.push('방 정보: 저장 가능한 방 위치');
     if (room.deposit == null) missing.push('방 정보: 보증금');
+    else if (room.deposit > MAX_ROOM_CONDITION_DEPOSIT) {
+      missing.push(`방 정보: 보증금 ${MAX_ROOM_CONDITION_DEPOSIT.toLocaleString()}만원 이하`);
+    }
     if (room.monthlyRent == null) missing.push('방 정보: 월세');
     if (!room.roomType) missing.push('방 정보: 방 형태');
     else if (!roomProfileIds.length) missing.push('방 정보: 저장 가능한 방 형태');
@@ -142,6 +146,10 @@ function validateOnboarding(
 
 function validationMessage(missing: string[]): string {
   return `다음 항목을 입력해주세요.\n\n${missing.map((item) => `- ${item}`).join('\n')}`;
+}
+
+function clampDeposit(value: number): number {
+  return Math.min(MAX_ROOM_CONDITION_DEPOSIT, Math.max(0, value));
 }
 
 function profileSaveErrorMessage(

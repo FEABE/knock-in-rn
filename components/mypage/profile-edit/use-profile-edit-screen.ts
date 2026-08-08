@@ -101,7 +101,7 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
       return {
         ...current,
         hasRoom,
-        deposit: hasRoom === false ? clampDepositRange(current.deposit) : current.deposit,
+        deposit: clampDepositRange(current.deposit),
       };
     });
   const setRegions: Dispatch<SetStateAction<Region[]>> = (next) =>
@@ -109,7 +109,10 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
   const setMoveInDate: Dispatch<SetStateAction<Date | null>> = (next) =>
     setState((current) => ({ ...current, moveInDate: resolveAction(next, current.moveInDate) }));
   const setDeposit: Dispatch<SetStateAction<RangeValue>> = (next) =>
-    setState((current) => ({ ...current, deposit: resolveAction(next, current.deposit) }));
+    setState((current) => ({
+      ...current,
+      deposit: clampDepositRange(resolveAction(next, current.deposit)),
+    }));
   const setRent: Dispatch<SetStateAction<RangeValue>> = (next) =>
     setState((current) => ({ ...current, rent: resolveAction(next, current.rent) }));
   const setRoomTypes: Dispatch<SetStateAction<string[]>> = (next) =>
@@ -140,7 +143,7 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
         ...current,
         loadedLifestyles: nextLoadedLifestyles,
         hasRoom: hasRoom ?? current.hasRoom,
-        deposit: hasRoom === false ? clampDepositRange(loadedDeposit) : loadedDeposit,
+        deposit: clampDepositRange(loadedDeposit),
         rent: [
           data.minMounthRent ?? data.mounthRent ?? 0,
           data.maxMounthRent ?? data.mounthRent ?? 50,
@@ -249,7 +252,7 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
         comeEnableAt: formatApiCalendarDate(moveInDate ?? new Date()),
         region: isOffer ? regionIds.slice(0, 1) : regionIds,
         roomProfile: isOffer ? roomTypeIds.slice(0, 1) : roomTypeIds,
-        deposit: isOffer ? deposit[0] : undefined,
+        deposit: isOffer ? clampDepositValue(deposit[0]) : undefined,
         monthlyRent: isOffer ? rent[0] : undefined,
       }),
     );
