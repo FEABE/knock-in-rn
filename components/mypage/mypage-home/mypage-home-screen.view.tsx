@@ -79,6 +79,7 @@ export function MyPageHomeScreenView({
                   label={`${user.age}세 · ${genderLabel}`}
                   tone={user.gender === 'male' ? 'sky' : 'red'}
                   icon={genderIcon}
+                  bold
                 />
               ) : null}
               <ReadyBadge label={roomTypeLabel} tone={hasRoom ? 'blue' : 'neutral'} icon="home" />

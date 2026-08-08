@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
 import type { RangeValue } from '@/components/ui/headless';
+import { setMypageHomeToast } from '@/components/mypage/mypage-home/mypage-home-toast';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   compactNumbers,
@@ -188,7 +189,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     // 전체 저장(POST)은 기존 행을 지우고 다시 만들기 때문에 id가 바뀐다.
     // 다시 읽어두지 않으면 같은 화면에서 두 번째 저장이 옛 id로 나가 무시된다.
     await refreshLoadedLifestyles();
-    Alert.alert('저장 완료', '생활 패턴이 저장되었어요.');
+    setMypageHomeToast('생활 패턴이 저장되었어요');
+    router.back();
   };
 
   const refreshLoadedLifestyles = async () => {
@@ -243,7 +245,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
       Alert.alert('저장 실패', saveErrorMessage(res.error, res.status));
       return;
     }
-    Alert.alert('저장 완료', '방 조건이 저장되었어요.');
+    setMypageHomeToast('방 조건이 저장되었어요');
+    router.back();
   };
 
   return {
