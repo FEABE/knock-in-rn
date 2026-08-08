@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 
-import type { UserSummary } from '@/lib/domain';
+import type { LifestyleSummaryItem, PreferencePrioritySummaryItem } from '@/lib/api';
 import { goMypageProfile } from '@/lib/navigation/routes';
 
 import { RoomPostFormView } from './room-post-form.view';
@@ -12,10 +12,9 @@ export type RoomPostFormProps = {
   onSubmit: (values: RoomFormValues) => void;
   submitLabel: string;
   mode?: 'create' | 'edit';
-  profile?: UserSummary;
-  lifestyleTiles?: { id: string; label: string; value: string }[];
-  preferredLifestyles?: { label: string; value: string }[];
-  importantConditions?: string[];
+  lifestyleTiles?: LifestyleSummaryItem[];
+  preferredLifestyles?: LifestyleSummaryItem[];
+  importantConditions?: PreferencePrioritySummaryItem[];
   submitting?: boolean;
 };
 
@@ -24,7 +23,6 @@ export function RoomPostForm({
   onSubmit,
   submitLabel,
   mode = 'create',
-  profile,
   lifestyleTiles,
   preferredLifestyles,
   importantConditions,
@@ -38,7 +36,6 @@ export function RoomPostForm({
       {...asks}
       submitLabel={submitLabel}
       mode={mode}
-      profile={profile}
       lifestyleTiles={lifestyleTiles}
       preferredLifestyles={preferredLifestyles}
       importantConditions={importantConditions}

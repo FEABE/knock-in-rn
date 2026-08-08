@@ -4,8 +4,12 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { TextField } from '@/components/ui/headless';
-import { RoomOptionArtwork, RoomTypeArtwork } from '@/components/ui/ready-to-dev-assets';
-import type { UserSummary } from '@/lib/domain';
+import {
+  PriorityArtwork,
+  RoomOptionArtwork,
+  RoomTypeArtwork,
+} from '@/components/ui/ready-to-dev-assets';
+import type { LifestyleSummaryItem, PreferencePrioritySummaryItem } from '@/lib/api';
 import type { Region } from '@/lib/onboarding';
 
 import { MAX_ROOM_DESCRIPTION_LENGTH, MAX_ROOM_PHOTOS } from './room-post-form.model';
@@ -15,13 +19,12 @@ import type { UseRoomPostFormReturn } from './use-room-post-form';
 export type RoomPostFormViewProps = UseRoomPostFormReturn & {
   submitLabel: string;
   mode: 'create' | 'edit';
-  profile?: UserSummary;
-  /** 서버(/users/me/profile/all)에서 읽은 생활패턴 4타일. 있으면 세션 대신 이걸 렌더한다. */
-  lifestyleTiles?: { id: string; label: string; value: string }[];
+  /** 서버 프로필과 생활패턴 메타 API를 결합한 생활패턴 전체. */
+  lifestyleTiles?: LifestyleSummaryItem[];
   /** 서버(/users/me/preferences/all)에서 읽은 선호 룸메이트 조건. */
-  preferredLifestyles?: { label: string; value: string }[];
-  /** 서버에서 읽은 중요 조건 이름 목록. */
-  importantConditions?: string[];
+  preferredLifestyles?: LifestyleSummaryItem[];
+  /** 서버에서 읽은 우선순위 조건. */
+  importantConditions?: PreferencePrioritySummaryItem[];
   submitting: boolean;
   onEditProfile: () => void;
 };
@@ -36,7 +39,6 @@ export function RoomPostFormView({
   bottomPadding,
   submitLabel,
   mode,
-  profile,
   lifestyleTiles,
   preferredLifestyles,
   importantConditions,
@@ -260,49 +262,52 @@ export function RoomPostFormView({
           </View>
 
           <View className="flex-row flex-wrap gap-2">
-            {lifestyleTiles ? (
+            {lifestyleTiles?.length ? (
               lifestyleTiles.map((tile) => (
                 <ProfileTile key={tile.id} label={tile.label} value={tile.value} />
               ))
             ) : (
-              <>
-                <ProfileTile label="취침 시간" value={profileSleepLabel(profile)} />
-                <ProfileTile
-                  label="청결 민감도"
-                  value={profileSensitivityLabel(profile?.lifestyle?.cleanliness)}
-                />
-                <ProfileTile
-                  label="소음 민감도"
-                  value={profileSensitivityLabel(profile?.lifestyle?.noise)}
-                />
-                <ProfileTile label="흡연" value={profileSmokingLabel(profile)} />
-              </>
+              <ProfileSummaryEmpty message="아직 생활패턴을 입력하지 않았어요" />
             )}
           </View>
 
-          <View className="gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
-            <KeyValueRow
-              label="선호 성별"
-              value={
-                profile?.preferredGender === 'same'
-                  ? profile.gender === 'female'
-                    ? '여성만'
-                    : '남성만'
-                  : '성별 무관'
-              }
-            />
-            {(preferredLifestyles ?? []).map((item) => (
-              <KeyValueRow key={item.label} label={item.label} value={item.value} />
-            ))}
-            <KeyValueRow
-              label="중요 조건"
-              value={
-                (importantConditions ?? profile?.importantConditions ?? [])
-                  .slice(0, 2)
-                  .join(' · ') || '미입력'
-              }
-            />
-          </View>
+          <Text className="text-[15px] font-bold text-[#17171B]">선호 룸메이트 조건</Text>
+          {preferredLifestyles?.length ? (
+            <View className="flex-row flex-wrap gap-2">
+              {preferredLifestyles.map((item) => (
+                <View
+                  key={item.id}
+                  className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8] bg-white px-3"
+                >
+                  <PriorityArtwork label={item.value} image={item.image} size={22} />
+                  <Text className="text-[14px] font-medium leading-[21px] text-[#696976]">
+                    {item.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <ProfileSummaryEmpty message="아직 선호 룸메이트 조건을 입력하지 않았어요" />
+          )}
+
+          <Text className="text-[15px] font-semibold text-[#256EF4]">우선순위</Text>
+          {importantConditions?.length ? (
+            <View className="flex-row flex-wrap gap-2">
+              {importantConditions.map((condition) => (
+                <View
+                  key={condition.id}
+                  className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg bg-[#ECF2FE] px-3"
+                >
+                  <PriorityArtwork label={condition.name} image={condition.image} size={22} />
+                  <Text className="text-[14px] font-medium leading-[21px] text-[#17171B]">
+                    {condition.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <ProfileSummaryEmpty message="아직 우선순위를 선택하지 않았어요" />
+          )}
         </Section>
       </ScrollView>
 
@@ -424,25 +429,6 @@ function NegotiableOption({
       </Text>
     </Pressable>
   );
-}
-
-export function profileSleepLabel(profile?: UserSummary): string {
-  return profile?.lifestyle?.sleepTime && profile?.lifestyle?.wakeTime
-    ? `${profile.lifestyle.sleepTime}~${profile.lifestyle.wakeTime}`
-    : '미입력';
-}
-
-export function profileSensitivityLabel(level?: number): string {
-  if (level === undefined) return '미입력';
-  return level >= 4 ? '높음' : level >= 3 ? '보통' : '낮음';
-}
-
-export function profileSmokingLabel(profile?: UserSummary): string {
-  return profile?.lifestyle?.smoking === 'no'
-    ? '비흡연'
-    : profile?.lifestyle?.smoking === 'outdoor'
-      ? '실외만'
-      : '미입력';
 }
 
 function MetadataState({
@@ -592,11 +578,10 @@ function ProfileTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function KeyValueRow({ label, value }: { label: string; value: string }) {
+function ProfileSummaryEmpty({ message }: { message: string }) {
   return (
-    <View className="flex-row items-center justify-between">
-      <Text className="text-xs text-neutral-500">{label}</Text>
-      <Text className="text-sm font-medium text-neutral-800">{value}</Text>
+    <View className="w-full rounded-lg bg-[#F6F6FA] px-4 py-4">
+      <Text className="text-[13px] text-[#696976]">{message}</Text>
     </View>
   );
 }

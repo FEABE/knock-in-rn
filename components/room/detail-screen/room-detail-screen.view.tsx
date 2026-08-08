@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -11,12 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { RoomThumbnailPlaceholder } from '@/components/domain';
+import { RoomThumbnailPlaceholder, RoomTypePill } from '@/components/domain';
 import { PriorityArtwork, RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
 import {
   ReadyActionRow,
   ReadyActionSheet,
-  ReadyBadge,
   ReadyDivider,
   ReadyMetadataTile,
   ReadyMoreButton,
@@ -24,7 +23,7 @@ import {
   ReadyScreenHeader,
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
-import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
+import { ReadyConfirmDialog } from '@/components/ui/ready-to-dev-feedback';
 import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
 import type { ImportantCondition, RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
@@ -57,19 +56,6 @@ const PREFERRED_GENDER_LABEL: Record<string, string> = {
   any: '성별 무관',
 };
 
-const DETAIL_BADGE_SHADOW_STYLE = {
-  shadowColor: '#696976',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.15,
-  shadowRadius: 2,
-  elevation: 2,
-} as const;
-
-const DETAIL_BADGE_TEXT_STYLE = {
-  includeFontPadding: false,
-  textAlignVertical: 'center',
-} as const;
-
 export type RoomDetailScreenViewProps = UseRoomDetailScreenReturn;
 
 type RoomDetailTab =
@@ -90,11 +76,18 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
     () =>
       ROOM_DETAIL_TABS.filter((tab) => {
         if (tab.key === 'compatibility') return !props.isOwner;
-        if (tab.key === 'moveIn') return Boolean(props.post?.moveInDate);
+        if (tab.key === 'moveIn') {
+          return Boolean(props.post?.moveInDate || props.post?.moveInNegotiable);
+        }
         if (tab.key === 'options') return Boolean(props.post?.options?.length);
         return true;
       }),
-    [props.isOwner, props.post?.moveInDate, props.post?.options?.length],
+    [
+      props.isOwner,
+      props.post?.moveInDate,
+      props.post?.moveInNegotiable,
+      props.post?.options?.length,
+    ],
   );
 
   useEffect(() => {
@@ -171,7 +164,6 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
           index={props.photoIndex}
           onIndexChange={props.setPhotoIndex}
           roomTypeLabel={ROOM_TYPE_LABEL[props.post.roomType] ?? props.post.roomType}
-          showNew={isRecent(props.post.createdAt)}
         />
 
         <TitleBlock post={props.post} />
@@ -193,7 +185,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         >
           <PreferredRoommateBlock post={props.post} />
         </View>
-        {props.post.moveInDate ? (
+        {props.post.moveInDate || props.post.moveInNegotiable ? (
           <>
             <ReadyDivider />
             <View
@@ -308,11 +300,6 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         onCancel={props.onCancelDelete}
         onConfirm={props.onConfirmDelete}
       />
-      <ReadyToast
-        visible={props.deleteToastVisible}
-        message="게시글이 삭제되었어요"
-        tone="success"
-      />
     </SafeAreaView>
   );
 }
@@ -397,13 +384,11 @@ function PhotoCarousel({
   index,
   onIndexChange,
   roomTypeLabel,
-  showNew,
 }: {
   photos: string[];
   index: number;
   onIndexChange: (next: number) => void;
   roomTypeLabel: string;
-  showNew: boolean;
 }) {
   const { width } = useWindowDimensions();
   const photoHeight = 180;
@@ -432,9 +417,8 @@ function PhotoCarousel({
           ))}
         </ScrollView>
       )}
-      <View className="absolute left-4 top-4 flex-row gap-2">
-        {showNew ? <DetailNewPill /> : null}
-        <DetailRoomTypePill label={roomTypeLabel} />
+      <View className="absolute left-2.5 top-3 flex-row gap-1">
+        <RoomTypePill label={roomTypeLabel} />
       </View>
       {photos.length > 1 ? (
         <View className="absolute inset-x-0 bottom-3 flex-row justify-center gap-1.5">
@@ -486,62 +470,51 @@ function TitleBlock({ post }: { post: RoomPost }) {
 
 function AuthorMetaPill({ author }: { author: UserSummary }) {
   const genderLabel = GENDER_LABEL[author.gender] ?? '기타';
-  const symbol = author.gender === 'female' ? '♀' : author.gender === 'male' ? '♂' : '';
+  const isMale = author.gender === 'male';
+  const isFemale = author.gender === 'female';
   return (
-    <View className="h-[24px] flex-row items-center justify-center rounded bg-[#FDEFEC] px-1.5">
-      <Text className="text-[12px] font-semibold leading-[18px] text-[#DE3412]">
-        {symbol ? `${symbol} ` : ''}
+    <View
+      className={`h-[22px] flex-row items-center justify-center gap-1 rounded px-[5px] ${
+        isMale ? 'bg-[#E7F4FE]' : isFemale ? 'bg-[#FDEFEC]' : 'bg-[#F1F1F6]'
+      }`}
+    >
+      {isMale || isFemale ? (
+        <Ionicons
+          name={isMale ? 'male' : 'female'}
+          size={12}
+          color={isMale ? '#0B78CB' : '#DE3412'}
+        />
+      ) : null}
+      <Text
+        className={`text-[12px] font-semibold leading-[18px] ${
+          isMale ? 'text-[#0B78CB]' : isFemale ? 'text-[#DE3412]' : 'text-[#696976]'
+        }`}
+      >
         {author.age}세 · {genderLabel}
       </Text>
     </View>
   );
 }
 
-function DetailNewPill() {
-  return (
-    <View
-      className="h-[26px] items-center justify-center rounded bg-[#4C87F6] px-1.5"
-      style={DETAIL_BADGE_SHADOW_STYLE}
-    >
-      <Text
-        style={DETAIL_BADGE_TEXT_STYLE}
-        className="text-[14px] font-semibold leading-[21px] text-white"
-      >
-        NEW
-      </Text>
-    </View>
-  );
-}
-
-function DetailRoomTypePill({ label }: { label: string }) {
-  return (
-    <View
-      className="h-[26px] items-center justify-center rounded bg-[#ECF2FE] px-1.5"
-      style={DETAIL_BADGE_SHADOW_STYLE}
-    >
-      <Text
-        style={DETAIL_BADGE_TEXT_STYLE}
-        className="text-[14px] font-semibold leading-[21px] text-[#4C87F6]"
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 function BasicInfoBlock({ post }: { post: RoomPost }) {
-  if (!post.moveInDate) return null;
+  const negotiable = post.moveInNegotiable === true;
+  if (!negotiable && !post.moveInDate) return null;
+
   return (
     <ReadySection title="입주 가능일">
       <View className="h-[49px] flex-row items-center justify-between rounded-lg border border-[#DADAE8] px-4">
         <View className="flex-row items-center gap-2">
-          <Ionicons name="calendar-outline" size={22} color="#17171B" />
-          <Text className="text-[14px] leading-[21px] text-[#17171B]">
-            {fmtDate(post.moveInDate)}
+          <Ionicons name="calendar-outline" size={22} color={negotiable ? '#696976' : '#17171B'} />
+          <Text
+            className={`text-[14px] leading-[21px] ${negotiable ? 'text-[#696976]' : 'text-[#17171B]'}`}
+          >
+            {negotiable ? '입주 가능일 없음' : fmtDate(post.moveInDate!)}
           </Text>
         </View>
         <View className="h-[26px] items-center justify-center rounded bg-[#ECF2FE] px-2">
-          <Text className="text-[13px] font-medium leading-[19px] text-[#4C87F6]">협의 불가능</Text>
+          <Text className="text-[13px] font-medium leading-[19px] text-[#4C87F6]">
+            {negotiable ? '협의 가능' : '협의 불가능'}
+          </Text>
         </View>
       </View>
     </ReadySection>
@@ -643,9 +616,9 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
   return (
     <ReadySection title="선호 룸메이트 조건">
       <View className="flex-row flex-wrap gap-2">
-        {conditionChips.map((condition) => (
+        {conditionChips.map((condition, index) => (
           <PreferredConditionChip
-            key={condition.label}
+            key={`preferred-condition-${index}`}
             label={condition.label}
             image={condition.image}
           />
@@ -656,8 +629,8 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
         <View className="mt-3 gap-3">
           <Text className="text-[15px] font-semibold leading-6 text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
-            {priorityItems.map((condition) => (
-              <PriorityConditionChip key={conditionName(condition)} condition={condition} />
+            {priorityItems.map((condition, index) => (
+              <PriorityConditionChip key={`priority-${index}`} condition={condition} />
             ))}
           </View>
         </View>
@@ -754,17 +727,7 @@ function CompatibilityBlock({ post, isLoggedIn }: { post: RoomPost; isLoggedIn: 
   const scoreColor = hasScore ? '#256EF4' : '#9CA3AF';
 
   return (
-    <ReadySection
-      title="궁합 점수"
-      accessory={
-        <View className="flex-row items-center gap-1">
-          <Text className="text-[13px] font-medium leading-[19px] text-[#AAAABA]">
-            프로필 완성 후 실제 점수 반영
-          </Text>
-          <Ionicons name="information-circle" size={18} color="#DADAE8" />
-        </View>
-      }
-    >
+    <ReadySection title="궁합 점수">
       <View className="items-center py-4">
         <View
           className="items-center justify-center"
@@ -829,8 +792,18 @@ function CompatibilityRing({ progress, active }: { progress: number; active: boo
 function LocationBlock({ post }: { post: RoomPost }) {
   const regionLabel = `${post.region.city} ${post.region.district}`.trim();
   return (
-    <ReadySection title="위치">
-      <View className="relative h-40 overflow-hidden rounded-lg bg-[#F1F3F5]">
+    <ReadySection
+      title="위치"
+      accessory={
+        <View className="flex-row items-center gap-1.5">
+          <Text className="text-[13px] font-medium leading-[19px] text-[#AAAABA]">
+            안전상 대략적인 위치 안내
+          </Text>
+          <Ionicons name="information-circle" size={18} color="#DADAE8" />
+        </View>
+      }
+    >
+      <View className="relative h-40 overflow-hidden bg-[#F1F3F5]">
         <View className="absolute -left-5 top-9 h-3 w-[115%] rotate-[-8deg] bg-white/80" />
         <View className="absolute -left-5 bottom-8 h-2 w-[115%] rotate-[7deg] bg-white/70" />
         <View className="absolute left-20 -top-5 h-[125%] w-3 rotate-[12deg] bg-white/75" />
@@ -847,9 +820,14 @@ function LocationBlock({ post }: { post: RoomPost }) {
         </View>
       </View>
       <View className="flex-row items-center gap-2">
-        <Ionicons name="location-outline" size={18} color="#8B8B9B" />
-        <Text className="text-xs text-neutral-600">{regionLabel || '위치 정보 없음'}</Text>
+        <Ionicons name="location-outline" size={22} color="#696976" />
+        <Text className="text-[15px] font-medium leading-[22px] text-[#17171B]">
+          {regionLabel || '위치 정보 없음'}
+        </Text>
       </View>
+      <Text className="text-[13px] leading-[21px] text-[#AAAABA]">
+        * 노크인은 등록된 정보만 제공하며, 거래에 대한 책임을 지지 않습니다. 거래 시 주의해주세요.
+      </Text>
     </ReadySection>
   );
 }
@@ -868,17 +846,29 @@ function AuthorBlock({ author, onPress }: { author: UserSummary; onPress: () => 
           </View>
           <View className="flex-row flex-wrap gap-2">
             {author.badges.map((badge) => (
-              <ReadyBadge
-                key={badge.kind}
-                label={badge.kind === 'school' ? '학교 인증' : '회사 인증'}
-                tone="green"
-                icon={badge.kind === 'school' ? 'school-outline' : 'business-outline'}
-              />
+              <AuthorVerificationBadge key={badge.kind} kind={badge.kind} />
             ))}
           </View>
         </View>
       </Pressable>
     </ReadySection>
+  );
+}
+
+function AuthorVerificationBadge({ kind }: { kind: 'school' | 'company' }) {
+  const isSchool = kind === 'school';
+  const color = isSchool ? '#3FA654' : '#4C87F6';
+  return (
+    <View
+      className={`h-7 flex-row items-center gap-1 rounded px-2 ${
+        isSchool ? 'bg-[#EAF6EC]' : 'bg-[#ECF2FE]'
+      }`}
+    >
+      <MaterialIcons name={isSchool ? 'verified' : 'work'} size={18} color={color} />
+      <Text className="text-[12px] font-semibold leading-[18px]" style={{ color }}>
+        {isSchool ? '학교 인증' : '회사 인증'}
+      </Text>
+    </View>
   );
 }
 
@@ -983,9 +973,4 @@ function timeAgo(date: Date): string {
   const month = Math.floor(day / 30);
   if (month < 12) return `${month}달 전`;
   return `${Math.floor(month / 12)}년 전`;
-}
-
-function isRecent(date: Date): boolean {
-  const age = Date.now() - date.getTime();
-  return age >= 0 && age <= 7 * 24 * 60 * 60 * 1000;
 }
