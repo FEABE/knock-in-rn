@@ -12,7 +12,6 @@ import {
 } from '@/lib/api';
 import { useSession, type UserSummary } from '@/lib/domain';
 import {
-  goKakaoLogin,
   goMypageAccount,
   goMypageBasicProfile,
   goMypageMyRooms,
@@ -23,6 +22,7 @@ import {
   goSupportTerms,
   goVerification,
 } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
 
 import { consumeMypageHomeToast } from './mypage-home-toast';
 
@@ -79,6 +79,7 @@ export type UseMyPageHomeScreenReturn = {
 export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
   const router = useRouter();
   const { session, setVisibility } = useSession();
+  const { requireLogin } = useRequireLogin();
   const profile = useMyPageProfileSummary(!!session);
   const verification = useMyVerificationSummary(!!session);
   const { profileVisible, setProfileVisible } = useProfileVisibilityToggle(
@@ -200,7 +201,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     accountRows,
     supportRows,
     toast,
-    onSignIn: () => goKakaoLogin(router),
+    onSignIn: () => requireLogin(() => undefined),
     onProfilePress: () => goMypageBasicProfile(router),
     setProfileVisible,
     setNotificationEnabled,

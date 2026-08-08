@@ -4,8 +4,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useSession } from '@/lib/domain';
-import { goKakaoLogin } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
 
 import { LoginPromptCard } from './login-prompt-card';
 
@@ -21,7 +20,7 @@ export function AuthenticatedRoute({
   promptDescription: string;
 }) {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, requireLogin } = useRequireLogin();
 
   if (session) return children;
 
@@ -38,7 +37,7 @@ export function AuthenticatedRoute({
         <LoginPromptCard
           title={promptTitle}
           description={promptDescription}
-          onPress={() => goKakaoLogin(router)}
+          onPress={() => requireLogin(() => undefined)}
         />
       </View>
     </SafeAreaView>

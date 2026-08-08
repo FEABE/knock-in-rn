@@ -10,8 +10,8 @@ import {
   parseServerDate,
   useChatRooms,
 } from '@/lib/api';
-import { useSession } from '@/lib/domain';
-import { goChatRoom, goKakaoLogin } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
+import { goChatRoom } from '@/lib/navigation/routes';
 
 export type ChatListRow = {
   room: ChatRoomItem;
@@ -34,8 +34,7 @@ export type UseChatListScreenReturn = {
 
 export function useChatListScreen(): UseChatListScreenReturn {
   const router = useRouter();
-  const { session } = useSession();
-  const isLoggedIn = !!session;
+  const { isLoggedIn, requireLogin } = useRequireLogin();
   const { data: rooms, loading, refreshing, error, reload } = useChatRooms(isLoggedIn);
   const focusedOnceRef = useRef(false);
 
@@ -87,7 +86,7 @@ export function useChatListScreen(): UseChatListScreenReturn {
     refreshing,
     error,
     isLoggedIn,
-    onLoginPress: () => goKakaoLogin(router),
+    onLoginPress: () => requireLogin(() => undefined),
     reload,
   };
 }

@@ -1,9 +1,8 @@
-import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { Alert } from 'react-native';
 
 import { useSession } from '@/lib/domain';
-import { goKakaoLogin } from '@/lib/navigation/routes';
+
+import { useLoginRequiredModal } from './login-required-modal-context';
 
 export type RequireLoginOptions = {
   title?: string;
@@ -13,23 +12,20 @@ export type RequireLoginOptions = {
 };
 
 export function useRequireLogin() {
-  const router = useRouter();
   const { session } = useSession();
+  const { showLoginRequiredModal } = useLoginRequiredModal();
 
   const requireLogin = useCallback(
-    (then: () => void, options: RequireLoginOptions = {}) => {
+    (then: () => void, _options: RequireLoginOptions = {}) => {
       if (session) {
         then();
         return true;
       }
 
-      Alert.alert(options.title ?? '로그인이 필요해요', options.message ?? '로그인하시겠어요?', [
-        { text: options.cancelText ?? '취소', style: 'cancel' },
-        { text: options.loginText ?? '로그인', onPress: () => goKakaoLogin(router) },
-      ]);
+      showLoginRequiredModal();
       return false;
     },
-    [router, session],
+    [session, showLoginRequiredModal],
   );
 
   return {

@@ -13,13 +13,7 @@ import {
 } from '@/lib/api';
 import { useModeration, type RoomPost } from '@/lib/domain';
 import { useRequireLogin } from '@/lib/auth';
-import {
-  goExplore,
-  goKakaoLogin,
-  goRoomDetail,
-  goRoommateDetail,
-  goRoomSearch,
-} from '@/lib/navigation/routes';
+import { goExplore, goRoomDetail, goRoommateDetail, goRoomSearch } from '@/lib/navigation/routes';
 
 import {
   EXPLORE_SORT_OPTIONS,
@@ -110,7 +104,7 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
     setOpenSheet,
     setFilter,
     onSearchPress: () => goRoomSearch(router),
-    onLoginPress: () => goKakaoLogin(router),
+    onLoginPress: () => requireLogin(() => undefined),
     onExplorePress: (tab) => goExplore(router, 'navigate', tab),
     onRoomPress: (post) => goRoomDetail(router, post.id),
     onRoomLikeChange: (post, liked) => requireLogin(() => setBoardLiked(post.id, liked)),
