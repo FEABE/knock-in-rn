@@ -161,6 +161,15 @@ const MOCK_CHAT_DETAIL: ChatRoomDetailData = {
       createdAt: '2026-05-13T09:28:00Z',
       type: 'TEXT',
     },
+    // 전체화면 이미지 뷰어를 목 데이터로도 확인할 수 있게 이미지 메시지를 하나 둔다.
+    {
+      id: 3,
+      senderId: 2,
+      contents: '',
+      imageUrl: 'https://picsum.photos/seed/chat-image/900/1200',
+      createdAt: '2026-05-13T09:31:00Z',
+      type: 'IMAGE',
+    },
   ],
   matchingRequiredList: [],
 };
