@@ -20,6 +20,7 @@ import type { AsyncState } from './use-async';
 import { useApi } from './use-async';
 
 export type MyPageProfileSummary = {
+  hasRoom: boolean;
   roomTypeLabel: string;
   regionLabel: string;
 };
@@ -39,10 +40,12 @@ export function useMyPageProfileSummary(enabled = true): AsyncState<MyPageProfil
       ?.map((item) => item.region)
       .filter(Boolean)
       .join(', ');
+    const hasRoom = state.data.type === 'OFFER';
     return {
+      hasRoom,
       // 마이페이지 뱃지는 방 형태(원룸/아파트 등)가 아니라 방 조건 관리 데이터(type) 기준
       // 방 있음/방 없음만 표시한다.
-      roomTypeLabel: state.data.type === 'OFFER' ? '방 있음' : '방 없음',
+      roomTypeLabel: hasRoom ? '방 있음' : '방 없음',
       regionLabel: regionLabel || '-',
     };
   }, [state.data]);
