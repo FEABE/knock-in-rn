@@ -84,7 +84,7 @@ export function MyPageHomeScreenView({
         <Section title="프로필">
           <View className="min-h-[76px] flex-row items-center justify-between border-b border-[#ECECF3] px-4 py-3">
             <View>
-              <Text className="text-sm font-medium text-neutral-800">프로필 공개</Text>
+              <Text className="text-[15px] font-medium text-[#17171B]">프로필 공개</Text>
               <Text className="text-xs text-neutral-400">룸메이트 매칭 탭에 노출 중이에요</Text>
             </View>
             <MyPageToggle checked={profileVisible} onChange={setProfileVisible} />
