@@ -157,6 +157,7 @@ export function boardDetailToRoomPost(data: BoardDetailData): RoomPost {
     })),
     options,
     moveInDate: parseServerDate(data.comeableDate) ?? undefined,
+    moveInNegotiable: data.comeableDateNegotiable,
     liked,
     compatibilityScore:
       data.compatibility?.totalScore != null ? num(data.compatibility.totalScore) : undefined,
@@ -197,15 +198,29 @@ function preferredRoommateFromDetail(data: BoardDetailData): RoomPost['preferred
   const conditionItems = conditions.flatMap((item) => {
     if (item.name?.includes('성별')) return [];
     const name = conditionDisplayValue(item);
-    return name ? [{ name, image: item.imageUrl ?? null }] : [];
+    return name
+      ? [
+          {
+            id: item.conditionId != null ? String(item.conditionId) : undefined,
+            name,
+            image: item.imageUrl ?? null,
+          },
+        ]
+      : [];
   });
   const importantConditions = (data.conditionWeights ?? [])
     .map((item) => {
       const name = item.name?.trim();
       if (!name) return null;
-      return { name, image: item.imageUrl ?? null };
+      return {
+        id: item.weightConditionId != null ? String(item.weightConditionId) : undefined,
+        name,
+        image: item.imageUrl ?? null,
+      };
     })
-    .filter((item): item is { name: string; image: string | null } => Boolean(item));
+    .filter((item): item is { id: string | undefined; name: string; image: string | null } =>
+      Boolean(item),
+    );
   return {
     genderLabel: conditionDisplayValue(gender),
     smokingLabel: conditionDisplayValue(smoking),

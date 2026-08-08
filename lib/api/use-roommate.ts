@@ -162,7 +162,13 @@ export function useRoommateBoardWriteActions() {
   const queryClient = useQueryClient();
 
   const invalidateBoards = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ['roommate', 'boards'] });
+    await queryClient.invalidateQueries({
+      predicate: ({ queryKey }) =>
+        queryKey[0] === 'roommate' &&
+        queryKey[1] === 'boards' &&
+        queryKey[2] !== 'detail' &&
+        queryKey[2] !== 'edit',
+    });
     await queryClient.invalidateQueries({ queryKey: ['profile', 'my-boards'] });
   }, [queryClient]);
 
@@ -182,7 +188,9 @@ export function useRoommateBoardWriteActions() {
   });
   const deleteMutation = useMutation({
     mutationFn: (boardId: string) => deleteRoommateBoard(boardId),
-    onSuccess: invalidateBoards,
+    onSuccess: () => {
+      void invalidateBoards();
+    },
   });
   const reportMutation = useMutation({
     mutationFn: ({ boardId, contents }: { boardId: string; contents: string }) =>

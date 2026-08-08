@@ -9,6 +9,7 @@ export type VerificationBadge = {
 };
 
 export type ImportantCondition = {
+  id?: string;
   name: string;
   image?: string | null;
 };
@@ -55,6 +56,7 @@ export type RoomPost = {
   likes: number;
   createdAt: Date;
   moveInDate?: Date;
+  moveInNegotiable?: boolean;
   status: RoomPostStatus;
   author: UserSummary;
   description: string;

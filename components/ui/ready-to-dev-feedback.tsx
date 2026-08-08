@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
 
@@ -207,18 +208,27 @@ export function ReadyToast({
   message,
   tone = 'neutral',
   icon = 'checkmark-circle',
+  bottomOffset,
 }: {
   visible: boolean;
   message: string;
   tone?: 'neutral' | 'success' | 'danger';
   icon?: keyof typeof Ionicons.glyphMap;
+  bottomOffset?: number;
 }) {
+  const { bottom } = useSafeAreaInsets();
   if (!visible) return null;
 
   const background = tone === 'danger' ? 'bg-[#D63D4A]' : 'bg-[#696976]';
   const iconColor = tone === 'success' ? '#32C76F' : '#FFFFFF';
+  const resolvedBottomOffset = bottomOffset ?? bottom + 88;
   return (
-    <View pointerEvents="none" className="absolute bottom-5 left-0 right-0 items-center px-6">
+    <View
+      pointerEvents="none"
+      className="absolute left-0 right-0 z-50 h-[69px] items-center justify-center px-6"
+      style={{ bottom: Math.max(0, resolvedBottomOffset - 18) }}
+    >
+      <View className="absolute inset-0 bg-white/70" />
       <View
         className={`min-h-[34px] min-w-[252px] flex-row items-center justify-center gap-2 rounded-lg px-4 py-2 ${background}`}
       >

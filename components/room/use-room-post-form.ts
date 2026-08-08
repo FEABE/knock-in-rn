@@ -71,6 +71,7 @@ export type UseRoomPostFormProps = {
 export type UseRoomPostFormReturn = {
   draft: RoomFormDraft;
   canSubmit: boolean;
+  isDirty: boolean;
   /** 보증금 상한(서버 정책) 초과 안내. 없으면 null. */
   depositError: string | null;
   /** 월세 상한(서버 정책) 초과 안내. 없으면 null. */
@@ -119,22 +120,34 @@ export type UseRoomPostFormReturn = {
 export function useRoomPostForm({
   initial,
   onSubmit,
+  mode,
 }: UseRoomPostFormProps): UseRoomPostFormReturn {
   const roomTypeOptions = useRoomTypeOptions();
   const roomAddOptions = useRoomAddOptionOptions();
-  const [state, setState] = useState(() => ({
-    draft: {
+  const [state, setState] = useState(() => {
+    const initialDraft = {
       ...emptyRoomFormDraft(),
       ...initial,
-    } as RoomFormDraft,
-    selectingPhotos: false,
-    regionSheetOpen: false,
-    pageIndex: 0,
-    maxVisitedPageIndex: 0,
-    toastMessage: null as string | null,
-  }));
-  const { draft, selectingPhotos, regionSheetOpen, pageIndex, maxVisitedPageIndex, toastMessage } =
-    state;
+    } as RoomFormDraft;
+    return {
+      draft: initialDraft,
+      initialDraft,
+      selectingPhotos: false,
+      regionSheetOpen: false,
+      pageIndex: 0,
+      maxVisitedPageIndex: mode === 'edit' ? ROOM_WIZARD_PAGES.length - 1 : 0,
+      toastMessage: null as string | null,
+    };
+  });
+  const {
+    draft,
+    initialDraft,
+    selectingPhotos,
+    regionSheetOpen,
+    pageIndex,
+    maxVisitedPageIndex,
+    toastMessage,
+  } = state;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -160,6 +173,7 @@ export function useRoomPostForm({
   };
 
   const canSubmit = isRoomFormDraftValid(draft);
+  const isDirty = !roomDraftsEqual(draft, initialDraft);
   const bottomPadding = useSafeBottomPadding(12, 12);
 
   const page = ROOM_WIZARD_PAGES[pageIndex];
@@ -185,6 +199,7 @@ export function useRoomPostForm({
   return {
     draft,
     canSubmit,
+    isDirty,
     depositError: depositErrorMessage(draft),
     rentError: monthlyRentErrorMessage(draft),
     photoCount: draft.imageUris.length,
@@ -303,6 +318,22 @@ export function useRoomPostForm({
     reloadRoomTypes: roomTypeOptions.reload,
     reloadRoomOptions: roomAddOptions.reload,
     submit,
+  };
+}
+
+function roomDraftsEqual(left: RoomFormDraft, right: RoomFormDraft): boolean {
+  return JSON.stringify(comparableDraft(left)) === JSON.stringify(comparableDraft(right));
+}
+
+function comparableDraft(draft: RoomFormDraft) {
+  return {
+    ...draft,
+    regions: draft.regions.map((region) => ({
+      id: region.id,
+      city: region.city,
+      district: region.district,
+    })),
+    options: [...draft.options].sort((a, b) => a - b),
   };
 }
 

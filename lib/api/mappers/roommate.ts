@@ -152,7 +152,7 @@ export function toRoommateMatchCardModel(match: MatchListItem): RoommateMatchCar
     roomTypeLabel: roomTypeLabel || '-',
     regionLabels,
     regionLabel: region ?? '-',
-    lifestyleChips: toChipModels(match.lifeStyles, 'lifestyle').slice(0, 4),
+    lifestyleChips: toChipModels(match.lifeStyles, 'lifestyle'),
     conditionChips: toChipModels(match.conditions, 'condition'),
   };
 }

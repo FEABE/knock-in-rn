@@ -1,9 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { RoomPostForm } from '@/components/room/room-post-form';
-import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
+import {
+  BudgetPage,
+  IntroPage,
+  LifestylePage,
+  LocationPage,
+  MoveInPage,
+  OptionsPage,
+  RoomTypePage,
+  StepTabs,
+} from '@/components/room/new-room-screen/new-room-screen.view';
+import type { RoomFormDraft, RoomFormValues } from '@/components/room/room-post-form';
+import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
+import { useRoomPostForm } from '@/components/room/use-room-post-form';
+import type { LifestyleSummaryItem, PreferencePrioritySummaryItem } from '@/lib/api';
+import { ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseEditRoomScreenReturn } from './use-edit-room-screen';
 
@@ -16,14 +29,10 @@ export function EditRoomScreenView({
   lifestyleTiles,
   preferredLifestyles,
   importantConditions,
+  profileMetadataChanged,
   submitting,
-  deleting,
-  deleteDialogOpen,
   toastMessage,
   onBack,
-  onDelete,
-  onCancelDelete,
-  onConfirmDelete,
   onSubmit,
 }: EditRoomScreenViewProps) {
   if (state === 'loading') {
@@ -39,41 +48,182 @@ export function EditRoomScreenView({
   }
 
   return (
+    <EditableRoomScreen
+      initial={initial}
+      lifestyleTiles={lifestyleTiles}
+      preferredLifestyles={preferredLifestyles}
+      importantConditions={importantConditions}
+      profileMetadataChanged={profileMetadataChanged}
+      submitting={submitting}
+      toastMessage={toastMessage}
+      onBack={onBack}
+      onSubmit={onSubmit}
+    />
+  );
+}
+
+function EditableRoomScreen({
+  initial,
+  lifestyleTiles,
+  preferredLifestyles,
+  importantConditions,
+  profileMetadataChanged,
+  submitting,
+  toastMessage,
+  onBack,
+  onSubmit,
+}: {
+  initial: Partial<RoomFormDraft>;
+  lifestyleTiles: LifestyleSummaryItem[];
+  preferredLifestyles: LifestyleSummaryItem[];
+  importantConditions: PreferencePrioritySummaryItem[];
+  profileMetadataChanged: boolean;
+  submitting: boolean;
+  toastMessage: string | null;
+  onBack: () => void;
+  onSubmit: (values: RoomFormValues) => Promise<void>;
+}) {
+  const form = useRoomPostForm({ initial, onSubmit, mode: 'edit' });
+  const canSave = form.canSubmit && (form.isDirty || profileMetadataChanged) && !submitting;
+  const footerReserve = form.bottomPadding + 96;
+
+  return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="relative h-12 items-center justify-center px-3">
         <Pressable onPress={onBack} className="absolute left-3 h-9 w-9 items-center justify-center">
           <Ionicons name="chevron-back" size={24} color="#404047" />
         </Pressable>
         <Text className="text-base font-semibold text-neutral-900">게시글 수정</Text>
-        <Pressable onPress={onDelete} className="absolute right-3 px-3 py-1">
-          <Text className="text-sm text-rose-500">삭제</Text>
-        </Pressable>
+        <View className="absolute right-3 flex-row items-center gap-1">
+          <Pressable
+            onPress={form.submit}
+            disabled={!canSave}
+            accessibilityRole="button"
+            accessibilityLabel="게시글 저장"
+            accessibilityState={{ disabled: !canSave }}
+            className="min-w-[44px] items-center justify-center px-1 py-2"
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color="#256EF4" />
+            ) : (
+              <Text
+                className={`text-[15px] font-semibold ${
+                  canSave ? 'text-[#256EF4]' : 'text-[#AAAABA]'
+                }`}
+              >
+                저장
+              </Text>
+            )}
+          </Pressable>
+        </View>
       </View>
 
-      <RoomPostForm
-        mode="edit"
-        submitLabel="수정 완료"
-        profile={profile}
-        initial={initial}
-        lifestyleTiles={lifestyleTiles}
-        preferredLifestyles={preferredLifestyles}
-        importantConditions={importantConditions}
-        submitting={submitting}
-        onSubmit={onSubmit}
+      <StepTabs
+        activeStep={form.stepIndex}
+        visitedStep={form.visitedStepIndex}
+        onTabPress={form.goToStep}
       />
 
-      <ReadyConfirmDialog
-        open={deleteDialogOpen}
-        title="게시글을 삭제하시겠어요?"
-        description="게시글 삭제 후에는 복구가 불가해요"
-        cancelLabel="취소"
-        confirmLabel="삭제"
-        processing={deleting}
-        onCancel={onCancelDelete}
-        onConfirm={onConfirmDelete}
+      <ScrollView
+        contentContainerClassName="flex-grow px-5 pt-6"
+        contentContainerStyle={{ paddingBottom: footerReserve }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
+        {form.page === 'lifestyle' ? (
+          <LifestylePage
+            tiles={lifestyleTiles}
+            preferredLifestyles={preferredLifestyles}
+            importantConditions={importantConditions}
+            loading={false}
+            error={null}
+            onRetry={() => undefined}
+          />
+        ) : form.page === 'roomType' ? (
+          <RoomTypePage form={form} />
+        ) : form.page === 'location' ? (
+          <LocationPage form={form} />
+        ) : form.page === 'budget' ? (
+          <BudgetPage form={form} />
+        ) : form.page === 'moveIn' ? (
+          <MoveInPage form={form} />
+        ) : form.page === 'options' ? (
+          <OptionsPage form={form} />
+        ) : (
+          <IntroPage form={form} />
+        )}
+      </ScrollView>
+
+      <View
+        className="absolute inset-x-0 bottom-0 border-t border-neutral-100 bg-white px-5 pt-3"
+        style={{ paddingBottom: form.bottomPadding }}
+      >
+        <View className="flex-row gap-2">
+          {!form.isFirstPage ? (
+            <WizardNavigationButton label="이전으로" onPress={form.goPrev} secondary />
+          ) : null}
+          {!form.isLastPage ? (
+            <WizardNavigationButton
+              label="다음으로"
+              onPress={form.goNext}
+              disabled={!form.canProceed}
+            />
+          ) : null}
+        </View>
+      </View>
+
+      <RoomRegionSheet
+        open={form.regionSheetOpen}
+        onOpenChange={form.setRegionSheetOpen}
+        value={form.selectedRegion}
+        onSelect={form.selectRegion}
+      />
+
+      <ReadyToast
+        visible={form.toastMessage !== null}
+        message={form.toastMessage ?? ''}
+        tone="neutral"
+        icon="warning"
       />
       <ReadyToast visible={toastMessage !== null} message={toastMessage ?? ''} tone="success" />
     </SafeAreaView>
+  );
+}
+
+function WizardNavigationButton({
+  label,
+  onPress,
+  disabled = false,
+  secondary = false,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  secondary?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      className={`h-12 flex-1 items-center justify-center rounded-lg border ${
+        secondary
+          ? 'border-[#256EF4] bg-white'
+          : disabled
+            ? 'border-[#F1F1F6] bg-[#F1F1F6]'
+            : 'border-[#256EF4] bg-[#256EF4]'
+      }`}
+    >
+      <Text
+        className={`text-[15px] font-semibold ${
+          secondary ? 'text-[#256EF4]' : disabled ? 'text-[#AAAABA]' : 'text-white'
+        }`}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

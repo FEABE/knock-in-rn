@@ -1,6 +1,6 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 import type { RoommateMatchCardModel } from '@/lib/api';
@@ -70,7 +70,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
             >
               <Ionicons
                 name={match.liked ? 'heart' : 'heart-outline'}
-                size={28}
+                size={24}
                 color={match.liked ? '#256EF4' : '#AAAABA'}
               />
             </Pressable>
@@ -99,8 +99,14 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
       </View>
 
       {match.lifestyleChips.length > 0 ? (
-        <View className="flex-row gap-2 overflow-hidden">
-          {match.lifestyleChips.slice(0, 3).map((chip) => (
+        <ScrollView
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-2"
+          directionalLockEnabled
+        >
+          {match.lifestyleChips.map((chip) => (
             <View
               key={chip.key}
               className="h-9 max-w-[149px] shrink-0 flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8]/80 bg-white px-[15px]"
@@ -114,7 +120,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
               </Text>
             </View>
           ))}
-        </View>
+        </ScrollView>
       ) : null}
     </Pressable>
   );

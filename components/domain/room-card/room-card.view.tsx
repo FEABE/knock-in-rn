@@ -33,8 +33,6 @@ export function RoomCardView({
   badge,
   timeAgoLabel,
 }: RoomCardViewProps) {
-  const verified = post.author.badges.length > 0;
-
   return (
     <Pressable onPress={onPress} className="bg-white active:opacity-90" accessibilityRole="button">
       <View className="relative overflow-hidden rounded">
@@ -99,7 +97,6 @@ export function RoomCardView({
             <Text numberOfLines={1} className="shrink text-xs text-neutral-600">
               {post.author.name}
             </Text>
-            {verified ? <Ionicons name="checkmark-circle" size={16} color={BRAND} /> : null}
             {authorMetaLabel ? (
               <AuthorMetaPill label={authorMetaLabel} tone={authorMetaTone} />
             ) : null}
@@ -152,7 +149,7 @@ export function RoomThumbnailPlaceholder({ height = 165 }: { height?: number } =
   );
 }
 
-function HotBadgePill() {
+export function HotBadgePill() {
   return (
     <View
       className="h-[26px] items-center justify-center rounded bg-[#D63D4A] px-1.5"
@@ -165,7 +162,7 @@ function HotBadgePill() {
   );
 }
 
-function RoomTypePill({ label }: { label: string }) {
+export function RoomTypePill({ label }: { label: string }) {
   return (
     <View
       className="h-[26px] items-center justify-center rounded bg-[#ECF2FE] px-1.5"

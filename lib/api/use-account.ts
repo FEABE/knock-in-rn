@@ -4,16 +4,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import {
-  EMBEDDED_PREFERENCE_PRIORITIES,
-  embeddedPriorityIdFromLabel,
-} from '@/lib/domain/preference-priorities';
-
 import { getAccessToken } from './client';
 import { formatKstDateLabel, parseServerDate } from './date-time';
 import { logout, withdraw } from './auth';
 import { getPreferenceAll, getProfileAll, updateVisibility } from './profile';
 import { getNotificationSettings, updateNotificationSetting } from './notification';
+import { getLifestylePatterns } from './meta';
 import {
   blockUser as blockUserRequest,
   getBlocks,
@@ -54,11 +50,18 @@ export function useMyPageProfileSummary(enabled = true): AsyncState<MyPageProfil
   return { ...state, data: summary };
 }
 
-/** 생활패턴/선호조건 한 줄. `id`는 매칭된 내장 우선순위 키(sleep/cleanliness/…)다. */
+/** 생활패턴/선호조건 한 줄. 문항명과 이미지는 서버 메타를 사용한다. */
 export type LifestyleSummaryItem = {
   id: string;
   label: string;
   value: string;
+  image?: string | null;
+};
+
+export type PreferencePrioritySummaryItem = {
+  id: string;
+  name: string;
+  image?: string | null;
 };
 
 export type MyLifestyleOverview = {
@@ -66,8 +69,8 @@ export type MyLifestyleOverview = {
   lifestyles: LifestyleSummaryItem[];
   /** 선호 룸메이트 조건 (GET /users/me/preferences/all → lifestyles). */
   preferredLifestyles: LifestyleSummaryItem[];
-  /** 중요 조건 (GET /users/me/preferences/all → conditions). */
-  importantConditions: string[];
+  /** 우선순위 (GET /users/me/preferences/all → conditions). */
+  importantConditions: PreferencePrioritySummaryItem[];
 };
 
 type RawLifestyleItem = {
@@ -75,11 +78,20 @@ type RawLifestyleItem = {
   name?: string;
   value?: string;
   description?: string;
+  imageUrl?: string;
 };
 
-const PRIORITY_ORDER: readonly string[] = EMBEDDED_PREFERENCE_PRIORITIES.map(
-  (priority) => priority.value,
-);
+type RawPriorityItem = {
+  conditionsId?: number;
+  name?: string;
+  imageUrl?: string;
+};
+
+type LifestyleMetaItem = {
+  patternId: number;
+  label: string;
+  image?: string | null;
+};
 
 /**
  * 내 생활패턴 + 선호 룸메이트 조건 조회.
@@ -95,57 +107,135 @@ export function useMyLifestyleOverview(
     enabled,
     retry: false,
   });
+  const lifestyleMeta = useApi(['meta', 'lifestyle-patterns'], () => getLifestylePatterns(), {
+    enabled,
+    retry: false,
+  });
+  const questions = useMemo(
+    () =>
+      (lifestyleMeta.data?.patterns ?? []).flatMap((pattern) => {
+        const patternId = Number(pattern.id);
+        const label = pattern.name?.trim();
+        if (!Number.isFinite(patternId) || !label) return [];
+        return [{ patternId, label, image: pattern.image?.trim() || null }];
+      }),
+    [lifestyleMeta.data?.patterns],
+  );
 
   const overview = useMemo<MyLifestyleOverview | null>(() => {
     if (!profile.data && !preference.data) return null;
     return {
-      lifestyles: toLifestyleSummaryItems(profile.data?.lifestyles),
-      preferredLifestyles: toLifestyleSummaryItems(preference.data?.lifestyles),
-      importantConditions: (preference.data?.conditions ?? []).flatMap((condition) => {
-        const name = condition.name?.trim();
-        return name ? [name] : [];
-      }),
+      lifestyles: toLifestyleSummaryItems(profile.data?.lifestyles, questions, true),
+      preferredLifestyles: toLifestyleSummaryItems(preference.data?.lifestyles, questions, false),
+      importantConditions: toPrioritySummaryItems(
+        preference.data?.conditions as RawPriorityItem[] | undefined,
+        questions,
+      ),
     };
-  }, [preference.data, profile.data]);
+  }, [preference.data, profile.data, questions]);
 
   const { reload: reloadProfile } = profile;
   const { reload: reloadPreference } = preference;
+  const { reload: reloadLifestyleMeta } = lifestyleMeta;
   const reload = useCallback(() => {
     reloadProfile();
     reloadPreference();
-  }, [reloadPreference, reloadProfile]);
+    reloadLifestyleMeta();
+  }, [reloadLifestyleMeta, reloadPreference, reloadProfile]);
 
   return {
     data: overview,
-    loading: profile.loading || preference.loading,
+    loading: profile.loading || preference.loading || lifestyleMeta.loading,
     refreshing: profile.refreshing || preference.refreshing,
-    error: profile.error ?? preference.error,
+    error: profile.error ?? preference.error ?? lifestyleMeta.error,
     reload,
   };
 }
 
-/** 서버 생활패턴 항목을 화면용 라벨/값으로 정규화하고 온보딩 질문 순서대로 정렬한다. */
-function toLifestyleSummaryItems(items?: RawLifestyleItem[]): LifestyleSummaryItem[] {
-  return (items ?? [])
-    .flatMap((item) => {
+/** 저장값과 서버 메타를 결합한다. 프로필 화면은 메타 문항 전체를 노출한다. */
+function toLifestyleSummaryItems(
+  items: RawLifestyleItem[] | undefined,
+  questions: LifestyleMetaItem[],
+  includeAllQuestions: boolean,
+): LifestyleSummaryItem[] {
+  const source = items ?? [];
+  if (includeAllQuestions && questions.length) {
+    const fromMeta = questions.map((question) => {
+      const item = source.find(
+        (candidate) =>
+          candidate.name?.trim() === question.label || candidate.lifestyleId === question.patternId,
+      );
+      return {
+        id: String(question.patternId),
+        label: question.label,
+        value: lifestyleValue(item) ?? '미입력',
+        image: item?.imageUrl?.trim() || question.image,
+      };
+    });
+    const matchedNames = new Set(questions.map((question) => question.label));
+    const matchedIds = new Set(questions.map((question) => question.patternId));
+    const fromProfileOnly = source.flatMap((item, index) => {
       const label = item.name?.trim();
-      if (!label) return [];
-      const value = item.description?.trim() || item.value?.trim();
-      if (!value) return [];
+      if (
+        !label ||
+        matchedNames.has(label) ||
+        (item.lifestyleId !== undefined && matchedIds.has(item.lifestyleId))
+      ) {
+        return [];
+      }
       return [
         {
-          id: embeddedPriorityIdFromLabel(label) ?? `pattern-${item.lifestyleId ?? label}`,
+          id: String(item.lifestyleId ?? `profile-${index}`),
           label,
-          value,
+          value: lifestyleValue(item) ?? '미입력',
+          image: item.imageUrl?.trim() || null,
         },
       ];
-    })
-    .sort((a, b) => priorityRank(a.id) - priorityRank(b.id));
+    });
+    return [...fromMeta, ...fromProfileOnly];
+  }
+
+  return source.flatMap((item, index) => {
+    const label = item.name?.trim();
+    const value = lifestyleValue(item);
+    if (!label || !value) return [];
+    const question = questions.find(
+      (candidate) => candidate.label === label || candidate.patternId === item.lifestyleId,
+    );
+    return [
+      {
+        id: String(question?.patternId ?? item.lifestyleId ?? index),
+        label,
+        value,
+        image: item.imageUrl?.trim() || question?.image || null,
+      },
+    ];
+  });
 }
 
-function priorityRank(id: string): number {
-  const index = PRIORITY_ORDER.indexOf(id);
-  return index === -1 ? PRIORITY_ORDER.length : index;
+function lifestyleValue(item: RawLifestyleItem | undefined): string | undefined {
+  return item?.description?.trim() || item?.value?.trim() || undefined;
+}
+
+function toPrioritySummaryItems(
+  items: RawPriorityItem[] | undefined,
+  questions: LifestyleMetaItem[],
+): PreferencePrioritySummaryItem[] {
+  return (items ?? []).flatMap((item, index) => {
+    const question = questions.find(
+      (candidate) =>
+        candidate.patternId === item.conditionsId || candidate.label === item.name?.trim(),
+    );
+    const name = item.name?.trim() || question?.label;
+    if (!name) return [];
+    return [
+      {
+        id: String(item.conditionsId ?? question?.patternId ?? index),
+        name,
+        image: item.imageUrl?.trim() || question?.image || null,
+      },
+    ];
+  });
 }
 
 export type MyVerificationSummary = {
