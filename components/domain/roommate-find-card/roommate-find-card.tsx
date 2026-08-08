@@ -1,8 +1,9 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View, type GestureResponderEvent } from 'react-native';
 
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
+import { useRequireLogin } from '@/lib/auth';
 import type { RoommateMatchCardModel } from '@/lib/api';
 
 const PROFILE_IMAGE_STYLE = { width: 62, height: 62, borderRadius: 31 } as const;
@@ -17,7 +18,12 @@ export type RoommateFindCardProps = {
 };
 
 export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindCardProps) {
+  const { isLoggedIn, requireLogin } = useRequireLogin();
   const score = Math.max(0, Math.min(100, match.compatibilityScore));
+  const onCompatibilityLoginPress = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+    requireLogin(() => undefined);
+  };
 
   return (
     <Pressable
@@ -83,14 +89,28 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
         </View>
       </View>
 
-      <View className="flex-row items-center justify-between">
-        <View className="h-[7px] flex-1 overflow-hidden rounded bg-[#ECECF3]">
-          <View style={{ width: `${score}%` }} className="h-full rounded bg-[#256EF4]" />
+      {isLoggedIn ? (
+        <View className="flex-row items-center justify-between">
+          <View className="h-[7px] flex-1 overflow-hidden rounded bg-[#ECECF3]">
+            <View style={{ width: `${score}%` }} className="h-full rounded bg-[#256EF4]" />
+          </View>
+          <Text className="ml-5 w-[33px] text-right text-[15px] font-semibold leading-[22px] text-[#083891]">
+            {match.compatibilityScore}점
+          </Text>
         </View>
-        <Text className="ml-5 w-[33px] text-right text-[15px] font-semibold leading-[22px] text-[#083891]">
-          {match.compatibilityScore}점
-        </Text>
-      </View>
+      ) : (
+        <Pressable
+          onPress={onCompatibilityLoginPress}
+          accessibilityRole="button"
+          accessibilityLabel="로그인하고 궁합 점수 확인하기"
+          className="h-9 flex-row items-center justify-center gap-2 rounded-lg border border-[#256EF4] bg-white active:bg-[#ECF2FE]"
+        >
+          <Ionicons name="lock-closed" size={16} color="#256EF4" />
+          <Text className="text-[14px] font-semibold leading-[21px] text-[#256EF4]">
+            로그인하고 궁합 점수 확인하기
+          </Text>
+        </Pressable>
+      )}
 
       <View className="h-[107px] justify-center gap-2 rounded-lg bg-[#F6F6FA] px-[14px] py-3">
         <InfoRow label="예산" value={match.depositRentLabel.replace(/\s\/\s/g, '/')} />

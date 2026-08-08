@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 
 import { getVerifications, useApi } from '@/lib/api';
-import { useSession } from '@/lib/domain';
-import { goKakaoLogin, goVerificationCompany, goVerificationSchool } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
+import { goVerificationCompany, goVerificationSchool } from '@/lib/navigation/routes';
 
 export type VerificationCardId = 'school' | 'company';
 
@@ -27,7 +27,7 @@ export type UseVerificationHomeScreenReturn = {
 
 export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, requireLogin } = useRequireLogin();
   const { data, loading, error, reload } = useApi(
     ['profile', 'verifications'],
     () => getVerifications(),
@@ -65,7 +65,7 @@ export function useVerificationHomeScreen(): UseVerificationHomeScreenReturn {
     loading,
     error,
     onBack: () => router.back(),
-    onLogin: () => goKakaoLogin(router),
+    onLogin: () => requireLogin(() => undefined),
     onRetry: reload,
   };
 }

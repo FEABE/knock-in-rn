@@ -6,8 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { VerificationFlowScreen } from '@/components/verification/verification-flow-screen';
 import type { VerificationKind } from '@/lib/api';
-import { useSession } from '@/lib/domain';
-import { goKakaoLogin } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
 
 export type VerificationEmailFlowScreenProps = {
   kind: VerificationKind;
@@ -27,7 +26,7 @@ export function VerificationEmailFlowScreen({
   placeholder,
 }: VerificationEmailFlowScreenProps) {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, requireLogin } = useRequireLogin();
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
@@ -47,7 +46,7 @@ export function VerificationEmailFlowScreen({
           <LoginPromptCard
             title="로그인 후 이메일을 인증할 수 있어요"
             description="인증 결과는 내 프로필의 신뢰 배지에 반영돼요"
-            onPress={() => goKakaoLogin(router)}
+            onPress={() => requireLogin(() => undefined)}
           />
         </View>
       )}

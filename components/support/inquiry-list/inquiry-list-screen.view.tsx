@@ -21,10 +21,7 @@ export function InquiryListScreenView({
       <SupportHeader title="문의 내역" />
 
       {/* 디자인(3746:78781)에서 헤더 아래 본문 영역 배경은 흰색이 아니라 #F6F6FA다. */}
-      <ScrollView
-        className="flex-1 bg-[#F6F6FA]"
-        contentContainerClassName="gap-4 px-4 pb-10 pt-5"
-      >
+      <ScrollView className="flex-1 bg-[#F6F6FA]" contentContainerClassName="gap-4 px-4 pb-10 pt-5">
         {loading ? (
           <View className="items-center gap-3 p-10">
             <ActivityIndicator color="#256EF4" />
@@ -55,7 +52,6 @@ export function InquiryListScreenView({
     </SafeAreaView>
   );
 }
-
 function InquiryCard({ inquiry, onPress }: { inquiry: InquiryListItem; onPress: () => void }) {
   return (
     <Pressable
@@ -87,4 +83,3 @@ function InquiryCard({ inquiry, onPress }: { inquiry: InquiryListItem; onPress: 
     </Pressable>
   );
 }
-

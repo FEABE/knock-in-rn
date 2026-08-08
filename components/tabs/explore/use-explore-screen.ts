@@ -247,7 +247,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     handleFilterChange,
     onSearchPress: () => goRoomSearch(router, searchQuery),
     onSearchClear: () => router.replace('/explore' as never),
-    onNotificationPress: () => goNotifications(router),
+    onNotificationPress: () => requireLogin(() => goNotifications(router)),
     setPreferenceNudgeSnooze,
     onPreferenceNudgeClose: closePreferenceNudge,
     onPreferenceSetupPress: () => {
@@ -256,8 +256,10 @@ export function useExploreScreen(): UseExploreScreenReturn {
     },
     onCreatePress: () => requireLogin(() => goNewRoom(router)),
     onRoomPress: (post) => {
-      logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
-      goRoomDetail(router, post.id);
+      requireLogin(() => {
+        logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
+        goRoomDetail(router, post.id);
+      });
     },
     onRoomLikeChange: (post, liked) =>
       requireLogin(() => {
@@ -267,8 +269,10 @@ export function useExploreScreen(): UseExploreScreenReturn {
         setBoardLiked(post.id, liked);
       }),
     onRoommatePress: (match) => {
-      logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.id });
-      goRoommateDetail(router, match.id);
+      requireLogin(() => {
+        logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.id });
+        goRoommateDetail(router, match.id);
+      });
     },
     onRoommateLikeChange: (match, liked) =>
       requireLogin(() => {

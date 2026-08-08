@@ -3,8 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { type AlarmItem, useAlarmActions, useAlarms } from '@/lib/api';
-import { useSession } from '@/lib/domain';
-import { goKakaoLogin } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
 
 export type UseNotificationScreenReturn = {
   alarms: AlarmItem[];
@@ -23,8 +22,7 @@ export type UseNotificationScreenReturn = {
 
 export function useNotificationScreen(): UseNotificationScreenReturn {
   const router = useRouter();
-  const { session } = useSession();
-  const isLoggedIn = Boolean(session);
+  const { isLoggedIn, requireLogin } = useRequireLogin();
   const { data, loading, refreshing, error, reload } = useAlarms(isLoggedIn);
   const { markRead, markAllRead, markingRead } = useAlarmActions();
   const alarms = useMemo(
@@ -63,7 +61,7 @@ export function useNotificationScreen(): UseNotificationScreenReturn {
     hasUnread: alarms.some((alarm) => !alarm.isRead),
     markingRead,
     onBack: () => router.back(),
-    onLogin: () => goKakaoLogin(router),
+    onLogin: () => requireLogin(() => undefined),
     onRetry: onManualRefresh,
     onAlarmPress: (alarm) => {
       if (alarm.isRead || alarm.id == null) return;

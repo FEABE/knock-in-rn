@@ -4,8 +4,9 @@ import { Alert } from 'react-native';
 
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useMyRoommateBoards, useRoommateBoardWriteActions } from '@/lib/api';
-import { useSession, type RoomPost } from '@/lib/domain';
-import { goKakaoLogin, goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
+import { useRequireLogin } from '@/lib/auth';
+import type { RoomPost } from '@/lib/domain';
+import { goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
 
 const TOAST_DURATION_MS = 1800;
 
@@ -32,7 +33,7 @@ export type UseMyRoomsScreenReturn = {
 
 export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, requireLogin } = useRequireLogin();
   const { data: apiRooms, loading, error, reload } = useMyRoommateBoards(!!session);
   const { deleteBoard, deleting } = useRoommateBoardWriteActions();
   const bottomPadding = useSafeBottomPadding(12, 24);
@@ -87,7 +88,7 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
     deleteDialogOpen: deleteTarget !== null,
     toastMessage,
     onBack: () => router.back(),
-    onLoginPress: () => goKakaoLogin(router),
+    onLoginPress: () => requireLogin(() => undefined),
     onRetry,
     onCreatePress: () => goNewRoom(router),
     onRoomPress: (post) => goRoomDetail(router, post.id),

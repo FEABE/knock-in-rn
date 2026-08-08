@@ -11,7 +11,7 @@ import {
   type PreferencePrioritySummaryItem,
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
-import { goKakaoLogin, goMypageProfile } from '@/lib/navigation/routes';
+import { goMypageProfile } from '@/lib/navigation/routes';
 
 const SUCCESS_TOAST_MS = 1200;
 
@@ -46,7 +46,7 @@ export type UseNewRoomScreenReturn = {
 
 export function useNewRoomScreen(): UseNewRoomScreenReturn {
   const router = useRouter();
-  const { session } = useRequireLogin();
+  const { session, requireLogin } = useRequireLogin();
   const { createBoard } = useRoommateBoardWriteActions();
   // 세션에는 생활패턴/선호조건이 없어서 화면 진입 시 서버에서 직접 읽어온다.
   const lifestyleOverview = useMyLifestyleOverview(Boolean(session));
@@ -94,7 +94,7 @@ export function useNewRoomScreen(): UseNewRoomScreenReturn {
     lifestyleError: lifestyleOverview.error,
     reloadLifestyle: lifestyleOverview.reload,
     onBack: () => router.back(),
-    onSignIn: () => goKakaoLogin(router),
+    onSignIn: () => requireLogin(() => undefined),
     onSubmit,
     onRequestEditProfile: () => setMypageDialogOpen(true),
     onCancelEditProfile: () => setMypageDialogOpen(false),

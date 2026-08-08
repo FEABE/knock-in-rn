@@ -4,6 +4,7 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
+import { useRequireLogin } from '@/lib/auth';
 
 const TAB_ICONS: Record<
   string,
@@ -22,6 +23,14 @@ function TabIcon({ name, focused, color }: { name: string; focused: boolean; col
 
 export default function TabLayout() {
   const tabBottomPadding = useSafeBottomPadding(0, 18);
+  const { isLoggedIn, requireLogin } = useRequireLogin();
+  const protectedTabListeners = {
+    tabPress: (event: { preventDefault: () => void }) => {
+      if (isLoggedIn) return;
+      event.preventDefault();
+      requireLogin(() => undefined);
+    },
+  };
 
   return (
     <Tabs
@@ -51,6 +60,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="interests"
+        listeners={protectedTabListeners}
         options={{
           title: '관심',
           tabBarIcon: ({ focused, color }) => (
@@ -60,6 +70,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="chat"
+        listeners={protectedTabListeners}
         options={{
           title: '채팅',
           tabBarIcon: ({ focused, color }) => (
@@ -69,6 +80,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="mypage"
+        listeners={protectedTabListeners}
         options={{
           title: '마이',
           tabBarIcon: ({ focused, color }) => (
