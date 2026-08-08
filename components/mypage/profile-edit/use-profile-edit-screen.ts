@@ -27,7 +27,7 @@ import {
   type LifestyleScaleOption,
   type RoomTypeOption,
 } from '@/lib/api';
-import type { Region } from '@/lib/onboarding';
+import { MAX_ROOM_CONDITION_DEPOSIT, type Region } from '@/lib/onboarding';
 
 export type UseProfileEditScreenReturn = {
   initialTab: 'lifestyle' | 'room';
@@ -96,7 +96,14 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
   } = state;
 
   const setHasRoom: Dispatch<SetStateAction<boolean | null>> = (next) =>
-    setState((current) => ({ ...current, hasRoom: resolveAction(next, current.hasRoom) }));
+    setState((current) => {
+      const hasRoom = resolveAction(next, current.hasRoom);
+      return {
+        ...current,
+        hasRoom,
+        deposit: hasRoom === false ? clampDepositRange(current.deposit) : current.deposit,
+      };
+    });
   const setRegions: Dispatch<SetStateAction<Region[]>> = (next) =>
     setState((current) => ({ ...current, regions: resolveAction(next, current.regions) }));
   const setMoveInDate: Dispatch<SetStateAction<Date | null>> = (next) =>
@@ -124,11 +131,16 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
       const ids = (data.roomProfile ?? []).flatMap((item) =>
         item.roomProfileId === undefined ? [] : [String(item.roomProfileId)],
       );
+      const hasRoom = data.type ? data.type === 'OFFER' : null;
+      const loadedDeposit: RangeValue = [
+        data.minDeposit ?? data.deposit ?? 0,
+        data.maxDeposit ?? data.deposit ?? 500,
+      ];
       setState((current) => ({
         ...current,
         loadedLifestyles: nextLoadedLifestyles,
-        hasRoom: data.type ? data.type === 'OFFER' : current.hasRoom,
-        deposit: [data.minDeposit ?? data.deposit ?? 0, data.maxDeposit ?? data.deposit ?? 500],
+        hasRoom: hasRoom ?? current.hasRoom,
+        deposit: hasRoom === false ? clampDepositRange(loadedDeposit) : loadedDeposit,
         rent: [
           data.minMounthRent ?? data.mounthRent ?? 0,
           data.maxMounthRent ?? data.mounthRent ?? 50,
@@ -229,8 +241,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     const res = await updateProfileRoomInfo(
       withComeableAtNegotiable({
         type: isOffer ? 'OFFER' : 'SEEKER',
-        minDeposit: isOffer ? undefined : deposit[0],
-        maxDeposit: isOffer ? undefined : deposit[1],
+        minDeposit: isOffer ? undefined : clampDepositValue(deposit[0]),
+        maxDeposit: isOffer ? undefined : clampDepositValue(deposit[1]),
         minMonthlyRent: isOffer ? undefined : rent[0],
         maxMonthlyRent: isOffer ? undefined : rent[1],
         // 입주(희망)일은 캘린더 날짜다. 서버 LocalDateTime = UTC 벽시계이므로 UTC 자정으로 맞춰 보낸다.
@@ -308,6 +320,14 @@ function saveErrorMessage(
 
 function resolveAction<T>(next: SetStateAction<T>, current: T): T {
   return typeof next === 'function' ? (next as (value: T) => T)(current) : next;
+}
+
+function clampDepositValue(value: number): number {
+  return Math.min(MAX_ROOM_CONDITION_DEPOSIT, Math.max(0, value));
+}
+
+function clampDepositRange([min, max]: RangeValue): RangeValue {
+  return [clampDepositValue(min), clampDepositValue(max)];
 }
 
 /** 서버가 UTC 자정으로 저장한 캘린더 날짜 문자열을 로컬 자정 Date로 되돌린다. */

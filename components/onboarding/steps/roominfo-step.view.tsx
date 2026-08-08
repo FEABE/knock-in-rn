@@ -10,7 +10,7 @@ import {
   RoomPresenceArtwork,
   RoomTypeArtwork,
 } from '@/components/ui/ready-to-dev-assets';
-import { ONBOARDING_PROGRESS_TOTAL } from '@/lib/onboarding';
+import { MAX_ROOM_CONDITION_DEPOSIT, ONBOARDING_PROGRESS_TOTAL } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import { MAX_PREF_ROOM_TYPES, MAX_REGIONS, type UseRoomInfoStepReturn } from './use-roominfo-step';
@@ -140,12 +140,12 @@ export function RoomInfoStepView({
             <RangeField
               label="보증금"
               min={0}
-              max={6000}
+              max={MAX_ROOM_CONDITION_DEPOSIT}
               step={100}
               value={[room.budgetDeposit.min, room.budgetDeposit.max]}
               onChange={([min, max]) => setBudgetDeposit({ min, max })}
               tickLabels={['최소', '400만', '1,200만', '최대']}
-              scaleStops={[0, 400, 1200, 6000]}
+              scaleStops={[0, 400, 1200, MAX_ROOM_CONDITION_DEPOSIT]}
             />
             <RangeField
               label="월세"

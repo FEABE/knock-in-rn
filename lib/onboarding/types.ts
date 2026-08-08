@@ -104,7 +104,7 @@ export type RoomCondition = {
   // ── 방 없어요 (범위·복수) ──
   /** 선호 지역 복수 선택. 구까지만도 OK, 미선택(선택사항) 가능. */
   regions: Region[];
-  /** 예산 보증금 범위 (0~6000만원). */
+  /** 예산 보증금 범위 (0~2000만원). */
   budgetDeposit: BudgetRange;
   /** 예산 월세 범위 (0~500만원). */
   budgetRent: BudgetRange;
@@ -114,6 +114,8 @@ export type RoomCondition = {
   roomTypes: RoomType[];
   moveInBy: Date | null;
 };
+
+export const MAX_ROOM_CONDITION_DEPOSIT = 2000;
 
 export type PreferenceConditions = {
   budget: BudgetRange | null;
@@ -158,7 +160,7 @@ export function emptyRoomCondition(): RoomCondition {
     roomType: null,
     moveInDate: null,
     regions: [],
-    budgetDeposit: { min: 0, max: 6000 },
+    budgetDeposit: { min: 0, max: MAX_ROOM_CONDITION_DEPOSIT },
     budgetRent: { min: 0, max: 500 },
     budgetManagement: { min: 0, max: 150 },
     roomTypes: [],
