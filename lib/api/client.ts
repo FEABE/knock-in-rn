@@ -25,6 +25,29 @@ export type ApiResponse<T> = {
   error: ApiError;
 };
 
+/**
+ * 서버 에러 코드를 잃지 않고 throw하기 위한 Error.
+ * message로 문자열 매칭하는 대신 호출부에서 `apiErrorCode(error)`로 분기한다.
+ */
+export type ApiActionError = Error & { code?: string; status?: number };
+
+/** 실패 응답 엔벨로프를 code/status가 실린 Error로 변환한다. */
+export function toApiActionError(
+  res: { status: number; error: ApiError },
+  fallbackMessage: string,
+): ApiActionError {
+  return Object.assign(new Error(res.error?.message ?? fallbackMessage), {
+    code: res.error?.code,
+    status: res.status,
+  });
+}
+
+/** throw된 값에서 서버 에러 코드를 꺼낸다. 코드가 실려 있지 않으면 undefined. */
+export function apiErrorCode(error: unknown): string | undefined {
+  const code = (error as { code?: unknown } | null | undefined)?.code;
+  return typeof code === 'string' ? code : undefined;
+}
+
 /** 다수의 쓰기(저장/수정/삭제) 엔드포인트 공통 응답 data. */
 export type UpdatedAt = {
   updatedAt: string;

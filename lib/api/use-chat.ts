@@ -17,6 +17,7 @@ import {
   uploadChatImage,
   type ChatImageUpload,
 } from './chat';
+import { toApiActionError } from './client';
 import {
   acceptChatRequest,
   cancelChatRequest,
@@ -154,7 +155,7 @@ export function useRoommateRequestAction() {
   ) => {
     const res = await action.mutateAsync(requestId);
     if (res.status !== 200 || res.error) {
-      throw new Error(res.error?.message ?? fallbackMessage);
+      throw toApiActionError(res, fallbackMessage);
     }
     await refreshRequests();
     return res.data;
@@ -164,7 +165,7 @@ export function useRoommateRequestAction() {
     requestRoommate: async (chatRoomId: string | number) => {
       const res = await mutation.mutateAsync(chatRoomId);
       if (res.status !== 200 || res.error) {
-        throw new Error(res.error?.message ?? '룸메이트 요청에 실패했습니다.');
+        throw toApiActionError(res, '룸메이트 요청에 실패했습니다.');
       }
       await refreshRequests();
       return res.data;
