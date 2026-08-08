@@ -17,7 +17,7 @@ export function SupportHeader({ title, onBack }: { title: string; onBack?: () =>
       >
         <Ionicons name="chevron-back" size={24} color="#696976" />
       </Pressable>
-      <Text className="flex-1 text-center text-base font-medium text-[#17171B]">{title}</Text>
+      <Text className="flex-1 text-center text-[17px] font-medium text-[#17171B]">{title}</Text>
       <View className="w-10" />
     </View>
   );
