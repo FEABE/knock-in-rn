@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ChatImageViewer } from '@/components/chat/chat-room/chat-image-viewer';
 import { RoomThumbnailPlaceholder, RoomTypePill } from '@/components/domain';
 import { PriorityArtwork, RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
 import {
@@ -72,6 +73,7 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
   const scrollRef = useRef<ScrollView>(null);
   const sectionOffsets = useRef<Partial<Record<RoomDetailTab, number>>>({});
   const [activeTab, setActiveTab] = useState<RoomDetailTab>('compatibility');
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const tabs = useMemo(
     () =>
       ROOM_DETAIL_TABS.filter((tab) => {
@@ -163,6 +165,10 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
           photos={props.photos}
           index={props.photoIndex}
           onIndexChange={props.setPhotoIndex}
+          onPhotoPress={(index) => {
+            props.setPhotoIndex(index);
+            setImageViewerOpen(true);
+          }}
           roomTypeLabel={ROOM_TYPE_LABEL[props.post.roomType] ?? props.post.roomType}
         />
 
@@ -300,6 +306,14 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         onCancel={props.onCancelDelete}
         onConfirm={props.onConfirmDelete}
       />
+
+      <ChatImageViewer
+        visible={imageViewerOpen}
+        imageUrls={props.photos}
+        index={props.photoIndex}
+        onIndexChange={props.setPhotoIndex}
+        onClose={() => setImageViewerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -383,11 +397,13 @@ function PhotoCarousel({
   photos,
   index,
   onIndexChange,
+  onPhotoPress,
   roomTypeLabel,
 }: {
   photos: string[];
   index: number;
   onIndexChange: (next: number) => void;
+  onPhotoPress: (index: number) => void;
   roomTypeLabel: string;
 }) {
   const { width } = useWindowDimensions();
@@ -408,12 +424,19 @@ function PhotoCarousel({
           }}
         >
           {photos.map((url, index) => (
-            <Image
+            <Pressable
               key={`${url}-${index}`}
-              source={{ uri: url }}
               style={{ width, height: photoHeight }}
-              contentFit="cover"
-            />
+              onPress={() => onPhotoPress(index)}
+              accessibilityRole="button"
+              accessibilityLabel={`사진 ${index + 1} 크게 보기`}
+            >
+              <Image
+                source={{ uri: url }}
+                style={{ width, height: photoHeight }}
+                contentFit="cover"
+              />
+            </Pressable>
           ))}
         </ScrollView>
       )}

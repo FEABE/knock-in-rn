@@ -352,16 +352,15 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   );
 
   const peerName = room?.peer.name;
-  const myName = session?.user.name;
   const openImageViewer = useCallback(
     (message: ChatRoomBubble) => {
       if (!message.imageUrl) return;
       setImageViewer({
         imageUrl: message.imageUrl,
-        title: message.mine ? (myName ?? '나') : (peerName ?? '상대방'),
+        title: peerName ?? '상대방',
       });
     },
-    [myName, peerName],
+    [peerName],
   );
   const closeImageViewer = useCallback(() => setImageViewer(null), []);
 
