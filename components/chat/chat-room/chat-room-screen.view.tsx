@@ -435,7 +435,7 @@ function RoommateRequestCard({ request, peer, ...actions }: RoommateRequestCardP
         <ReadyProfileAvatar name={peer.name} imageUrl={peer.avatarUrl} size={42} />
       ) : null}
       <View
-        className={`w-[278px] overflow-hidden rounded-bl-lg rounded-br-lg border border-[#DADAE8] bg-white ${
+        className={`w-[278px] max-w-full shrink overflow-hidden rounded-bl-lg rounded-br-lg border border-[#DADAE8] bg-white ${
           incoming ? 'rounded-tl-none rounded-tr-lg' : 'rounded-tl-lg rounded-tr-none'
         }`}
       >

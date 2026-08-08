@@ -304,7 +304,11 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
       // 배너/카드가 "이미 매칭됨"을 그대로 보여주게 한다.
       if (apiErrorCode(requestError) === ROOMMATE_ALREADY_EXISTS) {
         reload();
-        fetchSelfHasRoommate().then(setSelfHasRoommate);
+        const self = await fetchSelfHasRoommate();
+        setSelfHasRoommate(self);
+        // 두 플래그 모두 상태를 못 잡으면 배너/카드가 안 바뀌어 무반응이 된다.
+        // 그 경우에만 기존 알럿으로 폴백해 최소한의 피드백을 준다.
+        if (!self && !room.opponentHasRoommate) showRequestError(requestError);
         return;
       }
       showRequestError(requestError);
