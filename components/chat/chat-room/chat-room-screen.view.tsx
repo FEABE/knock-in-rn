@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { GenderAgeChip } from '@/components/ui/gender-age-chip';
 import {
   ReadyChatBubble,
   ReadyChatComposer,
@@ -199,8 +200,6 @@ function ChatHeader({
   onBack: () => void;
   onLeave: () => void;
 }) {
-  const genderSymbol = peer.gender === 'female' ? '♀' : peer.gender === 'male' ? '♂' : '';
-  const genderLabel = peer.gender === 'female' ? '여성' : peer.gender === 'male' ? '남성' : '';
   return (
     <View className="flex-row items-center gap-2 border-b border-[#F1F1F6] px-3 pb-2.5 pt-1">
       <Pressable
@@ -217,12 +216,7 @@ function ChatHeader({
           {peer.name}
         </Text>
         <View className="flex-row items-center gap-1.5">
-          {peer.age > 0 ? (
-            <ReadyBadge
-              label={`${genderSymbol} ${peer.age}세${genderLabel ? `·${genderLabel}` : ''}`.trim()}
-              tone="red"
-            />
-          ) : null}
+          <GenderAgeChip age={peer.age} gender={peer.gender} />
           {matched ? (
             <ReadyBadge label="룸메이트" tone="neutral" />
           ) : peer.compatibilityScore != null ? (
