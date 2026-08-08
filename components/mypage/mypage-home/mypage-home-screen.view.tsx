@@ -119,8 +119,8 @@ export function MyPageHomeScreenView({
         </Section>
 
         <Section title="고객 지원">
-          {supportRows.map((row, index) => (
-            <MenuRow key={row.label} row={row} last={index === supportRows.length - 1} />
+          {supportRows.map((row) => (
+            <MenuRow key={row.label} row={row} />
           ))}
           <View className="flex-row items-center border-b border-neutral-100 px-4 py-4">
             <Text className="flex-1 text-[15px] font-medium text-[#17171B]">버전 정보</Text>
