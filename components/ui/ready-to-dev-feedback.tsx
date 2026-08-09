@@ -311,3 +311,45 @@ export function ReadyConfirmDialog({
     </Modal>
   );
 }
+
+/** 확인 버튼 하나짜리 안내 모달 (예: 채팅방 생성 개수 제한). */
+export function ReadyInfoDialog({
+  open,
+  title,
+  description,
+  confirmLabel = '확인',
+  onConfirm,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal transparent animationType="fade" visible={open} onRequestClose={onConfirm}>
+      <View className="flex-1 items-center justify-center bg-[#17171B]/40 px-9">
+        <View className="w-full max-w-[320px] gap-5 rounded-2xl bg-white px-6 pb-5 pt-6">
+          <View className="gap-2">
+            <Text className="text-center text-lg font-bold leading-[27px] text-[#17171B]">
+              {title}
+            </Text>
+            {description ? (
+              <Text className="text-center text-sm leading-[21px] text-[#696976]">
+                {description}
+              </Text>
+            ) : null}
+          </View>
+          <Pressable
+            onPress={onConfirm}
+            accessibilityRole="button"
+            accessibilityLabel={confirmLabel}
+            className="h-11 items-center justify-center rounded-lg bg-[#4C87F6] active:opacity-85"
+          >
+            <Text className="text-sm font-semibold text-white">{confirmLabel}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}

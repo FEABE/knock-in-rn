@@ -7,6 +7,7 @@ import { consumeReportSuccessToast } from '@/components/moderation/report-form/r
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
+  apiErrorCode,
   blockUser as blockUserRequest,
   DEFAULT_CHAT_MESSAGE,
   getAccessTokenMemberId,
@@ -41,6 +42,8 @@ export type UseRoomDetailScreenReturn = {
   bottomPadding: number;
   deleting: boolean;
   deleteDialogOpen: boolean;
+  chatLimitOpen: boolean;
+  closeChatLimit: () => void;
   toast: string | null;
   setMenuOpen: (next: boolean) => void;
   setPhotoIndex: (next: number) => void;
@@ -109,6 +112,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const [descExpanded, setDescExpanded] = useState(false);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [chatLimitOpen, setChatLimitOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -163,6 +167,8 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     bottomPadding,
     deleting,
     deleteDialogOpen,
+    chatLimitOpen,
+    closeChatLimit: () => setChatLimitOpen(false),
     toast,
     setMenuOpen,
     setPhotoIndex,
@@ -234,6 +240,11 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
             goChatRoom(router, chatRoomId);
           })
           .catch((chatError) => {
+            // 채팅방 5개 제한은 시스템 Alert가 아니라 시안의 안내 모달로 띄운다.
+            if (apiErrorCode(chatError) === 'ROOM_LIMIT_EXCEEDED') {
+              setChatLimitOpen(true);
+              return;
+            }
             Alert.alert(
               '채팅 실패',
               chatError instanceof Error ? chatError.message : '잠시 후 다시 시도해주세요.',
