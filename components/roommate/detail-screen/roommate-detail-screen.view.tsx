@@ -107,7 +107,7 @@ export function RoommateDetailScreenView({
       ) : (
         <>
           <ProfileHead data={data} />
-          <DetailTabs active={activeTab} onPress={moveToSection} />
+          <DetailTabs active={activeTab} hasRoom={data.hasRoom} onPress={moveToSection} />
 
           <ScrollView
             ref={scrollRef}
@@ -268,13 +268,21 @@ function RoomStatusChip({ label }: { label: string }) {
   );
 }
 
-function DetailTabs({ active, onPress }: { active: DetailTab; onPress: (tab: DetailTab) => void }) {
+function DetailTabs({
+  active,
+  hasRoom,
+  onPress,
+}: {
+  active: DetailTab;
+  hasRoom: boolean;
+  onPress: (tab: DetailTab) => void;
+}) {
   const { width } = useWindowDimensions();
   const tabWidth = width / 3;
   const tabs: { key: DetailTab; label: string }[] = [
     { key: 'compatibility', label: '궁합 점수' },
     { key: 'condition', label: '룸메이트 조건' },
-    { key: 'room', label: '방 소개' },
+    { key: 'room', label: hasRoom ? '방 소개' : '희망 방 형태' },
     { key: 'lifestyle', label: '생활 패턴' },
   ];
   return (
@@ -428,8 +436,8 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
 
 function RoomIntroductionBlock({ data }: { data: RoommateMatchDetailModel }) {
   return (
-    <ReadySection title="방 소개">
-      <View className="gap-2">
+    <ReadySection title={data.hasRoom ? '방 소개' : '희망 방 형태'}>
+      <View className="gap-5">
         {data.livingRows.map((row) => (
           <KeyVal key={row.label} label={row.label} value={row.value} />
         ))}
@@ -563,9 +571,9 @@ function ConditionChip({ label, image }: { label: string; image?: string | null 
 
 function KeyVal({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-row items-center justify-between">
+    <View className="items-start gap-2">
       <Text className="text-[15px] font-medium leading-[22px] text-[#696976]">{label}</Text>
-      <Text className="max-w-[70%] text-right text-[16px] font-semibold leading-6 text-[#17171B]">
+      <Text className="w-full text-left text-[16px] font-semibold leading-6 text-[#17171B]">
         {value}
       </Text>
     </View>

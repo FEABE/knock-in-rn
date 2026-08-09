@@ -26,9 +26,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
   };
 
   return (
-    <Pressable
-      onPress={() => onPress?.(match)}
-      accessibilityRole="button"
+    <View
       className="gap-3 rounded-lg border border-[#D8E5FD]/70 bg-white px-[14px] py-4 active:opacity-90"
       style={{
         shadowColor: '#ECF2FE',
@@ -38,85 +36,91 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
         elevation: 1,
       }}
     >
-      <View className="flex-row items-center gap-3">
-        {match.profileImageUrl ? (
-          <Image
-            source={{ uri: match.profileImageUrl }}
-            style={PROFILE_IMAGE_STYLE}
-            contentFit="cover"
-          />
-        ) : (
-          <View className="h-[62px] w-[62px] items-center justify-center rounded-full border border-[#DADAE8] bg-white">
-            <Ionicons name="person" size={43} color="#DADAE8" />
-          </View>
-        )}
+      <Pressable
+        onPress={() => onPress?.(match)}
+        accessibilityRole="button"
+        className="gap-3 active:opacity-90"
+      >
+        <View className="flex-row items-center gap-3">
+          {match.profileImageUrl ? (
+            <Image
+              source={{ uri: match.profileImageUrl }}
+              style={PROFILE_IMAGE_STYLE}
+              contentFit="cover"
+            />
+          ) : (
+            <View className="h-[62px] w-[62px] items-center justify-center rounded-full border border-[#DADAE8] bg-white">
+              <Ionicons name="person" size={43} color="#DADAE8" />
+            </View>
+          )}
 
-        <View className="min-w-0 flex-1 gap-2">
-          <View className="flex-row items-center justify-between gap-2">
-            <View className="min-w-0 flex-1 flex-row items-center gap-0.5">
-              <Text
-                numberOfLines={1}
-                className="text-[16px] font-semibold leading-6 text-[#17171B]"
+          <View className="min-w-0 flex-1 gap-2">
+            <View className="flex-row items-center justify-between gap-2">
+              <View className="min-w-0 flex-1 flex-row items-center gap-0.5">
+                <Text
+                  numberOfLines={1}
+                  className="text-[16px] font-semibold leading-6 text-[#17171B]"
+                >
+                  {match.name}
+                </Text>
+                {match.isAuthStudent ? (
+                  <MaterialIcons name="verified" size={18} color={AUTH_BADGE_GREEN} />
+                ) : null}
+                {match.isAuthEmployee ? (
+                  <MaterialIcons name="work" size={18} color={AUTH_BADGE_BLUE} />
+                ) : null}
+              </View>
+
+              <Pressable
+                onPress={() => onLikeChange?.(match, !match.liked)}
+                hitSlop={8}
+                className="h-8 w-8 items-center justify-center"
+                accessibilityLabel={match.liked ? '관심 해제' : '관심 등록'}
               >
-                {match.name}
-              </Text>
-              {match.isAuthStudent ? (
-                <MaterialIcons name="verified" size={18} color={AUTH_BADGE_GREEN} />
-              ) : null}
-              {match.isAuthEmployee ? (
-                <MaterialIcons name="work" size={18} color={AUTH_BADGE_BLUE} />
-              ) : null}
+                <Ionicons
+                  name={match.liked ? 'heart' : 'heart-outline'}
+                  size={24}
+                  color={match.liked ? '#256EF4' : '#AAAABA'}
+                />
+              </Pressable>
             </View>
 
-            <Pressable
-              onPress={() => onLikeChange?.(match, !match.liked)}
-              hitSlop={8}
-              className="h-8 w-8 items-center justify-center"
-              accessibilityLabel={match.liked ? '관심 해제' : '관심 등록'}
-            >
-              <Ionicons
-                name={match.liked ? 'heart' : 'heart-outline'}
-                size={24}
-                color={match.liked ? '#256EF4' : '#AAAABA'}
-              />
-            </Pressable>
-          </View>
-
-          <View className="flex-row flex-wrap gap-2">
-            {match.age || match.genderLabel ? <GenderChip match={match} /> : null}
-            <RoomStatusChip hasRoom={match.hasRoom} />
+            <View className="flex-row flex-wrap gap-2">
+              {match.age || match.genderLabel ? <GenderChip match={match} /> : null}
+              <RoomStatusChip hasRoom={match.hasRoom} />
+            </View>
           </View>
         </View>
-      </View>
 
-      {isLoggedIn ? (
-        <View className="flex-row items-center justify-between">
-          <View className="h-[7px] flex-1 overflow-hidden rounded bg-[#ECECF3]">
-            <View style={{ width: `${score}%` }} className="h-full rounded bg-[#256EF4]" />
+        {isLoggedIn ? (
+          <View className="flex-row items-center justify-between">
+            <View className="h-[7px] flex-1 overflow-hidden rounded bg-[#ECECF3]">
+              <View style={{ width: `${score}%` }} className="h-full rounded bg-[#256EF4]" />
+            </View>
+            <Text className="ml-5 w-[33px] text-right text-[15px] font-semibold leading-[22px] text-[#083891]">
+              {match.compatibilityScore}점
+            </Text>
           </View>
-          <Text className="ml-5 w-[33px] text-right text-[15px] font-semibold leading-[22px] text-[#083891]">
-            {match.compatibilityScore}점
-          </Text>
-        </View>
-      ) : (
-        <Pressable
-          onPress={onCompatibilityLoginPress}
-          accessibilityRole="button"
-          accessibilityLabel="로그인하고 궁합 점수 확인하기"
-          className="h-9 flex-row items-center justify-center gap-2 rounded-lg border border-[#256EF4] bg-white active:bg-[#ECF2FE]"
-        >
-          <Ionicons name="lock-closed" size={16} color="#256EF4" />
-          <Text className="text-[14px] font-semibold leading-[21px] text-[#256EF4]">
-            로그인하고 궁합 점수 확인하기
-          </Text>
-        </Pressable>
-      )}
+        ) : (
+          <Pressable
+            onPress={onCompatibilityLoginPress}
+            accessibilityRole="button"
+            accessibilityLabel="로그인하고 궁합 점수 확인하기"
+            className="h-9 flex-row items-center justify-center gap-2 rounded-lg border border-[#256EF4] bg-white active:bg-[#ECF2FE]"
+          >
+            <Ionicons name="lock-closed" size={16} color="#256EF4" />
+            <Text className="text-[14px] font-semibold leading-[21px] text-[#256EF4]">
+              로그인하고 궁합 점수 확인하기
+            </Text>
+          </Pressable>
+        )}
 
-      <View className="h-[107px] justify-center gap-2 rounded-lg bg-[#F6F6FA] px-[14px] py-3">
-        <InfoRow label="예산" value={match.depositRentLabel.replace(/\s\/\s/g, '/')} />
-        <InfoRow label="방 형태" value={match.roomTypeLabel} />
-        <InfoRow label="위치" value={match.regionLabel} />
-      </View>
+        <View className="h-[107px] justify-center gap-2 rounded-lg bg-[#F6F6FA] px-[14px] py-3">
+          <InfoRow label="예산" value={match.depositRentLabel.replace(/\s\/\s/g, '/')} />
+          <InfoRow label="방 형태" value={match.roomTypeLabel} />
+          <InfoRow label="위치" value={match.regionLabel} />
+        </View>
+      </Pressable>
 
       {match.lifestyleChips.length > 0 ? (
         <ScrollView
@@ -142,7 +146,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
           ))}
         </ScrollView>
       ) : null}
-    </Pressable>
+    </View>
   );
 }
 

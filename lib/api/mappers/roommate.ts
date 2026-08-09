@@ -63,6 +63,7 @@ export type RoommateMatchDetailModel = {
   profileImageUrl?: string;
   age?: number;
   genderLabel?: string;
+  hasRoom: boolean;
   regionLabel: string;
   roomStatusLabel: string;
   isAuthStudent: boolean;
@@ -231,9 +232,13 @@ export function toRoommateMatchDetailModel(
     : [
         {
           label: '예산',
-          value: `${numberValue(data.seekerProfile?.maxDeposit ?? data.maxDeposit).toLocaleString()}/${numberValue(
-            data.seekerProfile?.maxMonthlyRent ?? data.maxMounthRent,
-          ).toLocaleString()}`,
+          value: `${formatMoneyRange(
+            data.minDeposit ?? data.seekerProfile?.minDeposit,
+            data.maxDeposit ?? data.seekerProfile?.maxDeposit,
+          )}/${formatMoneyRange(
+            data.minMounthRent ?? data.seekerProfile?.minMonthlyRent,
+            data.maxMounthRent ?? data.seekerProfile?.maxMonthlyRent,
+          )}`,
         },
         { label: '방 형태', value: roomTypeLabel },
         {
@@ -251,6 +256,7 @@ export function toRoommateMatchDetailModel(
     profileImageUrl: data.memberProfileImageUrl,
     age: data.memberAge,
     genderLabel: data.gender === 'FEMALE' ? '여성' : data.gender === 'MALE' ? '남성' : undefined,
+    hasRoom: isOffer,
     regionLabel: typeof region === 'number' ? labelForRegionId(region) : (region ?? '-'),
     roomStatusLabel,
     isAuthStudent:
