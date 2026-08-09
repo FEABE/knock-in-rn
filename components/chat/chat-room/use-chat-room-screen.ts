@@ -61,7 +61,6 @@ export type UseChatRoomScreenReturn = {
   uploadingImage: boolean;
   processingRequest: boolean;
   inputBottomPadding: number;
-  modalBottomPadding: number;
   scrollRef: MutableRefObject<ScrollView | null>;
   requestSheetVisible: boolean;
   /** 전체화면으로 펼쳐 볼 이미지. null이면 뷰어가 닫힌 상태. */
@@ -100,7 +99,6 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const chatRoomId = typeof id === 'string' ? id : '';
   const scrollRef = useRef<ScrollView | null>(null);
   const inputBottomPadding = useSafeBottomPadding(8, 8);
-  const modalBottomPadding = useSafeBottomPadding(16, 20);
   const hydratedRoomIdRef = useRef('');
   const firstSent = useRef(false);
   const { isUserBlocked } = useModeration();
@@ -321,7 +319,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
       }
       showRequestError(requestError);
     }
-  }, [acceptRoommateRequest, reload, room?.roommateRequest]);
+  }, [acceptRoommateRequest, reload, room?.opponentHasRoommate, room?.roommateRequest]);
 
   const confirmRequestAction = useCallback(
     (kind: 'reject' | 'cancel') => {
@@ -387,7 +385,6 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     uploadingImage,
     processingRequest: processingRequest || requesting,
     inputBottomPadding,
-    modalBottomPadding,
     scrollRef,
     requestSheetVisible,
     imageViewer,

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 
 import { GenderAgeChip } from '@/components/ui/gender-age-chip';
@@ -11,11 +11,7 @@ import {
   ReadyChatRestrictionBanner,
   ReadyChatSystemNotice,
 } from '@/components/ui/ready-to-dev-chat';
-import {
-  ReadyActionSheet,
-  ReadyBadge,
-  ReadyProfileAvatar,
-} from '@/components/ui/ready-to-dev-components';
+import { ReadyBadge, ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
 import { formatKstTime, isSameKstDay, kstClock, type ChatSocketStatus } from '@/lib/api';
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
@@ -45,7 +41,6 @@ export function ChatRoomScreenView({
   uploadingImage,
   processingRequest,
   inputBottomPadding,
-  modalBottomPadding,
   onBack,
   onLeave,
   openRequestSheet,
@@ -118,10 +113,9 @@ export function ChatRoomScreenView({
 
         <RoommateRequestModal
           visible={requestSheetVisible}
-          peerName={room.peer.name}
+          processing={processingRequest}
           onClose={closeRequestSheet}
           onConfirm={confirmRequest}
-          bottomPadding={modalBottomPadding}
         />
       </Animated.View>
 
@@ -587,47 +581,69 @@ function CardButton({
 
 function RoommateRequestModal({
   visible,
-  peerName,
+  processing,
   onClose,
   onConfirm,
-  bottomPadding,
 }: {
   visible: boolean;
-  peerName: string;
+  processing: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  bottomPadding: number;
 }) {
-  return (
-    <ReadyActionSheet open={visible} onOpenChange={(open) => !open && onClose()}>
-      <View className="gap-5" style={{ paddingBottom: Math.max(0, bottomPadding - 20) }}>
-        <View className="gap-2">
-          <Text className="text-lg font-bold text-[#17171B]">룸메이트를 요청할까요?</Text>
-          <Text className="text-sm leading-5 text-[#696976]">
-            {peerName}님에게 룸메이트 요청을 보내요. 상대방이 수락하면 룸메이트가 될 수 있어요.
-          </Text>
-        </View>
+  const close = () => {
+    if (!processing) onClose();
+  };
 
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={onClose}
-            accessibilityRole="button"
-            accessibilityLabel="요청 취소"
-            className="h-12 flex-1 items-center justify-center rounded-lg bg-[#F1F1F6] active:opacity-85"
-          >
-            <Text className="text-sm font-semibold text-[#696976]">취소</Text>
-          </Pressable>
-          <Pressable
-            onPress={onConfirm}
-            accessibilityRole="button"
-            accessibilityLabel="룸메이트 요청 보내기"
-            className="h-12 flex-1 items-center justify-center rounded-lg bg-[#256EF4] active:opacity-90"
-          >
-            <Text className="text-sm font-semibold text-white">요청하기</Text>
-          </Pressable>
-        </View>
-      </View>
-    </ReadyActionSheet>
+  return (
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={close}>
+      <Pressable
+        onPress={close}
+        accessibilityRole="button"
+        accessibilityLabel="룸메이트 요청 모달 닫기"
+        className="flex-1 items-center justify-center bg-[#17171B]/40"
+      >
+        <Pressable
+          onPress={(event) => event.stopPropagation()}
+          className="h-[153px] w-[286px] items-center justify-center rounded-[10px] bg-white p-5"
+        >
+          <View className="items-center gap-2">
+            <Text className="text-center text-[18px] font-bold leading-[27px] text-[#2D2D2D]">
+              룸메이트를 요청할까요?
+            </Text>
+            <Text className="text-center text-[14px] leading-[21px] text-[#42454A]">
+              상대가 수락하면 룸메이트가 돼요
+            </Text>
+          </View>
+
+          <View className="mt-4 flex-row gap-3">
+            <Pressable
+              onPress={close}
+              disabled={processing}
+              accessibilityRole="button"
+              accessibilityLabel="룸메이트 요청 취소"
+              className="h-11 w-[112px] items-center justify-center rounded-[7px] bg-[#ECECF3]"
+            >
+              <Text className="text-[15px] font-bold text-[#AAAABA]">취소</Text>
+            </Pressable>
+            <Pressable
+              onPress={onConfirm}
+              disabled={processing}
+              accessibilityRole="button"
+              accessibilityLabel="룸메이트 요청 보내기"
+              className={`h-11 w-[112px] items-center justify-center rounded-[7px] bg-[#256EF4] ${
+                processing ? 'opacity-60' : 'active:opacity-85'
+              }`}
+            >
+              {processing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text className="text-[15px] font-bold text-white">요청하기</Text>
+              )}
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
