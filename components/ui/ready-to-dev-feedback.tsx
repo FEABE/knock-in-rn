@@ -340,6 +340,66 @@ export function ReadyConfirmDialog({
   );
 }
 
+/**
+ * 화면 이탈 확인 모달 (Figma `3229:19267`).
+ * 취소는 회색 채움, 확인은 파랑 채움 — 취소 버튼이 테두리인 ReadyConfirmDialog와는 다른 시안이다.
+ */
+export function ReadyExitDialog({
+  open,
+  title,
+  description,
+  cancelLabel = '취소',
+  confirmLabel = '확인',
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  cancelLabel?: string;
+  confirmLabel?: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal transparent animationType="fade" visible={open} onRequestClose={onCancel}>
+      <View className="flex-1 items-center justify-center bg-[#17171B]/40">
+        <View className="w-[286px] items-center justify-center rounded-[10px] bg-white p-5">
+          <View className="items-center gap-2">
+            <Text className="text-center text-lg font-bold leading-[27px] text-[#2D2D2D]">
+              {title}
+            </Text>
+            {description ? (
+              <Text className="text-center text-sm leading-[21px] text-[#42454A]">
+                {description}
+              </Text>
+            ) : null}
+          </View>
+
+          <View className="mt-4 flex-row gap-3">
+            <Pressable
+              onPress={onCancel}
+              accessibilityRole="button"
+              accessibilityLabel={cancelLabel}
+              className="h-11 w-[112px] items-center justify-center rounded-[7px] bg-[#ECECF3] active:opacity-85"
+            >
+              <Text className="text-[15px] font-bold text-[#AAAABA]">{cancelLabel}</Text>
+            </Pressable>
+            <Pressable
+              onPress={onConfirm}
+              accessibilityRole="button"
+              accessibilityLabel={confirmLabel}
+              className="h-11 w-[112px] items-center justify-center rounded-[7px] bg-[#256EF4] active:opacity-85"
+            >
+              <Text className="text-[15px] font-bold text-white">{confirmLabel}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 /** 확인 버튼 하나짜리 안내 모달 (예: 채팅방 생성 개수 제한). */
 export function ReadyInfoDialog({
   open,

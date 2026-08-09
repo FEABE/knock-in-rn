@@ -26,6 +26,7 @@ import {
 import {
   ReadyConfirmDialog,
   ReadyErrorState,
+  ReadyExitDialog,
   ReadyLoadingState,
   ReadyToast,
 } from '@/components/ui/ready-to-dev-feedback';
@@ -53,7 +54,10 @@ export function NewRoomScreenView({
   lifestyleLoading,
   lifestyleError,
   reloadLifestyle,
+  exitDialogOpen,
   onBack,
+  onExitCancel,
+  onExitConfirm,
   onSignIn,
   onRequestEditProfile,
   onCancelEditProfile,
@@ -173,6 +177,14 @@ export function NewRoomScreenView({
         confirmLabel="확인"
         onCancel={onCancelEditProfile}
         onConfirm={onConfirmEditProfile}
+      />
+
+      <ReadyExitDialog
+        open={exitDialogOpen}
+        title="해당 페이지를 나갈까요?"
+        description="해당 페이지를 나가면 작성한 글이 사라져요"
+        onCancel={onExitCancel}
+        onConfirm={onExitConfirm}
       />
 
       <ReadyToast
@@ -582,11 +594,17 @@ export function IntroPage({ form }: { form: UseRoomPostFormReturn }) {
 
       <View className="mt-8 gap-1">
         <Text className="text-[15px] font-bold text-[#17171B]">제목</Text>
+        {/* 제목이 길어지면 줄바꿈되면서 밑줄도 같이 내려가야 한다.
+            그래서 높이를 고정하지 않고 multiline + 최소 높이로 둔다.
+            (py-3 + lineHeight 24 = 한 줄일 때 기존 h-12 와 같은 높이) */}
         <TextField
           value={form.draft.title}
           onChangeValue={form.setTitle}
           placeholder="예) 신촌역 도보 5분, 풀옵션 원룸"
-          className="h-12 border-b border-[#DADAE8] px-0 py-0 text-base text-[#17171B]"
+          multiline
+          submitBehavior="blurAndSubmit"
+          returnKeyType="done"
+          className="min-h-12 border-b border-[#DADAE8] px-0 py-3 text-base text-[#17171B]"
           style={{ lineHeight: 24 }}
         />
       </View>

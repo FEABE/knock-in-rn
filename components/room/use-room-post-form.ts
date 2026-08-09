@@ -248,7 +248,9 @@ export function useRoomPostForm({
         return { ...current, pageIndex: targetPageIndex };
       }),
     toastMessage,
-    setTitle: (next) => patch({ title: next }),
+    // 제목 입력은 줄바꿈되도록 multiline 이지만, 값 자체에 개행이 들어가면
+    // 목록/상세의 한 줄 제목이 깨진다. 붙여넣기로 들어온 개행은 공백으로 바꾼다.
+    setTitle: (next) => patch({ title: next.replace(/\r?\n/g, ' ') }),
     setDeposit: (next) => patch({ deposit: next }),
     setRent: (next) => patch({ rent: next }),
     setMaintenance: (next) => patch({ maintenance: next }),

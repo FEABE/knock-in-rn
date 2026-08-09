@@ -16,7 +16,7 @@ import type { RoomFormDraft, RoomFormValues } from '@/components/room/room-post-
 import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
 import { useRoomPostForm } from '@/components/room/use-room-post-form';
 import type { LifestyleSummaryItem, PreferencePrioritySummaryItem } from '@/lib/api';
-import { ReadyToast } from '@/components/ui/ready-to-dev-feedback';
+import { ReadyExitDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseEditRoomScreenReturn } from './use-edit-room-screen';
 
@@ -32,7 +32,10 @@ export function EditRoomScreenView({
   profileMetadataChanged,
   submitting,
   toastMessage,
+  exitDialogOpen,
   onBack,
+  onExitCancel,
+  onExitConfirm,
   onSubmit,
 }: EditRoomScreenViewProps) {
   if (state === 'loading') {
@@ -56,7 +59,10 @@ export function EditRoomScreenView({
       profileMetadataChanged={profileMetadataChanged}
       submitting={submitting}
       toastMessage={toastMessage}
+      exitDialogOpen={exitDialogOpen}
       onBack={onBack}
+      onExitCancel={onExitCancel}
+      onExitConfirm={onExitConfirm}
       onSubmit={onSubmit}
     />
   );
@@ -70,7 +76,10 @@ function EditableRoomScreen({
   profileMetadataChanged,
   submitting,
   toastMessage,
+  exitDialogOpen,
   onBack,
+  onExitCancel,
+  onExitConfirm,
   onSubmit,
 }: {
   initial: Partial<RoomFormDraft>;
@@ -80,7 +89,10 @@ function EditableRoomScreen({
   profileMetadataChanged: boolean;
   submitting: boolean;
   toastMessage: string | null;
+  exitDialogOpen: boolean;
   onBack: () => void;
+  onExitCancel: () => void;
+  onExitConfirm: () => void;
   onSubmit: (values: RoomFormValues) => Promise<void>;
 }) {
   const form = useRoomPostForm({ initial, onSubmit, mode: 'edit' });
@@ -178,6 +190,14 @@ function EditableRoomScreen({
         onOpenChange={form.setRegionSheetOpen}
         value={form.selectedRegion}
         onSelect={form.selectRegion}
+      />
+
+      <ReadyExitDialog
+        open={exitDialogOpen}
+        title="해당 페이지를 나갈까요?"
+        description="해당 페이지를 나가면 작성한 글이 사라져요"
+        onCancel={onExitCancel}
+        onConfirm={onExitConfirm}
       />
 
       <ReadyToast

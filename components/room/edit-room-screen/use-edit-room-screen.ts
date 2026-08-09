@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, BackHandler } from 'react-native';
 
 import { roomFormValuesToBoardWriteRequest } from '@/components/room/room-post-form.api';
 import type { RoomFormDraft, RoomFormValues } from '@/components/room/room-post-form';
@@ -35,7 +35,11 @@ export type UseEditRoomScreenReturn = {
   initial?: Partial<RoomFormDraft>;
   submitting: boolean;
   toastMessage: string | null;
+  /** 뒤로가기로 화면을 벗어나기 전 띄우는 확인창(수정 내용은 저장되지 않는다). */
+  exitDialogOpen: boolean;
   onBack: () => void;
+  onExitCancel: () => void;
+  onExitConfirm: () => void;
   onSubmit: (values: RoomFormValues) => Promise<void>;
 };
 
@@ -53,7 +57,10 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
   const { updateBoard } = useRoommateBoardWriteActions();
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [exitDialogOpen, setExitDialogOpen] = useState(false);
   const backTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 수정 성공 후 자동 복귀는 확인창 없이 지나가야 한다. */
+  const leavingRef = useRef(false);
 
   useEffect(
     () => () => {
@@ -65,6 +72,7 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
   // 성공 토스트를 잠시 보여준 뒤 이전 화면으로 복귀한다.
   const showToastAndGoBack = (message: string) => {
     setToastMessage(message);
+    leavingRef.current = true;
     backTimer.current = setTimeout(() => router.back(), SUCCESS_TOAST_MS);
   };
 
@@ -76,6 +84,23 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
         : session?.user.id !== post.author.id && session?.user.name !== post.author.name
           ? 'forbidden'
           : 'editable';
+
+  // Android 하드웨어 뒤로가기도 헤더 뒤로가기와 같은 확인창을 거치게 한다.
+  // (iOS 스와이프 뒤로가기는 app/room/[id]/edit.tsx 에서 gestureEnabled: false 로 막는다.)
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      // 폼이 없는 상태(로딩·없음·권한없음)에서는 잃을 내용이 없으므로 그대로 나간다.
+      if (state !== 'editable' || leavingRef.current) return false;
+      if (exitDialogOpen) {
+        setExitDialogOpen(false);
+        return true;
+      }
+      if (submitting) return true;
+      setExitDialogOpen(true);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [exitDialogOpen, state, submitting]);
 
   const onSubmit = async (values: RoomFormValues) => {
     if (!post || submitting) return;
@@ -109,7 +134,21 @@ export function useEditRoomScreen(): UseEditRoomScreenReturn {
     initial: editData ? toInitialDraftFromEdit(editData) : post ? toInitialDraft(post) : undefined,
     submitting,
     toastMessage,
-    onBack: () => router.back(),
+    exitDialogOpen,
+    // 수정 중인 내용은 저장되지 않으므로 폼 화면에서는 확인창을 먼저 띄운다.
+    onBack: () => {
+      if (state !== 'editable') {
+        router.back();
+        return;
+      }
+      setExitDialogOpen(true);
+    },
+    onExitCancel: () => setExitDialogOpen(false),
+    onExitConfirm: () => {
+      setExitDialogOpen(false);
+      leavingRef.current = true;
+      router.back();
+    },
     onSubmit,
   };
 }
