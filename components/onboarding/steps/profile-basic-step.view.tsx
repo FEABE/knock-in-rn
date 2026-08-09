@@ -111,8 +111,6 @@ export function ProfileBasicStepView({
               placeholder="생년월일 8자리"
               keyboardType="number-pad"
               invalid={Boolean(fieldError)}
-              returnKeyType="next"
-              onSubmitEditing={onContinue}
               className={inputClassName(Boolean(fieldError))}
             />
           ) : null}
