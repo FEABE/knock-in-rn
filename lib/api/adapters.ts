@@ -197,12 +197,14 @@ function preferredRoommateFromDetail(data: BoardDetailData): RoomPost['preferred
   const smoking = conditions.find((item) => item.name?.includes('흡연'));
   const conditionItems = conditions.flatMap((item) => {
     if (item.name?.includes('성별')) return [];
-    const name = conditionDisplayValue(item);
-    return name
+    const name = item.name?.trim();
+    const value = conditionDisplayValue(item);
+    return name && value
       ? [
           {
             id: item.conditionId != null ? String(item.conditionId) : undefined,
             name,
+            value,
             image: item.imageUrl ?? null,
           },
         ]

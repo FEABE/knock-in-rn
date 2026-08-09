@@ -10,6 +10,7 @@ import {
   RoomTypeArtwork,
 } from '@/components/ui/ready-to-dev-assets';
 import type { LifestyleSummaryItem, PreferencePrioritySummaryItem } from '@/lib/api';
+import { formatSelectionLabel } from '@/lib/domain/selection-label';
 import type { Region } from '@/lib/onboarding';
 
 import { MAX_ROOM_DESCRIPTION_LENGTH, MAX_ROOM_PHOTOS } from './room-post-form.model';
@@ -279,9 +280,13 @@ export function RoomPostFormView({
                   key={item.id}
                   className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8] bg-white px-3"
                 >
-                  <PriorityArtwork label={item.value} image={item.image} size={22} />
+                  <PriorityArtwork
+                    label={formatSelectionLabel(item.label, item.value)}
+                    image={item.image}
+                    size={22}
+                  />
                   <Text className="text-[14px] font-medium leading-[21px] text-[#696976]">
-                    {item.value}
+                    {formatSelectionLabel(item.label, item.value)}
                   </Text>
                 </View>
               ))}

@@ -3,6 +3,7 @@ import {
   labelForRoomProfileType,
   labelForRoomTypeId,
 } from '@/lib/api/backend-ids';
+import { formatSelectionLabel } from '@/lib/domain/selection-label';
 
 import type { MatchDetailData, MatchListItem } from '../roommate-boards';
 import { booleanValue, formatDateLabel, numberValue, stringValue } from './common';
@@ -35,6 +36,7 @@ export type RoommateMatchCardModel = {
 
 export type RoommateChipModel = {
   key: string;
+  value?: string;
   label: string;
   image?: string | null;
 };
@@ -301,6 +303,8 @@ function toChipModels(
   items:
     | {
         name?: string;
+        value?: string;
+        description?: string;
         imageUrl?: string;
         lifestyleId?: number;
         conditionId?: number;
@@ -310,13 +314,15 @@ function toChipModels(
   keyPrefix: string,
 ): RoommateChipModel[] {
   return (items ?? []).flatMap((item, index) => {
-    const label = item.name?.trim();
-    if (!label) return [];
+    const name = item.name?.trim();
+    if (!name) return [];
+    const value = item.description?.trim() || item.value?.trim();
     const id = item.lifestyleId ?? item.conditionId ?? item.conditionWeightId;
     return [
       {
         key: stringValue(id, `${keyPrefix}-${index}`),
-        label,
+        value,
+        label: formatSelectionLabel(name, value),
         image: item.imageUrl ?? null,
       },
     ];

@@ -11,6 +11,7 @@ export type VerificationBadge = {
 export type ImportantCondition = {
   id?: string;
   name: string;
+  value?: string;
   image?: string | null;
 };
 

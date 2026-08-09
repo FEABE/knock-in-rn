@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/roommate-condition-chip';
 import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
 import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
+import { formatSelectionLabel } from '@/lib/domain/selection-label';
 
 import type { LifestyleTile, UseRoomDetailScreenReturn } from './use-room-detail-screen';
 
@@ -683,7 +684,7 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
   ).slice(0, 3);
   const conditionChips = preferred?.conditions.length
     ? preferred.conditions.map((condition) => ({
-        label: condition.name,
+        label: formatSelectionLabel(condition.name, condition.value),
         image: condition.image,
       }))
     : [

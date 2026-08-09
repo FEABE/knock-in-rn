@@ -26,6 +26,7 @@ import {
   RoommatePriorityChip,
 } from '@/components/ui/roommate-condition-chip';
 import type { RoommateMatchDetailModel } from '@/lib/api';
+import { formatSelectionLabel } from '@/lib/domain/selection-label';
 import type { Gender } from '@/lib/onboarding';
 
 import type { UseRoommateDetailScreenReturn } from './use-roommate-detail-screen';
@@ -469,7 +470,7 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
           {data.preferenceRows.map((preference) => (
             <RoommateConditionChip
               key={preference.key}
-              label={preference.value === '-' ? preference.label : preference.value}
+              label={formatSelectionLabel(preference.label, preference.value)}
               image={preference.image}
             />
           ))}
