@@ -88,8 +88,8 @@ export function InterestsScreenView({
                     <Text
                       className={
                         selected
-                          ? 'text-[16px] font-semibold text-neutral-900'
-                          : 'text-[16px] font-medium text-[#AAAABA]'
+                          ? 'text-sm font-semibold text-neutral-900'
+                          : 'text-sm font-medium text-[#AAAABA]'
                       }
                     >
                       {tab.label}
@@ -104,7 +104,7 @@ export function InterestsScreenView({
             <FlatList
               automaticallyAdjustContentInsets={false}
               contentInsetAdjustmentBehavior="never"
-              contentContainerClassName="px-4 pb-24 pt-1"
+              contentContainerClassName="grow px-4 pb-24 pt-4"
               data={roomsLoading || roomsError ? EMPTY_ROOM_POSTS : rooms}
               keyExtractor={roomKeyExtractor}
               renderItem={({ item }) => (
@@ -148,7 +148,7 @@ export function InterestsScreenView({
             <FlatList
               automaticallyAdjustContentInsets={false}
               contentInsetAdjustmentBehavior="never"
-              contentContainerClassName="p-5"
+              contentContainerClassName="grow px-4 pb-24 pt-4"
               data={matchesLoading || matchesError ? EMPTY_MATCHES : likedMatches}
               keyExtractor={matchKeyExtractor}
               renderItem={({ item }) => (

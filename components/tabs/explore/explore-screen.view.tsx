@@ -107,8 +107,8 @@ export function ExploreScreenView({
                   <Text
                     className={
                       selected
-                        ? 'text-base font-semibold text-[#17171B]'
-                        : 'text-base font-medium text-[#AAAABA]'
+                        ? 'text-sm font-semibold text-[#17171B]'
+                        : 'text-sm font-medium text-[#AAAABA]'
                     }
                   >
                     {tab.label}
