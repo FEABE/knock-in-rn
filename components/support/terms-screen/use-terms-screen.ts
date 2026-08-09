@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import { type SupportTermsSection, useSupportTerms } from '@/lib/api';
@@ -15,6 +15,7 @@ export type UseTermsScreenReturn = {
 };
 
 export function useTermsScreen(): UseTermsScreenReturn {
+  const router = useRouter();
   const { termId } = useLocalSearchParams<{ termId?: string }>();
   const [activeId, setActiveId] = useState<string | null>(null);
   const { data, loading, error, reload } = useSupportTerms();
@@ -39,6 +40,12 @@ export function useTermsScreen(): UseTermsScreenReturn {
     error,
     retry: reload,
     open: setActiveId,
-    closeDetail: () => setActiveId(null),
+    closeDetail: () => {
+      if (termId) {
+        router.back();
+        return;
+      }
+      setActiveId(null);
+    },
   };
 }
