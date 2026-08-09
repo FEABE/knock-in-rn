@@ -428,7 +428,7 @@ export function LocationPage({ form }: { form: UseRoomPostFormReturn }) {
           onPress={() => form.setRegionSheetOpen(true)}
         />
       </View>
-      <View className="mt-4 items-center rounded-lg">
+      <View className="mt-4 w-full items-center rounded-lg">
         <RoomLocationArtwork size={180} />
       </View>
     </View>
@@ -492,7 +492,8 @@ function MoneyField({
           onChangeValue={(next) => onChange(next.replace(/\D/g, ''))}
           keyboardType="number-pad"
           placeholder={label}
-          className="flex-1 text-base text-[#17171B]"
+          className="h-7 flex-1 px-0 py-0 text-base text-[#17171B]"
+          style={{ lineHeight: 22 }}
         />
         <Text className="text-[15px] text-[#AAAABA]">만원</Text>
       </View>
@@ -585,7 +586,8 @@ export function IntroPage({ form }: { form: UseRoomPostFormReturn }) {
           value={form.draft.title}
           onChangeValue={form.setTitle}
           placeholder="예) 신촌역 도보 5분, 풀옵션 원룸"
-          className="border-b border-[#DADAE8] px-0 py-3 text-base text-[#17171B]"
+          className="h-12 border-b border-[#DADAE8] px-0 py-0 text-base text-[#17171B]"
+          style={{ lineHeight: 24 }}
         />
       </View>
 
@@ -600,8 +602,11 @@ export function IntroPage({ form }: { form: UseRoomPostFormReturn }) {
           maxLength={MAX_ROOM_DESCRIPTION_LENGTH}
           className="min-h-[160px] border-b border-[#DADAE8] px-0 py-3 text-base leading-6 text-[#17171B]"
         />
-        <Text className="self-end text-xs text-[#AAAABA]">
-          {form.draft.description.length}/{MAX_ROOM_DESCRIPTION_LENGTH}
+        <Text className="self-end text-xs">
+          <Text className={form.draft.description.length > 0 ? 'text-[#256EF4]' : 'text-[#AAAABA]'}>
+            {form.draft.description.length}
+          </Text>
+          <Text className="text-[#AAAABA]">/{MAX_ROOM_DESCRIPTION_LENGTH}</Text>
         </Text>
       </View>
 

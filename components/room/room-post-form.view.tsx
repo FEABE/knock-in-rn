@@ -400,7 +400,7 @@ export function NegotiableSelector({
         label="불가능해요"
         selected={value === false}
         onPress={() => onChange(false)}
-        icon={<Ionicons name="close" size={22} color="#E5202E" />}
+        icon={<Ionicons name="close" size={28} color="#E5202E" />}
       />
     </View>
   );
