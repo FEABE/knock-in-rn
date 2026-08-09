@@ -27,7 +27,7 @@ export function LoginScreenView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-1 px-4 pb-3">
-        <View className="flex-1 items-center pt-[94px]">
+        <View className="flex-1 items-center justify-center">
           <BrandMark />
           <Text className="mt-8 text-center text-[22px] font-bold leading-[33px] text-[#17171B]">
             좋은 집보다 좋은 룸메이트
