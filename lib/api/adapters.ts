@@ -39,6 +39,11 @@ function bool(value: string | boolean | undefined): boolean {
   return value === true || value === 'true';
 }
 
+function hasBoardBadge(item: BoardListItem, badge: 'NEW' | 'HOT'): boolean {
+  const badges = Array.isArray(item.badges) ? item.badges : item.badges ? [item.badges] : [];
+  return badges.some((value) => value.trim().toUpperCase() === badge);
+}
+
 /**
  * 작성자 이름만 아는 리스트 응답용 최소 UserSummary.
  * 상세 정보는 상세 API 에서 별도로 채운다.
@@ -102,6 +107,12 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
     }),
     description: '',
     liked: bool(item.interested ?? item.isLike),
+    listBadge:
+      item.isNew || hasBoardBadge(item, 'NEW')
+        ? 'new'
+        : item.isPopular || hasBoardBadge(item, 'HOT')
+          ? 'hot'
+          : undefined,
   };
 }
 

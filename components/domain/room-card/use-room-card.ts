@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { RoomPost } from '@/lib/domain';
 
-export type RoomCardBadge = 'hot' | null;
+export type RoomCardBadge = 'new' | 'hot' | null;
 
 export type UseRoomCardProps = {
   post: RoomPost;
@@ -49,8 +49,7 @@ function timeAgo(date: Date): string {
 }
 
 function pickBadge(post: RoomPost): RoomCardBadge {
-  if (post.likes >= 25 || post.views >= 300) return 'hot';
-  return null;
+  return post.listBadge ?? null;
 }
 
 const GENDER_META: Record<string, { symbol: string; label: string }> = {

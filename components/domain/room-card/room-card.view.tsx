@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
+import { ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
+
 import type { UseRoomCardReturn } from './use-room-card';
 
 const BRAND = '#256EF4';
@@ -35,7 +37,7 @@ export function RoomCardView({
 }: RoomCardViewProps) {
   return (
     <Pressable onPress={onPress} className="bg-white active:opacity-90" accessibilityRole="button">
-      <View className="relative overflow-hidden rounded">
+      <View className="relative h-[165px] overflow-hidden rounded-[5px]">
         {post.thumbnailUrl ? (
           <Image
             source={{ uri: post.thumbnailUrl }}
@@ -46,8 +48,10 @@ export function RoomCardView({
         ) : (
           <RoomThumbnailPlaceholder />
         )}
+        <View className="absolute inset-0 bg-[#17171B]/20" pointerEvents="none" />
 
-        <View className="absolute left-2.5 top-3 flex-row gap-1">
+        <View className="absolute left-2.5 top-2.5 flex-row gap-1">
+          {badge === 'new' ? <NewBadgePill /> : null}
           {badge === 'hot' ? <HotBadgePill /> : null}
           <RoomTypePill label={roomTypeLabel} />
         </View>
@@ -62,48 +66,48 @@ export function RoomCardView({
         >
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
-            size={22}
+            size={20}
             color={liked ? BRAND : 'white'}
             style={ICON_GLYPH_STYLE}
           />
         </Pressable>
       </View>
 
-      <View className="gap-1 pt-3">
-        <View className="flex-row items-center justify-between gap-2">
-          <Text
-            numberOfLines={1}
-            className="min-w-0 flex-1 text-[17px] font-bold leading-6 text-[#17171B]"
-          >
-            {post.title}
+      <View className="gap-4 pt-3">
+        <View className="gap-0.5">
+          <View className="flex-row items-center justify-between gap-2">
+            <Text
+              numberOfLines={1}
+              className="min-w-0 flex-1 text-[16px] font-semibold leading-6 text-[#17171B]"
+            >
+              {post.title}
+            </Text>
+            <Text className="text-[13px] leading-5 text-[#AAAABA]">{timeAgoLabel}</Text>
+          </View>
+          <Text className="text-[14px] font-medium leading-[21px] text-[#696976]">
+            {regionLabel}
           </Text>
-          <Text className="text-xs text-neutral-400">{timeAgoLabel}</Text>
         </View>
-        <Text className="text-[13px] leading-[19px] text-[#696976]">{regionLabel}</Text>
 
-        <View className="mt-2 flex-row items-center justify-between gap-2">
+        <View className="flex-row items-center justify-between gap-2">
           <View className="min-w-0 flex-1 flex-row items-center gap-1.5">
-            {post.author.avatarUrl ? (
-              <Image
-                source={{ uri: post.author.avatarUrl }}
-                style={AUTHOR_AVATAR_STYLE}
-                contentFit="cover"
-              />
-            ) : (
-              <View className="h-6 w-6 items-center justify-center rounded-full bg-neutral-100">
-                <Text className="text-[10px] text-neutral-500">{post.author.name.charAt(0)}</Text>
-              </View>
-            )}
-            <Text numberOfLines={1} className="shrink text-xs text-neutral-600">
+            <ReadyProfileAvatar
+              name={post.author.name}
+              imageUrl={post.author.avatarUrl}
+              size={AUTHOR_AVATAR_STYLE.width}
+            />
+            <Text numberOfLines={1} className="shrink text-[13px] leading-5 text-[#AAAABA]">
               {post.author.name}
             </Text>
             {authorMetaLabel ? (
               <AuthorMetaPill label={authorMetaLabel} tone={authorMetaTone} />
             ) : null}
           </View>
-          <View className="flex-row items-baseline gap-1">
-            <Text className="text-xs text-[#696976]">월세</Text>
-            <Text className="text-base font-bold text-[#17171B]">{priceLabel}</Text>
+          <View className="flex-row items-baseline gap-1.5">
+            <Text className="text-[16px] leading-6 text-[#696976]">월세</Text>
+            <Text className="text-[18px] font-semibold leading-[27px] text-[#17171B]">
+              {priceLabel}
+            </Text>
           </View>
         </View>
       </View>
@@ -111,24 +115,18 @@ export function RoomCardView({
   );
 }
 
-function AuthorMetaPill({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: 'male' | 'female' | 'neutral';
-}) {
+function AuthorMetaPill({ label, tone }: { label: string; tone: 'male' | 'female' | 'neutral' }) {
   const isMale = tone === 'male';
   const isFemale = tone === 'female';
   return (
     <View
-      className={`rounded-sm px-1.5 py-0.5 ${
-        isMale ? 'bg-[#E7F4FE]' : isFemale ? 'bg-[#FFF1ED]' : 'bg-[#F6F6FA]'
+      className={`h-[22px] justify-center rounded px-[5px] py-0.5 ${
+        isMale ? 'bg-[#E7F4FE]' : isFemale ? 'bg-[#FDEFEC]' : 'bg-[#F6F6FA]'
       }`}
     >
       <Text
-        className={`text-[10px] font-medium ${
-          isMale ? 'text-[#0B78CB]' : isFemale ? 'text-[#F15B4A]' : 'text-[#696976]'
+        className={`text-[12px] font-semibold leading-[18px] ${
+          isMale ? 'text-[#0B78CB]' : isFemale ? 'text-[#DE3412]' : 'text-[#696976]'
         }`}
       >
         {label}
@@ -157,6 +155,19 @@ export function HotBadgePill() {
     >
       <Text style={CHIP_TEXT_STYLE} className="text-[14px] font-semibold leading-[21px] text-white">
         HOT
+      </Text>
+    </View>
+  );
+}
+
+export function NewBadgePill() {
+  return (
+    <View
+      className="h-[26px] items-center justify-center rounded bg-[#4C87F6] px-1.5"
+      style={CHIP_SHADOW_STYLE}
+    >
+      <Text style={CHIP_TEXT_STYLE} className="text-[14px] font-semibold leading-[21px] text-white">
+        NEW
       </Text>
     </View>
   );

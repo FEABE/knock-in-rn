@@ -31,11 +31,14 @@ export function MyRoomsScreenView({
 }: MyRoomsScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="h-14 flex-row items-center px-3">
-        <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
+      <View className="h-12 flex-row items-center px-3">
+        <Pressable
+          onPress={onBack}
+          className="absolute left-[7px] h-10 w-10 items-center justify-center"
+        >
           <Ionicons name="chevron-back" size={24} color="#696976" />
         </Pressable>
-        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
+        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-medium leading-[26px] text-[#17171B]">
           게시글 관리
         </Text>
       </View>
@@ -49,20 +52,20 @@ export function MyRoomsScreenView({
           />
         </View>
       ) : loading ? (
-        <View className="flex-1 items-center justify-center gap-3 bg-[#F7F8FC]">
+        <View className="flex-1 items-center justify-center gap-3 bg-white">
           <ActivityIndicator color="#256EF4" />
           <Text className="text-sm text-[#AAAABA]">내 방을 불러오는 중...</Text>
         </View>
       ) : error ? (
-        <View className="flex-1 bg-[#F7F8FC]">
+        <View className="flex-1 bg-white">
           <ErrorState message="내 방 목록을 불러오지 못했어요" detail={error} onRetry={onRetry} />
         </View>
       ) : (
         <ScrollView
-          className="flex-1 bg-[#F7F8FC]"
+          className="flex-1 bg-white"
           automaticallyAdjustContentInsets={false}
           contentInsetAdjustmentBehavior="never"
-          contentContainerClassName="gap-5 px-4 pb-28 pt-5"
+          contentContainerClassName="px-4 pb-28 pt-[21px]"
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRetry} tintColor="#256EF4" />
@@ -76,7 +79,14 @@ export function MyRoomsScreenView({
               </Text>
             </View>
           ) : (
-            rooms.map((post) => <RoomCard key={post.id} post={post} onPress={onRoomPress} />)
+            rooms.map((post, index) => (
+              <View key={post.id}>
+                <RoomCard post={post} onPress={onRoomPress} />
+                {index < rooms.length - 1 ? (
+                  <View className="-mx-4 my-6 h-px bg-[#ECECF3]" />
+                ) : null}
+              </View>
+            ))
           )}
         </ScrollView>
       )}
@@ -86,10 +96,12 @@ export function MyRoomsScreenView({
           onPress={onCreatePress}
           accessibilityRole="button"
           accessibilityLabel="방 게시글 등록하기"
-          className="absolute right-5 h-14 w-14 items-center justify-center rounded-full bg-[#256EF4] shadow-lg active:opacity-90"
+          className="absolute right-4 h-12 w-12 items-center justify-center active:opacity-90"
           style={{ bottom: bottomPadding + 12 }}
         >
-          <Ionicons name="add" size={28} color="#FFFFFF" />
+          <View className="h-11 w-11 items-center justify-center rounded-full bg-[#256EF4] shadow-md">
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+          </View>
         </Pressable>
       ) : null}
 
