@@ -109,7 +109,7 @@ export function ExploreScreenView({
             <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1">
               {({ selected }) => (
                 <View
-                  className={`-mb-px items-center border-b-2 pb-3 pt-1 ${
+                  className={`items-center border-b-2 pb-3 ${
                     selected ? 'border-[#256EF4]' : 'border-transparent'
                   }`}
                 >
@@ -388,8 +388,11 @@ function Header({
   onNotificationPress: () => void;
 }) {
   return (
-    <View className="flex-row items-center justify-between px-4 pb-6 pt-7">
-      <Text className="text-xl font-bold leading-6 text-[#256EF4]" style={{ letterSpacing: 3.2 }}>
+    <View className="flex-row items-center justify-between px-4 pb-7 pt-6">
+      <Text
+        className="text-xl font-bold leading-[30px] text-[#256EF4]"
+        style={{ letterSpacing: 3.2 }}
+      >
         KNOCKIN
       </Text>
       <Pressable

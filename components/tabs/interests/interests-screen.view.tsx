@@ -85,12 +85,12 @@ export function InterestsScreenView({
           onValueChange={(next) => setActiveTab(next as typeof activeTab)}
           className="flex-1"
         >
-          <Tabs.List className="flex-row">
+          <Tabs.List className="flex-row border-b border-[#DADAE8]">
             {INTERESTS_TABS.map((tab) => (
-              <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1 pt-3">
+              <Tabs.Trigger key={tab.value} value={tab.value} className="flex-1">
                 {({ selected }) => (
                   <View
-                    className={`items-center border-b-2 pb-2 ${
+                    className={`items-center border-b-2 pb-3 ${
                       selected ? 'border-[#256EF4]' : 'border-transparent'
                     }`}
                   >
