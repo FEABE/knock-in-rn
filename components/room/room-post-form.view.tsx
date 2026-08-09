@@ -295,7 +295,7 @@ export function RoomPostFormView({
             <ProfileSummaryEmpty message="아직 선호 룸메이트 조건을 입력하지 않았어요" />
           )}
 
-          <Text className="text-[15px] font-semibold text-[#256EF4]">우선순위</Text>
+          <Text className="text-[16px] font-semibold text-[#256EF4]">우선순위</Text>
           {importantConditions?.length ? (
             <View className="flex-row flex-wrap gap-2">
               {importantConditions.map((condition) => (

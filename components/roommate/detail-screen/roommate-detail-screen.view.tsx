@@ -493,7 +493,7 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
 
       {priorities.length ? (
         <View className="gap-2">
-          <Text className="text-[15px] font-semibold leading-[22px] text-[#256EF4]">우선순위</Text>
+          <Text className="text-[16px] font-semibold leading-[22px] text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
             {priorities.map((priority) => (
               <RoommatePriorityChip
