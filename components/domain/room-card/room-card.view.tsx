@@ -11,6 +11,9 @@ const BRAND = '#256EF4';
 /** 리스트 셀이 마운트될 때마다 새로 만들지 않도록 모듈 상수로 공유한다. */
 const THUMBNAIL_STYLE = { width: '100%', height: 165 } as const;
 const AUTHOR_AVATAR_STYLE = { width: 24, height: 24, borderRadius: 12 } as const;
+/** 사진 없는 게시글의 기본 이미지 — Figma 시안의 128x125 크기 그대로. */
+const ROOM_PLACEHOLDER_SOURCE = require('../../../assets/images/figma-ready/room-list-default.png');
+const ROOM_PLACEHOLDER_STYLE = { width: 128, height: 125 } as const;
 
 /**
  * 아이콘 폰트의 비대칭 세로 여백을 제거해 원형 배경 정중앙에 오도록 한다.
@@ -135,13 +138,14 @@ function AuthorMetaPill({ label, tone }: { label: string; tone: 'male' | 'female
 }
 
 /**
- * 썸네일이 없을 때의 기본 이미지 — 디자인 기준 연회색 배경 + 집 아이콘 플레이스홀더.
- * 카드/검색 결과 카드가 같은 모양을 쓰도록 공유한다.
+ * 썸네일이 없을 때의 기본 이미지 (Figma: 방사진_디폴트이미지).
+ * 연회색 배경 위에 128x125 집 일러스트를 가운데 놓는다.
+ * 카드/검색 결과 카드/방 상세가 같은 모양을 쓰도록 공유한다.
  */
 export function RoomThumbnailPlaceholder({ height = 165 }: { height?: number } = {}) {
   return (
     <View style={{ height }} className="w-full items-center justify-center bg-[#F6F6FA]">
-      <Ionicons name="home" size={44} color="#DADAE8" style={ICON_GLYPH_STYLE} />
+      <Image source={ROOM_PLACEHOLDER_SOURCE} style={ROOM_PLACEHOLDER_STYLE} contentFit="contain" />
     </View>
   );
 }

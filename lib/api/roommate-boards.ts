@@ -291,7 +291,7 @@ const MOCK_BOARDS: BoardListItem[] = [
   },
   {
     boardId: 2,
-    image: 'https://picsum.photos/seed/p2/600/400',
+    image: '',
     title: '강남 직주근접 오피스텔 룸셰어',
     deposit: 1000,
     mounthRent: 95,
