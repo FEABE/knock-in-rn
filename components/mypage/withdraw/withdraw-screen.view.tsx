@@ -52,39 +52,39 @@ export function WithdrawScreenView({
         <Text className="text-base font-semibold text-[#17171B]">탈퇴하기</Text>
       </View>
 
-      <ScrollView contentContainerClassName="px-5 pb-6">
-        <View className="items-center py-6">
-          <EmptyHouseArtwork size={180} />
+      <ScrollView contentContainerClassName="pb-6">
+        <View className="mx-4 mt-5 h-[329px] items-center justify-between">
+          <EmptyHouseArtwork size={171} />
+
+          <View className="w-full gap-3.5">
+            <View className="flex-row items-center gap-2">
+              <Ionicons name="warning" size={22} color="#FFB020" />
+              <Text className="text-base font-bold leading-6 text-[#17171B]">탈퇴 전 유의사항</Text>
+            </View>
+
+            <View className="gap-2">
+              {NOTICE_ITEMS.map((parts, index) => (
+                <NoticeRow key={index} parts={parts} />
+              ))}
+            </View>
+          </View>
         </View>
 
-        <View className="flex-row items-center gap-1.5 pb-4">
-          <Ionicons name="warning" size={20} color="#FFB020" />
-          <Text className="text-[17px] font-bold leading-[26px] text-[#17171B]">
-            탈퇴 전 유의사항
-          </Text>
-        </View>
-
-        <View className="gap-3">
-          {NOTICE_ITEMS.map((parts, index) => (
-            <NoticeRow key={index} parts={parts} />
-          ))}
-        </View>
-
-        <View className="mt-6 rounded-lg bg-[#FDEFEC] px-4 py-3">
+        <View className="mt-[18px] h-[76px] justify-center bg-[#FBEFF0] px-[18px] py-3">
           <Text className="text-[13px] font-bold leading-5 text-[#D63D4A]">
             탈퇴후 3일간 계정 데이터가 보관되며, 이후에는 영구 삭제되어 복구가 불가합니다.
           </Text>
         </View>
       </ScrollView>
 
-      <View className="gap-3 px-5 pb-3 pt-2">
+      <View className="gap-3 border-t border-[#ECECF3] px-4 py-4">
         <Pressable
           onPress={onBack}
           accessibilityRole="button"
           accessibilityLabel="취소"
           className="h-12 items-center justify-center rounded-lg bg-[#F6F6FA] active:bg-[#ECECF3]"
         >
-          <Text className="text-[15px] font-semibold text-[#AAAABA]">취소</Text>
+          <Text className="text-base font-semibold text-[#AAAABA]">취소</Text>
         </Pressable>
         <Pressable
           onPress={openConfirm}
@@ -95,7 +95,7 @@ export function WithdrawScreenView({
             submitting ? 'opacity-50' : 'active:opacity-85'
           }`}
         >
-          <Text className="text-[15px] font-semibold text-white">탈퇴하기</Text>
+          <Text className="text-base font-bold text-white">탈퇴하기</Text>
         </Pressable>
       </View>
 
@@ -116,16 +116,16 @@ export function WithdrawScreenView({
 
 function NoticeRow({ parts }: { parts: NoticePart[] }) {
   return (
-    <View className="flex-row gap-2">
-      <Text className="text-sm leading-[21px] text-[#17171B]">•</Text>
-      <Text className="flex-1 text-sm leading-[21px] text-[#17171B]">
+    <View className="flex-row gap-2.5">
+      <Text className="text-[13px] leading-5 text-[#696976]">•</Text>
+      <Text className="flex-1 text-[13px] leading-5 text-[#696976]">
         {parts.map((part, index) => (
           <Text
             key={index}
             className={
               part.emphasis
-                ? 'text-sm font-bold leading-[21px] text-[#D63D4A]'
-                : 'text-sm leading-[21px] text-[#17171B]'
+                ? 'text-[13px] font-semibold leading-5 text-[#DE3412]'
+                : 'text-[13px] leading-5 text-[#696976]'
             }
           >
             {part.text}
