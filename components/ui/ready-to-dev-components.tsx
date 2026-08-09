@@ -419,7 +419,10 @@ export function ReadyActionRow({
         divider ? 'border-b border-[#ECECF3]' : ''
       }`}
     >
-      <Ionicons name={icon} size={22} color={color} />
+      {/* 글리프마다 시각적 무게중심이 달라(예: exit-outline) 고정 폭 박스 안에서 중앙 정렬한다. */}
+      <View className="w-6 items-center justify-center">
+        <Ionicons name={icon} size={22} color={color} />
+      </View>
       <Text className="text-base font-medium" style={{ color }}>
         {label}
       </Text>

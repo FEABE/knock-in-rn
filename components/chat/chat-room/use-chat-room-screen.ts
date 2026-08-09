@@ -83,8 +83,22 @@ export type UseChatRoomScreenReturn = {
   cancelRequest: () => void;
   sendMessage: () => void;
   pickAndSendImage: () => Promise<void>;
+  /** 전송 전 확인 대기 중인 사진. null이면 미리보기 닫힘. */
+  pendingImage: { uri: string; name: string; type: string } | null;
+  sendPendingImage: () => Promise<void>;
+  cancelPendingImage: () => void;
+  /** 룸메이트 요청 거절 확인 다이얼로그(Figma 커스텀 팝업). */
+  rejectConfirmOpen: boolean;
+  confirmReject: () => Promise<void>;
+  cancelReject: () => void;
+  /** 입력이 500자를 넘겨 잘렸을 때 띄우는 안내 토스트. */
+  limitToastVisible: boolean;
   onLeave: () => void;
 };
+
+/** 채팅 입력 최대 길이. 초과분은 자르고 토스트로 안내한다. */
+const MAX_MESSAGE_LENGTH = 500;
+const LIMIT_TOAST_DURATION_MS = 2000;
 
 /** 양쪽 중 한 명이라도 이미 룸메이트가 있을 때 서버가 409로 내려주는 코드. */
 const ROOMMATE_ALREADY_EXISTS = 'ROOMMATE_ALREADY_EXISTS';
@@ -122,6 +136,32 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   } = useRoommateRequestAction();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
+  const [limitToastVisible, setLimitToastVisible] = useState(false);
+  const limitToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // TextInput의 maxLength는 초과 입력을 조용히 무시해 안내할 방법이 없다.
+  // 대신 여기서 자르고, 잘린 순간 토스트로 알린다.
+  const setDraftClamped = useCallback((next: string) => {
+    if (next.length > MAX_MESSAGE_LENGTH) {
+      setDraft(next.slice(0, MAX_MESSAGE_LENGTH));
+      setLimitToastVisible(true);
+      if (limitToastTimerRef.current) clearTimeout(limitToastTimerRef.current);
+      limitToastTimerRef.current = setTimeout(
+        () => setLimitToastVisible(false),
+        LIMIT_TOAST_DURATION_MS,
+      );
+      return;
+    }
+    setDraft(next);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (limitToastTimerRef.current) clearTimeout(limitToastTimerRef.current);
+    },
+    [],
+  );
+
   const [requestSheetVisible, setRequestSheetVisible] = useState(false);
   const [selfHasRoommate, setSelfHasRoommate] = useState(false);
   const [imageViewer, setImageViewer] = useState<{ imageUrl: string; title: string } | null>(null);
@@ -249,6 +289,14 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   // 잠기지 않는다. 연타로 피커가 두 번 열려 같은 사진이 두 번 전송되는 것을 동기 ref 로 막는다.
   const pickingImageRef = useRef(false);
 
+  // 잘못 보낸 사진은 삭제할 수 없으므로, 피커에서 고른 사진을 바로 보내지 않고
+  // 미리보기 확인을 거친 뒤에만 업로드·전송한다.
+  const [pendingImage, setPendingImage] = useState<{
+    uri: string;
+    name: string;
+    type: string;
+  } | null>(null);
+
   const pickAndSendImage = useCallback(async () => {
     if (pickingImageRef.current) return;
     if (!USE_MOCK && socket.status !== 'connected') {
@@ -264,12 +312,25 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
       });
       const asset = result.assets?.[0];
       if (result.canceled || !asset || !room) return;
-
-      const uploaded = await uploadImage(room.id, {
+      setPendingImage({
         uri: asset.uri,
         name: asset.fileName ?? `chat-${Date.now()}.jpg`,
         type: asset.mimeType ?? 'image/jpeg',
       });
+    } finally {
+      pickingImageRef.current = false;
+    }
+  }, [room, socket.status]);
+
+  const cancelPendingImage = useCallback(() => {
+    if (uploadingImage) return;
+    setPendingImage(null);
+  }, [uploadingImage]);
+
+  const sendPendingImage = useCallback(async () => {
+    if (!pendingImage || !room || uploadingImage) return;
+    try {
+      const uploaded = await uploadImage(room.id, pendingImage);
       const imageUrl = uploaded?.imageUrl;
       if (!imageUrl) throw new Error('업로드된 이미지 주소를 받지 못했습니다.');
       const clientMessageId = USE_MOCK
@@ -277,15 +338,14 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
         : socket.send({ type: 'IMAGE', message: '', imageUrl });
       if (!clientMessageId) throw new Error('채팅 서버에 연결되지 않았습니다.');
       appendOptimisticMessage(clientMessageId, '', 'image', imageUrl);
+      setPendingImage(null);
     } catch (uploadError) {
       Alert.alert(
         '이미지 전송 실패',
         uploadError instanceof Error ? uploadError.message : '잠시 후 다시 시도해주세요.',
       );
-    } finally {
-      pickingImageRef.current = false;
     }
-  }, [appendOptimisticMessage, room, socket, uploadImage]);
+  }, [appendOptimisticMessage, pendingImage, room, socket, uploadImage, uploadingImage]);
 
   // 시트의 '요청하기' 버튼은 전송 중에도 눌리므로, 연타 시 두 번째 호출이 서버의
   // ROOMMATE_DUPLICATE("이미 대기중인 룸메이트 요청이 존재합니다.")로 떨어져
@@ -328,33 +388,38 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     }
   }, [acceptRoommateRequest, reload, room?.opponentHasRoommate, room?.roommateRequest]);
 
-  const confirmRequestAction = useCallback(
-    (kind: 'reject' | 'cancel') => {
-      const request = room?.roommateRequest;
-      if (!request) return;
-      const reject = kind === 'reject';
-      Alert.alert(
-        reject ? '룸메이트 요청 거절' : '룸메이트 요청 취소',
-        reject ? '이 요청을 거절할까요?' : '보낸 요청을 취소할까요?',
-        [
-          { text: '아니요', style: 'cancel' },
-          {
-            text: reject ? '거절' : '취소하기',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                if (reject) await rejectRoommateRequest(request.id);
-                else await cancelRoommateRequest(request.id);
-              } catch (requestError) {
-                showRequestError(requestError);
-              }
-            },
-          },
-        ],
-      );
-    },
-    [cancelRoommateRequest, rejectRoommateRequest, room?.roommateRequest],
-  );
+  // 거절은 시스템 Alert가 아니라 Figma 커스텀 팝업(ReadyConfirmDialog)으로 확인받는다.
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+
+  const confirmReject = useCallback(async () => {
+    const request = room?.roommateRequest;
+    if (!request) return;
+    setRejectConfirmOpen(false);
+    try {
+      await rejectRoommateRequest(request.id);
+    } catch (requestError) {
+      showRequestError(requestError);
+    }
+  }, [rejectRoommateRequest, room?.roommateRequest]);
+
+  const confirmCancelRequest = useCallback(() => {
+    const request = room?.roommateRequest;
+    if (!request) return;
+    Alert.alert('룸메이트 요청 취소', '보낸 요청을 취소할까요?', [
+      { text: '아니요', style: 'cancel' },
+      {
+        text: '취소하기',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await cancelRoommateRequest(request.id);
+          } catch (requestError) {
+            showRequestError(requestError);
+          }
+        },
+      },
+    ]);
+  }, [cancelRoommateRequest, room?.roommateRequest]);
 
   const peerName = room?.peer.name;
   const currentUserName = session?.user.name;
@@ -435,7 +500,8 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     messages: bubbles,
     timeline,
     draft,
-    setDraft,
+    setDraft: setDraftClamped,
+    limitToastVisible,
     canSend: draft.trim().length > 0 && (USE_MOCK || socket.status === 'connected'),
     loading,
     error,
@@ -464,10 +530,16 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     closeRequestSheet: () => setRequestSheetVisible(false),
     confirmRequest,
     acceptRequest,
-    rejectRequest: () => confirmRequestAction('reject'),
-    cancelRequest: () => confirmRequestAction('cancel'),
+    rejectRequest: () => setRejectConfirmOpen(true),
+    cancelRequest: confirmCancelRequest,
+    rejectConfirmOpen,
+    confirmReject,
+    cancelReject: () => setRejectConfirmOpen(false),
     sendMessage,
     pickAndSendImage,
+    pendingImage,
+    sendPendingImage,
+    cancelPendingImage,
     onLeave: confirmLeave,
   };
 }

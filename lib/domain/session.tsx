@@ -97,27 +97,29 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     readStoredAuthSession().then((stored) => {
       if (cancelled || !stored) return;
       setAccessToken(stored.accessToken);
-      loadSessionUser(stored.identity).then(async ({ user, invalidToken, profileComplete }) => {
-        if (cancelled) return;
-        const isProfileComplete = stored.basicInfo || profileComplete === true;
-        // 기본정보 입력 전에 앱을 끄면 토큰만 남는다. 이 상태로 세션을 복원하면
-        // 이름 없는 "사용자"로 전 화면 접근이 가능해지므로, 미완성 가입은 복원하지
-        // 않고 로그인부터 다시 진행하게 한다.
-        if (invalidToken || !isProfileComplete) {
-          setAccessToken(null);
-          setSession(null);
-          await queryClient.cancelQueries();
-          queryClient.clear();
-          await clearStoredAuthSession();
-          return;
-        }
-        setSession({
-          user,
-          isProfileComplete,
-          preferenceInfo: stored.preferenceInfo === true,
-          visibility: 'public',
-        });
-      });
+      loadSessionUser(stored.identity).then(
+        async ({ user, invalidToken, profileComplete, visibility }) => {
+          if (cancelled) return;
+          const isProfileComplete = stored.basicInfo || profileComplete === true;
+          // 기본정보 입력 전에 앱을 끄면 토큰만 남는다. 이 상태로 세션을 복원하면
+          // 이름 없는 "사용자"로 전 화면 접근이 가능해지므로, 미완성 가입은 복원하지
+          // 않고 로그인부터 다시 진행하게 한다.
+          if (invalidToken || !isProfileComplete) {
+            setAccessToken(null);
+            setSession(null);
+            await queryClient.cancelQueries();
+            queryClient.clear();
+            await clearStoredAuthSession();
+            return;
+          }
+          setSession({
+            user,
+            isProfileComplete,
+            preferenceInfo: stored.preferenceInfo === true,
+            visibility: visibility ?? 'public',
+          });
+        },
+      );
     });
 
     return () => {
@@ -182,7 +184,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
 
       setAccessToken(res.data.accessToken);
       const identity = identityFromLogin(res.data);
-      const { user, invalidToken, profileComplete } = await loadSessionUser(identity);
+      const { user, invalidToken, profileComplete, visibility } = await loadSessionUser(identity);
       if (invalidToken) {
         setAccessToken(null);
         await clearStoredAuthSession();
@@ -205,7 +207,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
         user,
         isProfileComplete,
         preferenceInfo: res.data.preferenceInfo === true,
-        visibility: 'public',
+        visibility: visibility ?? 'public',
       });
 
       return {
@@ -275,6 +277,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
             ...previous,
             user: loaded.user,
             isProfileComplete: previous.isProfileComplete || loaded.profileComplete === true,
+            visibility: loaded.visibility ?? previous.visibility,
           }
         : previous,
     );
@@ -439,10 +442,20 @@ function classifyThrownError(code?: string, message?: string): SignInFailureKind
   return 'failed';
 }
 
+/** 서버 공개범위(memberPrivacyType)를 세션 visibility 값으로 변환. 모르면 null. */
+function visibilityFromProfile(profile?: ProfileAllData): 'public' | 'hidden' | null {
+  const privacy = profile?.userInfo?.memberPrivacyType;
+  if (privacy === 'PRIVATE') return 'hidden';
+  if (privacy === 'PUBLIC') return 'public';
+  return null;
+}
+
 async function loadSessionUser(identity?: StoredAuthIdentity): Promise<{
   user: UserSummary;
   invalidToken: boolean;
   profileComplete: boolean | null;
+  /** 서버 기준 프로필 공개범위. 조회 실패 시 null. */
+  visibility: 'public' | 'hidden' | null;
 }> {
   try {
     const res = await getProfileAll();
@@ -451,6 +464,7 @@ async function loadSessionUser(identity?: StoredAuthIdentity): Promise<{
         user: sessionUserFromProfile(res.data, identity),
         invalidToken: false,
         profileComplete: isProfilePayloadComplete(res.data),
+        visibility: visibilityFromProfile(res.data),
       };
     }
     if (isInvalidTokenResponse(res.status, res.error?.code)) {
@@ -458,6 +472,7 @@ async function loadSessionUser(identity?: StoredAuthIdentity): Promise<{
         user: sessionUserFromProfile(undefined, identity),
         invalidToken: true,
         profileComplete: null,
+        visibility: null,
       };
     }
   } catch {
@@ -465,6 +480,7 @@ async function loadSessionUser(identity?: StoredAuthIdentity): Promise<{
   }
   return {
     user: sessionUserFromProfile(undefined, identity),
+    visibility: null,
     invalidToken: false,
     profileComplete: null,
   };

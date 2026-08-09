@@ -3,7 +3,10 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 
+import { Image } from 'expo-image';
+
 import { GenderAgeChip } from '@/components/ui/gender-age-chip';
+import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 import {
   ReadyChatBubble,
   ReadyChatComposer,
@@ -62,6 +65,13 @@ export function ChatRoomScreenView({
   cancelRequest,
   sendMessage,
   pickAndSendImage,
+  pendingImage,
+  sendPendingImage,
+  cancelPendingImage,
+  rejectConfirmOpen,
+  confirmReject,
+  cancelReject,
+  limitToastVisible,
   imageViewer,
   openImageViewer,
   closeImageViewer,
@@ -141,6 +151,32 @@ export function ChatRoomScreenView({
         onBlock={blockPeer}
         onReport={reportPeer}
         onLeave={leaveFromMenu}
+      />
+
+      <ReadyConfirmDialog
+        open={rejectConfirmOpen}
+        title="룸메이트 요청을 거절할까요?"
+        cancelLabel="취소"
+        confirmLabel="거절"
+        destructive
+        processing={processingRequest}
+        onCancel={cancelReject}
+        onConfirm={() => void confirmReject()}
+      />
+
+      <ChatImagePreviewDialog
+        image={pendingImage}
+        uploading={uploadingImage}
+        onCancel={cancelPendingImage}
+        onSend={() => void sendPendingImage()}
+      />
+
+      <ReadyToast
+        visible={limitToastVisible}
+        message="최대 500자까지 보낼 수 있어요"
+        icon="alert-circle"
+        iconColor="#FFB020"
+        bottomOffset={inputBottomPadding + 96}
       />
 
       {/* 열 때마다 새로 마운트해 translateY/closingRef/Modal 인스턴스를 초기 상태로 되돌린다.
@@ -281,6 +317,64 @@ function MatchedPill() {
         <Text className="text-[13px] font-medium text-[#4C87F6]">룸메이트가 되었어요</Text>
       </View>
     </View>
+  );
+}
+
+/** 잘못 전송한 사진은 삭제할 수 없으므로, 전송 전에 미리보기로 한 번 확인받는다. */
+function ChatImagePreviewDialog({
+  image,
+  uploading,
+  onCancel,
+  onSend,
+}: {
+  image: { uri: string } | null;
+  uploading: boolean;
+  onCancel: () => void;
+  onSend: () => void;
+}) {
+  return (
+    <Modal transparent animationType="fade" visible={image != null} onRequestClose={onCancel}>
+      <View className="flex-1 items-center justify-center bg-[#17171B]/40 px-9">
+        <View className="w-full max-w-[320px] gap-4 rounded-2xl bg-white px-5 pb-5 pt-5">
+          <Text className="text-center text-lg font-bold leading-[27px] text-[#17171B]">
+            이 사진을 보낼까요?
+          </Text>
+          {image ? (
+            <Image
+              source={{ uri: image.uri }}
+              contentFit="cover"
+              style={{ width: '100%', height: 220, borderRadius: 12 }}
+            />
+          ) : null}
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={onCancel}
+              disabled={uploading}
+              accessibilityRole="button"
+              accessibilityLabel="사진 전송 취소"
+              className="h-11 flex-1 items-center justify-center rounded-lg border border-[#DADAE8] active:bg-[#F6F6FA]"
+            >
+              <Text className="text-sm font-semibold text-[#696976]">취소</Text>
+            </Pressable>
+            <Pressable
+              onPress={onSend}
+              disabled={uploading}
+              accessibilityRole="button"
+              accessibilityLabel="사진 전송"
+              className={`h-11 flex-1 items-center justify-center rounded-lg bg-[#4C87F6] ${
+                uploading ? 'opacity-50' : 'active:opacity-85'
+              }`}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text className="text-sm font-semibold text-white">전송</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -452,7 +546,7 @@ function Banner({
   return (
     <View
       className={`flex-row items-center gap-3 ${
-        red ? 'bg-[#FBEFF0] px-[18px] py-3' : 'bg-[#ECF2FE] px-4 py-3.5'
+        red ? 'bg-[#FBEFF0] px-[18px] py-[17px]' : 'bg-[#ECF2FE] px-4 py-3.5'
       }`}
     >
       <View className="flex-1 gap-0.5">

@@ -1,7 +1,7 @@
 /**
  * 마이페이지/계정 설정 화면용 API 훅.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { getAccessToken } from './client';
@@ -340,6 +340,14 @@ export function useProfileVisibilityToggle(
       return response;
     },
   });
+
+  // 세션의 서버 공개범위가 뒤늦게 로드되거나(비동기), 매칭으로 서버가 PRIVATE로
+  // 바꾼 경우에도 토글이 따라가도록 동기화한다. 사용자가 방금 누른 토글이 저장되는
+  // 동안(isPending)은 낙관적 상태를 유지한다.
+  const { isPending } = mutation;
+  useEffect(() => {
+    if (!isPending) setProfileVisibleState(initialVisible);
+  }, [initialVisible, isPending]);
 
   const setProfileVisible = useCallback(
     (next: boolean) => {

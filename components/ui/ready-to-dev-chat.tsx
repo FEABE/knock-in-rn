@@ -196,7 +196,6 @@ export function ReadyChatComposer({
           placeholderTextColor="#AAAABA"
           editable={!disabled}
           multiline
-          maxLength={500}
           returnKeyType="send"
           submitBehavior="submit"
           onSubmitEditing={() => {

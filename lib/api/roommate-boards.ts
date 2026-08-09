@@ -23,9 +23,25 @@ export type BoardListQuery = {
   minMounthRent?: number;
   maxMounthRent?: number;
   roomTypeIds?: number[];
+  /**
+   * 제목/방 유형/지역 통합 검색어. 로그인 상태에서 이 값이 실려야만 서버가
+   * 검색 기록을 저장한다(RoommateBoardServiceImpl#saveSearchKeyword).
+   */
+  keyword?: string;
+  /** true 면 내가 관심(찜) 표시한 게시글만. 로그인 필요. */
+  likedOnly?: boolean;
   page?: number;
   size?: number;
   sort?: string;
+};
+
+/** 매칭(룸메 찾아요) 리스트 쿼리. 서버가 Slice(커서형)라 page 대신 제외 ID를 넘긴다. */
+export type MatchListQuery = {
+  size?: number;
+  /** 이미 받아본 memberId 들. 다음 페이지에서 제외된다. */
+  excludeMemberIds?: number[];
+  /** true 면 내가 관심(찜) 표시한 사용자만. 로그인 필요. */
+  likedOnly?: boolean;
 };
 
 /** 게시글 등록/수정 이미지 항목. (서버는 fileIndex/thumbnail, 기존 화면은 image/thumnail 사용) */
@@ -397,7 +413,7 @@ const MOCK_MATCH_DETAIL: MatchDetailData = {
 export async function getRoommateBoards(
   query: BoardListQuery = {},
 ): Promise<ApiResponse<BoardListData>> {
-  if (USE_MOCK) return mockOk({ boards: MOCK_BOARDS });
+  if (USE_MOCK) return mockOk({ boards: MOCK_BOARDS, last: true });
   const res = await request<BoardListPageData>('GET', '/roommate/boards', {
     query: {
       page: 0,
@@ -438,9 +454,18 @@ export function getRoommateBoardEdit(boardId: string): Promise<ApiResponse<Board
 }
 
 /** GET /roommate/matches — 매칭 리스트 탐색 */
-export async function getRoommateMatches(): Promise<ApiResponse<MatchListData>> {
-  if (USE_MOCK) return mockOk({ matches: MOCK_MATCHES });
-  const res = await request<MatchListPageData>('GET', '/roommate/matches');
+export async function getRoommateMatches(
+  query: MatchListQuery = {},
+): Promise<ApiResponse<MatchListData>> {
+  if (USE_MOCK) return mockOk({ matches: MOCK_MATCHES, last: true });
+  const res = await request<MatchListPageData>('GET', '/roommate/matches', {
+    query: {
+      size: 20,
+      ...query,
+      // 빈 배열은 파라미터 자체를 생략한다(axios indexes:null 직렬화 시 no-op).
+      excludeMemberIds: query.excludeMemberIds?.length ? query.excludeMemberIds : undefined,
+    },
+  });
   if (res.status !== 200 || res.error || !res.data) return { ...res, data: { matches: [] } };
   return { ...res, data: sliceToMatchListData(res.data) };
 }

@@ -52,7 +52,8 @@ export function useCreateChatRoom() {
       const res = await mutation.mutateAsync(body);
       const chatRoomId = res.data?.chatRoomId;
       if (res.status < 200 || res.status >= 300 || res.error || chatRoomId == null) {
-        throw new Error(res.error?.message ?? '채팅방을 만들지 못했습니다.');
+        // 개수 제한(ROOM_LIMIT_EXCEEDED) 등은 호출부에서 apiErrorCode 로 분기한다.
+        throw toApiActionError(res, '채팅방을 만들지 못했습니다.');
       }
       await queryClient.invalidateQueries({ queryKey: ['chat', 'rooms'] });
       return chatRoomId;

@@ -79,7 +79,7 @@ export type UseMyPageHomeScreenReturn = {
 
 export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
   const router = useRouter();
-  const { session, setVisibility } = useSession();
+  const { session, setVisibility, refreshSessionUser } = useSession();
   const { requireLogin } = useRequireLogin();
   const profile = useMyPageProfileSummary(!!session);
   const verification = useMyVerificationSummary(!!session);
@@ -91,6 +91,14 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
     useNotificationSettingToggle(!!session);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 서버가 공개범위를 바꾸는 경우(매칭 성사 시 PRIVATE 전환 등)를 화면 진입 때 반영한다.
+  const isLoggedIn = !!session;
+  useFocusEffect(
+    useCallback(() => {
+      if (isLoggedIn) void refreshSessionUser();
+    }, [isLoggedIn, refreshSessionUser]),
+  );
 
   useFocusEffect(
     useCallback(() => {

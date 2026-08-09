@@ -218,19 +218,22 @@ export function ReadyToast({
   message,
   tone = 'neutral',
   icon = 'checkmark-circle',
+  iconColor: iconColorOverride,
   bottomOffset,
 }: {
   visible: boolean;
   message: string;
   tone?: 'neutral' | 'success' | 'danger';
   icon?: keyof typeof Ionicons.glyphMap;
+  /** 톤 기본색 대신 쓸 아이콘 색 (예: 경고 앰버). */
+  iconColor?: string;
   bottomOffset?: number;
 }) {
   const { bottom } = useSafeAreaInsets();
   if (!visible) return null;
 
   const background = tone === 'danger' ? 'bg-[#D63D4A]' : 'bg-[#696976]';
-  const iconColor = tone === 'success' ? '#32C76F' : '#FFFFFF';
+  const iconColor = iconColorOverride ?? (tone === 'success' ? '#32C76F' : '#FFFFFF');
   const resolvedBottomOffset = bottomOffset ?? bottom + 88;
   return (
     <View
