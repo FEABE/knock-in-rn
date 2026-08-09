@@ -36,6 +36,40 @@ export function VerificationFlowScreenView({
     paddingBottom: Math.max(0, keyboard.height.value - bottomInset),
   }));
 
+  const isResultStep = step === 'review' || step === 'complete' || step === 'rejected';
+  const headingBlock = (
+    <View className="gap-2">
+      <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{heading}</Text>
+      <Text className="text-[14px] leading-[22px] text-[#696976]">{description}</Text>
+    </View>
+  );
+
+  // 검토중/완료/반려는 스크롤할 내용이 없다. ScrollView 안에서는 flex-1 이 남은 높이를
+  // 받지 못해 이미지가 위로 붙으므로, 결과 화면만 일반 View 로 그려 세로 가운데에 둔다.
+  if (isResultStep) {
+    return (
+      <Animated.View className="flex-1 bg-white" style={keyboardAvoidingStyle}>
+        <View className="flex-1 px-4 pb-6 pt-6">
+          {headingBlock}
+
+          <View className="flex-1 items-center justify-center">
+            <EmptyHouseArtwork size={188} height={173} />
+          </View>
+
+          {error ? <Text className="text-center text-sm text-rose-500">{error}</Text> : null}
+        </View>
+
+        <VerificationFooter>
+          <PrimaryButton
+            label={step === 'rejected' ? '다시 인증하기' : '확인'}
+            loading={loading}
+            onPress={completeReview}
+          />
+        </VerificationFooter>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View className="flex-1 bg-white" style={keyboardAvoidingStyle}>
       <ScrollView
@@ -45,10 +79,7 @@ export function VerificationFlowScreenView({
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
       >
-        <View className="gap-2">
-          <Text className="text-xl font-bold leading-[30px] text-[#17171B]">{heading}</Text>
-          <Text className="text-[14px] leading-[22px] text-[#696976]">{description}</Text>
-        </View>
+        {headingBlock}
 
         {step === 'entry' ? (
           <View className="mt-8 gap-2">
@@ -117,12 +148,6 @@ export function VerificationFlowScreenView({
           </View>
         ) : null}
 
-        {step === 'review' || step === 'complete' || step === 'rejected' ? (
-          <View className="mt-24 items-center">
-            <EmptyHouseArtwork size={188} height={173} />
-          </View>
-        ) : null}
-
         {error ? <Text className="mt-3 text-sm text-rose-500">{error}</Text> : null}
       </ScrollView>
 
@@ -143,15 +168,6 @@ export function VerificationFlowScreenView({
             loading={loading}
             disabled={!canVerify}
             onPress={verify}
-          />
-        </VerificationFooter>
-      ) : null}
-      {step === 'review' || step === 'complete' || step === 'rejected' ? (
-        <VerificationFooter>
-          <PrimaryButton
-            label={step === 'rejected' ? '다시 인증하기' : '확인'}
-            loading={loading}
-            onPress={completeReview}
           />
         </VerificationFooter>
       ) : null}
