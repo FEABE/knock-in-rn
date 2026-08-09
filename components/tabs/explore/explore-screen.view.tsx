@@ -41,9 +41,13 @@ const EMPTY_MATCHES: RoommateMatchCardModel[] = [];
 const roomKeyExtractor = (post: RoomPost) => post.id;
 const matchKeyExtractor = (match: RoommateMatchCardModel) => match.id;
 
-/** 기존 contentContainer의 gap-5 / gap-4 를 대체한다(가상화 스페이서에 gap이 먹는 문제 회피). */
+/**
+ * 게시물 사이 구분선 (Figma 탐색_3_메인 기준).
+ * 카드 - 24pt - 1px 라인 - 24pt - 카드. 라인은 화면 전체 너비라서
+ * 리스트 좌우 패딩(px-4)을 음수 마진으로 빠져나온다.
+ */
 function RoomListSeparator() {
-  return <View className="h-5" />;
+  return <View className="-mx-4 my-6 h-px bg-[#ECECF3]" />;
 }
 
 function MatchListSeparator() {
