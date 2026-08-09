@@ -11,8 +11,8 @@ import {
   regionBackendId,
   roomTypeBackendId,
   useRoommateBoardLikeActions,
-  useRoommateBoards,
-  useRoommateMatchCards,
+  useRoommateBoardsInfinite,
+  useRoommateMatchCardsInfinite,
   useRoommateMatchLikeActions,
   useAlarms,
   type RoommateMatchCardModel,
@@ -75,9 +75,13 @@ export type UseExploreScreenReturn = {
   roomsLoading: boolean;
   roomsRefreshing: boolean;
   roomsError: string | null;
+  roomsLoadingMore: boolean;
+  loadMoreRooms: () => void;
   matchesLoading: boolean;
   matchesRefreshing: boolean;
   matchesError: string | null;
+  matchesLoadingMore: boolean;
+  loadMoreMatches: () => void;
   hasUnreadAlarms: boolean;
   preferenceNudgeOpen: boolean;
   preferenceNudgeSnooze: boolean;
@@ -127,19 +131,27 @@ export function useExploreScreen(): UseExploreScreenReturn {
     }, [tab]),
   );
 
-  const boardQuery = useMemo(() => mapFilterToQuery(filter, sort), [filter, sort]);
+  // 검색어는 서버 keyword 파라미터로 넘긴다(페이지 단위 클라이언트 필터링은
+  // 무한 스크롤에서 페이지마다 구멍이 생기고, 검색 기록도 남지 않는다).
+  const boardQuery = useMemo(
+    () => mapFilterToQuery(filter, sort, searchQuery),
+    [filter, sort, searchQuery],
+  );
   const {
     data: posts,
     loading: roomsLoading,
     error: roomsError,
     reload: reloadRooms,
-  } = useRoommateBoards(boardQuery);
+    refresh: refreshRoomsPages,
+    loadMore: loadMoreRooms,
+    loadingMore: roomsLoadingMore,
+  } = useRoommateBoardsInfinite(boardQuery);
   const [roomsPullRefreshing, setRoomsPullRefreshing] = useState(false);
 
   const refreshRooms = useCallback(() => {
     setRoomsPullRefreshing(true);
-    void Promise.resolve(reloadRooms()).finally(() => setRoomsPullRefreshing(false));
-  }, [reloadRooms]);
+    void Promise.resolve(refreshRoomsPages()).finally(() => setRoomsPullRefreshing(false));
+  }, [refreshRoomsPages]);
 
   useFocusEffect(
     useCallback(() => {
@@ -163,7 +175,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     const safe = postsWithCurrentUserAvatar.filter(
       (post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
     );
-    return sortPosts(filterRoomsBySearch(safe, searchQuery), sort);
+    return sortPosts(safe, sort);
   }, [
     posts,
     currentMemberId,
@@ -171,7 +183,6 @@ export function useExploreScreen(): UseExploreScreenReturn {
     session?.user.name,
     isPostBlocked,
     isUserBlocked,
-    searchQuery,
     sort,
   ]);
 
@@ -180,8 +191,10 @@ export function useExploreScreen(): UseExploreScreenReturn {
     loading: matchesLoading,
     refreshing: matchesRefreshing,
     error: matchesError,
-    reload: reloadMatches,
-  } = useRoommateMatchCards();
+    refresh: reloadMatches,
+    loadMore: loadMoreMatches,
+    loadingMore: matchesLoadingMore,
+  } = useRoommateMatchCardsInfinite();
   const visibleMatches = useMemo(
     () => (matchList ?? []).filter((match) => !isUserBlocked(match.id)),
     [matchList, isUserBlocked],
@@ -234,9 +247,13 @@ export function useExploreScreen(): UseExploreScreenReturn {
     roomsLoading,
     roomsRefreshing: roomsPullRefreshing,
     roomsError,
+    roomsLoadingMore,
+    loadMoreRooms,
     matchesLoading,
     matchesRefreshing,
     matchesError,
+    matchesLoadingMore,
+    loadMoreMatches,
     hasUnreadAlarms: (alarms ?? []).some((alarm) => !alarm.isRead),
     preferenceNudgeOpen,
     preferenceNudgeSnooze,
@@ -282,28 +299,11 @@ export function useExploreScreen(): UseExploreScreenReturn {
   };
 }
 
-function normalizeSearchValue(value: string): string {
-  return value.toLocaleLowerCase().replace(/\s+/g, '');
-}
-
-function filterRoomsBySearch(posts: RoomPost[], query: string): RoomPost[] {
-  const normalized = normalizeSearchValue(query);
-  if (!normalized) return posts;
-  return posts.filter((post) =>
-    normalizeSearchValue(
-      [
-        post.title,
-        post.description,
-        post.region.city,
-        post.region.district,
-        post.author.name,
-        post.roomType,
-      ].join(' '),
-    ).includes(normalized),
-  );
-}
-
-function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
+function mapFilterToQuery(
+  filter: ExploreFilter,
+  sort: ExploreSort,
+  keyword: string,
+): BoardListQuery {
   const defaultBudget =
     filter.depositMin === INITIAL_EXPLORE_FILTER.depositMin &&
     filter.depositMax === INITIAL_EXPLORE_FILTER.depositMax &&
@@ -320,6 +320,7 @@ function mapFilterToQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQu
     roomTypeIds: filter.roomTypes
       .map(roomTypeBackendId)
       .filter((id): id is number => id !== undefined),
+    keyword: keyword || undefined,
     sort: sort === 'views' ? 'hits,DESC' : 'createdAt,DESC',
   };
 }

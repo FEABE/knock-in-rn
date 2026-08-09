@@ -59,6 +59,16 @@ export function ReadyLoadingState({
   );
 }
 
+/** 무한 스크롤 목록의 다음 페이지 로딩 표시(FlatList ListFooterComponent 용). */
+export function ReadyListFooterLoading({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <View className="items-center justify-center py-5">
+      <ActivityIndicator color="#256EF4" />
+    </View>
+  );
+}
+
 export function ReadyEmptyState({
   title,
   description,

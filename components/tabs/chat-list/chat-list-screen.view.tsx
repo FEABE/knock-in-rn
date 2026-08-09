@@ -29,7 +29,7 @@ export function ChatListScreenView({
 }: ChatListScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <View className="px-4 pb-7 pt-4">
+      <View className="px-4 pb-7 pt-6">
         <Text className="text-xl font-bold leading-[30px] text-[#17171B]">채팅</Text>
       </View>
 

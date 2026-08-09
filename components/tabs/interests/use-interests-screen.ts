@@ -3,11 +3,12 @@ import { useMemo, useState } from 'react';
 
 import {
   type BoardListQuery,
+  type MatchListQuery,
   regionBackendId,
   roomTypeBackendId,
   useRoommateBoardLikeActions,
-  useRoommateBoards,
-  useRoommateMatchCards,
+  useRoommateBoardsInfinite,
+  useRoommateMatchCardsInfinite,
   useRoommateMatchLikeActions,
   type RoommateMatchCardModel,
 } from '@/lib/api';
@@ -23,6 +24,9 @@ import {
   type ExploreSort,
 } from '../explore/use-explore-screen';
 
+/** 관심 룸메이트만 조회한다(서버 likedOnly 필터). 렌더마다 새 객체가 되지 않도록 모듈 상수. */
+const MATCH_LIKED_QUERY: MatchListQuery = { likedOnly: true };
+
 export type UseInterestsScreenReturn = {
   rooms: RoomPost[];
   likedMatches: RoommateMatchCardModel[];
@@ -33,9 +37,13 @@ export type UseInterestsScreenReturn = {
   roomsLoading: boolean;
   roomsRefreshing: boolean;
   roomsError: string | null;
+  roomsLoadingMore: boolean;
+  loadMoreRooms: () => void;
   matchesLoading: boolean;
   matchesRefreshing: boolean;
   matchesError: string | null;
+  matchesLoadingMore: boolean;
+  loadMoreMatches: () => void;
   reloadRooms: () => void;
   reloadMatches: () => void;
   sortLabel: string;
@@ -58,31 +66,40 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
+  // 관심 목록은 서버의 likedOnly 필터로 받는다. 예전처럼 전체 목록 1페이지를 받아
+  // 클라이언트에서 liked 만 걸러내면, 최신 20건 밖의 관심 글은 아예 보이지 않는다.
   const boardQuery = useMemo(() => toBoardQuery(filter, sort), [filter, sort]);
   const {
     data: posts,
     loading: roomsLoading,
     refreshing: roomsRefreshing,
     error: roomsError,
-    reload: reloadRooms,
-  } = useRoommateBoards(boardQuery, isLoggedIn);
+    refresh: reloadRooms,
+    loadMore: loadMoreRooms,
+    loadingMore: roomsLoadingMore,
+  } = useRoommateBoardsInfinite(boardQuery, isLoggedIn);
   const {
     data: matchList,
     loading: matchesLoading,
     refreshing: matchesRefreshing,
     error: matchesError,
-    reload: reloadMatches,
-  } = useRoommateMatchCards(isLoggedIn);
+    refresh: reloadMatches,
+    loadMore: loadMoreMatches,
+    loadingMore: matchesLoadingMore,
+  } = useRoommateMatchCardsInfinite(MATCH_LIKED_QUERY, isLoggedIn);
   const setBoardLiked = useRoommateBoardLikeActions();
   const setMatchLiked = useRoommateMatchLikeActions();
 
+  // liked === false 는 방금 관심 해제한 항목이다(낙관적 업데이트). 재조회 전까지 즉시 감춘다.
   const rooms = sortPosts(
     (posts ?? []).filter(
-      (post) => post.liked === true && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
+      (post) => post.liked !== false && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
     ),
     sort,
   );
-  const likedMatches = (matchList ?? []).filter((match) => match.liked && !isUserBlocked(match.id));
+  const likedMatches = (matchList ?? []).filter(
+    (match) => match.liked !== false && !isUserBlocked(match.id),
+  );
 
   return {
     rooms,
@@ -94,9 +111,13 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
     roomsLoading,
     roomsRefreshing,
     roomsError,
+    roomsLoadingMore,
+    loadMoreRooms,
     matchesLoading,
     matchesRefreshing,
     matchesError,
+    matchesLoadingMore,
+    loadMoreMatches,
     reloadRooms,
     reloadMatches,
     sortLabel: EXPLORE_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? '정렬',
@@ -114,13 +135,22 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
 }
 
 function toBoardQuery(filter: ExploreFilter, sort: ExploreSort): BoardListQuery {
+  // 예산 슬라이더를 건드리지 않았으면 범위 파라미터를 보내지 않는다. 기본값(보증금 0~2000,
+  // 월세 0~500)을 그대로 보내면 그 범위를 벗어난 관심 게시글이 목록에서 빠진다.
+  const defaultBudget =
+    filter.depositMin === INITIAL_EXPLORE_FILTER.depositMin &&
+    filter.depositMax === INITIAL_EXPLORE_FILTER.depositMax &&
+    filter.rentMin === INITIAL_EXPLORE_FILTER.rentMin &&
+    filter.rentMax === INITIAL_EXPLORE_FILTER.rentMax;
+
   return {
+    likedOnly: true,
     regionIds: filter.regions.map(regionBackendId).filter((id): id is number => id !== undefined),
     gender: filter.gender === 'male' ? 'MALE' : filter.gender === 'female' ? 'FEMALE' : undefined,
-    minDeposit: filter.depositMin,
-    maxDeposit: filter.depositMax,
-    minMounthRent: filter.rentMin,
-    maxMounthRent: filter.rentMax,
+    minDeposit: defaultBudget ? undefined : filter.depositMin,
+    maxDeposit: defaultBudget ? undefined : filter.depositMax,
+    minMounthRent: defaultBudget ? undefined : filter.rentMin,
+    maxMounthRent: defaultBudget ? undefined : filter.rentMax,
     roomTypeIds: filter.roomTypes
       .map(roomTypeBackendId)
       .filter((id): id is number => id !== undefined),

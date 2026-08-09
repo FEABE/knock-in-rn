@@ -16,6 +16,7 @@ import { Tabs } from '@/components/ui/headless';
 import {
   ReadyEmptyState,
   ReadyErrorState,
+  ReadyListFooterLoading,
   ReadyLoadingState,
 } from '@/components/ui/ready-to-dev-feedback';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
@@ -63,9 +64,13 @@ export function ExploreScreenView({
   roomsLoading,
   roomsRefreshing,
   roomsError,
+  roomsLoadingMore,
+  loadMoreRooms,
   matchesLoading,
   matchesRefreshing,
   matchesError,
+  matchesLoadingMore,
+  loadMoreMatches,
   hasUnreadAlarms,
   preferenceNudgeOpen,
   preferenceNudgeSnooze,
@@ -147,6 +152,9 @@ export function ExploreScreenView({
             initialNumToRender={4}
             maxToRenderPerBatch={4}
             windowSize={7}
+            onEndReached={loadMoreRooms}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={<ReadyListFooterLoading visible={roomsLoadingMore} />}
             refreshControl={
               activeTab === 'rooms' ? (
                 <RefreshControl
@@ -207,6 +215,9 @@ export function ExploreScreenView({
             initialNumToRender={5}
             maxToRenderPerBatch={5}
             windowSize={7}
+            onEndReached={loadMoreMatches}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={<ReadyListFooterLoading visible={matchesLoadingMore} />}
             refreshControl={
               activeTab === 'roommates' ? (
                 <RefreshControl

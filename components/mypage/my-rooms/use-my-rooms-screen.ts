@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
-import { useMyRoommateBoards, useRoommateBoardWriteActions } from '@/lib/api';
+import { useMyRoommateBoardsInfinite, useRoommateBoardWriteActions } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import type { RoomPost } from '@/lib/domain';
 import { goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
@@ -16,6 +16,8 @@ export type UseMyRoomsScreenReturn = {
   loading: boolean;
   refreshing: boolean;
   error: string | null;
+  loadingMore: boolean;
+  onEndReached: () => void;
   deleting: boolean;
   bottomPadding: number;
   deleteDialogOpen: boolean;
@@ -34,7 +36,14 @@ export type UseMyRoomsScreenReturn = {
 export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
   const router = useRouter();
   const { session, requireLogin } = useRequireLogin();
-  const { data: apiRooms, loading, error, reload } = useMyRoommateBoards(!!session);
+  const {
+    data: apiRooms,
+    loading,
+    error,
+    refresh,
+    loadMore,
+    loadingMore,
+  } = useMyRoommateBoardsInfinite(!!session);
   const { deleteBoard, deleting } = useRoommateBoardWriteActions();
   const bottomPadding = useSafeBottomPadding(12, 24);
   const rooms = session ? (apiRooms ?? []) : [];
@@ -58,8 +67,8 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
 
   const onRetry = useCallback(() => {
     setRefreshing(true);
-    void Promise.resolve(reload()).finally(() => setRefreshing(false));
-  }, [reload]);
+    void Promise.resolve(refresh()).finally(() => setRefreshing(false));
+  }, [refresh]);
 
   const onConfirmDelete = async () => {
     if (!deleteTarget || deleting) return;
@@ -83,6 +92,8 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
     loading,
     refreshing,
     error,
+    loadingMore,
+    onEndReached: loadMore,
     deleting,
     bottomPadding,
     deleteDialogOpen: deleteTarget !== null,

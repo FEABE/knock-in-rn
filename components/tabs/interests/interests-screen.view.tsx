@@ -9,6 +9,7 @@ import { ReadyPageTitle } from '@/components/ui/ready-to-dev-components';
 import {
   ReadyEmptyState,
   ReadyErrorState,
+  ReadyListFooterLoading,
   ReadyLoadingState,
 } from '@/components/ui/ready-to-dev-feedback';
 import type { RoommateMatchCardModel } from '@/lib/api';
@@ -44,9 +45,13 @@ export function InterestsScreenView({
   roomsLoading,
   roomsRefreshing,
   roomsError,
+  roomsLoadingMore,
+  loadMoreRooms,
   matchesLoading,
   matchesRefreshing,
   matchesError,
+  matchesLoadingMore,
+  loadMoreMatches,
   reloadRooms,
   reloadMatches,
   onLoginPress,
@@ -114,6 +119,9 @@ export function InterestsScreenView({
               initialNumToRender={4}
               maxToRenderPerBatch={4}
               windowSize={7}
+              onEndReached={loadMoreRooms}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={<ReadyListFooterLoading visible={roomsLoadingMore} />}
               refreshControl={
                 activeTab === 'rooms' ? (
                   <RefreshControl
@@ -162,6 +170,9 @@ export function InterestsScreenView({
               initialNumToRender={5}
               maxToRenderPerBatch={5}
               windowSize={7}
+              onEndReached={loadMoreMatches}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={<ReadyListFooterLoading visible={matchesLoadingMore} />}
               refreshControl={
                 activeTab === 'roommates' ? (
                   <RefreshControl

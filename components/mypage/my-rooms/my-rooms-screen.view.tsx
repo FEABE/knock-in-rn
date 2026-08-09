@@ -1,15 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { RoomCard } from '@/components/domain';
 import { ErrorState } from '@/components/ui/error-state';
-import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
+import {
+  ReadyConfirmDialog,
+  ReadyListFooterLoading,
+  ReadyToast,
+} from '@/components/ui/ready-to-dev-feedback';
+import type { RoomPost } from '@/lib/domain';
 
 import type { UseMyRoomsScreenReturn } from './use-my-rooms-screen';
 
 export type MyRoomsScreenViewProps = UseMyRoomsScreenReturn;
+
+const roomKeyExtractor = (post: RoomPost) => post.id;
+
+/** 기존 카드 사이 구분선(-mx-4 my-6 h-px)을 FlatList separator 로 옮긴 것. */
+function MyRoomSeparator() {
+  return <View className="-mx-4 my-6 h-px bg-[#ECECF3]" />;
+}
 
 export function MyRoomsScreenView({
   loggedIn,
@@ -17,6 +29,8 @@ export function MyRoomsScreenView({
   loading,
   refreshing,
   error,
+  loadingMore,
+  onEndReached,
   deleting,
   bottomPadding,
   deleteDialogOpen,
@@ -61,34 +75,34 @@ export function MyRoomsScreenView({
           <ErrorState message="내 방 목록을 불러오지 못했어요" detail={error} onRetry={onRetry} />
         </View>
       ) : (
-        <ScrollView
+        <FlatList
           className="flex-1 bg-white"
           automaticallyAdjustContentInsets={false}
           contentInsetAdjustmentBehavior="never"
           contentContainerClassName="px-4 pb-28 pt-[21px]"
           showsVerticalScrollIndicator={false}
+          data={rooms}
+          keyExtractor={roomKeyExtractor}
+          renderItem={({ item }) => <RoomCard post={item} onPress={onRoomPress} />}
+          ItemSeparatorComponent={MyRoomSeparator}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={7}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={<ReadyListFooterLoading visible={loadingMore} />}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRetry} tintColor="#256EF4" />
           }
-        >
-          {rooms.length === 0 ? (
+          ListEmptyComponent={
             <View className="mt-8 items-center justify-center rounded-xl border border-dashed border-[#DADAE8] bg-white p-10">
               <Ionicons name="home-outline" size={30} color="#AAAABA" />
               <Text className="mt-3 text-center text-sm text-[#8A8A98]">
                 아직 등록한 방 게시글이 없어요
               </Text>
             </View>
-          ) : (
-            rooms.map((post, index) => (
-              <View key={post.id}>
-                <RoomCard post={post} onPress={onRoomPress} />
-                {index < rooms.length - 1 ? (
-                  <View className="-mx-4 my-6 h-px bg-[#ECECF3]" />
-                ) : null}
-              </View>
-            ))
-          )}
-        </ScrollView>
+          }
+        />
       )}
 
       {loggedIn ? (

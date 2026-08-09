@@ -187,7 +187,8 @@ export function useVerificationFlowScreen(
         : undefined;
     setState((current) => ({
       ...current,
-      step: verificationStep(status),
+      // 방금 검증에 성공했으므로, 상태 재조회가 실패해도 검토중으로 안내한다.
+      step: status ? verificationStep(status) : 'review',
       loading: false,
       error: null,
       expiresAt: null,
@@ -259,5 +260,9 @@ function verificationForKind(
 function verificationStep(status?: VerificationStatus | null): VerificationFlowStep {
   if (status?.status === 'REJECT') return 'rejected';
   if (status?.status === 'ACCEPTED') return 'complete';
-  return 'review';
+  if (status?.status === 'PENDING') return 'review';
+  // 승인 행이 없으면(status null) 코드 발송만 하고 검증 없이 이탈한 상태다.
+  // 서버는 발송 시점에 인증 행을 만들고 검증 시점에야 PENDING 승인 행을 만들므로,
+  // 이 경우 검토중이 아니라 처음부터 다시 진행해야 한다.
+  return 'entry';
 }

@@ -39,7 +39,7 @@ export type UseRoomSearchScreenReturn = {
   onResultLikeChange: (post: RoomPost, liked: boolean) => void;
 };
 
-// 탐색 탭과 별개 캐시 키를 갖는 기본 목록 쿼리 (최신순 전체 목록).
+// 탐색 탭과 별개 캐시 키를 갖는 기본 목록 쿼리 (최신순).
 const SEARCH_BOARD_QUERY: BoardListQuery = { sort: 'createdAt,DESC' };
 
 export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
@@ -70,19 +70,25 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
     [popularData],
   );
 
+  // 검색어를 keyword 파라미터로 실어 서버 검색을 태운다. 서버는 이 호출에서만
+  // 검색 기록을 저장하므로(RoommateBoardServiceImpl#saveSearchKeyword), 클라이언트
+  // 필터링으로 대체하면 최근/인기 검색어가 쌓이지 않는다.
+  const searchQuery = useMemo<BoardListQuery>(
+    () => ({ ...SEARCH_BOARD_QUERY, keyword: submitted ?? undefined }),
+    [submitted],
+  );
   const {
     data: posts,
     loading: resultsLoading,
     error: resultsError,
     reload: retryResults,
-  } = useRoommateBoards(SEARCH_BOARD_QUERY, submitted !== null);
+  } = useRoommateBoards(searchQuery, submitted !== null);
 
   const results = useMemo(() => {
     if (submitted === null) return [];
-    const safe = (posts ?? []).filter(
+    return (posts ?? []).filter(
       (post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
     );
-    return filterRoomsBySearch(safe, submitted);
   }, [posts, isPostBlocked, isUserBlocked, submitted]);
 
   const phase: RoomSearchPhase =
@@ -155,26 +161,4 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
         setBoardLiked(post.id, liked);
       }),
   };
-}
-
-function normalizeSearchValue(value: string): string {
-  return value.toLocaleLowerCase().replace(/\s+/g, '');
-}
-
-// 탐색 화면(use-explore-screen)의 검색 필터와 동일한 매칭 기준.
-function filterRoomsBySearch(posts: RoomPost[], query: string): RoomPost[] {
-  const normalized = normalizeSearchValue(query);
-  if (!normalized) return posts;
-  return posts.filter((post) =>
-    normalizeSearchValue(
-      [
-        post.title,
-        post.description,
-        post.region.city,
-        post.region.district,
-        post.author.name,
-        post.roomType,
-      ].join(' '),
-    ).includes(normalized),
-  );
 }
