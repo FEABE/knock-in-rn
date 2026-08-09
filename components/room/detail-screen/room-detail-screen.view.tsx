@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatImageViewer } from '@/components/chat/chat-room/chat-image-viewer';
 import { RoomThumbnailPlaceholder, RoomTypePill } from '@/components/domain';
-import { PriorityArtwork, RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
+import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
 import {
   ReadyActionRow,
   ReadyActionSheet,
@@ -25,8 +25,12 @@ import {
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
 import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
+import {
+  RoommateConditionChip,
+  RoommatePriorityChip,
+} from '@/components/ui/roommate-condition-chip';
 import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
-import type { ImportantCondition, RoomOption, RoomPost, UserSummary } from '@/lib/domain';
+import type { RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
 import type { LifestyleTile, UseRoomDetailScreenReturn } from './use-room-detail-screen';
 
@@ -693,7 +697,7 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
     <ReadySection title="선호 룸메이트 조건">
       <View className="flex-row flex-wrap gap-2">
         {conditionChips.map((condition, index) => (
-          <PreferredConditionChip
+          <RoommateConditionChip
             key={`preferred-condition-${index}`}
             label={condition.label}
             image={condition.image}
@@ -706,7 +710,11 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
           <Text className="text-[15px] font-semibold leading-6 text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
             {priorityItems.map((condition, index) => (
-              <PriorityConditionChip key={`priority-${index}`} condition={condition} />
+              <RoommatePriorityChip
+                key={`priority-${index}`}
+                label={typeof condition === 'string' ? condition : condition.name}
+                image={typeof condition === 'string' ? undefined : condition.image}
+              />
             ))}
           </View>
         </View>
@@ -714,49 +722,6 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
     </ReadySection>
   );
 }
-
-function PreferredConditionChip({ label, image }: { label: string; image?: string | null }) {
-  return (
-    <View className="h-[34px] flex-row items-center justify-center gap-1.5 rounded-lg border border-[#DADAE8] bg-white px-3">
-      <PriorityArtwork label={label} image={image} size={18} />
-      <Text
-        style={DETAIL_CHIP_TEXT_STYLE}
-        className="text-[14px] font-semibold leading-[21px] text-[#696976]"
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function PriorityConditionChip({ condition }: { condition: string | ImportantCondition }) {
-  const label = conditionName(condition);
-  const image = conditionImage(condition);
-  return (
-    <View className="h-[36px] flex-row items-center justify-center gap-1.5 rounded-lg bg-[#ECF2FE] px-3">
-      <PriorityArtwork label={label} image={image} size={18} />
-      <Text
-        style={DETAIL_CHIP_TEXT_STYLE}
-        className="text-[14px] font-semibold leading-[21px] text-[#17171B]"
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function conditionName(condition: string | ImportantCondition): string {
-  return typeof condition === 'string' ? condition : condition.name;
-}
-
-function conditionImage(condition: string | ImportantCondition): string | null | undefined {
-  return typeof condition === 'string' ? undefined : condition.image;
-}
-
-const DETAIL_CHIP_TEXT_STYLE = {
-  includeFontPadding: false,
-  textAlignVertical: 'center',
-} as const;
 
 function DescriptionBlock({
   description,

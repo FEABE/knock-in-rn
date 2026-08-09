@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
@@ -20,8 +20,11 @@ import {
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
 import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
-import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 import { GenderAgeChip } from '@/components/ui/gender-age-chip';
+import {
+  RoommateConditionChip,
+  RoommatePriorityChip,
+} from '@/components/ui/roommate-condition-chip';
 import type { RoommateMatchDetailModel } from '@/lib/api';
 import type { Gender } from '@/lib/onboarding';
 
@@ -38,6 +41,8 @@ const RING_SIZE = 120;
 const RING_STROKE = 8;
 const RING_SEGMENTS = 120;
 const RING_SEGMENT_WIDTH = 7;
+const DETAIL_SECTION_ACTIVATION_OFFSET = 12;
+const SCROLL_END_THRESHOLD = 8;
 
 export function RoommateDetailScreenView({
   data,
@@ -64,20 +69,44 @@ export function RoommateDetailScreenView({
   onReport,
 }: RoommateDetailScreenViewProps) {
   const scrollRef = useRef<ScrollView>(null);
-  const sectionOffsets = useRef<Record<DetailTab, number>>({
-    compatibility: 0,
-    condition: 0,
-    room: 0,
-    lifestyle: 0,
-  });
+  const sectionOffsets = useRef<Partial<Record<DetailTab, number>>>({});
+  const programmaticTab = useRef<DetailTab | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('compatibility');
 
   const moveToSection = (tab: DetailTab) => {
+    const y = sectionOffsets.current[tab];
+    if (y === undefined) return;
+    programmaticTab.current = tab;
     setActiveTab(tab);
     scrollRef.current?.scrollTo({
-      y: Math.max(0, sectionOffsets.current[tab] - 12),
+      y: Math.max(0, y - DETAIL_SECTION_ACTIVATION_OFFSET),
       animated: true,
     });
+  };
+
+  const syncActiveTabFromScroll = (
+    scrollY: number,
+    viewportHeight: number,
+    contentHeight: number,
+  ) => {
+    if (programmaticTab.current) return;
+
+    if (scrollY + viewportHeight >= contentHeight - SCROLL_END_THRESHOLD) {
+      if (activeTab !== 'lifestyle') setActiveTab('lifestyle');
+      return;
+    }
+
+    const sectionY = scrollY + DETAIL_SECTION_ACTIVATION_OFFSET + 1;
+    let nextTab: DetailTab = 'compatibility';
+
+    DETAIL_TABS.forEach((tab) => {
+      const offset = sectionOffsets.current[tab.key];
+      if (offset !== undefined && offset <= sectionY) {
+        nextTab = tab.key;
+      }
+    });
+
+    if (nextTab !== activeTab) setActiveTab(nextTab);
   };
 
   return (
@@ -113,7 +142,27 @@ export function RoommateDetailScreenView({
             ref={scrollRef}
             className="flex-1"
             contentContainerClassName="pb-28"
-            onScroll={onScroll}
+            onScroll={(event) => {
+              onScroll(event);
+              const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+              syncActiveTabFromScroll(
+                contentOffset.y,
+                layoutMeasurement.height,
+                contentSize.height,
+              );
+            }}
+            onScrollBeginDrag={() => {
+              programmaticTab.current = null;
+            }}
+            onMomentumScrollEnd={(event) => {
+              programmaticTab.current = null;
+              const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+              syncActiveTabFromScroll(
+                contentOffset.y,
+                layoutMeasurement.height,
+                contentSize.height,
+              );
+            }}
             scrollEventThrottle={16}
           >
             <View
@@ -279,15 +328,25 @@ function DetailTabs({
 }) {
   const { width } = useWindowDimensions();
   const tabWidth = width / 3;
-  const tabs: { key: DetailTab; label: string }[] = [
-    { key: 'compatibility', label: '궁합 점수' },
-    { key: 'condition', label: '룸메이트 조건' },
-    { key: 'room', label: hasRoom ? '방 소개' : '희망 방 형태' },
-    { key: 'lifestyle', label: '생활 패턴' },
-  ];
+  const tabScrollRef = useRef<ScrollView>(null);
+  const tabs = DETAIL_TABS.map((tab) =>
+    tab.key === 'room' ? { ...tab, label: hasRoom ? '방 소개' : '희망 방 형태' } : tab,
+  );
+
+  useEffect(() => {
+    const activeIndex = DETAIL_TABS.findIndex((tab) => tab.key === active);
+    if (activeIndex < 0) return;
+
+    tabScrollRef.current?.scrollTo({
+      x: Math.max(0, activeIndex - 2) * tabWidth,
+      animated: true,
+    });
+  }, [active, tabWidth]);
+
   return (
     <View className="border-b border-[#ECECF3] bg-white">
       <ScrollView
+        ref={tabScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ minWidth: tabWidth * tabs.length }}
@@ -322,6 +381,13 @@ function DetailTabs({
     </View>
   );
 }
+
+const DETAIL_TABS: { key: DetailTab; label: string }[] = [
+  { key: 'compatibility', label: '궁합 점수' },
+  { key: 'condition', label: '룸메이트 조건' },
+  { key: 'room', label: '방 소개' },
+  { key: 'lifestyle', label: '생활 패턴' },
+];
 
 function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
   const score = data.compatibility.score;
@@ -401,7 +467,7 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
       {data.preferenceRows.length ? (
         <View className="flex-row flex-wrap gap-2">
           {data.preferenceRows.map((preference) => (
-            <ConditionChip
+            <RoommateConditionChip
               key={preference.key}
               label={preference.value === '-' ? preference.label : preference.value}
               image={preference.image}
@@ -417,15 +483,11 @@ function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
           <Text className="text-[15px] font-semibold leading-[22px] text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
             {priorities.map((priority) => (
-              <View
+              <RoommatePriorityChip
                 key={priority.key}
-                className="h-[42px] flex-row items-center gap-2 rounded-lg bg-[#ECF2FE] px-3.5"
-              >
-                <PriorityArtwork label={priority.label} image={priority.image} size={22} />
-                <Text className="text-[16px] font-medium leading-6 text-[#17171B]">
-                  {priority.label}
-                </Text>
-              </View>
+                label={priority.label}
+                image={priority.image}
+              />
             ))}
           </View>
         </View>
@@ -557,15 +619,6 @@ function ReportSheet({
         <ReadyActionRow icon="notifications-outline" label="사용자 신고하기" onPress={onReport} />
       </View>
     </ReadyActionSheet>
-  );
-}
-
-function ConditionChip({ label, image }: { label: string; image?: string | null }) {
-  return (
-    <View className="h-[42px] flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8]/80 bg-white px-3">
-      <PriorityArtwork label={label} image={image} size={22} />
-      <Text className="text-[16px] font-medium leading-6 text-[#696976]">{label}</Text>
-    </View>
   );
 }
 
