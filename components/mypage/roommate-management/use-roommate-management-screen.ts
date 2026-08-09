@@ -14,7 +14,8 @@ import {
   useApi,
   type CalendarDayItem,
 } from '@/lib/api';
-import { goChatRoom, goMypageAgreement } from '@/lib/navigation/routes';
+import { setMypageHomeToast } from '@/components/mypage/mypage-home/mypage-home-toast';
+import { goChatRoom, goMypageAgreement, resetToMypage } from '@/lib/navigation/routes';
 
 export type CalendarEditor = {
   calendarId?: string;
@@ -178,7 +179,8 @@ export function useRoommateManagementScreen() {
           throw new Error(response.error?.message ?? '룸메이트 연결을 해제하지 못했어요.');
         }
         setDisconnectConfirmOpen(false);
-        roommateState.reload();
+        setMypageHomeToast('룸메이트가 끊어졌어요');
+        resetToMypage(router);
       })
       .catch((error) => {
         setDisconnectConfirmOpen(false);

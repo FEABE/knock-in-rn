@@ -227,10 +227,10 @@ export function RoommateManagementScreenView(props: Props) {
 
       <ReadyConfirmDialog
         open={props.disconnectConfirmOpen}
-        title="룸메이트 연결을 해제할까요?"
-        description={'합의서와 캘린더를 더 이상\n함께 사용할 수 없어요'}
+        title="룸메이트를 끊을까요?"
+        description={'룸메이트를 끊으면 다시 룸메이트가 되기\n위해 새로 요청해야 해요'}
         cancelLabel="취소"
-        confirmLabel="해제"
+        confirmLabel="룸메이트 끊기"
         destructive
         processing={props.saving}
         onCancel={props.cancelDisconnect}
