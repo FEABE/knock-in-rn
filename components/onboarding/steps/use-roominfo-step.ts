@@ -5,6 +5,7 @@ import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { useRegionOptions, useRoomTypeOptions, type RoomTypeOption } from '@/lib/api';
 import {
   MAX_ROOM_CONDITION_DEPOSIT,
+  MAX_ROOM_CONDITION_REGIONS,
   ROOM_INFO_PROGRESS_START,
   useOnboarding,
   useOnboardingRoom,
@@ -13,7 +14,7 @@ import {
 } from '@/lib/onboarding';
 
 export const MAX_PREF_ROOM_TYPES = 3;
-export const MAX_REGIONS = 10;
+export const MAX_REGIONS = MAX_ROOM_CONDITION_REGIONS;
 export const ROOM_INFO_STAGE_TITLES = ['방 유무 여부', '방 유무 여부', '예산', '방 형태'] as const;
 export type RoomInfoStage = 0 | 1 | 2 | 3;
 

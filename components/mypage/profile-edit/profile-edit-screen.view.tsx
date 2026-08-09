@@ -5,13 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RegionFilterSheet } from '@/components/room/filters';
 import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
+import { TextField } from '@/components/ui/headless';
 import { RangeField } from '@/components/ui/range-field';
 import {
   RoomLocationArtwork,
   RoomPresenceArtwork,
   RoomTypeArtwork,
 } from '@/components/ui/ready-to-dev-assets';
-import { MAX_ROOM_CONDITION_DEPOSIT } from '@/lib/onboarding';
+import { MAX_ROOM_CONDITION_DEPOSIT, MAX_ROOM_CONDITION_REGIONS } from '@/lib/onboarding';
 
 import { LifestyleQuestionFlow } from '../lifestyle-question-flow';
 import type { UseProfileEditScreenReturn } from './use-profile-edit-screen';
@@ -47,12 +48,16 @@ const ROOM_STAGES = ['presence', 'region', 'budget', 'roomType'] as const;
 function RoomConditionFlow({
   hasRoom,
   regions,
+  offerDeposit,
+  offerRent,
   deposit,
   rent,
   roomTypes,
   roomTypeOptions,
   setHasRoom,
   setRegions,
+  setOfferDeposit,
+  setOfferRent,
   setDeposit,
   setRent,
   setRoomTypes,
@@ -63,7 +68,7 @@ function RoomConditionFlow({
   const [regionOpen, setRegionOpen] = useState(false);
   const isOffer = hasRoom === true;
   const lastStage = ROOM_STAGES.length - 1;
-  const maxRegions = isOffer ? 1 : 3;
+  const maxRegions = isOffer ? 1 : MAX_ROOM_CONDITION_REGIONS;
 
   const goBack = () => {
     if (stage === 0) onBack();
@@ -78,7 +83,9 @@ function RoomConditionFlow({
       : stage === 1
         ? regions.length > 0
         : stage === 2
-          ? true
+          ? isOffer
+            ? offerDeposit != null && offerRent != null
+            : true
           : roomTypes.length > 0;
 
   const goNext = () => {
@@ -163,28 +170,45 @@ function RoomConditionFlow({
         ) : null}
 
         {stage === 2 ? (
-          <View className="mt-8 gap-10">
-            <RangeField
-              label={isOffer ? '보증금' : '예산 보증금'}
-              min={0}
-              max={MAX_ROOM_CONDITION_DEPOSIT}
-              step={100}
-              value={deposit}
-              onChange={setDeposit}
-              tickLabels={['최소', '400만', '1,200만', '최대']}
-              scaleStops={[0, 400, 1200, MAX_ROOM_CONDITION_DEPOSIT]}
-            />
-            <RangeField
-              label={isOffer ? '월세' : '예산 월세'}
-              min={0}
-              max={500}
-              step={10}
-              value={rent}
-              onChange={setRent}
-              tickLabels={['최소', '125만', '250만', '최대']}
-              scaleStops={[0, 125, 250, 500]}
-            />
-          </View>
+          isOffer ? (
+            <View className="mt-8 gap-5">
+              <NumberField
+                label="보증금"
+                placeholder="보증금"
+                value={offerDeposit}
+                onChange={setOfferDeposit}
+              />
+              <NumberField
+                label="월세"
+                placeholder="월세"
+                value={offerRent}
+                onChange={setOfferRent}
+              />
+            </View>
+          ) : (
+            <View className="mt-8 gap-10">
+              <RangeField
+                label="예산 보증금"
+                min={0}
+                max={MAX_ROOM_CONDITION_DEPOSIT}
+                step={100}
+                value={deposit}
+                onChange={setDeposit}
+                tickLabels={['최소', '400만', '1,200만', '최대']}
+                scaleStops={[0, 400, 1200, MAX_ROOM_CONDITION_DEPOSIT]}
+              />
+              <RangeField
+                label="예산 월세"
+                min={0}
+                max={500}
+                step={10}
+                value={rent}
+                onChange={setRent}
+                tickLabels={['최소', '125만', '250만', '최대']}
+                scaleStops={[0, 125, 250, 500]}
+              />
+            </View>
+          )
         ) : null}
 
         {stage === 3 ? (
@@ -306,7 +330,7 @@ function StageTitle({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
           ? [
               hasRoom ? '거주하고 있는 집의' : '희망하는 예산을',
               '보증금과 월세를 알려주세요',
-              '범위 양끝을 움직여 금액을 설정해주세요',
+              hasRoom ? '금액을 직접 입력해주세요' : '범위 양끝을 움직여 금액을 설정해주세요',
             ]
           : [
               hasRoom ? '거주하고 있는' : '거주하고 싶은',
@@ -322,6 +346,37 @@ function StageTitle({ stage, hasRoom }: { stage: number; hasRoom: boolean }) {
         {copy[1]}
       </Text>
       <Text className="mt-1 text-sm leading-5 text-[#696976]">{copy[2]}</Text>
+    </View>
+  );
+}
+
+function NumberField({
+  label,
+  placeholder,
+  value,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <View className="gap-3">
+      <Text className="text-[15px] font-semibold leading-[23px] text-[#17171B]">{label}</Text>
+      <View className="h-9 flex-row items-center border-b border-[#AAAABA]">
+        <TextField
+          value={value == null ? '' : String(value)}
+          onChangeValue={(text) => {
+            const digits = text.replace(/[^0-9]/g, '');
+            onChange(digits === '' ? null : Number(digits));
+          }}
+          placeholder={placeholder}
+          keyboardType="number-pad"
+          className="h-9 flex-1 py-0 text-[15px] text-[#17171B]"
+        />
+        <Text className="text-[15px] text-[#AAAABA]">만원</Text>
+      </View>
     </View>
   );
 }

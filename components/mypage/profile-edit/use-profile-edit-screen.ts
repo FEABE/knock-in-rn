@@ -38,6 +38,8 @@ export type UseProfileEditScreenReturn = {
   hasRoom: boolean | null;
   regions: Region[];
   moveInDate: Date | null;
+  offerDeposit: number | null;
+  offerRent: number | null;
   deposit: RangeValue;
   rent: RangeValue;
   roomTypes: string[];
@@ -47,6 +49,8 @@ export type UseProfileEditScreenReturn = {
   setHasRoom: (next: boolean | null) => void;
   setRegions: Dispatch<SetStateAction<Region[]>>;
   setMoveInDate: Dispatch<SetStateAction<Date | null>>;
+  setOfferDeposit: (value: number | null) => void;
+  setOfferRent: (value: number | null) => void;
   setDeposit: Dispatch<SetStateAction<RangeValue>>;
   setRent: Dispatch<SetStateAction<RangeValue>>;
   setRoomTypes: Dispatch<SetStateAction<string[]>>;
@@ -79,6 +83,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     hasRoom: null,
     regions: [],
     moveInDate: null,
+    offerDeposit: null,
+    offerRent: null,
     deposit: [0, 500],
     rent: [0, 50],
     roomTypes: [],
@@ -90,6 +96,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     hasRoom,
     regions,
     moveInDate,
+    offerDeposit,
+    offerRent,
     deposit,
     rent,
     roomTypes,
@@ -98,16 +106,29 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
   const setHasRoom: Dispatch<SetStateAction<boolean | null>> = (next) =>
     setState((current) => {
       const hasRoom = resolveAction(next, current.hasRoom);
+      if (hasRoom === current.hasRoom) return current;
       return {
         ...current,
         hasRoom,
-        deposit: clampDepositRange(current.deposit),
+        regions: [],
+        roomTypes: [],
+        offerDeposit: null,
+        offerRent: null,
+        deposit: [0, 500],
+        rent: [0, 50],
       };
     });
   const setRegions: Dispatch<SetStateAction<Region[]>> = (next) =>
     setState((current) => ({ ...current, regions: resolveAction(next, current.regions) }));
   const setMoveInDate: Dispatch<SetStateAction<Date | null>> = (next) =>
     setState((current) => ({ ...current, moveInDate: resolveAction(next, current.moveInDate) }));
+  const setOfferDeposit = (value: number | null) =>
+    setState((current) => ({
+      ...current,
+      offerDeposit: value == null ? null : clampDepositValue(value),
+    }));
+  const setOfferRent = (value: number | null) =>
+    setState((current) => ({ ...current, offerRent: value }));
   const setDeposit: Dispatch<SetStateAction<RangeValue>> = (next) =>
     setState((current) => ({
       ...current,
@@ -143,11 +164,10 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
         ...current,
         loadedLifestyles: nextLoadedLifestyles,
         hasRoom: hasRoom ?? current.hasRoom,
-        deposit: clampDepositRange(loadedDeposit),
-        rent: [
-          data.minMounthRent ?? data.mounthRent ?? 0,
-          data.maxMounthRent ?? data.mounthRent ?? 50,
-        ],
+        offerDeposit: hasRoom ? (data.deposit ?? null) : null,
+        offerRent: hasRoom ? (data.mounthRent ?? null) : null,
+        deposit: hasRoom ? current.deposit : clampDepositRange(loadedDeposit),
+        rent: hasRoom ? current.rent : [data.minMounthRent ?? 0, data.maxMounthRent ?? 50],
         // comeEnableAt은 오프셋 없는 UTC 벽시계다. parseServerDate로 파싱한 뒤
         // 캘린더 위젯이 쓰는 로컬 자정으로 옮긴다.
         moveInDate: toLocalCalendarDate(data.comeEnableAt),
@@ -229,6 +249,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     if (hasRoom === null) missing.push('방 여부');
     if (!regionIds.length) missing.push(hasRoom ? '방 위치' : '선호 지역');
     if (!roomTypeIds.length) missing.push(hasRoom ? '방 형태' : '선호 방 형태');
+    if (hasRoom && offerDeposit == null) missing.push('보증금');
+    if (hasRoom && offerRent == null) missing.push('월세');
     // 입주(희망)일은 관리 플로우에서 입력받지 않는다(시안에 화면이 없음).
     // 서버는 comeEnableAt이 필수라 기존 저장값을 그대로 다시 보낸다.
 
@@ -252,8 +274,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
         comeEnableAt: formatApiCalendarDate(moveInDate ?? new Date()),
         region: isOffer ? regionIds.slice(0, 1) : regionIds,
         roomProfile: isOffer ? roomTypeIds.slice(0, 1) : roomTypeIds,
-        deposit: isOffer ? clampDepositValue(deposit[0]) : undefined,
-        monthlyRent: isOffer ? rent[0] : undefined,
+        deposit: isOffer && offerDeposit != null ? clampDepositValue(offerDeposit) : undefined,
+        monthlyRent: isOffer ? (offerRent ?? undefined) : undefined,
       }),
     );
     if (res.error || res.status !== 200) {
@@ -273,6 +295,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     hasRoom,
     regions,
     moveInDate,
+    offerDeposit,
+    offerRent,
     deposit,
     rent,
     roomTypes,
@@ -286,6 +310,8 @@ export function useProfileEditScreen(): UseProfileEditScreenReturn {
     setHasRoom,
     setRegions,
     setMoveInDate,
+    setOfferDeposit,
+    setOfferRent,
     setDeposit,
     setRent,
     setRoomTypes,
@@ -307,6 +333,8 @@ type ProfileEditState = {
   hasRoom: boolean | null;
   regions: Region[];
   moveInDate: Date | null;
+  offerDeposit: number | null;
+  offerRent: number | null;
   deposit: RangeValue;
   rent: RangeValue;
   roomTypes: string[];

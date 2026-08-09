@@ -116,6 +116,7 @@ export type RoomCondition = {
 };
 
 export const MAX_ROOM_CONDITION_DEPOSIT = 2000;
+export const MAX_ROOM_CONDITION_REGIONS = 10;
 
 export type PreferenceConditions = {
   budget: BudgetRange | null;
