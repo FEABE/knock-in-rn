@@ -758,7 +758,7 @@ function DescriptionBlock({
             setHasOverflow(event.nativeEvent.lines.length > 3);
           }
         }}
-        className="text-sm leading-6 text-neutral-700"
+        className="text-[15px] leading-6 text-neutral-700"
       >
         {description}
       </Text>
