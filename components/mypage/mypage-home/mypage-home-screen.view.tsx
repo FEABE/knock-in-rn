@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import Constants from 'expo-constants';
+import { useContext } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -33,6 +35,10 @@ export function MyPageHomeScreenView({
   setProfileVisible,
   setNotificationEnabled,
 }: MyPageHomeScreenViewProps) {
+  // 탭 화면이라 콘텐츠 영역이 탭바 위에서 끝난다. 토스트를 다른 화면과 같은 높이
+  // (화면 하단 기준)에 띄우려면 탭바 높이만큼 보정해야 한다.
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
+
   if (!user) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -137,7 +143,12 @@ export function MyPageHomeScreenView({
         </Section>
       </ScrollView>
 
-      <ReadyToast visible={!!toast} message={toast ?? ''} tone="success" />
+      <ReadyToast
+        visible={!!toast}
+        message={toast ?? ''}
+        tone="success"
+        containerBottomInset={tabBarHeight}
+      />
     </SafeAreaView>
   );
 }

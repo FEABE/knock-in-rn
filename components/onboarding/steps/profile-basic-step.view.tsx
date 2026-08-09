@@ -5,6 +5,7 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-re
 
 import { BottomSheet, Modal, TermsAgreement, TextField } from '@/components/ui/headless';
 import { IdentityVerificationArtwork } from '@/components/ui/ready-to-dev-assets';
+import { ReadyToast, useSheetToastInset } from '@/components/ui/ready-to-dev-feedback';
 import { PROFILE_NAME_MAX_LENGTH, type Gender, type Term } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
@@ -336,6 +337,7 @@ function TermsBottomSheet({
   onContinue: () => void;
   onTermDetailPress: (termKey: string) => void;
 }) {
+  const toastInset = useSheetToastInset();
   return (
     <BottomSheet
       open={open}
@@ -344,7 +346,13 @@ function TermsBottomSheet({
       contentClassName="rounded-t-[20px] bg-white px-5 pt-2"
       handleClassName="mx-auto mb-7 h-0.5 w-[66px] rounded-full bg-black/60"
     >
-      {toastVisible ? <RequiredTermToast /> : null}
+      <ReadyToast
+        visible={toastVisible}
+        message="필수 항목을 선택해주세요"
+        icon="alert-circle"
+        iconColor="#FFB114"
+        containerBottomInset={toastInset}
+      />
 
       <Text className="text-[19px] font-bold leading-[29px] text-[#17171B]">
         기본 정보 입력이 완료되었어요{'\n'}서비스 이용에 필요한 약관을 확인해주세요
@@ -448,17 +456,6 @@ function CheckIcon({ checked, size }: { checked: boolean; size: 20 | 24 }) {
   return (
     <View className="items-center justify-center" style={{ width: size, height: size }}>
       <Ionicons name="checkmark" size={size} color={checked ? '#256EF4' : '#DADAE8'} />
-    </View>
-  );
-}
-
-function RequiredTermToast() {
-  return (
-    <View className="absolute -top-[42px] left-[34px] h-8 w-[252px] flex-row items-center justify-center gap-2 rounded-lg bg-[#696976]">
-      <View className="h-4 w-4 items-center justify-center rounded-full bg-[#FFB114]">
-        <Text className="text-[11px] font-bold leading-4 text-[#8A5C00]">!</Text>
-      </View>
-      <Text className="text-[13px] leading-5 text-white">필수 항목을 선택해주세요</Text>
     </View>
   );
 }

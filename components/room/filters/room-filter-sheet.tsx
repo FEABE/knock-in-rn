@@ -100,14 +100,13 @@ export function RoomFilterSheet({
         })}
       </View>
 
-      <View className="gap-4">
-        {tab === 'region' ? <RegionFilterBody value={draft.regions} onChange={setRegions} /> : null}
-        {tab === 'gender' ? <GenderFilterBody value={draft.gender} onChange={setGender} /> : null}
-        {tab === 'budget' ? <BudgetFilterBody value={budget} onChange={setBudget} /> : null}
-        {tab === 'roomType' ? (
-          <RoomTypeFilterBody value={draft.roomTypes} onChange={setRoomTypes} />
-        ) : null}
-      </View>
+      {/* 탭 본문은 시트 콘텐츠의 직계 자식으로 둔다(본문 안 토스트를 화면 하단 기준 높이에 맞추기 위해). */}
+      {tab === 'region' ? <RegionFilterBody value={draft.regions} onChange={setRegions} /> : null}
+      {tab === 'gender' ? <GenderFilterBody value={draft.gender} onChange={setGender} /> : null}
+      {tab === 'budget' ? <BudgetFilterBody value={budget} onChange={setBudget} /> : null}
+      {tab === 'roomType' ? (
+        <RoomTypeFilterBody value={draft.roomTypes} onChange={setRoomTypes} />
+      ) : null}
 
       <View className="mt-6 flex-row gap-3">
         <Pressable

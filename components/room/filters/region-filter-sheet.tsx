@@ -1,13 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { ReadyErrorState, ReadyLoadingState } from '@/components/ui/ready-to-dev-feedback';
+import {
+  ReadyErrorState,
+  ReadyLoadingState,
+  ReadyToast,
+  useSheetToastInset,
+} from '@/components/ui/ready-to-dev-feedback';
 import type { Region } from '@/lib/onboarding';
 
 import { FilterSheet } from './filter-sheet';
 import { useRegionFilterBody } from './use-region-filter-body';
 import { useRegionFilterSheet } from './use-region-filter-sheet';
 
+/**
+ * 지역 선택 목록. 최대 선택 토스트는 화면 하단 기준 높이를 다른 토스트와 맞추기 위해
+ * 목록 View 밖(= 시트 콘텐츠의 직계 자식)에 둔다. 그래서 반환값이 프래그먼트다.
+ */
 export function RegionFilterBody({
   value,
   onChange,
@@ -17,6 +26,7 @@ export function RegionFilterBody({
   onChange: (next: Region[]) => void;
   maxSelection?: number;
 }) {
+  const toastInset = useSheetToastInset();
   const {
     cities,
     activeCity,
@@ -42,7 +52,7 @@ export function RegionFilterBody({
   }
 
   return (
-    <View>
+    <>
       <View className="h-[336px] flex-row overflow-hidden border-b border-[#ECECF3]">
         <View className="w-1/2 bg-white">
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -132,22 +142,14 @@ export function RegionFilterBody({
         ) : null}
       </View>
 
-      {limitToastVisible ? (
-        <View
-          pointerEvents="none"
-          className="absolute bottom-[68px] left-0 right-0 z-10 items-center px-4"
-        >
-          <View className="min-h-[34px] flex-row items-center justify-center gap-2 rounded-lg bg-[#696976] px-4 py-2">
-            <View className="h-4 w-4 items-center justify-center rounded-full bg-[#FFB114]">
-              <Text className="text-[11px] font-bold leading-4 text-[#8A5C00]">!</Text>
-            </View>
-            <Text className="text-[13px] leading-5 text-white">
-              지역은 최대 {maxSelection}개까지 선택 가능해요
-            </Text>
-          </View>
-        </View>
-      ) : null}
-    </View>
+      <ReadyToast
+        visible={limitToastVisible}
+        message={`지역은 최대 ${maxSelection}개까지 선택 가능해요`}
+        icon="alert-circle"
+        iconColor="#FFB114"
+        containerBottomInset={toastInset}
+      />
+    </>
   );
 }
 

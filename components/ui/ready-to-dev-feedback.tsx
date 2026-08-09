@@ -4,6 +4,7 @@ import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
+import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 
 type FeedbackTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -213,13 +214,32 @@ export function ReadyStatusBanner({
   );
 }
 
+/**
+ * 모든 토스트가 공유하는 높이. 화면 하단(세이프 에어리어 포함)에서 이만큼 위에 띄운다.
+ * 기준: 룸메 상세 > 사용자 차단하기 > "차단되었어요" 토스트.
+ */
+export const TOAST_BOTTOM_OFFSET = 88;
+/** 69pt 레이어 안에서 토스트가 가운데 정렬되므로, 실제 여백만큼 레이어를 내린다. */
+const TOAST_LAYER_INSET = 18;
+
+/**
+ * 바텀시트 안에서 ReadyToast를 쓸 때 넘길 containerBottomInset.
+ * BottomSheet 콘텐츠의 하단 패딩(= useSafeBottomPadding(16, 32))만큼 빼면
+ * 화면 하단 기준 높이가 다른 화면 토스트와 같아진다.
+ * 단, 토스트를 시트 콘텐츠의 직계 자식으로 둬야 한다(중첩되면 그만큼 더 떠오르고
+ * Android에서는 부모 밖으로 나간 만큼 잘린다).
+ */
+export function useSheetToastInset(): number {
+  return useSafeBottomPadding(16, 32);
+}
+
 export function ReadyToast({
   visible,
   message,
   tone = 'neutral',
   icon = 'checkmark-circle',
   iconColor: iconColorOverride,
-  bottomOffset,
+  containerBottomInset = 0,
 }: {
   visible: boolean;
   message: string;
@@ -227,19 +247,24 @@ export function ReadyToast({
   icon?: keyof typeof Ionicons.glyphMap;
   /** 톤 기본색 대신 쓸 아이콘 색 (예: 경고 앰버). */
   iconColor?: string;
-  bottomOffset?: number;
+  /**
+   * 토스트를 감싼 컨테이너의 하단이 화면 하단에서 떨어진 거리.
+   * 화면 전체를 덮는 컨테이너면 0, 바텀시트 안이면 useSheetToastInset()을 쓴다.
+   * 높이 자체는 TOAST_BOTTOM_OFFSET 하나로 고정되고, 이 값은 보정용이다.
+   */
+  containerBottomInset?: number;
 }) {
   const { bottom } = useSafeAreaInsets();
   if (!visible) return null;
 
   const background = tone === 'danger' ? 'bg-[#D63D4A]' : 'bg-[#696976]';
   const iconColor = iconColorOverride ?? (tone === 'success' ? '#32C76F' : '#FFFFFF');
-  const resolvedBottomOffset = bottomOffset ?? bottom + 88;
+  const layerBottom = bottom + TOAST_BOTTOM_OFFSET - containerBottomInset - TOAST_LAYER_INSET;
   return (
     <View
       pointerEvents="none"
       className="absolute left-0 right-0 z-50 h-[69px] items-center justify-center px-6"
-      style={{ bottom: Math.max(0, resolvedBottomOffset - 18) }}
+      style={{ bottom: Math.max(0, layerBottom) }}
     >
       <View className="absolute inset-0 bg-white/70" />
       <View

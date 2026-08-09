@@ -161,14 +161,13 @@ export function ChatRoomScreenView({
           onConfirm={confirmRequest}
         />
 
-        {/* 키보드가 올라온 상태에서 뜨는 토스트라, 키보드 패딩이 적용된 컨테이너 안에서
-            입력칸보다 충분히 위(대화 영역)에 띄운다. */}
+        {/* 키보드 패딩이 적용된 컨테이너 안이라, 키보드가 올라오면 그만큼 같이 밀려 올라간다.
+            높이는 다른 화면 토스트와 동일(TOAST_BOTTOM_OFFSET)하게 둔다. */}
         <ReadyToast
           visible={limitToastVisible}
           message="최대 500자까지 보낼 수 있어요"
           icon="alert-circle"
           iconColor="#FFB020"
-          bottomOffset={inputBottomPadding + 180}
         />
       </Animated.View>
 
