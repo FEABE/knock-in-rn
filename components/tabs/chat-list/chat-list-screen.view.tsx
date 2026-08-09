@@ -2,11 +2,7 @@ import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
-import {
-  ReadyBadge,
-  ReadyPageTitle,
-  ReadyProfileAvatar,
-} from '@/components/ui/ready-to-dev-components';
+import { ReadyChatStatusBadge, ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
 import {
   ReadyEmptyState,
   ReadyErrorState,
@@ -33,7 +29,9 @@ export function ChatListScreenView({
 }: ChatListScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <ReadyPageTitle title="채팅" />
+      <View className="px-4 pb-7 pt-4">
+        <Text className="text-xl font-bold leading-[30px] text-[#17171B]">채팅</Text>
+      </View>
 
       {!isLoggedIn ? (
         <View className="px-5 pt-2">
@@ -83,31 +81,41 @@ function ChatRoomRow({ row }: { row: ChatListRow }) {
   return (
     <Pressable
       onPress={row.onPress}
-      className={`min-h-[68px] flex-row items-center gap-3 px-4 py-2 ${
+      className={`flex-row items-center gap-3 px-4 ${
         row.proposal
-          ? 'bg-[#ECF2FE] active:bg-[#DCE8FD]'
-          : 'border-b border-[#F6F6FA] active:bg-[#F6F6FA]'
+          ? 'h-[83px] bg-[#ECF2FE] pb-4 pt-[15px] active:bg-[#DCE8FD]'
+          : 'min-h-[68px] border-b border-[#F6F6FA] py-2 active:bg-[#F6F6FA]'
       }`}
     >
       <ReadyProfileAvatar name={name} imageUrl={row.room.memberProfileImageUrl} size={52} />
       <View className="flex-1 gap-1">
-        <View className="flex-row items-center gap-1.5">
-          <Text numberOfLines={1} className="shrink text-base font-bold text-[#17171B]">
-            {name}
+        <View className="flex-row items-center">
+          <View className="min-w-0 flex-1 flex-row items-center gap-1.5">
+            <Text
+              numberOfLines={1}
+              className="shrink text-base font-semibold leading-6 text-[#17171B]"
+            >
+              {name}
+            </Text>
+            {row.proposal ? (
+              <ReadyChatStatusBadge status="request" />
+            ) : matched ? (
+              <ReadyChatStatusBadge status="roommate" />
+            ) : null}
+          </View>
+          <Text className="ml-2 shrink-0 text-sm leading-[21px] text-[#AAAABA]">
+            {row.timeLabel}
           </Text>
-          {row.proposal ? (
-            <ReadyBadge label="매칭 요청" tone="blue" />
-          ) : matched ? (
-            <ReadyBadge label="룸메이트" tone="neutral" />
-          ) : null}
-          <View className="flex-1" />
-          <Text className="text-[13px] leading-5 text-[#AAAABA]">{row.timeLabel}</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Text
             numberOfLines={1}
             className={`flex-1 text-sm leading-[21px] ${
-              row.proposal ? 'font-semibold text-[#256EF4]' : 'text-[#696976]'
+              row.proposal
+                ? 'font-medium text-[#256EF4]'
+                : row.unread > 0
+                  ? 'text-[#17171B]'
+                  : 'text-[#696976]'
             }`}
           >
             {row.preview}

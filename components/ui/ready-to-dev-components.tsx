@@ -350,6 +350,22 @@ export function ReadyBadge({
   );
 }
 
+export function ReadyChatStatusBadge({ status }: { status: 'request' | 'roommate' }) {
+  const isRequest = status === 'request';
+
+  return (
+    <View
+      className={`h-[22px] w-14 shrink-0 items-center justify-center rounded ${
+        isRequest ? 'bg-[#4C87F6]' : 'bg-[#696976]'
+      }`}
+    >
+      <Text className="text-xs font-semibold leading-[17px] text-white">
+        {isRequest ? '매칭 요청' : '룸메이트'}
+      </Text>
+    </View>
+  );
+}
+
 export function ReadyActionSheet({
   open,
   onOpenChange,

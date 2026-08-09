@@ -11,7 +11,11 @@ import {
   ReadyChatRestrictionBanner,
   ReadyChatSystemNotice,
 } from '@/components/ui/ready-to-dev-chat';
-import { ReadyBadge, ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
+import {
+  ReadyBadge,
+  ReadyChatStatusBadge,
+  ReadyProfileAvatar,
+} from '@/components/ui/ready-to-dev-components';
 import { formatKstTime, isSameKstDay, kstClock, type ChatSocketStatus } from '@/lib/api';
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
@@ -289,7 +293,7 @@ function ChatHeader({
         <View className="flex-row items-center gap-1.5">
           <GenderAgeChip age={peer.age} gender={peer.gender} />
           {matched ? (
-            <ReadyBadge label="룸메이트" tone="neutral" className="h-[22px] py-0" />
+            <ReadyChatStatusBadge status="roommate" />
           ) : peer.compatibilityScore != null ? (
             <ReadyBadge
               label={`궁합 ${peer.compatibilityScore}점`}
