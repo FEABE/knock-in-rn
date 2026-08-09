@@ -327,17 +327,21 @@ export function ReadyBadge({
   tone = 'neutral',
   icon,
   bold = false,
+  className = '',
 }: {
   label: string;
   tone?: 'neutral' | 'blue' | 'sky' | 'red' | 'green' | 'dark';
   icon?: keyof typeof Ionicons.glyphMap;
   /** 탐색 > 룸메 찾아요의 나이·성별 칩처럼 굵게 표시해야 할 때 켠다. */
   bold?: boolean;
+  className?: string;
 }) {
   const [backgroundClass, color] = BADGE_PALETTE[tone];
 
   return (
-    <View className={`flex-row items-center gap-1 rounded px-1.5 py-1 ${backgroundClass}`}>
+    <View
+      className={`flex-row items-center gap-1 rounded px-1.5 py-1 ${backgroundClass} ${className}`}
+    >
       {icon ? <Ionicons name={icon} size={11} color={color} /> : null}
       <Text className={`text-[11px] ${bold ? 'font-semibold' : 'font-medium'}`} style={{ color }}>
         {label}

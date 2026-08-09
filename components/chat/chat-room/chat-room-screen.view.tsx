@@ -1,14 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 
 import { GenderAgeChip } from '@/components/ui/gender-age-chip';
 import {
@@ -67,12 +60,17 @@ export function ChatRoomScreenView({
   openImageViewer,
   closeImageViewer,
 }: ChatRoomScreenViewProps) {
+  const keyboard = useAnimatedKeyboard({
+    isStatusBarTranslucentAndroid: true,
+    isNavigationBarTranslucentAndroid: true,
+  });
+  const keyboardAvoidingStyle = useAnimatedStyle(() => ({
+    paddingBottom: keyboard.height.value,
+  }));
+
   return (
     <>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 bg-white"
-      >
+      <Animated.View className="flex-1 bg-white" style={keyboardAvoidingStyle}>
         <ChatHeader peer={room.peer} matched={room.matched} onBack={onBack} onLeave={onLeave} />
 
         <RequestStatusBanner
@@ -125,7 +123,7 @@ export function ChatRoomScreenView({
           onConfirm={confirmRequest}
           bottomPadding={modalBottomPadding}
         />
-      </KeyboardAvoidingView>
+      </Animated.View>
 
       {/* 열 때마다 새로 마운트해 translateY/closingRef/Modal 인스턴스를 초기 상태로 되돌린다.
           (항상 마운트해 두면 스와이프로 닫은 뒤 stale 애니메이션 값이 남아 두 번째 열기가 깨진다.) */}
@@ -297,9 +295,13 @@ function ChatHeader({
         <View className="flex-row items-center gap-1.5">
           <GenderAgeChip age={peer.age} gender={peer.gender} />
           {matched ? (
-            <ReadyBadge label="룸메이트" tone="neutral" />
+            <ReadyBadge label="룸메이트" tone="neutral" className="h-[22px] py-0" />
           ) : peer.compatibilityScore != null ? (
-            <ReadyBadge label={`궁합 ${peer.compatibilityScore}점`} tone="blue" />
+            <ReadyBadge
+              label={`궁합 ${peer.compatibilityScore}점`}
+              tone="blue"
+              className="h-[22px] py-0"
+            />
           ) : null}
         </View>
       </View>

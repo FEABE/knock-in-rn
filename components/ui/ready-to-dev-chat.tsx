@@ -1,6 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Keyboard,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
 import { ReadyStatusBanner } from '@/components/ui/ready-to-dev-feedback';
@@ -143,10 +152,24 @@ export function ReadyChatComposer({
   bottomPadding?: number;
 }) {
   const canSend = value.trim().length > 0 && !disabled && !sendDisabled;
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   return (
     <View
       className="flex-row items-end gap-3 border-t border-[#F6F6FA] bg-white px-4 pt-2.5"
-      style={{ paddingBottom: Math.max(bottomPadding, 10) }}
+      style={{ paddingBottom: keyboardVisible ? 10 : Math.max(bottomPadding, 10) }}
     >
       <Pressable
         onPress={onAdd}
