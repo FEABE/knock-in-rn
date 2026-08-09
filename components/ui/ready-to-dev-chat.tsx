@@ -52,7 +52,11 @@ export function ReadyChatBubble({
 }) {
   return (
     <View className={mine ? 'items-end' : 'items-start'}>
-      <View className={`max-w-[92%] flex-row items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
+      <View
+        className={`max-w-[92%] flex-row gap-2 ${imageUrl ? 'items-start' : 'items-end'} ${
+          mine ? 'flex-row-reverse' : ''
+        }`}
+      >
         {!mine ? (
           <ReadyProfileAvatar name={peerName || '상대방'} imageUrl={peerImageUrl} size={42} />
         ) : null}
