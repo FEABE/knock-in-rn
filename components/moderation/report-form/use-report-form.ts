@@ -1,9 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import { useState } from 'react';
+import { Alert, Keyboard } from 'react-native';
 
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useRoommateBoardWriteActions, useRoommateMatchReportActions } from '@/lib/api';
+
+import { setReportSuccessToast } from './report-success-toast';
 
 /** 신고 대상 종류. board=방 게시글, match=룸메이트(사용자). */
 export type ReportTargetKind = 'board' | 'match';
@@ -13,14 +15,11 @@ export type UseReportFormReturn = {
   reportReason: string;
   submitting: boolean;
   submitDisabled: boolean;
-  toastVisible: boolean;
   bottomPadding: number;
   onBack: () => void;
   onReportReasonChange: (value: string) => void;
   onSubmit: () => void;
 };
-
-const TOAST_DURATION_MS = 1400;
 
 export function useReportForm(): UseReportFormReturn {
   const router = useRouter();
@@ -33,28 +32,18 @@ export function useReportForm(): UseReportFormReturn {
 
   const [reportReason, setReportReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
-  const backTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (backTimer.current) clearTimeout(backTimer.current);
-    },
-    [],
-  );
 
   return {
     title: '신고하기',
     reportReason,
     submitting,
-    submitDisabled: !reportReason.trim() || submitting || toastVisible,
-    toastVisible,
+    submitDisabled: !reportReason.trim() || submitting,
     bottomPadding,
     onBack: () => router.back(),
     onReportReasonChange: setReportReason,
     onSubmit: () => {
       const contents = reportReason.trim();
-      if (!contents || !targetId || submitting || toastVisible) return;
+      if (!contents || !targetId || submitting) return;
       setSubmitting(true);
       void (async () => {
         try {
@@ -63,8 +52,9 @@ export function useReportForm(): UseReportFormReturn {
           } else {
             await reportBoard(targetId, contents);
           }
-          setToastVisible(true);
-          backTimer.current = setTimeout(() => router.back(), TOAST_DURATION_MS);
+          setReportSuccessToast(target, targetId);
+          Keyboard.dismiss();
+          router.back();
         } catch (reportError) {
           Alert.alert(
             '신고 실패',

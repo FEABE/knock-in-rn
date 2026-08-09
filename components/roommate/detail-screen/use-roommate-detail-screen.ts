@@ -1,7 +1,9 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { consumeReportSuccessToast } from '@/components/moderation/report-form/report-success-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
@@ -88,11 +90,18 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
     [],
   );
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const message = consumeReportSuccessToast('match', matchId);
+      if (message) showToast(message);
+    }, [matchId, showToast]),
+  );
 
   return {
     data,

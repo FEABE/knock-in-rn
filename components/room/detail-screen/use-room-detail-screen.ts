@@ -1,7 +1,9 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Share } from 'react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { consumeReportSuccessToast } from '@/components/moderation/report-form/report-success-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
@@ -39,6 +41,7 @@ export type UseRoomDetailScreenReturn = {
   bottomPadding: number;
   deleting: boolean;
   deleteDialogOpen: boolean;
+  toast: string | null;
   setMenuOpen: (next: boolean) => void;
   setPhotoIndex: (next: number) => void;
   toggleDescription: () => void;
@@ -106,6 +109,8 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const [descExpanded, setDescExpanded] = useState(false);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const photos = post?.photoUrls?.length
     ? post.photoUrls
@@ -121,6 +126,24 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   useEffect(() => {
     if (post?.id) logEvent(AnalyticsEvent.ROOM_DETAIL_VIEW, { room_id: post.id });
   }, [post?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const message = consumeReportSuccessToast('board', boardId);
+      if (!message) return;
+
+      setToast(message);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), 2000);
+    }, [boardId]),
+  );
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
   return {
     post,
@@ -140,6 +163,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     bottomPadding,
     deleting,
     deleteDialogOpen,
+    toast,
     setMenuOpen,
     setPhotoIndex,
     toggleDescription: () => setDescExpanded((prev) => !prev),

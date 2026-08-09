@@ -24,7 +24,7 @@ import {
   ReadyScreenHeader,
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
-import { ReadyConfirmDialog } from '@/components/ui/ready-to-dev-feedback';
+import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 import { formatKstDateLabel, useRoomAddOptionOptions } from '@/lib/api';
 import type { ImportantCondition, RoomOption, RoomPost, UserSummary } from '@/lib/domain';
 
@@ -335,6 +335,8 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         onCancel={props.onCancelDelete}
         onConfirm={props.onConfirmDelete}
       />
+
+      <ReadyToast visible={props.toast !== null} message={props.toast ?? ''} tone="success" />
 
       <ChatImageViewer
         visible={imageViewerOpen}
