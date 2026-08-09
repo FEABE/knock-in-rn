@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import { ReadyErrorState, ReadyLoadingState } from '@/components/ui/ready-to-dev-feedback';
 import { CompanyBadgeArtwork, SchoolBadgeArtwork } from '@/components/ui/ready-to-dev-assets';
 
@@ -74,9 +75,7 @@ export function VerificationHomeScreenView({
 function Header({ onBack }: { onBack: () => void }) {
   return (
     <View className="h-12 flex-row items-center px-2">
-      <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
-        <Ionicons name="chevron-back" size={24} color="#696976" />
-      </Pressable>
+      <HeaderBackButton onPress={onBack} />
       <Text className="flex-1 text-center text-[17px] font-medium text-[#17171B]">신원 인증</Text>
       <View className="w-10" />
     </View>

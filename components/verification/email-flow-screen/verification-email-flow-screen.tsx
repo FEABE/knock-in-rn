@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import { VerificationFlowScreen } from '@/components/verification/verification-flow-screen';
 import type { VerificationKind } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
@@ -56,17 +57,12 @@ export function VerificationEmailFlowScreen({
 
 function Header({ title, onBack }: { title: string; onBack: () => void }) {
   return (
-    <View className="h-12 items-center justify-center px-4">
-      <Pressable
-        onPress={onBack}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel="뒤로 가기"
-        className="absolute left-3 h-8 w-8 items-center justify-center"
-      >
-        <Ionicons name="chevron-back" size={24} color="#696976" />
-      </Pressable>
-      <Text className="text-[17px] font-medium leading-[26px] text-[#17171B]">{title}</Text>
+    <View className="h-12 flex-row items-center px-3">
+      <HeaderBackButton onPress={onBack} />
+      <View pointerEvents="none" className="flex-1 items-center justify-center">
+        <Text className="text-[17px] font-medium leading-[26px] text-[#17171B]">{title}</Text>
+      </View>
+      <View className="h-10 w-10" />
     </View>
   );
 }

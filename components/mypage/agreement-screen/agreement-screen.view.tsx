@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AgreementForm, TextField } from '@/components/ui/headless';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import type { AgreementRecord, AgreementValues } from '@/lib/domain';
 
 import type { UseAgreementScreenReturn } from './use-agreement-screen';
@@ -37,9 +37,7 @@ function AgreementEditView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-row items-center gap-2 border-b border-neutral-100 px-3 py-2">
-        <Pressable onPress={closeEdit} className="h-9 w-9 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#404047" />
-        </Pressable>
+        <HeaderBackButton onPress={closeEdit} color="#404047" />
         <Text className="text-base font-semibold text-neutral-900">
           {record ? '합의서 수정' : '새 합의서 작성'}
         </Text>
@@ -162,9 +160,7 @@ function AgreementListView({
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="flex-row items-center justify-between border-b border-neutral-100 px-3 py-2">
         <View className="flex-row items-center gap-2">
-          <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-            <Ionicons name="chevron-back" size={24} color="#404047" />
-          </Pressable>
+          <HeaderBackButton onPress={onBack} color="#404047" />
           <Text className="text-base font-semibold text-neutral-900">공동생활 합의서</Text>
         </View>
         <Pressable

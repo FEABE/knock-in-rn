@@ -3,6 +3,8 @@ import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HeaderBackButton } from '@/components/ui/header-back-button';
+
 // 합의서·캘린더 제외로 임시 미사용 — 복원 시 주석 해제
 // import { TextField } from '@/components/ui/headless';
 import { ReadyConfirmDialog } from '@/components/ui/ready-to-dev-feedback';
@@ -16,9 +18,7 @@ export function RoommateManagementScreenView(props: Props) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="h-12 flex-row items-center px-2">
-        <Pressable onPress={props.onBack} className="h-10 w-10 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
+        <HeaderBackButton onPress={props.onBack} />
         <Text className="flex-1 text-center text-base font-semibold text-[#17171B]">
           내 룸메이트
         </Text>

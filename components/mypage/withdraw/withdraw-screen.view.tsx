@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ReadyConfirmDialog } from '@/components/ui/ready-to-dev-feedback';
 import { EmptyHouseArtwork } from '@/components/ui/ready-to-dev-assets';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 
 import type { UseWithdrawScreenReturn } from './use-withdraw-screen';
 
@@ -40,16 +41,12 @@ export function WithdrawScreenView({
 }: WithdrawScreenViewProps) {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <View className="h-12 flex-row items-center justify-center">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="뒤로 가기"
-          className="absolute left-2 h-10 w-10 items-center justify-center"
-        >
-          <Ionicons name="chevron-back" size={24} color="#17171B" />
-        </Pressable>
-        <Text className="text-base font-semibold text-[#17171B]">탈퇴하기</Text>
+      <View className="h-12 flex-row items-center px-2">
+        <HeaderBackButton onPress={onBack} color="#17171B" />
+        <View pointerEvents="none" className="flex-1 items-center justify-center">
+          <Text className="text-base font-semibold text-[#17171B]">탈퇴하기</Text>
+        </View>
+        <View className="h-10 w-10" />
       </View>
 
       <ScrollView contentContainerClassName="pb-6">

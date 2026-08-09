@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import { useRequireLogin } from '@/lib/auth';
 
 import { LoginPromptCard } from './login-prompt-card';
@@ -27,9 +27,7 @@ export function AuthenticatedRoute({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="h-12 flex-row items-center px-2">
-        <Pressable onPress={() => router.back()} className="h-10 w-10 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
+        <HeaderBackButton onPress={() => router.back()} />
         <Text className="flex-1 text-center text-base font-medium text-[#17171B]">{title}</Text>
         <View className="w-10" />
       </View>
