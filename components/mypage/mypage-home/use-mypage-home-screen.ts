@@ -17,6 +17,7 @@ import {
   goMypageMyRooms,
   goMypagePreferences,
   goMypageProfile,
+  goMypageRoommate,
   goSupport,
   goSupportNotice,
   goSupportTerms,
@@ -149,6 +150,12 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
         label: '선호 룸메이트 관리',
         sub: '원하는 룸메이트 조건 설정',
         onPress: () => goMypagePreferences(router),
+      },
+      {
+        icon: 'people-outline',
+        label: '룸메이트 관리',
+        sub: '합의서 · 캘린더 · 연결 해제',
+        onPress: () => goMypageRoommate(router),
       },
       {
         icon: 'home-outline',

@@ -160,37 +160,34 @@ export function useRoommateManagementScreen() {
     ]);
   };
 
+  // 연결 해제 확인은 시스템 Alert 대신 Figma 커스텀 팝업(ReadyConfirmDialog)으로 받는다.
+  const [disconnectConfirmOpen, setDisconnectConfirmOpen] = useState(false);
+
   const disconnect = () => {
+    if (!roommateState.data?.id || saving) return;
+    setDisconnectConfirmOpen(true);
+  };
+
+  const confirmDisconnect = () => {
     const roommateId = roommateState.data?.id;
     if (!roommateId || saving) return;
-    Alert.alert(
-      '룸메이트 연결 해제',
-      '합의서와 캘린더를 더 이상 함께 사용할 수 없어요. 연결을 해제할까요?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '해제',
-          style: 'destructive',
-          onPress: () => {
-            setSaving(true);
-            void removeRoommate(String(roommateId))
-              .then((response) => {
-                if (response.status !== 200 || response.error) {
-                  throw new Error(response.error?.message ?? '룸메이트 연결을 해제하지 못했어요.');
-                }
-                roommateState.reload();
-              })
-              .catch((error) => {
-                Alert.alert(
-                  '해제 실패',
-                  error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.',
-                );
-              })
-              .finally(() => setSaving(false));
-          },
-        },
-      ],
-    );
+    setSaving(true);
+    void removeRoommate(String(roommateId))
+      .then((response) => {
+        if (response.status !== 200 || response.error) {
+          throw new Error(response.error?.message ?? '룸메이트 연결을 해제하지 못했어요.');
+        }
+        setDisconnectConfirmOpen(false);
+        roommateState.reload();
+      })
+      .catch((error) => {
+        setDisconnectConfirmOpen(false);
+        Alert.alert(
+          '해제 실패',
+          error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.',
+        );
+      })
+      .finally(() => setSaving(false));
   };
 
   const moveMonth = (offset: number) => {
@@ -229,6 +226,11 @@ export function useRoommateManagementScreen() {
       if (roommateState.data?.chatRoomId) goChatRoom(router, roommateState.data.chatRoomId);
     },
     disconnect,
+    disconnectConfirmOpen,
+    confirmDisconnect,
+    cancelDisconnect: () => {
+      if (!saving) setDisconnectConfirmOpen(false);
+    },
   };
 }
 
