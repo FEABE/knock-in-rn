@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import {
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DefaultProfileArtwork } from '@/components/ui/ready-to-dev-assets';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 
 import type { UseBasicProfileEditScreenReturn } from './use-basic-profile-edit-screen';
 
@@ -22,13 +22,7 @@ export function BasicProfileEditScreenView(props: UseBasicProfileEditScreenRetur
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="h-12 flex-row items-center justify-between px-4">
-        <Pressable
-          onPress={props.onBack}
-          hitSlop={12}
-          className="h-10 w-10 items-center justify-center"
-        >
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
+        <HeaderBackButton onPress={props.onBack} />
         <Text className="text-lg font-semibold text-[#17171B]">프로필 편집</Text>
         <Pressable
           onPress={() => void props.save()}

@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { HeaderBackButton } from '@/components/ui/header-back-button';
+
 import {
   lifestylePatternQuestions,
   type LifestyleChoiceGroup,
@@ -25,24 +27,17 @@ export function QuestionFlowHeader({
 }) {
   return (
     <View className="h-14 flex-row items-center px-3">
-      <Pressable
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel="이전으로"
-        className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
-      >
-        <Ionicons name="chevron-back" size={24} color="#696976" />
-      </Pressable>
-      <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
-        {title}
-      </Text>
+      <HeaderBackButton onPress={onBack} accessibilityLabel="이전으로" className="rounded-full" />
+      <View pointerEvents="none" className="flex-1 items-center justify-center">
+        <Text className="text-center text-[17px] font-semibold text-[#242429]">{title}</Text>
+      </View>
       <Pressable
         onPress={onSave}
         disabled={!saveEnabled}
         accessibilityRole="button"
         accessibilityLabel="저장"
         accessibilityState={{ disabled: !saveEnabled }}
-        className="ml-auto px-2 py-2 active:opacity-60"
+        className="h-10 w-10 items-center justify-center active:opacity-60"
       >
         <Text
           className={`text-[15px] ${
@@ -372,19 +367,11 @@ function InitialQuestionHeader({
 }) {
   return (
     <View className="h-14 flex-row items-center px-3">
-      <Pressable
-        onPress={onBack}
-        hitSlop={12}
-        accessibilityRole="button"
-        accessibilityLabel="이전으로"
-        className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
-      >
-        <Ionicons name="chevron-back" size={24} color="#696976" />
-      </Pressable>
-      <Text className="pointer-events-none absolute left-14 right-14 text-center text-[17px] font-medium text-[#242429]">
-        {title}
-      </Text>
-      <Text className="ml-auto px-2 text-[15px] text-[#AAAABA]">
+      <HeaderBackButton onPress={onBack} accessibilityLabel="이전으로" className="rounded-full" />
+      <View pointerEvents="none" className="flex-1 items-center justify-center">
+        <Text className="text-center text-[17px] font-medium text-[#242429]">{title}</Text>
+      </View>
+      <Text className="w-10 text-center text-[15px] text-[#AAAABA]">
         {progress}/{total}
       </Text>
     </View>

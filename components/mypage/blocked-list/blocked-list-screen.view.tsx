@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 
 import type { UseBlockedListScreenReturn } from './use-blocked-list-screen';
 
@@ -20,12 +21,11 @@ export function BlockedListScreenView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <View className="h-14 flex-row items-center px-3">
-        <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
-        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
-          차단 목록
-        </Text>
+        <HeaderBackButton onPress={onBack} />
+        <View pointerEvents="none" className="flex-1 items-center justify-center">
+          <Text className="text-center text-[17px] font-semibold text-[#242429]">차단 목록</Text>
+        </View>
+        <View className="h-10 w-10" />
       </View>
 
       <View className="mx-4 mt-2 flex-row gap-3 rounded-lg bg-[#FFF4E8] px-4 py-3">

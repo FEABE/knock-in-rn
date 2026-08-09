@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { RoomCard } from '@/components/domain';
 import { ErrorState } from '@/components/ui/error-state';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import {
   ReadyConfirmDialog,
   ReadyListFooterLoading,
@@ -46,15 +47,13 @@ export function MyRoomsScreenView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="h-12 flex-row items-center px-3">
-        <Pressable
-          onPress={onBack}
-          className="absolute left-[7px] h-10 w-10 items-center justify-center"
-        >
-          <Ionicons name="chevron-back" size={24} color="#696976" />
-        </Pressable>
-        <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-medium leading-[26px] text-[#17171B]">
-          게시글 관리
-        </Text>
+        <HeaderBackButton onPress={onBack} />
+        <View pointerEvents="none" className="flex-1 items-center justify-center">
+          <Text className="text-center text-[17px] font-medium leading-[26px] text-[#17171B]">
+            게시글 관리
+          </Text>
+        </View>
+        <View className="h-10 w-10" />
       </View>
 
       {!loggedIn ? (

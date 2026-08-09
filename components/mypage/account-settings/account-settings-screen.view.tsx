@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HeaderBackButton } from '@/components/ui/header-back-button';
+
 import type {
   AccountSettingsRow,
   AccountSettingsSection,
@@ -26,9 +28,7 @@ export function AccountSettingsScreenView({ sections, onBack }: AccountSettingsS
 function Header({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <View className="h-12 flex-row items-center px-2">
-      <Pressable onPress={onBack} className="h-10 w-10 items-center justify-center">
-        <Ionicons name="chevron-back" size={24} color="#696976" />
-      </Pressable>
+      <HeaderBackButton onPress={onBack} />
       <Text className="flex-1 text-center text-base font-medium text-[#17171B]">{title}</Text>
       <View className="w-10" />
     </View>

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HeaderBackButton } from '@/components/ui/header-back-button';
+
 import { RegionFilterSheet } from '@/components/room/filters';
 import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
 import { TextField } from '@/components/ui/headless';
@@ -301,17 +303,11 @@ function RoomConditionFlow({
 function SimpleFlowHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <View className="h-14 flex-row items-center px-3">
-      <Pressable
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel="이전으로"
-        className="h-10 w-10 items-center justify-center rounded-full active:bg-neutral-100"
-      >
-        <Ionicons name="chevron-back" size={24} color="#696976" />
-      </Pressable>
-      <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#242429]">
-        {title}
-      </Text>
+      <HeaderBackButton onPress={onBack} accessibilityLabel="이전으로" className="rounded-full" />
+      <View pointerEvents="none" className="flex-1 items-center justify-center">
+        <Text className="text-center text-[17px] font-semibold text-[#242429]">{title}</Text>
+      </View>
+      <View className="h-10 w-10" />
     </View>
   );
 }
