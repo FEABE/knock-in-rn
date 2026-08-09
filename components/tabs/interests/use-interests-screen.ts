@@ -12,7 +12,7 @@ import {
   useRoommateMatchLikeActions,
   type RoommateMatchCardModel,
 } from '@/lib/api';
-import { useModeration, type RoomPost } from '@/lib/domain';
+import { useModeration, useMyProfileAuthor, type RoomPost } from '@/lib/domain';
 import { useRequireLogin } from '@/lib/auth';
 import { goExplore, goRoomDetail, goRoommateDetail, goRoomSearch } from '@/lib/navigation/routes';
 
@@ -62,6 +62,7 @@ export type UseInterestsScreenReturn = {
 export function useInterestsScreen(): UseInterestsScreenReturn {
   const router = useRouter();
   const { isPostBlocked, isUserBlocked } = useModeration();
+  const { applyToPosts: applyMyProfile } = useMyProfileAuthor();
   const { requireLogin, isLoggedIn } = useRequireLogin();
   const [filter, setFilter] = useState<ExploreFilter>(INITIAL_EXPLORE_FILTER);
   const [sort, setSort] = useState<ExploreSort>('latest');
@@ -91,8 +92,9 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
   const setMatchLiked = useRoommateMatchLikeActions();
 
   // liked === false 는 방금 관심 해제한 항목이다(낙관적 업데이트). 재조회 전까지 즉시 감춘다.
+  // 내 글의 작성자 프로필은 탐색 탭과 같이 세션 값으로 보정한다(응답 이미지가 비어 올 수 있다).
   const rooms = sortPosts(
-    (posts ?? []).filter(
+    applyMyProfile(posts ?? []).filter(
       (post) => post.liked !== false && !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
     ),
     sort,

@@ -5,7 +5,7 @@ import { Alert } from 'react-native';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useMyRoommateBoardsInfinite, useRoommateBoardWriteActions } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
-import type { RoomPost } from '@/lib/domain';
+import { useMyProfileAuthor, type RoomPost } from '@/lib/domain';
 import { goNewRoom, goRoomDetail, goRoomEdit } from '@/lib/navigation/routes';
 
 const TOAST_DURATION_MS = 1800;
@@ -46,7 +46,10 @@ export function useMyRoomsScreen(): UseMyRoomsScreenReturn {
   } = useMyRoommateBoardsInfinite(!!session);
   const { deleteBoard, deleting } = useRoommateBoardWriteActions();
   const bottomPadding = useSafeBottomPadding(12, 24);
-  const rooms = session ? (apiRooms ?? []) : [];
+  const { applyToPosts: applyMyProfile } = useMyProfileAuthor();
+  // 내 게시글 목록 응답에는 프로필 이미지가 비어 오는 경우가 있어 탐색 탭과 같은 기준으로
+  // 세션 프로필을 입혀준다.
+  const rooms = session ? applyMyProfile(apiRooms ?? []) : [];
   const [deleteTarget, setDeleteTarget] = useState<RoomPost | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);

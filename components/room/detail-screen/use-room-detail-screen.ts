@@ -19,7 +19,7 @@ import {
   useRoommateBoardWriteActions,
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
-import { useModeration, useSession, type RoomPost } from '@/lib/domain';
+import { useModeration, useMyProfileAuthor, useSession, type RoomPost } from '@/lib/domain';
 import { goChatRoom, goExplore, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
 
 export type LifestyleTile = { label: string; value: string };
@@ -70,20 +70,11 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const { requireLogin } = useRequireLogin();
   const { data: fetchedPost, loading, error } = useRoommateBoardDetail(boardId);
   const currentMemberId = getAccessTokenMemberId() ?? session?.user.id;
-  const post = useMemo(() => {
-    if (!fetchedPost) return null;
-    const isFetchedPostOwner =
-      (currentMemberId != null && String(currentMemberId) === String(fetchedPost.author.id)) ||
-      session?.user.name === fetchedPost.author.name;
-    const sessionAvatar = session?.user.avatarUrl?.trim();
-    if (!isFetchedPostOwner || fetchedPost.author.avatarUrl?.trim() || !sessionAvatar) {
-      return fetchedPost;
-    }
-    return {
-      ...fetchedPost,
-      author: { ...fetchedPost.author, avatarUrl: sessionAvatar },
-    };
-  }, [currentMemberId, fetchedPost, session?.user.avatarUrl, session?.user.name]);
+  const { applyToPost: applyMyProfile } = useMyProfileAuthor();
+  const post = useMemo(
+    () => (fetchedPost ? applyMyProfile(fetchedPost) : null),
+    [applyMyProfile, fetchedPost],
+  );
   // 생활 패턴 8종 타일은 서버 라벨/값을 그대로 쓰기 위해 명세 원본 응답을 함께 구독한다.
   // useRoommateBoardDetail 과 같은 쿼리 키라 추가 네트워크 요청은 발생하지 않는다.
   const { data: rawDetail } = useApi(

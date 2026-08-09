@@ -6,7 +6,6 @@ import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type BoardListQuery,
-  getAccessTokenMemberId,
   getPreferenceAll,
   regionBackendId,
   roomTypeBackendId,
@@ -17,7 +16,7 @@ import {
   useAlarms,
   type RoommateMatchCardModel,
 } from '@/lib/api';
-import { useModeration, useSession, type RoomPost } from '@/lib/domain';
+import { useModeration, useMyProfileAuthor, useSession, type RoomPost } from '@/lib/domain';
 import { useRequireLogin } from '@/lib/auth';
 import {
   goNotifications,
@@ -110,6 +109,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
   const { isPostBlocked, isUserBlocked } = useModeration();
+  const { applyToPosts: applyMyProfile } = useMyProfileAuthor();
   const setBoardLiked = useRoommateBoardLikeActions();
   const setMatchLiked = useRoommateMatchLikeActions();
   const [sort, setSort] = useState<ExploreSort>('latest');
@@ -159,32 +159,12 @@ export function useExploreScreen(): UseExploreScreenReturn {
     }, [reloadRooms]),
   );
 
-  const currentMemberId = getAccessTokenMemberId() ?? session?.user.id;
   const visiblePosts = useMemo(() => {
-    const currentUserAvatar = session?.user.avatarUrl?.trim();
-    const postsWithCurrentUserAvatar = (posts ?? []).map((post) => {
-      const isCurrentUser =
-        (currentMemberId != null && String(currentMemberId) === String(post.author.id)) ||
-        session?.user.name === post.author.name;
-      if (!isCurrentUser || post.author.avatarUrl?.trim() || !currentUserAvatar) return post;
-      return {
-        ...post,
-        author: { ...post.author, avatarUrl: currentUserAvatar },
-      };
-    });
-    const safe = postsWithCurrentUserAvatar.filter(
+    const safe = applyMyProfile(posts ?? []).filter(
       (post) => !isPostBlocked(post.id) && !isUserBlocked(post.author.id),
     );
     return sortPosts(safe, sort);
-  }, [
-    posts,
-    currentMemberId,
-    session?.user.avatarUrl,
-    session?.user.name,
-    isPostBlocked,
-    isUserBlocked,
-    sort,
-  ]);
+  }, [posts, applyMyProfile, isPostBlocked, isUserBlocked, sort]);
 
   const {
     data: matchList,
