@@ -29,7 +29,7 @@ export function ReadyPageTitle({
   return (
     <View className="flex-row items-end justify-between gap-4 px-4 pb-5 pt-4">
       <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-[26px] font-bold leading-[39px] text-[#17171B]">{title}</Text>
+        <Text className="text-xl font-bold leading-[39px] text-[#17171B]">{title}</Text>
         {subtitle ? (
           <Text className="text-sm leading-[21px] text-[#696976]">{subtitle}</Text>
         ) : null}
