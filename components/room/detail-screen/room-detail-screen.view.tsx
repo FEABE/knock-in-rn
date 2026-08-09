@@ -597,14 +597,17 @@ function OptionsBlock({ options }: { options: RoomOption[] }) {
 
   return (
     <ReadySection title="옵션">
-      <View className="flex-row flex-wrap justify-around gap-2 py-2">
+      <View className="flex-row flex-wrap py-2" style={{ rowGap: 16 }}>
         {options.map((option) => {
           const fromMeta = metaById.get(option.id);
           const label = option.name || fromMeta?.label || `옵션 #${option.id}`;
           return (
-            <View key={option.id} className="min-w-[72px] flex-1 items-center gap-2">
+            <View key={option.id} className="h-[90px] w-1/4 items-center gap-2 px-1">
               <RoomOptionArtwork label={label} image={fromMeta?.image} size={40} />
-              <Text className="text-center text-[14px] font-medium leading-[21px] text-[#17171B]">
+              <Text
+                numberOfLines={2}
+                className="text-center text-[14px] font-medium leading-[21px] text-[#17171B]"
+              >
                 {label}
               </Text>
             </View>
