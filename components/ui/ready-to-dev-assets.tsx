@@ -10,6 +10,7 @@ type RoomTypeArtworkProps = {
 
 type ArtworkProps = {
   size?: number;
+  height?: number;
 };
 
 type RoomOptionArtworkProps = ArtworkProps & {
@@ -99,9 +100,9 @@ export function RoomOptionArtwork({ label, image, size = 22 }: RoomOptionArtwork
   );
 }
 
-export function EmptyHouseArtwork({ size = 180 }: ArtworkProps) {
+export function EmptyHouseArtwork({ size = 180, height = size * 0.78 }: ArtworkProps) {
   return (
-    <View style={{ width: size, height: size * 0.78, overflow: 'hidden' }}>
+    <View style={{ width: size, height, overflow: 'hidden' }}>
       <Image
         source={require('../../assets/images/figma-ready/empty-search-and-interest.png')}
         contentFit="fill"

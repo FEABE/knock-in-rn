@@ -56,11 +56,17 @@ export function VerificationEmailFlowScreen({
 
 function Header({ title, onBack }: { title: string; onBack: () => void }) {
   return (
-    <View className="flex-row items-center gap-2 px-3 py-2">
-      <Pressable onPress={onBack} className="h-9 w-9 items-center justify-center">
-        <Ionicons name="chevron-back" size={24} color="#404040" />
+    <View className="h-12 items-center justify-center px-4">
+      <Pressable
+        onPress={onBack}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="뒤로 가기"
+        className="absolute left-3 h-8 w-8 items-center justify-center"
+      >
+        <Ionicons name="chevron-back" size={24} color="#696976" />
       </Pressable>
-      <Text className="text-base font-semibold text-neutral-900">{title}</Text>
+      <Text className="text-[17px] font-medium leading-[26px] text-[#17171B]">{title}</Text>
     </View>
   );
 }
