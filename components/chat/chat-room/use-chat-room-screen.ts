@@ -63,6 +63,13 @@ export type UseChatRoomScreenReturn = {
   inputBottomPadding: number;
   scrollRef: MutableRefObject<ScrollView | null>;
   requestSheetVisible: boolean;
+  /** 헤더 더보기(⋯) 바텀시트: 사용자 차단하기 / 사용자 신고하기 / 채팅방 나가기. */
+  menuSheetVisible: boolean;
+  openMenuSheet: () => void;
+  closeMenuSheet: () => void;
+  blockPeer: () => void;
+  reportPeer: () => void;
+  leaveFromMenu: () => void;
   /** 전체화면으로 펼쳐 볼 이미지. null이면 뷰어가 닫힌 상태. */
   imageViewer: { imageUrl: string; title: string } | null;
   openImageViewer: (message: ChatRoomBubble) => void;
@@ -101,7 +108,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const inputBottomPadding = useSafeBottomPadding(8, 8);
   const hydratedRoomIdRef = useRef('');
   const firstSent = useRef(false);
-  const { isUserBlocked } = useModeration();
+  const { isUserBlocked, blockUser } = useModeration();
   const { session } = useSession();
   const currentUserId = session?.user.id ?? 'me';
   const { data: room, loading, error, reload } = useChatRoomDetail(chatRoomId, currentUserId);
@@ -363,6 +370,61 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   );
   const closeImageViewer = useCallback(() => setImageViewer(null), []);
 
+  const [menuSheetVisible, setMenuSheetVisible] = useState(false);
+
+  // 시트(Modal)가 닫히는 도중 Alert/네비게이션을 띄우면 iOS에서 dismiss 중인 모달에
+  // 붙어 묻힐 수 있어, 닫힘 애니메이션이 끝난 뒤 실행한다.
+  const closeMenuSheetThen = useCallback((action: () => void) => {
+    setMenuSheetVisible(false);
+    setTimeout(action, 350);
+  }, []);
+
+  const blockPeer = useCallback(() => {
+    if (!room) return;
+    closeMenuSheetThen(() => {
+      Alert.alert('사용자 차단', `${room.peer.name}님을 차단할까요?`, [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '차단',
+          style: 'destructive',
+          onPress: () => blockUser(room.peer.id),
+        },
+      ]);
+    });
+  }, [blockUser, closeMenuSheetThen, room]);
+
+  const reportPeer = useCallback(() => {
+    if (!room) return;
+    closeMenuSheetThen(() => {
+      router.push({
+        pathname: '/moderation/report',
+        params: { target: 'match', id: room.peer.id },
+      } as never);
+    });
+  }, [closeMenuSheetThen, room, router]);
+
+  const confirmLeave = useCallback(() => {
+    if (!room) return;
+    Alert.alert('채팅방 나가기', '이 채팅방을 나갈까요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '나가기',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await leaveChat(room.id);
+            router.back();
+          } catch (leaveError) {
+            Alert.alert(
+              '나가기 실패',
+              leaveError instanceof Error ? leaveError.message : '잠시 후 다시 시도해주세요.',
+            );
+          }
+        },
+      },
+    ]);
+  }, [leaveChat, room, router]);
+
   useEffect(() => {
     const timer = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(timer);
@@ -388,6 +450,12 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     inputBottomPadding,
     scrollRef,
     requestSheetVisible,
+    menuSheetVisible,
+    openMenuSheet: () => setMenuSheetVisible(true),
+    closeMenuSheet: () => setMenuSheetVisible(false),
+    blockPeer,
+    reportPeer,
+    leaveFromMenu: () => closeMenuSheetThen(confirmLeave),
     imageViewer,
     openImageViewer,
     closeImageViewer,
@@ -400,27 +468,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     cancelRequest: () => confirmRequestAction('cancel'),
     sendMessage,
     pickAndSendImage,
-    onLeave: () => {
-      if (!room) return;
-      Alert.alert('채팅방 나가기', '이 채팅방을 나갈까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '나가기',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await leaveChat(room.id);
-              router.back();
-            } catch (leaveError) {
-              Alert.alert(
-                '나가기 실패',
-                leaveError instanceof Error ? leaveError.message : '잠시 후 다시 시도해주세요.',
-              );
-            }
-          },
-        },
-      ]);
-    },
+    onLeave: confirmLeave,
   };
 }
 

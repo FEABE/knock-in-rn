@@ -197,6 +197,11 @@ export function ReadyChatComposer({
           editable={!disabled}
           multiline
           maxLength={500}
+          returnKeyType="send"
+          submitBehavior="submit"
+          onSubmitEditing={() => {
+            if (canSend) onSend?.();
+          }}
           className="max-h-24 p-0 text-sm leading-5 text-[#17171B]"
         />
       </View>

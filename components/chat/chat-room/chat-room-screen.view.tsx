@@ -12,6 +12,8 @@ import {
   ReadyChatSystemNotice,
 } from '@/components/ui/ready-to-dev-chat';
 import {
+  ReadyActionRow,
+  ReadyActionSheet,
   ReadyBadge,
   ReadyChatStatusBadge,
   ReadyProfileAvatar,
@@ -46,7 +48,12 @@ export function ChatRoomScreenView({
   processingRequest,
   inputBottomPadding,
   onBack,
-  onLeave,
+  menuSheetVisible,
+  openMenuSheet,
+  closeMenuSheet,
+  blockPeer,
+  reportPeer,
+  leaveFromMenu,
   openRequestSheet,
   closeRequestSheet,
   confirmRequest,
@@ -70,7 +77,12 @@ export function ChatRoomScreenView({
   return (
     <>
       <Animated.View className="flex-1 bg-white" style={keyboardAvoidingStyle}>
-        <ChatHeader peer={room.peer} matched={room.matched} onBack={onBack} onLeave={onLeave} />
+        <ChatHeader
+          peer={room.peer}
+          matched={room.matched}
+          onBack={onBack}
+          onMenuPress={openMenuSheet}
+        />
 
         <RequestStatusBanner
           matched={room.matched}
@@ -123,6 +135,14 @@ export function ChatRoomScreenView({
         />
       </Animated.View>
 
+      <ChatRoomMenuSheet
+        open={menuSheetVisible}
+        onOpenChange={(open) => !open && closeMenuSheet()}
+        onBlock={blockPeer}
+        onReport={reportPeer}
+        onLeave={leaveFromMenu}
+      />
+
       {/* 열 때마다 새로 마운트해 translateY/closingRef/Modal 인스턴스를 초기 상태로 되돌린다.
           (항상 마운트해 두면 스와이프로 닫은 뒤 stale 애니메이션 값이 남아 두 번째 열기가 깨진다.) */}
       {imageViewer ? (
@@ -148,7 +168,7 @@ export function ChatRoomBlockedView({
 }) {
   return (
     <View className="flex-1 bg-white">
-      <ChatHeader peer={peer} matched={false} onBack={onBack} onLeave={onBack} />
+      <ChatHeader peer={peer} matched={false} onBack={onBack} onMenuPress={onBack} />
       <ReadyChatRestrictionBanner kind="blocked" />
       <ScrollView className="flex-1 bg-white" contentContainerClassName="gap-5 px-4 py-3">
         <TimelineList
@@ -264,16 +284,52 @@ function MatchedPill() {
   );
 }
 
+/** 헤더 더보기(⋯) 바텀시트 — Figma: 사용자 차단하기 / 사용자 신고하기 / 채팅방 나가기. */
+function ChatRoomMenuSheet({
+  open,
+  onOpenChange,
+  onBlock,
+  onReport,
+  onLeave,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onBlock: () => void;
+  onReport: () => void;
+  onLeave: () => void;
+}) {
+  return (
+    <ReadyActionSheet open={open} onOpenChange={onOpenChange}>
+      <View>
+        <ReadyActionRow
+          icon="ban-outline"
+          label="사용자 차단하기"
+          tone="danger"
+          divider
+          onPress={onBlock}
+        />
+        <ReadyActionRow
+          icon="notifications-outline"
+          label="사용자 신고하기"
+          divider
+          onPress={onReport}
+        />
+        <ReadyActionRow icon="exit-outline" label="채팅방 나가기" onPress={onLeave} />
+      </View>
+    </ReadyActionSheet>
+  );
+}
+
 function ChatHeader({
   peer,
   matched,
   onBack,
-  onLeave,
+  onMenuPress,
 }: {
   peer: UserSummary;
   matched: boolean;
   onBack: () => void;
-  onLeave: () => void;
+  onMenuPress: () => void;
 }) {
   return (
     <View className="flex-row items-center gap-2 border-b border-[#F1F1F6] px-3 pb-2.5 pt-1">
@@ -304,7 +360,7 @@ function ChatHeader({
         </View>
       </View>
       <Pressable
-        onPress={onLeave}
+        onPress={onMenuPress}
         accessibilityRole="button"
         accessibilityLabel="채팅방 메뉴"
         className="h-10 w-10 items-center justify-center"
