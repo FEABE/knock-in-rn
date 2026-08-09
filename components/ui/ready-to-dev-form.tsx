@@ -88,8 +88,11 @@ export function ReadyTextAreaField({
           textAlignVertical="top"
           className="min-h-[72px] flex-1 p-0 text-sm leading-[21px] text-[#17171B]"
         />
-        <Text className="self-end text-xs text-[#696976]">
-          {value.length}/{maxLength}
+        <Text className="self-end text-xs">
+          <Text className={value.length > 0 ? 'font-medium text-[#696976]' : 'text-[#AAAABA]'}>
+            {value.length}
+          </Text>
+          <Text className="text-[#AAAABA]">/{maxLength}</Text>
         </Text>
       </View>
       {error ? <Text className="text-xs text-[#D63D4A]">{error}</Text> : null}
