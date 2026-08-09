@@ -2,7 +2,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, Text, View, type GestureResponderEvent } from 'react-native';
 
-import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
+import { RoommateConditionChip } from '@/components/ui/roommate-condition-chip';
 import { useRequireLogin } from '@/lib/auth';
 import type { RoommateMatchCardModel } from '@/lib/api';
 
@@ -131,18 +131,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
           directionalLockEnabled
         >
           {match.lifestyleChips.map((chip) => (
-            <View
-              key={chip.key}
-              className="h-9 max-w-[149px] shrink-0 flex-row items-center justify-center gap-2 rounded-lg border border-[#DADAE8]/80 bg-white px-[15px]"
-            >
-              <PriorityArtwork label={chip.label} image={chip.image} size={22} />
-              <Text
-                numberOfLines={1}
-                className="text-[14px] font-medium leading-[21px] text-[#696976]"
-              >
-                {chip.label}
-              </Text>
-            </View>
+            <RoommateConditionChip key={chip.key} label={chip.label} image={chip.image} />
           ))}
         </ScrollView>
       ) : null}
