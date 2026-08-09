@@ -94,7 +94,6 @@ export type BoardListItem = BoardListItemSwagger &
     createdAt: string;
     viewer: number;
     isPopular: boolean;
-    isNew: boolean;
     isLike: boolean;
   }>;
 
@@ -272,7 +271,6 @@ const MOCK_BOARDS: BoardListItem[] = [
     createAt: '2026-05-10T09:00:00Z',
     viewer: 312,
     isPopular: true,
-    isNew: false,
     interested: false,
   },
   {
@@ -287,7 +285,6 @@ const MOCK_BOARDS: BoardListItem[] = [
     createAt: '2026-05-08T09:00:00Z',
     viewer: 187,
     isPopular: false,
-    isNew: false,
     interested: false,
   },
 ];
@@ -535,7 +532,6 @@ function normalizeBoardListItem(item: BoardListItemSwagger): BoardListItem {
     writer,
     createAt,
     viewer,
-    isNew: hasValue(item.badges, 'NEW'),
     isPopular: hasValue(item.badges, 'HOT'),
   };
 }

@@ -51,7 +51,6 @@ export function RoomCardView({
         <View className="absolute inset-0 bg-[#17171B]/20" pointerEvents="none" />
 
         <View className="absolute left-2.5 top-2.5 flex-row gap-1">
-          {badge === 'new' ? <NewBadgePill /> : null}
           {badge === 'hot' ? <HotBadgePill /> : null}
           <RoomTypePill label={roomTypeLabel} />
         </View>
@@ -155,19 +154,6 @@ export function HotBadgePill() {
     >
       <Text style={CHIP_TEXT_STYLE} className="text-[14px] font-semibold leading-[21px] text-white">
         HOT
-      </Text>
-    </View>
-  );
-}
-
-export function NewBadgePill() {
-  return (
-    <View
-      className="h-[26px] items-center justify-center rounded bg-[#4C87F6] px-1.5"
-      style={CHIP_SHADOW_STYLE}
-    >
-      <Text style={CHIP_TEXT_STYLE} className="text-[14px] font-semibold leading-[21px] text-white">
-        NEW
       </Text>
     </View>
   );

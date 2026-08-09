@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { RoomPost } from '@/lib/domain';
 
-export type RoomCardBadge = 'new' | 'hot' | null;
+export type RoomCardBadge = 'hot' | null;
 
 export type UseRoomCardProps = {
   post: RoomPost;

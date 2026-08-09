@@ -67,7 +67,7 @@ export type RoomPost = {
   liked?: boolean;
   compatibilityScore?: number;
   compatibilityDetails?: { label: string; score: number }[];
-  listBadge?: 'new' | 'hot';
+  listBadge?: 'hot';
   preferredRoommate?: {
     genderLabel?: string;
     smokingLabel?: string;

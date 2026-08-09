@@ -39,9 +39,9 @@ function bool(value: string | boolean | undefined): boolean {
   return value === true || value === 'true';
 }
 
-function hasBoardBadge(item: BoardListItem, badge: 'NEW' | 'HOT'): boolean {
+function hasHotBoardBadge(item: BoardListItem): boolean {
   const badges = Array.isArray(item.badges) ? item.badges : item.badges ? [item.badges] : [];
-  return badges.some((value) => value.trim().toUpperCase() === badge);
+  return badges.some((value) => value.trim().toUpperCase() === 'HOT');
 }
 
 /**
@@ -107,12 +107,7 @@ export function boardListItemToRoomPost(item: BoardListItem): RoomPost {
     }),
     description: '',
     liked: bool(item.interested ?? item.isLike),
-    listBadge:
-      item.isNew || hasBoardBadge(item, 'NEW')
-        ? 'new'
-        : item.isPopular || hasBoardBadge(item, 'HOT')
-          ? 'hot'
-          : undefined,
+    listBadge: item.isPopular || hasHotBoardBadge(item) ? 'hot' : undefined,
   };
 }
 
