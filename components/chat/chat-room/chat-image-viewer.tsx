@@ -13,7 +13,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import { FlatList, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DISMISS_DRAG_DISTANCE = 100;
 const DISMISS_DRAG_VELOCITY = 600;
@@ -43,6 +43,8 @@ export function ChatImageViewer({
 }) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, initialWindowMetrics?.insets.top ?? 0);
+  const bottomInset = Math.max(insets.bottom, initialWindowMetrics?.insets.bottom ?? 0);
   const images = useMemo(
     () => (imageUrls?.length ? imageUrls.filter(Boolean) : imageUrl ? [imageUrl] : []),
     [imageUrl, imageUrls],
@@ -102,13 +104,14 @@ export function ChatImageViewer({
       animationType="fade"
       transparent
       statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="light" />
         <Reanimated.View className="flex-1 bg-[#17171B]" style={backdropStyle} />
         <Reanimated.View className="absolute inset-0" style={viewerStyle}>
-          <View className="flex-1" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
+          <View className="flex-1" style={{ paddingTop: topInset, paddingBottom: bottomInset }}>
             <View className="h-[52px] flex-row items-center justify-between px-4">
               <Pressable
                 onPress={onClose}
