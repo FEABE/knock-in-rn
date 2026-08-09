@@ -154,7 +154,7 @@ export function useMyPageHomeScreen(): UseMyPageHomeScreenReturn {
       {
         icon: 'people-outline',
         label: '룸메이트 관리',
-        sub: '합의서 · 캘린더 · 연결 해제',
+        sub: '내 룸메이트 확인 · 연결 해제',
         onPress: () => goMypageRoommate(router),
       },
       {
