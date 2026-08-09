@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/headless';
 
@@ -85,10 +85,10 @@ export function ReadyScreenHeader({
 
 const SEARCH_INPUT_STYLE = {
   includeFontPadding: false,
-  lineHeight: 21,
   paddingBottom: 0,
   paddingTop: 0,
   textAlignVertical: 'center',
+  ...(Platform.OS === 'ios' ? { lineHeight: undefined } : { lineHeight: 21 }),
 } as const;
 
 const SEARCH_PLACEHOLDER_STYLE = {
@@ -151,7 +151,7 @@ export function ReadySearchHeader({
             returnKeyType="search"
             autoFocus={autoFocus}
             style={SEARCH_INPUT_STYLE}
-            className="h-[21px] w-full p-0 text-[14px] font-medium text-[#17171B]"
+            className="h-[38px] w-full p-0 text-[14px] font-medium text-[#17171B]"
           />
         </View>
         {value.length > 0 ? (
