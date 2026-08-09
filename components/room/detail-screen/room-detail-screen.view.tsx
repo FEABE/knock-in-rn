@@ -718,7 +718,7 @@ function PreferredRoommateBlock({ post }: { post: RoomPost }) {
 
       {priorityItems.length ? (
         <View className="mt-3 gap-3">
-          <Text className="text-[15px] font-semibold leading-6 text-[#256EF4]">우선순위</Text>
+          <Text className="text-base font-semibold leading-6 text-[#256EF4]">우선순위</Text>
           <View className="flex-row flex-wrap gap-2">
             {priorityItems.map((condition, index) => (
               <RoommatePriorityChip
