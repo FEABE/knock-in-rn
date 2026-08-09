@@ -75,10 +75,6 @@ export function ChatListScreenView({
 
 function ChatRoomRow({ row }: { row: ChatListRow }) {
   const name = row.room.name ?? row.room.memberName ?? '이름 없음';
-  const matched =
-    row.room.isRoommate === true ||
-    row.room.isAgree === true ||
-    row.room.roommateStatus === 'ACCEPTED';
   return (
     <Pressable
       onPress={row.onPress}
@@ -100,7 +96,7 @@ function ChatRoomRow({ row }: { row: ChatListRow }) {
             </Text>
             {row.proposal ? (
               <ReadyChatStatusBadge status="request" />
-            ) : matched ? (
+            ) : row.isCurrentRoommate ? (
               <ReadyChatStatusBadge status="roommate" />
             ) : null}
           </View>

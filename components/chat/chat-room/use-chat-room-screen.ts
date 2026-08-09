@@ -111,14 +111,15 @@ const LIMIT_TOAST_DURATION_MS = 2000;
 /** 양쪽 중 한 명이라도 이미 룸메이트가 있을 때 서버가 409로 내려주는 코드. */
 const ROOMMATE_ALREADY_EXISTS = 'ROOMMATE_ALREADY_EXISTS';
 
-/** 내가 이미 다른 룸메이트와 매칭되어 있는지. 실패는 조용히 false(화면 흐름을 막지 않는다). */
-async function fetchSelfHasRoommate(): Promise<boolean> {
-  if (USE_MOCK) return false;
+/** 현재 내 룸메이트 memberId. 조회 실패나 룸메이트 없음은 null로 처리한다. */
+async function fetchMyRoommateMemberId(): Promise<string | null> {
+  if (USE_MOCK) return null;
   try {
     const res = await getMyRoommate();
-    return !res.error && Boolean(res.data?.myRoommateInfo);
+    const memberId = res.data?.myRoommateInfo?.memberId;
+    return !res.error && memberId != null ? String(memberId) : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -134,7 +135,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const { requestBlock } = useAccountActions();
   const { session } = useSession();
   const currentUserId = session?.user.id ?? 'me';
-  const { data: room, loading, error, reload } = useChatRoomDetail(chatRoomId, currentUserId);
+  const { data: roomDetail, loading, error, reload } = useChatRoomDetail(chatRoomId, currentUserId);
   const { leaveChat, uploadImage, uploadingImage } = useChatRoomActions();
   const {
     requestRoommate,
@@ -172,24 +173,34 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   );
 
   const [requestSheetVisible, setRequestSheetVisible] = useState(false);
-  const [selfHasRoommate, setSelfHasRoommate] = useState(false);
+  const [myRoommateMemberId, setMyRoommateMemberId] = useState<string | null>(null);
   const [imageViewer, setImageViewer] = useState<{ imageUrl: string; title: string } | null>(null);
 
-  // 룸메이트 요청 가능 여부 판정에는 "내가 이미 매칭됐는지"가 필요하다.
-  // 방이 바뀔 때마다 1회만 조회하고, 실패는 조용히 false로 둔다(화면 흐름을 막지 않는다).
-  const roomId = room?.id;
-  const roomMatched = room?.matched === true;
+  // opponentHasRoommate는 상대에게 룸메이트가 있는지만 뜻한다. 현재 상대가 실제 내
+  // 룸메이트인지는 /roommates/me의 memberId와 상대 id를 직접 대조해야 한다.
+  const roomId = roomDetail?.id;
+  const peerId = roomDetail?.peer.id;
   useEffect(() => {
-    setSelfHasRoommate(false);
-    if (!roomId || roomMatched || USE_MOCK) return;
+    setMyRoommateMemberId(null);
+    if (!roomId || !peerId || USE_MOCK) return;
     let cancelled = false;
-    fetchSelfHasRoommate().then((has) => {
-      if (!cancelled) setSelfHasRoommate(has);
+    fetchMyRoommateMemberId().then((memberId) => {
+      if (!cancelled) setMyRoommateMemberId(memberId);
     });
     return () => {
       cancelled = true;
     };
-  }, [roomId, roomMatched]);
+  }, [peerId, roomId]);
+
+  const roomMatched = USE_MOCK
+    ? roomDetail?.matched === true
+    : myRoommateMemberId != null && myRoommateMemberId === peerId;
+  const selfHasRoommate = myRoommateMemberId != null && !roomMatched;
+  const room = useMemo(
+    () =>
+      roomDetail ? { ...roomDetail, matched: roomMatched, acceptedRequest: roomMatched } : null,
+    [roomDetail, roomMatched],
+  );
 
   useEffect(() => {
     if (!room) return;
@@ -397,13 +408,15 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     if (!room?.roommateRequest) return;
     try {
       await acceptRoommateRequest(room.roommateRequest.id);
+      setMyRoommateMemberId(await fetchMyRoommateMemberId());
     } catch (requestError) {
       // 이미 한쪽이 매칭된 뒤의 수락은 서버가 409로 막는다. 알럿 대신 최신 상태를 다시 받아와
       // 배너/카드가 "이미 매칭됨"을 그대로 보여주게 한다.
       if (apiErrorCode(requestError) === ROOMMATE_ALREADY_EXISTS) {
         reload();
-        const self = await fetchSelfHasRoommate();
-        setSelfHasRoommate(self);
+        const memberId = await fetchMyRoommateMemberId();
+        setMyRoommateMemberId(memberId);
+        const self = memberId != null && memberId !== room.peer.id;
         // 두 플래그 모두 상태를 못 잡으면 배너/카드가 안 바뀌어 무반응이 된다.
         // 그 경우에만 기존 알럿으로 폴백해 최소한의 피드백을 준다.
         if (!self && !room.opponentHasRoommate) showRequestError(requestError);
@@ -411,7 +424,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
       }
       showRequestError(requestError);
     }
-  }, [acceptRoommateRequest, reload, room?.opponentHasRoommate, room?.roommateRequest]);
+  }, [acceptRoommateRequest, reload, room]);
 
   // 거절은 시스템 Alert가 아니라 Figma 커스텀 팝업(ReadyConfirmDialog)으로 확인받는다.
   const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);

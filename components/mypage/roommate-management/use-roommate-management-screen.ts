@@ -37,7 +37,7 @@ export function useRoommateManagementScreen() {
   const selected = parseDate(selectedDate);
 
   const roommateState = useApi(['roommates', 'me'], () => getMyRoommate(), { retry: false });
-  const hasRoommate = Boolean(roommateState.data?.id);
+  const hasRoommate = roommateState.data?.myRoommateInfo?.memberId != null;
   const noRoommate = roommateState.error === '연결된 룸메이트가 없습니다.';
   const monthState = useApi(
     ['roommates', 'calendar', 'month', year, monthNumber],

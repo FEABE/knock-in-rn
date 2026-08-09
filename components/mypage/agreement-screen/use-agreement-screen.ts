@@ -57,7 +57,7 @@ export function useAgreementScreen(): UseAgreementScreenReturn {
     enabled,
     retry: false,
   });
-  const hasRoommate = Boolean(roommateState.data?.id);
+  const hasRoommate = roommateState.data?.myRoommateInfo?.memberId != null;
   const noRoommate = roommateState.error === '연결된 룸메이트가 없습니다.';
   const ruleState = useApi(['roommates', 'house-rules'], () => getHouseRules(), {
     enabled: enabled && hasRoommate,
