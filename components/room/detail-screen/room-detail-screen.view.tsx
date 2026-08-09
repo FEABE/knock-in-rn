@@ -72,6 +72,7 @@ type RoomDetailTab =
 export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
   const scrollRef = useRef<ScrollView>(null);
   const sectionOffsets = useRef<Partial<Record<RoomDetailTab, number>>>({});
+  const programmaticTab = useRef<RoomDetailTab | null>(null);
   const [activeTab, setActiveTab] = useState<RoomDetailTab>('compatibility');
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const tabs = useMemo(
@@ -101,8 +102,27 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
   const moveToSection = (tab: RoomDetailTab) => {
     const y = sectionOffsets.current[tab];
     if (y === undefined) return;
+    programmaticTab.current = tab;
     setActiveTab(tab);
-    scrollRef.current?.scrollTo({ y: Math.max(0, y - 44), animated: true });
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - ROOM_DETAIL_TAB_HEIGHT), animated: true });
+  };
+
+  const syncActiveTabFromScroll = (scrollY: number) => {
+    if (programmaticTab.current) return;
+
+    const sectionY = scrollY + ROOM_DETAIL_TAB_HEIGHT + 1;
+    let nextTab = tabs[0]?.key;
+
+    tabs.forEach((tab) => {
+      const offset = sectionOffsets.current[tab.key];
+      if (offset !== undefined && offset <= sectionY) {
+        nextTab = tab.key;
+      }
+    });
+
+    if (nextTab && nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
   };
 
   if (props.loading) {
@@ -160,6 +180,15 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         className="flex-1"
         contentContainerClassName={props.isOwner ? 'pb-6' : 'pb-28'}
         stickyHeaderIndices={[2]}
+        scrollEventThrottle={16}
+        onScroll={(event) => syncActiveTabFromScroll(event.nativeEvent.contentOffset.y)}
+        onScrollBeginDrag={() => {
+          programmaticTab.current = null;
+        }}
+        onMomentumScrollEnd={(event) => {
+          programmaticTab.current = null;
+          syncActiveTabFromScroll(event.nativeEvent.contentOffset.y);
+        }}
       >
         <PhotoCarousel
           photos={props.photos}
@@ -326,6 +355,8 @@ const ROOM_DETAIL_TABS: { key: RoomDetailTab; label: string }[] = [
   { key: 'lifestyle', label: '생활 패턴' },
 ];
 
+const ROOM_DETAIL_TAB_HEIGHT = 35;
+
 function RoomDetailTabs({
   tabs,
   active,
@@ -337,10 +368,22 @@ function RoomDetailTabs({
 }) {
   const { width } = useWindowDimensions();
   const tabWidth = width / 3;
+  const tabScrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const activeIndex = tabs.findIndex((tab) => tab.key === active);
+    if (activeIndex < 0) return;
+
+    tabScrollRef.current?.scrollTo({
+      x: Math.max(0, activeIndex - 2) * tabWidth,
+      animated: true,
+    });
+  }, [active, tabWidth, tabs]);
 
   return (
     <View className="border-b border-[#ECECF3] bg-white">
       <ScrollView
+        ref={tabScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ minWidth: tabWidth * tabs.length }}
@@ -353,10 +396,12 @@ function RoomDetailTabs({
               onPress={() => onPress(tab.key)}
               accessibilityRole="tab"
               accessibilityState={{ selected }}
-              className={`h-11 items-center justify-center border-b-2 px-3 ${
-                selected ? 'border-[#256EF4]' : 'border-transparent'
-              }`}
-              style={{ width: tabWidth }}
+              className="items-center justify-center border-b-2 px-3"
+              style={{
+                width: tabWidth,
+                height: ROOM_DETAIL_TAB_HEIGHT,
+                borderBottomColor: selected ? '#256EF4' : 'transparent',
+              }}
             >
               <Text
                 className={
@@ -407,7 +452,7 @@ function PhotoCarousel({
   roomTypeLabel: string;
 }) {
   const { width } = useWindowDimensions();
-  const photoHeight = 180;
+  const photoHeight = 170;
 
   return (
     <View className="relative">
@@ -440,11 +485,11 @@ function PhotoCarousel({
           ))}
         </ScrollView>
       )}
-      <View className="absolute left-2.5 top-3 flex-row gap-1">
+      <View className="absolute left-4 top-3 flex-row gap-1">
         <RoomTypePill label={roomTypeLabel} />
       </View>
       {photos.length > 1 ? (
-        <View className="absolute inset-x-0 bottom-3 flex-row justify-center gap-1.5">
+        <View className="absolute inset-x-0 bottom-2 flex-row justify-center gap-1.5">
           {photos.map((url, photoIndex) => (
             <View
               key={`${url}-dot-${photoIndex}`}
@@ -459,29 +504,32 @@ function PhotoCarousel({
 
 function TitleBlock({ post }: { post: RoomPost }) {
   return (
-    <View className="gap-2 px-4 py-3">
+    <View className="min-h-[130px] gap-1 px-4 pb-4 pt-4">
       <View className="flex-row items-start justify-between gap-3">
-        <Text className="min-w-0 flex-1 text-[14px] font-semibold leading-[21px] text-[#17171B]">
+        <Text className="min-w-0 flex-1 text-[16px] font-bold leading-6 text-[#17171B]">
           {post.title}
         </Text>
-        <Text className="text-[12px] font-medium leading-[18px] text-[#AAAABA]">
+        <Text className="pt-0.5 text-[13px] font-medium leading-5 text-[#AAAABA]">
           {timeAgo(post.createdAt)}
         </Text>
       </View>
-      <Text className="text-[12px] font-medium leading-[18px] text-[#696976]">
+      <Text className="text-[13px] font-medium leading-5 text-[#696976]">
         {post.region.city} {post.region.district}
       </Text>
-      <View className="mt-1 flex-row items-center justify-between gap-3">
+      <View className="mt-2 flex-row items-center justify-between gap-3">
         <View className="min-w-0 flex-1 flex-row items-center gap-2">
-          <ReadyProfileAvatar name={post.author.name} imageUrl={post.author.avatarUrl} size={20} />
-          <Text numberOfLines={1} className="shrink text-[12px] font-medium text-[#696976]">
+          <ReadyProfileAvatar name={post.author.name} imageUrl={post.author.avatarUrl} size={24} />
+          <Text
+            numberOfLines={1}
+            className="shrink text-[13px] font-medium leading-5 text-[#AAAABA]"
+          >
             {post.author.name}
           </Text>
           <AuthorMetaPill author={post.author} />
         </View>
         <View className="flex-row items-baseline gap-1">
-          <Text className="text-[12px] font-medium leading-[18px] text-[#696976]">월세</Text>
-          <Text className="text-[16px] font-bold leading-6 text-[#17171B]">
+          <Text className="text-[16px] font-medium leading-6 text-[#696976]">월세</Text>
+          <Text className="text-[18px] font-bold leading-[27px] text-[#17171B]">
             {post.deposit.toLocaleString()}/{post.monthlyRent.toLocaleString()}/
             {post.maintenanceFee ?? 0}
           </Text>
@@ -509,7 +557,7 @@ function AuthorMetaPill({ author }: { author: UserSummary }) {
         />
       ) : null}
       <Text
-        className={`text-[12px] font-semibold leading-[18px] ${
+        className={`text-[13px] font-semibold leading-5 ${
           isMale ? 'text-[#0B78CB]' : isFemale ? 'text-[#DE3412]' : 'text-[#696976]'
         }`}
       >
