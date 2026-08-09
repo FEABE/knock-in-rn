@@ -1,9 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
-
-import { Image } from 'expo-image';
 
 import { GenderAgeChip } from '@/components/ui/gender-age-chip';
 import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
@@ -25,6 +31,7 @@ import { formatKstTime, isSameKstDay, kstClock, type ChatSocketStatus } from '@/
 import type { ChatRoom as DomainChatRoom, UserSummary } from '@/lib/domain';
 
 import { ChatImageViewer } from './chat-image-viewer';
+import { ChatPhotoPicker } from './chat-photo-picker';
 import type {
   ChatRoomBubble,
   ChatTimelineItem,
@@ -43,6 +50,7 @@ export function ChatRoomScreenView({
   draft,
   setDraft,
   canSend,
+  opponentLeft,
   selfHasRoommate,
   socketStatus,
   socketError,
@@ -64,10 +72,11 @@ export function ChatRoomScreenView({
   rejectRequest,
   cancelRequest,
   sendMessage,
-  pickAndSendImage,
-  pendingImage,
-  sendPendingImage,
-  cancelPendingImage,
+  photoPickerVisible,
+  openPhotoPicker,
+  closePhotoPicker,
+  sendImageFile,
+  launchCamera,
   rejectConfirmOpen,
   confirmReject,
   cancelReject,
@@ -80,8 +89,10 @@ export function ChatRoomScreenView({
     isStatusBarTranslucentAndroid: true,
     isNavigationBarTranslucentAndroid: true,
   });
+  // Android는 기본 adjustResize로 창 자체가 줄어들므로 여기서 또 패딩하면 키보드 높이만큼
+  // 이중 보정된다(입력창·토스트가 iOS보다 훨씬 위로 뜸). iOS만 수동 보정한다.
   const keyboardAvoidingStyle = useAnimatedStyle(() => ({
-    paddingBottom: keyboard.height.value,
+    paddingBottom: Platform.OS === 'ios' ? keyboard.height.value : 0,
   }));
 
   return (
@@ -94,14 +105,18 @@ export function ChatRoomScreenView({
           onMenuPress={openMenuSheet}
         />
 
-        <RequestStatusBanner
-          matched={room.matched}
-          request={room.roommateRequest}
-          processing={processingRequest}
-          selfHasRoommate={selfHasRoommate}
-          opponentHasRoommate={room.opponentHasRoommate}
-          onOpenRequestSheet={openRequestSheet}
-        />
+        {opponentLeft ? (
+          <ReadyChatRestrictionBanner kind="left" />
+        ) : (
+          <RequestStatusBanner
+            matched={room.matched}
+            request={room.roommateRequest}
+            processing={processingRequest}
+            selfHasRoommate={selfHasRoommate}
+            opponentHasRoommate={room.opponentHasRoommate}
+            onOpenRequestSheet={openRequestSheet}
+          />
+        )}
 
         <SocketStatusBanner status={socketStatus} error={socketError} onRetry={retrySocket} />
 
@@ -130,8 +145,10 @@ export function ChatRoomScreenView({
         <ReadyChatComposer
           value={draft}
           onChangeText={setDraft}
-          onAdd={pickAndSendImage}
+          onAdd={openPhotoPicker}
           onSend={sendMessage}
+          disabled={opponentLeft}
+          placeholder={opponentLeft ? '상대방이 나간 채팅방이에요' : undefined}
           sendDisabled={!canSend}
           uploading={uploadingImage}
           bottomPadding={inputBottomPadding}
@@ -142,6 +159,16 @@ export function ChatRoomScreenView({
           processing={processingRequest}
           onClose={closeRequestSheet}
           onConfirm={confirmRequest}
+        />
+
+        {/* 키보드가 올라온 상태에서 뜨는 토스트라, 키보드 패딩이 적용된 컨테이너 안에서
+            입력칸보다 충분히 위(대화 영역)에 띄운다. */}
+        <ReadyToast
+          visible={limitToastVisible}
+          message="최대 500자까지 보낼 수 있어요"
+          icon="alert-circle"
+          iconColor="#FFB020"
+          bottomOffset={inputBottomPadding + 180}
         />
       </Animated.View>
 
@@ -164,19 +191,12 @@ export function ChatRoomScreenView({
         onConfirm={() => void confirmReject()}
       />
 
-      <ChatImagePreviewDialog
-        image={pendingImage}
+      <ChatPhotoPicker
+        visible={photoPickerVisible}
         uploading={uploadingImage}
-        onCancel={cancelPendingImage}
-        onSend={() => void sendPendingImage()}
-      />
-
-      <ReadyToast
-        visible={limitToastVisible}
-        message="최대 500자까지 보낼 수 있어요"
-        icon="alert-circle"
-        iconColor="#FFB020"
-        bottomOffset={inputBottomPadding + 96}
+        onClose={closePhotoPicker}
+        onConfirm={(asset) => void sendImageFile(asset)}
+        onLaunchCamera={() => void launchCamera()}
       />
 
       {/* 열 때마다 새로 마운트해 translateY/closingRef/Modal 인스턴스를 초기 상태로 되돌린다.
@@ -196,10 +216,13 @@ export function ChatRoomScreenView({
 export function ChatRoomBlockedView({
   peer,
   messages = [],
+  bottomPadding = 0,
   onBack,
 }: {
   peer: UserSummary;
   messages?: ChatRoomBubble[];
+  /** 하단 안전영역 패딩. 없으면 입력칸이 홈 인디케이터 밑으로 파고든다. */
+  bottomPadding?: number;
   onBack: () => void;
 }) {
   return (
@@ -216,7 +239,12 @@ export function ChatRoomBlockedView({
           peer={peer}
         />
       </ScrollView>
-      <ReadyChatComposer value="" disabled placeholder="차단한 사용자에요" />
+      <ReadyChatComposer
+        value=""
+        disabled
+        placeholder="차단한 사용자에요"
+        bottomPadding={bottomPadding}
+      />
     </View>
   );
 }
@@ -317,64 +345,6 @@ function MatchedPill() {
         <Text className="text-[13px] font-medium text-[#4C87F6]">룸메이트가 되었어요</Text>
       </View>
     </View>
-  );
-}
-
-/** 잘못 전송한 사진은 삭제할 수 없으므로, 전송 전에 미리보기로 한 번 확인받는다. */
-function ChatImagePreviewDialog({
-  image,
-  uploading,
-  onCancel,
-  onSend,
-}: {
-  image: { uri: string } | null;
-  uploading: boolean;
-  onCancel: () => void;
-  onSend: () => void;
-}) {
-  return (
-    <Modal transparent animationType="fade" visible={image != null} onRequestClose={onCancel}>
-      <View className="flex-1 items-center justify-center bg-[#17171B]/40 px-9">
-        <View className="w-full max-w-[320px] gap-4 rounded-2xl bg-white px-5 pb-5 pt-5">
-          <Text className="text-center text-lg font-bold leading-[27px] text-[#17171B]">
-            이 사진을 보낼까요?
-          </Text>
-          {image ? (
-            <Image
-              source={{ uri: image.uri }}
-              contentFit="cover"
-              style={{ width: '100%', height: 220, borderRadius: 12 }}
-            />
-          ) : null}
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={onCancel}
-              disabled={uploading}
-              accessibilityRole="button"
-              accessibilityLabel="사진 전송 취소"
-              className="h-11 flex-1 items-center justify-center rounded-lg border border-[#DADAE8] active:bg-[#F6F6FA]"
-            >
-              <Text className="text-sm font-semibold text-[#696976]">취소</Text>
-            </Pressable>
-            <Pressable
-              onPress={onSend}
-              disabled={uploading}
-              accessibilityRole="button"
-              accessibilityLabel="사진 전송"
-              className={`h-11 flex-1 items-center justify-center rounded-lg bg-[#4C87F6] ${
-                uploading ? 'opacity-50' : 'active:opacity-85'
-              }`}
-            >
-              {uploading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text className="text-sm font-semibold text-white">전송</Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
   );
 }
 

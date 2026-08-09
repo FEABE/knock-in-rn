@@ -1,5 +1,9 @@
 import type { ExpoConfig } from 'expo/config';
 
+/** 방 게시글 업로드와 채팅 사진 보내기가 같은 사진 보관함 권한을 쓴다. */
+const PHOTOS_PERMISSION =
+  '방 게시글에 올리거나 채팅에서 사진을 보내기 위해 사진 보관함에 접근합니다.';
+
 const config: ExpoConfig = {
   name: '노크인',
   slug: 'knock-in-rn',
@@ -48,10 +52,23 @@ const config: ExpoConfig = {
     '@react-native-firebase/messaging',
     'expo-secure-store',
     'expo-apple-authentication',
+    // NSPhotoLibraryUsageDescription 은 expo-image-picker / expo-media-library 두 플러그인이
+    // 모두 건드리므로, 나중에 적용되는 쪽이 이기지 않도록 같은 문구를 양쪽에 둔다.
     [
       'expo-image-picker',
       {
-        photosPermission: '방 게시글에 올릴 사진을 선택하기 위해 사진 보관함 접근이 필요합니다.',
+        photosPermission: PHOTOS_PERMISSION,
+        cameraPermission: '채팅에서 사진을 찍어 보내기 위해 카메라를 사용합니다.',
+      },
+    ],
+    [
+      'expo-media-library',
+      {
+        photosPermission: PHOTOS_PERMISSION,
+        // 앱에서 사진을 저장하지 않으므로 저장 권한 문구는 두지 않는다.
+        savePhotosPermission: false,
+        // Android 13+ 는 READ_MEDIA_IMAGES 만 있으면 된다(동영상/오디오는 요청하지 않는다).
+        granularPermissions: ['photo'],
       },
     ],
     [

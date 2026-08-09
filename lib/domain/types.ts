@@ -136,6 +136,8 @@ export type ChatMessage = {
   sentAt: Date;
   kind?: 'text' | 'image' | 'system';
   imageUrl?: string;
+  /** 상대방 퇴장(LEFT_ROOM) 시스템 메시지 여부. 하나라도 있으면 전송을 막는다. */
+  leftRoom?: boolean;
 };
 
 export type RoommateRequestState = {

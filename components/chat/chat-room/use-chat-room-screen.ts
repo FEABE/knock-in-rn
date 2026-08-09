@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { Alert, type ScrollView } from 'react-native';
+import { Alert, Linking, type ScrollView } from 'react-native';
 
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
@@ -12,6 +12,7 @@ import {
   getMyRoommate,
   parseServerDate,
   USE_MOCK,
+  useAccountActions,
   useChatRoomActions,
   useChatRoomDetail,
   useChatSocket,
@@ -23,6 +24,8 @@ import {
   type ChatMessage,
   type ChatRoom as DomainChatRoom,
 } from '@/lib/domain';
+
+import type { ChatPhotoPickerAsset } from './chat-photo-picker';
 
 export type ChatRoomBubble = ChatMessage & { mine: boolean };
 
@@ -49,6 +52,8 @@ export type UseChatRoomScreenReturn = {
   draft: string;
   setDraft: (next: string) => void;
   canSend: boolean;
+  /** 상대방이 채팅방을 나가 더 이상 전송할 수 없는 상태. */
+  opponentLeft: boolean;
   loading: boolean;
   error: string | null;
   currentUserId: string;
@@ -82,11 +87,14 @@ export type UseChatRoomScreenReturn = {
   rejectRequest: () => void;
   cancelRequest: () => void;
   sendMessage: () => void;
-  pickAndSendImage: () => Promise<void>;
-  /** 전송 전 확인 대기 중인 사진. null이면 미리보기 닫힘. */
-  pendingImage: { uri: string; name: string; type: string } | null;
-  sendPendingImage: () => Promise<void>;
-  cancelPendingImage: () => void;
+  /** 인앱 사진 선택 모달(Figma "최근 항목")의 열림 상태. */
+  photoPickerVisible: boolean;
+  openPhotoPicker: () => void;
+  closePhotoPicker: () => void;
+  /** 선택/촬영한 사진을 업로드하고 IMAGE 메시지로 보낸다. */
+  sendImageFile: (file: ChatPhotoPickerAsset) => Promise<void>;
+  /** 사진 선택 모달의 카메라 타일 — 촬영 후 바로 전송한다. */
+  launchCamera: () => Promise<void>;
   /** 룸메이트 요청 거절 확인 다이얼로그(Figma 커스텀 팝업). */
   rejectConfirmOpen: boolean;
   confirmReject: () => Promise<void>;
@@ -123,6 +131,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const hydratedRoomIdRef = useRef('');
   const firstSent = useRef(false);
   const { isUserBlocked, blockUser } = useModeration();
+  const { requestBlock } = useAccountActions();
   const { session } = useSession();
   const currentUserId = session?.user.id ?? 'me';
   const { data: room, loading, error, reload } = useChatRoomDetail(chatRoomId, currentUserId);
@@ -220,6 +229,10 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     [currentUserId, messages],
   );
 
+  // 상대가 나간 방에서는 서버가 전송을 예외로 막는다. FE도 무조건 입력을 잠근다.
+  // LEFT_ROOM 행은 히스토리에 저장되므로, 소켓 이벤트를 놓치고 재진입해도 판정된다.
+  const opponentLeft = useMemo(() => messages.some((message) => message.leftRoom), [messages]);
+
   // room 객체는 소켓 reload마다 새 참조가 되므로 원시값으로 좁혀서 의존한다.
   const requestStatus = room?.roommateRequest?.status;
   const requestCreatedMs = room?.roommateRequest?.createdAt?.getTime();
@@ -285,34 +298,71 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     }
   }, [appendOptimisticMessage, chatRoomId, draft, room?.id, socket]);
 
-  // 사진 버튼은 `uploadingImage` 로 잠기지만, OS 피커가 떠 있는 동안에는 아직 업로드 전이라
-  // 잠기지 않는다. 연타로 피커가 두 번 열려 같은 사진이 두 번 전송되는 것을 동기 ref 로 막는다.
+  // OS 피커 대신 인앱 사진 선택 모달을 띄운다. 카메라 촬영은 이 모달의 첫 타일에서 시작된다.
+  const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
+
+  // 카메라는 OS 화면이 뜨는 동안 `uploadingImage` 로 잠기지 않는다(아직 업로드 전).
+  // 연타로 카메라가 두 번 열려 같은 사진이 두 번 전송되는 것을 동기 ref 로 막는다.
   const pickingImageRef = useRef(false);
 
-  // 잘못 보낸 사진은 삭제할 수 없으므로, 피커에서 고른 사진을 바로 보내지 않고
-  // 미리보기 확인을 거친 뒤에만 업로드·전송한다.
-  const [pendingImage, setPendingImage] = useState<{
-    uri: string;
-    name: string;
-    type: string;
-  } | null>(null);
-
-  const pickAndSendImage = useCallback(async () => {
-    if (pickingImageRef.current) return;
+  const openPhotoPicker = useCallback(() => {
+    if (opponentLeft) return;
     if (!USE_MOCK && socket.status !== 'connected') {
       Alert.alert('연결 확인', '채팅 서버 연결 후 이미지를 보낼 수 있어요.');
       return;
     }
+    setPhotoPickerVisible(true);
+  }, [opponentLeft, socket.status]);
+
+  const closePhotoPicker = useCallback(() => {
+    if (uploadingImage) return;
+    setPhotoPickerVisible(false);
+  }, [uploadingImage]);
+
+  const sendImageFile = useCallback(
+    async (file: ChatPhotoPickerAsset) => {
+      if (!room || uploadingImage) return;
+      try {
+        const uploaded = await uploadImage(room.id, file);
+        const imageUrl = uploaded?.imageUrl;
+        if (!imageUrl) throw new Error('업로드된 이미지 주소를 받지 못했습니다.');
+        const clientMessageId = USE_MOCK
+          ? `mock-image-${Date.now()}`
+          : socket.send({ type: 'IMAGE', message: '', imageUrl });
+        if (!clientMessageId) throw new Error('채팅 서버에 연결되지 않았습니다.');
+        appendOptimisticMessage(clientMessageId, '', 'image', imageUrl);
+        setPhotoPickerVisible(false);
+      } catch (uploadError) {
+        Alert.alert(
+          '이미지 전송 실패',
+          uploadError instanceof Error ? uploadError.message : '잠시 후 다시 시도해주세요.',
+        );
+      }
+    },
+    [appendOptimisticMessage, room, socket, uploadImage, uploadingImage],
+  );
+
+  // iOS 카메라 화면에는 "사진 사용" 확인이 이미 있으므로, 촬영 성공 시 미리보기 없이 바로 보낸다.
+  const launchCamera = useCallback(async () => {
+    if (pickingImageRef.current) return;
     pickingImageRef.current = true;
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: false,
-        quality: 0.85,
-      });
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          '카메라 권한 필요',
+          '설정에서 카메라 접근을 허용하면 사진을 찍어 보낼 수 있어요.',
+          [
+            { text: '취소', style: 'cancel' },
+            { text: '설정 열기', onPress: () => void Linking.openSettings() },
+          ],
+        );
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
       const asset = result.assets?.[0];
-      if (result.canceled || !asset || !room) return;
-      setPendingImage({
+      if (result.canceled || !asset) return;
+      await sendImageFile({
         uri: asset.uri,
         name: asset.fileName ?? `chat-${Date.now()}.jpg`,
         type: asset.mimeType ?? 'image/jpeg',
@@ -320,32 +370,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     } finally {
       pickingImageRef.current = false;
     }
-  }, [room, socket.status]);
-
-  const cancelPendingImage = useCallback(() => {
-    if (uploadingImage) return;
-    setPendingImage(null);
-  }, [uploadingImage]);
-
-  const sendPendingImage = useCallback(async () => {
-    if (!pendingImage || !room || uploadingImage) return;
-    try {
-      const uploaded = await uploadImage(room.id, pendingImage);
-      const imageUrl = uploaded?.imageUrl;
-      if (!imageUrl) throw new Error('업로드된 이미지 주소를 받지 못했습니다.');
-      const clientMessageId = USE_MOCK
-        ? `mock-image-${Date.now()}`
-        : socket.send({ type: 'IMAGE', message: '', imageUrl });
-      if (!clientMessageId) throw new Error('채팅 서버에 연결되지 않았습니다.');
-      appendOptimisticMessage(clientMessageId, '', 'image', imageUrl);
-      setPendingImage(null);
-    } catch (uploadError) {
-      Alert.alert(
-        '이미지 전송 실패',
-        uploadError instanceof Error ? uploadError.message : '잠시 후 다시 시도해주세요.',
-      );
-    }
-  }, [appendOptimisticMessage, pendingImage, room, socket, uploadImage, uploadingImage]);
+  }, [sendImageFile]);
 
   // 시트의 '요청하기' 버튼은 전송 중에도 눌리므로, 연타 시 두 번째 호출이 서버의
   // ROOMMATE_DUPLICATE("이미 대기중인 룸메이트 요청이 존재합니다.")로 떨어져
@@ -446,17 +471,36 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
 
   const blockPeer = useCallback(() => {
     if (!room) return;
+    const memberId = Number(room.peer.id);
     closeMenuSheetThen(() => {
+      if (!Number.isFinite(memberId)) {
+        Alert.alert('차단 실패', '상대 사용자 정보를 확인하지 못했습니다.');
+        return;
+      }
       Alert.alert('사용자 차단', `${room.peer.name}님을 차단할까요?`, [
         { text: '취소', style: 'cancel' },
         {
           text: '차단',
           style: 'destructive',
-          onPress: () => blockUser(room.peer.id),
+          onPress: () => {
+            // 서버에 차단을 등록해야 마이페이지 차단목록에 생기고 해제도 가능하다.
+            // (requestBlock이 차단목록 캐시 무효화까지 수행)
+            void (async () => {
+              try {
+                await requestBlock(memberId);
+                blockUser(room.peer.id);
+              } catch (blockError) {
+                Alert.alert(
+                  '차단 실패',
+                  blockError instanceof Error ? blockError.message : '잠시 후 다시 시도해주세요.',
+                );
+              }
+            })();
+          },
         },
       ]);
     });
-  }, [blockUser, closeMenuSheetThen, room]);
+  }, [blockUser, closeMenuSheetThen, requestBlock, room]);
 
   const reportPeer = useCallback(() => {
     if (!room) return;
@@ -502,7 +546,9 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     draft,
     setDraft: setDraftClamped,
     limitToastVisible,
-    canSend: draft.trim().length > 0 && (USE_MOCK || socket.status === 'connected'),
+    canSend:
+      !opponentLeft && draft.trim().length > 0 && (USE_MOCK || socket.status === 'connected'),
+    opponentLeft,
     loading,
     error,
     currentUserId,
@@ -536,10 +582,11 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     confirmReject,
     cancelReject: () => setRejectConfirmOpen(false),
     sendMessage,
-    pickAndSendImage,
-    pendingImage,
-    sendPendingImage,
-    cancelPendingImage,
+    photoPickerVisible,
+    openPhotoPicker,
+    closePhotoPicker,
+    sendImageFile,
+    launchCamera,
     onLeave: confirmLeave,
   };
 }
@@ -558,7 +605,16 @@ function socketEventToMessage(event: ChatSocketEnvelope): ChatMessage | null {
     payload.clientMessageId ??
     `${event.chatRoomId}-${payload.senderId ?? 'system'}-${sentAt.getTime()}-${payload.type ?? 'TEXT'}`;
   if (payload.type === 'LEFT_ROOM' || event.eventType === 'SYSTEM_MESSAGE') {
-    return { id, authorId: 'system', body, sentAt, kind: 'system' };
+    // 서버 퇴장 문구("상대방이 나갔습니다.")도 함께 매칭해, 타입이 빠진 브로드캐스트에도 대비한다.
+    const leftRoom = payload.type === 'LEFT_ROOM' || body.includes('나갔');
+    return {
+      id,
+      authorId: 'system',
+      body,
+      sentAt,
+      kind: 'system',
+      leftRoom: leftRoom || undefined,
+    };
   }
   if (payload.type === 'IMAGE') {
     return {
@@ -589,6 +645,15 @@ function socketEventToMessage(event: ChatSocketEnvelope): ChatMessage | null {
  * 따라서 REST 응답을 정본으로 삼고, 로컬 메시지 중 **REST 최신 메시지보다 뒤에 온 것만**
  * (= 서버 응답이 만들어진 시점 이후의 전송 중/소켓 수신 메시지) 덧붙인다.
  */
+/** 이 시간 안의 서버 메시지와 내용이 같으면 로컬 사본을 서버 사본의 중복으로 간주한다. */
+const RECONCILE_DUP_WINDOW_MS = 5 * 60 * 1000;
+
+/** 작성자+종류+내용 기준의 근사 키. 소켓·REST 가 공유하는 id 가 없어 내용으로 대조한다. */
+function fuzzyMessageKey(message: ChatMessage): string {
+  const content = message.kind === 'image' ? (message.imageUrl ?? '') : message.body;
+  return `${message.authorId}|${message.kind}|${content}`;
+}
+
 function reconcileWithServerMessages(
   current: ChatMessage[],
   incoming: ChatMessage[],
@@ -598,7 +663,33 @@ function reconcileWithServerMessages(
     (latest, message) => Math.max(latest, message.sentAt.getTime()),
     Number.NEGATIVE_INFINITY,
   );
-  const pending = current.filter((message) => message.sentAt.getTime() > latestServerAt);
+
+  // 기기 시계가 서버보다 빠르면, 서버가 이미 저장해 REST에 포함된 메시지의 로컬 사본이
+  // `latestServerAt`보다 뒤 시각으로 남아 중복 렌더된다(룸메 요청 직후 마지막 메시지가
+  // 양쪽 기기에서 2개씩 보이던 QA 재현). 최근 서버 메시지와 내용이 같은 로컬 사본은
+  // 서버 사본을 정본으로 삼아 버린다. 같은 내용을 연달아 보낸 진짜 신규 메시지가 잠깐
+  // 사라질 수 있지만, 소켓 에코(clientMessageId 병합)와 다음 재조회가 복원한다.
+  const recentServerCounts = new Map<string, number>();
+  for (const message of incoming) {
+    if (message.sentAt.getTime() >= latestServerAt - RECONCILE_DUP_WINDOW_MS) {
+      const key = fuzzyMessageKey(message);
+      recentServerCounts.set(key, (recentServerCounts.get(key) ?? 0) + 1);
+    }
+  }
+
+  const serverIds = new Set(incoming.map((message) => message.id));
+  const pending: ChatMessage[] = [];
+  for (const message of current) {
+    if (message.sentAt.getTime() <= latestServerAt) continue;
+    if (serverIds.has(message.id)) continue;
+    const key = fuzzyMessageKey(message);
+    const remaining = recentServerCounts.get(key) ?? 0;
+    if (remaining > 0) {
+      recentServerCounts.set(key, remaining - 1);
+      continue;
+    }
+    pending.push(message);
+  }
   return [...incoming, ...pending].sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
 }
 

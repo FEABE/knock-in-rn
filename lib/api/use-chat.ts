@@ -382,6 +382,7 @@ function detailMessages(detail: ChatRoomDetailData, peerId: string): ChatMessage
         imageUrl: isImage ? message.imageUrl : undefined,
         sentAt: parseDate(message.createdAt),
         kind: isSystem ? 'system' : isImage ? 'image' : 'text',
+        leftRoom: isSystem || undefined,
       } satisfies ChatMessage;
     }) ?? [];
 

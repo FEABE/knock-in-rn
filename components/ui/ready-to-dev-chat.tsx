@@ -110,9 +110,18 @@ export function ReadyChatRestrictionBanner({
   kind,
   onUnblock,
 }: {
-  kind: 'blocked' | 'unavailable';
+  kind: 'blocked' | 'unavailable' | 'left';
   onUnblock?: () => void;
 }) {
+  if (kind === 'left') {
+    return (
+      <ReadyStatusBanner
+        title="상대방이 채팅방을 나갔어요"
+        description="더 이상 메시지를 보낼 수 없어요"
+        tone="neutral"
+      />
+    );
+  }
   if (kind === 'unavailable') {
     return (
       <ReadyStatusBanner
