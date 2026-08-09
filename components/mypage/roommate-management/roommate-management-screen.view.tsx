@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TextField } from '@/components/ui/headless';
+import { ReadyConfirmDialog } from '@/components/ui/ready-to-dev-feedback';
 import type { CalendarDayItem } from '@/lib/api';
 
 import type { useRoommateManagementScreen } from './use-roommate-management-screen';
@@ -216,6 +217,18 @@ export function RoommateManagementScreenView(props: Props) {
           </Pressable>
         </ScrollView>
       )}
+
+      <ReadyConfirmDialog
+        open={props.disconnectConfirmOpen}
+        title="룸메이트 연결을 해제할까요?"
+        description={'합의서와 캘린더를 더 이상\n함께 사용할 수 없어요'}
+        cancelLabel="취소"
+        confirmLabel="해제"
+        destructive
+        processing={props.saving}
+        onCancel={props.cancelDisconnect}
+        onConfirm={props.confirmDisconnect}
+      />
     </SafeAreaView>
   );
 }
