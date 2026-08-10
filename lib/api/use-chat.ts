@@ -4,12 +4,11 @@
 import { useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import type { ChatMessage, ChatRoom, UserSummary } from '@/lib/domain';
+import type { ChatRoom } from '@/lib/domain';
 
 import {
   createChatRoom,
   type ChatRoomCreateRequest,
-  type ChatRoomDetailData,
   type ChatRoomItem,
   getChatRoomDetail,
   getChatRooms,
@@ -29,9 +28,13 @@ import {
   type ChatRequestDetailData,
   type ChatRequestItem,
 } from './chat-requests';
-import { parseServerDate } from './date-time';
-import { createRoommateRequest } from './roommate';
-import { acceptRoommateRequest, cancelRoommateRequest, rejectRoommateRequest } from './roommate';
+import { toChatRoomModel } from './mappers/chat';
+import {
+  acceptRoommateRequest,
+  cancelRoommateRequest,
+  createRoommateRequest,
+  rejectRoommateRequest,
+} from './roommate';
 import { type AsyncState, useApi } from './use-async';
 
 /** 채팅방 목록. (ChatRoomItem 그대로 — 명세 형태) */
@@ -87,7 +90,7 @@ export function useChatRoomDetail(
   });
   const room = useMemo<ChatRoom | null>(() => {
     if (!state.data) return null;
-    return chatRoomDetailToDomainRoom(chatRoomId, state.data, currentMemberId);
+    return toChatRoomModel(chatRoomId, state.data, currentMemberId);
   }, [chatRoomId, currentMemberId, state.data]);
 
   return {
@@ -235,170 +238,4 @@ export function useChatRequestActions() {
     processingChatRequest:
       acceptMutation.isPending || rejectMutation.isPending || cancelMutation.isPending,
   };
-}
-
-function chatRoomItemToDomainRoom(item: ChatRoomItem): ChatRoom {
-  const id = String(item.chatRoomId ?? '');
-  const peer = userFromChatRoom(item);
-  const messages = initialMessagesFromChatRoom(item, peer.id);
-  return {
-    id,
-    peer,
-    messages,
-    matched: item.isAgree === true,
-    acceptedRequest: item.isAgree === true,
-    // 목록 응답에는 상대 매칭 여부가 없다. 상세 조회에서만 채워진다.
-    opponentHasRoommate: false,
-  };
-}
-
-function chatRoomDetailToDomainRoom(
-  chatRoomId: string,
-  detail: ChatRoomDetailData,
-  currentMemberId?: string,
-): ChatRoom {
-  const peer = userFromChatRoomDetail(detail);
-  const messages = detailMessages(detail, peer.id);
-  const matched =
-    detail.matchingRequiredList?.some((request) => request.status === 'ACCEPTED') === true;
-  // 서버가 목록 순서를 보장하지 않는다. createdAt 문자열 desc가 1차 키이고,
-  // createdAt이 비어 동률이면 requiredId 숫자 desc로 최신 요청을 고른다.
-  const latestRequest = [...(detail.matchingRequiredList ?? [])]
-    .filter((request) => request.requiredId != null && request.status != null)
-    .sort(
-      (a, b) =>
-        (b.createdAt ?? '').localeCompare(a.createdAt ?? '') ||
-        (b.requiredId ?? 0) - (a.requiredId ?? 0),
-    )[0];
-  const role = latestRequest
-    ? String(latestRequest.requesterMemberId) === currentMemberId
-      ? 'requester'
-      : String(latestRequest.requesteeMemberId) === currentMemberId
-        ? 'requestee'
-        : 'unknown'
-    : undefined;
-  return {
-    id: chatRoomId,
-    peer,
-    messages,
-    matched,
-    acceptedRequest: matched,
-    opponentHasRoommate: detail.opponentHasRoommate === true,
-    roommateRequest:
-      latestRequest?.requiredId != null && latestRequest.status
-        ? {
-            id: String(latestRequest.requiredId),
-            status: latestRequest.status,
-            role: role ?? 'unknown',
-            createdAt: parseServerDate(latestRequest.createdAt) ?? undefined,
-            updatedAt: parseServerDate(latestRequest.updatedAt) ?? undefined,
-          }
-        : undefined,
-  };
-}
-
-function userFromChatRoom(item: ChatRoomItem): UserSummary {
-  const name = item.name ?? '사용자';
-  return {
-    id: String(item.chatRoomId ?? name),
-    name,
-    age: 0,
-    gender: 'other',
-    preferredGender: 'any',
-    bio: '',
-    region: {
-      id: 'unknown',
-      city: '-',
-      district: '',
-    },
-    badges: [],
-    lifestyle: {},
-    importantConditions: [],
-  };
-}
-
-function userFromChatRoomDetail(detail: ChatRoomDetailData): UserSummary {
-  const profile = detail.opponentProfile;
-  const name = profile?.name ?? '사용자';
-  return {
-    id: String(profile?.id ?? name),
-    name,
-    age: profile?.age ?? 0,
-    gender: profile?.gender === 'FEMALE' ? 'female' : profile?.gender === 'MALE' ? 'male' : 'other',
-    preferredGender: 'any',
-    bio: '',
-    avatarUrl: profile?.memberProfileImageUrl,
-    compatibilityScore: profile?.score,
-    region: {
-      id: 'unknown',
-      city: '-',
-      district: '',
-    },
-    badges: [],
-    lifestyle: {},
-    importantConditions: [],
-  };
-}
-
-function initialMessagesFromChatRoom(item: ChatRoomItem, peerId: string): ChatMessage[] {
-  const createdAt = parseDate(item.lastMessageAt ?? item.creatAt ?? item.createdAt);
-  const messages: ChatMessage[] = [
-    {
-      id: `chat-${item.chatRoomId ?? 'new'}-system`,
-      authorId: 'system',
-      body: item.isAgree ? '룸메이트가 확정되었어요.' : '채팅이 시작되었어요.',
-      sentAt: createdAt,
-      kind: 'system',
-    },
-  ];
-
-  if (item.lastMessage) {
-    messages.push({
-      id: `chat-${item.chatRoomId ?? 'new'}-last`,
-      authorId: peerId,
-      body: item.lastMessage,
-      sentAt: createdAt,
-      kind: 'text',
-    });
-  }
-
-  return messages;
-}
-
-function detailMessages(detail: ChatRoomDetailData, peerId: string): ChatMessage[] {
-  const messages =
-    detail.messages?.map((message) => {
-      const type = message.type;
-      const isSystem = type === 'LEFT_ROOM';
-      const isImage = type === 'IMAGE';
-      return {
-        id: String(
-          message.id ?? `${message.senderId ?? 'system'}-${message.createdAt ?? Date.now()}`,
-        ),
-        authorId: isSystem ? 'system' : String(message.senderId ?? peerId),
-        body: isSystem
-          ? '채팅방을 나갔어요.'
-          : message.contents || message.imageUrl || '이미지 메시지',
-        imageUrl: isImage ? message.imageUrl : undefined,
-        sentAt: parseDate(message.createdAt),
-        kind: isSystem ? 'system' : isImage ? 'image' : 'text',
-        leftRoom: isSystem || undefined,
-      } satisfies ChatMessage;
-    }) ?? [];
-
-  if (messages.length > 0) return messages;
-
-  return [
-    {
-      id: `chat-${detail.opponentProfile?.id ?? 'new'}-system`,
-      authorId: 'system',
-      body: '채팅이 시작되었어요.',
-      sentAt: new Date(),
-      kind: 'system',
-    },
-  ];
-}
-
-function parseDate(value?: string): Date {
-  return parseServerDate(value) ?? new Date();
 }

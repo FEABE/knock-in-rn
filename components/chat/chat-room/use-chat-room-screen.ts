@@ -10,7 +10,7 @@ import {
   type ChatSocketEnvelope,
   type ChatSocketStatus,
   getMyRoommate,
-  parseServerDate,
+  toChatSocketMessage,
   USE_MOCK,
   useAccountActions,
   useChatRoomActions,
@@ -26,6 +26,7 @@ import {
 } from '@/lib/domain';
 
 import type { ChatPhotoPickerAsset } from './chat-photo-picker';
+import { mergeMessages, reconcileWithServerMessages } from './chat-message-state';
 
 export type ChatRoomBubble = ChatMessage & { mine: boolean };
 
@@ -219,7 +220,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
         reload();
         return;
       }
-      const message = socketEventToMessage(event);
+      const message = toChatSocketMessage(event);
       if (message) setMessages((current) => mergeMessages(current, [message]));
     },
     [reload],
@@ -602,115 +603,6 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     launchCamera,
     onLeave: confirmLeave,
   };
-}
-
-function socketEventToMessage(event: ChatSocketEnvelope): ChatMessage | null {
-  const payload = event.payload as {
-    clientMessageId?: string;
-    senderId?: number;
-    type?: 'TEXT' | 'IMAGE' | 'LEFT_ROOM';
-    contents?: string;
-    imageUrl?: string;
-  };
-  const body = payload.contents ?? '';
-  const sentAt = parseServerDate(event.createdAt) ?? new Date();
-  const id =
-    payload.clientMessageId ??
-    `${event.chatRoomId}-${payload.senderId ?? 'system'}-${sentAt.getTime()}-${payload.type ?? 'TEXT'}`;
-  if (payload.type === 'LEFT_ROOM' || event.eventType === 'SYSTEM_MESSAGE') {
-    // 서버 퇴장 문구("상대방이 나갔습니다.")도 함께 매칭해, 타입이 빠진 브로드캐스트에도 대비한다.
-    const leftRoom = payload.type === 'LEFT_ROOM' || body.includes('나갔');
-    return {
-      id,
-      authorId: 'system',
-      body,
-      sentAt,
-      kind: 'system',
-      leftRoom: leftRoom || undefined,
-    };
-  }
-  if (payload.type === 'IMAGE') {
-    return {
-      id,
-      authorId: String(payload.senderId ?? 'unknown'),
-      body,
-      imageUrl: payload.imageUrl,
-      sentAt,
-      kind: 'image',
-    };
-  }
-  return {
-    id,
-    authorId: String(payload.senderId ?? 'unknown'),
-    body,
-    sentAt,
-    kind: 'text',
-  };
-}
-
-/**
- * 이미 하이드레이션된 방을 REST 로 재조회했을 때의 병합 규칙.
- *
- * REST 상세는 전체 히스토리를 정본으로 내려주지만 `clientMessageId` 를 포함하지 않아,
- * 낙관적 버블(id=clientMessageId)과 서버 버블(id=DB PK)이 서로 다른 키가 된다.
- * 그래서 id 기준 merge 로는 같은 메시지가 두 개로 남는다.
- *
- * 따라서 REST 응답을 정본으로 삼고, 로컬 메시지 중 **REST 최신 메시지보다 뒤에 온 것만**
- * (= 서버 응답이 만들어진 시점 이후의 전송 중/소켓 수신 메시지) 덧붙인다.
- */
-/** 이 시간 안의 서버 메시지와 내용이 같으면 로컬 사본을 서버 사본의 중복으로 간주한다. */
-const RECONCILE_DUP_WINDOW_MS = 5 * 60 * 1000;
-
-/** 작성자+종류+내용 기준의 근사 키. 소켓·REST 가 공유하는 id 가 없어 내용으로 대조한다. */
-function fuzzyMessageKey(message: ChatMessage): string {
-  const content = message.kind === 'image' ? (message.imageUrl ?? '') : message.body;
-  return `${message.authorId}|${message.kind}|${content}`;
-}
-
-function reconcileWithServerMessages(
-  current: ChatMessage[],
-  incoming: ChatMessage[],
-): ChatMessage[] {
-  if (incoming.length === 0) return current;
-  const latestServerAt = incoming.reduce(
-    (latest, message) => Math.max(latest, message.sentAt.getTime()),
-    Number.NEGATIVE_INFINITY,
-  );
-
-  // 기기 시계가 서버보다 빠르면, 서버가 이미 저장해 REST에 포함된 메시지의 로컬 사본이
-  // `latestServerAt`보다 뒤 시각으로 남아 중복 렌더된다(룸메 요청 직후 마지막 메시지가
-  // 양쪽 기기에서 2개씩 보이던 QA 재현). 최근 서버 메시지와 내용이 같은 로컬 사본은
-  // 서버 사본을 정본으로 삼아 버린다. 같은 내용을 연달아 보낸 진짜 신규 메시지가 잠깐
-  // 사라질 수 있지만, 소켓 에코(clientMessageId 병합)와 다음 재조회가 복원한다.
-  const recentServerCounts = new Map<string, number>();
-  for (const message of incoming) {
-    if (message.sentAt.getTime() >= latestServerAt - RECONCILE_DUP_WINDOW_MS) {
-      const key = fuzzyMessageKey(message);
-      recentServerCounts.set(key, (recentServerCounts.get(key) ?? 0) + 1);
-    }
-  }
-
-  const serverIds = new Set(incoming.map((message) => message.id));
-  const pending: ChatMessage[] = [];
-  for (const message of current) {
-    if (message.sentAt.getTime() <= latestServerAt) continue;
-    if (serverIds.has(message.id)) continue;
-    const key = fuzzyMessageKey(message);
-    const remaining = recentServerCounts.get(key) ?? 0;
-    if (remaining > 0) {
-      recentServerCounts.set(key, remaining - 1);
-      continue;
-    }
-    pending.push(message);
-  }
-  return [...incoming, ...pending].sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
-}
-
-/** 소켓 단건 병합용. id 가 같은 메시지를 덮어써 낙관적 버블을 서버 응답으로 바꾼다. */
-function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
-  const byId = new Map(current.map((message) => [message.id, message]));
-  incoming.forEach((message) => byId.set(message.id, { ...byId.get(message.id), ...message }));
-  return [...byId.values()].sort((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
 }
 
 function showRequestError(error: unknown) {
