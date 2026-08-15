@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 import { ReadyProfileAvatar } from '@/components/ui/ready-to-dev-components';
 
 import type { UseRoomCardReturn } from './use-room-card';
@@ -14,12 +15,6 @@ const AUTHOR_AVATAR_STYLE = { width: 24, height: 24, borderRadius: 12 } as const
 /** 사진 없는 게시글의 기본 이미지 — Figma 시안의 128x125 크기 그대로. */
 const ROOM_PLACEHOLDER_SOURCE = require('../../../assets/images/figma-ready/room-list-default.png');
 const ROOM_PLACEHOLDER_STYLE = { width: 128, height: 125 } as const;
-
-/**
- * 아이콘 폰트의 비대칭 세로 여백을 제거해 원형 배경 정중앙에 오도록 한다.
- * (Android 기본 includeFontPadding 때문에 글리프가 위로 치우쳐 보인다.)
- */
-const ICON_GLYPH_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
 
 export type RoomCardViewProps = UseRoomCardReturn & {
   className?: string;
@@ -187,4 +182,4 @@ const CHIP_SHADOW_STYLE = {
   elevation: 2,
 } as const;
 
-const CHIP_TEXT_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
+const CHIP_TEXT_STYLE = ICON_GLYPH_STYLE;

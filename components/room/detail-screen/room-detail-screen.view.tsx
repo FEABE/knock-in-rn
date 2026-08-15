@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatImageViewer } from '@/components/chat/chat-room/chat-image-viewer';
 import { RoomThumbnailPlaceholder, RoomTypePill } from '@/components/domain';
+import { GenderAgeChip } from '@/components/ui/gender-age-chip';
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 import { RoomOptionArtwork } from '@/components/ui/ready-to-dev-assets';
 import {
   ReadyActionRow,
@@ -53,12 +55,6 @@ const SMOKING_LABEL: Record<string, string> = {
   no: '비흡연',
   outdoor: '실외만',
   yes: '흡연',
-};
-
-const GENDER_LABEL: Record<string, string> = {
-  male: '남성',
-  female: '여성',
-  other: '기타',
 };
 
 const PREFERRED_GENDER_LABEL: Record<string, string> = {
@@ -187,7 +183,10 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
       <ScrollView
         ref={scrollRef}
         className="flex-1"
-        contentContainerClassName={props.isOwner ? 'pb-6' : 'pb-28'}
+        contentContainerStyle={{
+          // 하단바 실높이(border 1 + pt-3 12 + 버튼 48) + 세이프에어리어 패딩만큼만 비운다.
+          paddingBottom: props.isOwner ? 24 : 61 + props.bottomPadding,
+        }}
         stickyHeaderIndices={[2]}
         scrollEventThrottle={16}
         onScroll={(event) => syncActiveTabFromScroll(event.nativeEvent.contentOffset.y)}
@@ -542,7 +541,7 @@ function TitleBlock({ post }: { post: RoomPost }) {
           >
             {post.author.name}
           </Text>
-          <AuthorMetaPill author={post.author} />
+          <GenderAgeChip age={post.author.age} gender={post.author.gender} />
         </View>
         <View className="flex-row items-baseline gap-1">
           <Text className="text-[16px] font-medium leading-6 text-[#696976]">월세</Text>
@@ -552,34 +551,6 @@ function TitleBlock({ post }: { post: RoomPost }) {
           </Text>
         </View>
       </View>
-    </View>
-  );
-}
-
-function AuthorMetaPill({ author }: { author: UserSummary }) {
-  const genderLabel = GENDER_LABEL[author.gender] ?? '기타';
-  const isMale = author.gender === 'male';
-  const isFemale = author.gender === 'female';
-  return (
-    <View
-      className={`h-[22px] flex-row items-center justify-center gap-1 rounded px-[5px] ${
-        isMale ? 'bg-[#E7F4FE]' : isFemale ? 'bg-[#FDEFEC]' : 'bg-[#F1F1F6]'
-      }`}
-    >
-      {isMale || isFemale ? (
-        <Ionicons
-          name={isMale ? 'male' : 'female'}
-          size={12}
-          color={isMale ? '#0B78CB' : '#DE3412'}
-        />
-      ) : null}
-      <Text
-        className={`text-[13px] font-semibold leading-5 ${
-          isMale ? 'text-[#0B78CB]' : isFemale ? 'text-[#DE3412]' : 'text-[#696976]'
-        }`}
-      >
-        {author.age}세 · {genderLabel}
-      </Text>
     </View>
   );
 }
@@ -894,7 +865,7 @@ function AuthorBlock({ author, onPress }: { author: UserSummary; onPress: () => 
             <Text className="text-[16px] font-semibold leading-6 text-[#17171B]">
               {author.name}
             </Text>
-            <AuthorMetaPill author={author} />
+            <GenderAgeChip age={author.age} gender={author.gender} />
           </View>
           <View className="flex-row flex-wrap gap-2">
             {author.badges.map((badge) => (
@@ -953,7 +924,7 @@ function BottomBar({
           name={liked ? 'heart' : 'heart-outline'}
           size={23}
           color={liked ? '#256EF4' : '#AAAABA'}
-          style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+          style={ICON_GLYPH_STYLE}
         />
       </Pressable>
       <Pressable

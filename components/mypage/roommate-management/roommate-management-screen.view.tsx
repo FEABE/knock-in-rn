@@ -95,13 +95,25 @@ export function RoommateManagementScreenView(props: Props) {
 
               <View className="gap-4">
                 <View className="flex-row items-center justify-between">
-                  <Pressable onPress={props.previousMonth} hitSlop={10}>
+                  <Pressable
+                    onPress={props.previousMonth}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="이전 달"
+                    className="h-10 w-10 items-center justify-center"
+                  >
                     <Ionicons name="chevron-back" size={22} color="#696976" />
                   </Pressable>
                   <Text className="text-lg font-bold text-[#17171B]">
                     {props.month.getFullYear()}년 {props.month.getMonth() + 1}월
                   </Text>
-                  <Pressable onPress={props.nextMonth} hitSlop={10}>
+                  <Pressable
+                    onPress={props.nextMonth}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="다음 달"
+                    className="h-10 w-10 items-center justify-center"
+                  >
                     <Ionicons name="chevron-forward" size={22} color="#696976" />
                   </Pressable>
                 </View>

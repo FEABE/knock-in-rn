@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,6 +15,7 @@ import type { RoomFormDraft, RoomFormValues } from '@/components/room/room-post-
 import { RoomRegionSheet } from '@/components/room/room-post-form.region-sheet';
 import { useRoomPostForm } from '@/components/room/use-room-post-form';
 import type { LifestyleSummaryItem, PreferencePrioritySummaryItem } from '@/lib/api';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import { ReadyExitDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseEditRoomScreenReturn } from './use-edit-room-screen';
@@ -102,9 +102,7 @@ function EditableRoomScreen({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="relative h-12 items-center justify-center px-3">
-        <Pressable onPress={onBack} className="absolute left-3 h-9 w-9 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#404047" />
-        </Pressable>
+        <HeaderBackButton onPress={onBack} color="#404047" className="absolute left-3" />
         <Text className="text-base font-semibold text-neutral-900">게시글 수정</Text>
         <View className="absolute right-3 flex-row items-center gap-1">
           <Pressable

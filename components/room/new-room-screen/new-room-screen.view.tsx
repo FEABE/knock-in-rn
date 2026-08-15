@@ -17,6 +17,7 @@ import {
 } from '@/components/room/room-post-form.view';
 import type { UseRoomPostFormReturn } from '@/components/room/use-room-post-form';
 import { TextField } from '@/components/ui/headless';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import {
   PriorityArtwork,
   RoomLocationArtwork,
@@ -82,9 +83,7 @@ export function NewRoomScreenView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="relative h-12 items-center justify-center px-3">
-        <Pressable onPress={onBack} className="absolute left-3 h-9 w-9 items-center justify-center">
-          <Ionicons name="chevron-back" size={24} color="#404047" />
-        </Pressable>
+        <HeaderBackButton onPress={onBack} color="#404047" className="absolute left-3" />
         <Text className="text-base font-semibold text-neutral-900">게시글 등록</Text>
       </View>
 
@@ -490,7 +489,7 @@ function MoneyField({
 }) {
   return (
     <View className="gap-1">
-      <View className="flex-row items-end gap-1">
+      <View className="flex-row items-center gap-1">
         <Text className="text-[15px] font-bold text-[#17171B]">{label}</Text>
         {optional ? <Text className="text-xs text-[#AAAABA]">선택</Text> : null}
       </View>
@@ -629,7 +628,7 @@ export function IntroPage({ form }: { form: UseRoomPostFormReturn }) {
       </View>
 
       <View className="mt-6 gap-3">
-        <View className="flex-row items-end gap-1">
+        <View className="flex-row items-center gap-1">
           <Text className="text-[15px] font-bold text-[#17171B]">사진</Text>
           <Text className="text-xs text-[#AAAABA]">선택</Text>
         </View>

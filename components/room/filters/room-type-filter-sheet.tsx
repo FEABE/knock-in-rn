@@ -65,7 +65,7 @@ export function RoomTypeFilterBody({
               key={rt.value}
               onPress={() => toggle(rt.value)}
               disabled={disabled}
-              className={`items-center justify-center rounded-full border px-[8.5px] py-[7px] active:opacity-80 ${
+              className={`h-9 items-center justify-center rounded-full border px-3 active:opacity-80 ${
                 selected
                   ? 'border-[#256EF4] bg-[#256EF4]/10'
                   : disabled

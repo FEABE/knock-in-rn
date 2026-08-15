@@ -122,7 +122,7 @@ export function ReadySearchHeader({
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel="이전으로"
-        className="h-8 w-5 items-start justify-center"
+        className="h-10 w-10 items-start justify-center"
       >
         <Ionicons name="chevron-back" size={24} color="#696976" />
       </Pressable>

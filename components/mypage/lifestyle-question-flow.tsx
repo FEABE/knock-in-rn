@@ -371,8 +371,9 @@ function InitialQuestionHeader({
       <View pointerEvents="none" className="flex-1 items-center justify-center">
         <Text className="text-center text-[17px] font-medium text-[#242429]">{title}</Text>
       </View>
-      <Text className="w-10 text-center text-[15px] text-[#AAAABA]">
-        {progress}/{total}
+      <Text className="w-12 text-center text-[15px]">
+        <Text className="text-[#17171B]">{progress}</Text>
+        <Text className="text-[#AAAABA]">/{total}</Text>
       </Text>
     </View>
   );

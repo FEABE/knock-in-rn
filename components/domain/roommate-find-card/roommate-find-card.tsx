@@ -2,6 +2,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, Text, View, type GestureResponderEvent } from 'react-native';
 
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 import { RoommateConditionChip } from '@/components/ui/roommate-condition-chip';
 import { useRequireLogin } from '@/lib/auth';
 import type { RoommateMatchCardModel } from '@/lib/api';
@@ -81,6 +82,7 @@ export function RoommateFindCard({ match, onPress, onLikeChange }: RoommateFindC
                   name={match.liked ? 'heart' : 'heart-outline'}
                   size={24}
                   color={match.liked ? '#256EF4' : '#AAAABA'}
+                  style={ICON_GLYPH_STYLE}
                 />
               </Pressable>
             </View>

@@ -72,13 +72,25 @@ export function CalendarField({
       <BottomSheet open={open} onOpenChange={setOpen}>
         <View className="gap-3">
           <View className="flex-row items-center justify-between">
-            <Pressable onPress={prevMonth} hitSlop={8} className="px-4 py-1">
+            <Pressable
+              onPress={prevMonth}
+              hitSlop={{ top: 12, right: 8, bottom: 12, left: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="이전 달"
+              className="px-4 py-1"
+            >
               <Ionicons name="chevron-back" size={22} color="#525252" />
             </Pressable>
             <Text className="text-base font-semibold text-neutral-900">
               {view.y}.{String(view.m + 1).padStart(2, '0')}
             </Text>
-            <Pressable onPress={nextMonth} hitSlop={8} className="px-4 py-1">
+            <Pressable
+              onPress={nextMonth}
+              hitSlop={{ top: 12, right: 8, bottom: 12, left: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="다음 달"
+              className="px-4 py-1"
+            >
               <Ionicons name="chevron-forward" size={22} color="#525252" />
             </Pressable>
           </View>

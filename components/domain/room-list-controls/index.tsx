@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text } from 'react-native';
 
 import type { RoomFilterValue } from '@/components/room/filters';
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 import { ReadyFilterChip } from '@/components/ui/ready-to-dev-components';
 import { ROOM_TYPE_BACKEND_LABELS } from '@/lib/api';
 
@@ -41,12 +42,8 @@ function roomTypeChipLabel(roomType: RoomFilterValue['roomTypes'][number]): stri
   return backendLabel ?? ROOM_TYPE_CHIP_LABEL[roomType] ?? roomType;
 }
 
-/**
- * 검색창의 아이콘/플레이스홀더를 세로 가운데로 맞춘다.
- * Android 기본 includeFontPadding 이 글리프 위쪽에 비대칭 여백을 넣어
- * items-center 로도 내용이 위로 치우쳐 보이는 문제를 없앤다.
- */
-const SEARCH_GLYPH_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
+/** 검색창의 아이콘/플레이스홀더를 세로 가운데로 맞춘다. */
+const SEARCH_GLYPH_STYLE = ICON_GLYPH_STYLE;
 
 export function RoomListControls({
   filter,

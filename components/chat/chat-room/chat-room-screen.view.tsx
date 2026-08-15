@@ -1,17 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GenderAgeChip } from '@/components/ui/gender-age-chip';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import { ReadyConfirmDialog, ReadyToast } from '@/components/ui/ready-to-dev-feedback';
 import {
   ReadyChatBubble,
@@ -85,14 +79,18 @@ export function ChatRoomScreenView({
   openImageViewer,
   closeImageViewer,
 }: ChatRoomScreenViewProps) {
+  const { bottom: bottomInset } = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard({
     isStatusBarTranslucentAndroid: true,
     isNavigationBarTranslucentAndroid: true,
   });
-  // Android는 기본 adjustResize로 창 자체가 줄어들므로 여기서 또 패딩하면 키보드 높이만큼
-  // 이중 보정된다(입력창·토스트가 iOS보다 훨씬 위로 뜸). iOS만 수동 보정한다.
+  // 이 앱은 edge-to-edge라 Android의 adjustResize가 창을 줄여 주지 않고, 위의
+  // translucent 옵션이 리사이즈를 한 번 더 무력화한다. 즉 두 OS 모두 JS 수동 패딩이
+  // 유일한 키보드 보정 수단이다.
+  // 컴포저가 이미 하단 안전영역만큼 패딩을 갖고 있으므로 키보드 높이에서 그만큼 빼야
+  // 입력창이 키보드 위로 들뜨지 않는다(verification-flow-screen.view.tsx와 동일 공식).
   const keyboardAvoidingStyle = useAnimatedStyle(() => ({
-    paddingBottom: Platform.OS === 'ios' ? keyboard.height.value : 0,
+    paddingBottom: Math.max(0, keyboard.height.value - bottomInset),
   }));
 
   return (
@@ -396,14 +394,7 @@ function ChatHeader({
 }) {
   return (
     <View className="flex-row items-center gap-2 border-b border-[#F1F1F6] px-3 pb-2.5 pt-1">
-      <Pressable
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel="뒤로가기"
-        className="h-10 w-8 items-center justify-center"
-      >
-        <Ionicons name="chevron-back" size={24} color="#17171B" />
-      </Pressable>
+      <HeaderBackButton onPress={onBack} color="#17171B" accessibilityLabel="뒤로가기" />
       <ReadyProfileAvatar name={peer.name} imageUrl={peer.avatarUrl} size={48} />
       <View className="flex-1 gap-1 pl-1">
         <Text className="text-base font-bold text-[#17171B]" numberOfLines={1}>

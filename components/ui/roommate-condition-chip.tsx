@@ -1,11 +1,9 @@
 import { Text, View } from 'react-native';
 
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 import { PriorityArtwork } from '@/components/ui/ready-to-dev-assets';
 
-const CHIP_TEXT_STYLE = {
-  includeFontPadding: false,
-  textAlignVertical: 'center',
-} as const;
+const CHIP_TEXT_STYLE = ICON_GLYPH_STYLE;
 
 export function RoommateConditionChip({ label, image }: { label: string; image?: string | null }) {
   return (

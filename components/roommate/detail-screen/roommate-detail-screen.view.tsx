@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 import {
   ReadyActionRow,
   ReadyActionSheet,
@@ -48,6 +49,8 @@ const RING_SEGMENTS = 120;
 const RING_SEGMENT_WIDTH = 7;
 const DETAIL_SECTION_ACTIVATION_OFFSET = 12;
 const SCROLL_END_THRESHOLD = 8;
+/** 탭 탭핑 후 스크롤이 실제로 일어나지 않아도 잠금이 풀리도록 하는 보정 시간(ms). */
+const PROGRAMMATIC_TAB_RELEASE_MS = 400;
 
 export function RoommateDetailScreenView({
   data,
@@ -78,7 +81,17 @@ export function RoommateDetailScreenView({
   const scrollRef = useRef<ScrollView>(null);
   const sectionOffsets = useRef<Partial<Record<DetailTab, number>>>({});
   const programmaticTab = useRef<DetailTab | null>(null);
+  const programmaticTabTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>('compatibility');
+
+  /** 탭 탭핑으로 건 스크롤 동기화 잠금을 즉시 해제한다(예약된 보정 타이머도 함께 정리). */
+  const releaseProgrammaticTab = () => {
+    programmaticTab.current = null;
+    if (programmaticTabTimer.current) {
+      clearTimeout(programmaticTabTimer.current);
+      programmaticTabTimer.current = null;
+    }
+  };
 
   const moveToSection = (tab: DetailTab) => {
     const y = sectionOffsets.current[tab];
@@ -89,6 +102,13 @@ export function RoommateDetailScreenView({
       y: Math.max(0, y - DETAIL_SECTION_ACTIVATION_OFFSET),
       animated: true,
     });
+    // 이미 목표 위치라 스크롤 이벤트가 한 번도 안 오면 momentum 해제 경로가 돌지 않아
+    // 잠금이 영구히 남는다. 타이머로 반드시 풀어 준다.
+    if (programmaticTabTimer.current) clearTimeout(programmaticTabTimer.current);
+    programmaticTabTimer.current = setTimeout(() => {
+      programmaticTab.current = null;
+      programmaticTabTimer.current = null;
+    }, PROGRAMMATIC_TAB_RELEASE_MS);
   };
 
   const syncActiveTabFromScroll = (
@@ -159,10 +179,10 @@ export function RoommateDetailScreenView({
               );
             }}
             onScrollBeginDrag={() => {
-              programmaticTab.current = null;
+              releaseProgrammaticTab();
             }}
             onMomentumScrollEnd={(event) => {
-              programmaticTab.current = null;
+              releaseProgrammaticTab();
               const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
               syncActiveTabFromScroll(
                 contentOffset.y,
@@ -342,19 +362,34 @@ function DetailTabs({
   const { width } = useWindowDimensions();
   const tabWidth = width / 3;
   const tabScrollRef = useRef<ScrollView>(null);
+  /** 스트립의 현재 가로 오프셋 — 활성 탭이 이미 보이는지 판단하는 데 쓴다. */
+  const stripScrollX = useRef(0);
+  /** 사용자가 스트립을 드래그 중이거나 관성이 진행 중인 동안 auto-follow를 멈춘다. */
+  const stripInteracting = useRef(false);
   const tabs = DETAIL_TABS.map((tab) =>
     tab.key === 'room' ? { ...tab, label: hasRoom ? '방 소개' : '희망 방 형태' } : tab,
   );
 
+  // 활성 탭이 스트립 밖으로 나갔을 때만 따라간다. 이미 보이면 no-op이라 idx 0~2에서
+  // x=0으로 스냅백하던 원래 버그가 재발하지 않고, 사용자 드래그 중에도 개입하지 않는다.
   useEffect(() => {
     const activeIndex = DETAIL_TABS.findIndex((tab) => tab.key === active);
     if (activeIndex < 0) return;
+    if (stripInteracting.current) return;
 
+    const scrollX = stripScrollX.current;
+    const start = activeIndex * tabWidth;
+    const end = start + tabWidth;
+    const fullyVisible = start >= scrollX && end <= scrollX + width;
+    if (fullyVisible) return;
+
+    const maxScrollX = Math.max(0, tabWidth * DETAIL_TABS.length - width);
+    const target = start < scrollX ? start : end - width;
     tabScrollRef.current?.scrollTo({
-      x: Math.max(0, activeIndex - 2) * tabWidth,
+      x: Math.min(Math.max(0, target), maxScrollX),
       animated: true,
     });
-  }, [active, tabWidth]);
+  }, [active, tabWidth, width]);
 
   return (
     <View className="border-b border-[#ECECF3] bg-white">
@@ -363,6 +398,24 @@ function DetailTabs({
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ minWidth: tabWidth * tabs.length }}
+        scrollEventThrottle={16}
+        onScroll={(event) => {
+          stripScrollX.current = event.nativeEvent.contentOffset.x;
+        }}
+        onScrollBeginDrag={() => {
+          stripInteracting.current = true;
+        }}
+        onScrollEndDrag={() => {
+          stripInteracting.current = false;
+        }}
+        // 손을 뗀 뒤 관성이 이어지는 구간도 사용자 조작으로 본다(onScrollEndDrag가 먼저
+        // false로 만들기 때문에 여기서 다시 true로 잡아 준다).
+        onMomentumScrollBegin={() => {
+          stripInteracting.current = true;
+        }}
+        onMomentumScrollEnd={() => {
+          stripInteracting.current = false;
+        }}
       >
         {tabs.map((tab) => {
           const selected = active === tab.key;
@@ -427,10 +480,25 @@ function CompatibilityBlock({ data }: { data: RoommateMatchDetailModel }) {
   );
 }
 
-function CompatibilityRing({ progress, active }: { progress: number; active: boolean }) {
+/**
+ * 최대 120개의 rotate View를 그리므로 본문 스크롤(activeTab 갱신)마다 재렌더되면
+ * 프레임이 무너진다. memo + 세그먼트 배열 useMemo로 점수가 바뀔 때만 다시 만든다.
+ */
+const CompatibilityRing = memo(function CompatibilityRing({
+  progress,
+  active,
+}: {
+  progress: number;
+  active: boolean;
+}) {
   const normalized = Math.max(0, Math.min(100, progress));
   const activeSegments = Math.round((normalized / 100) * RING_SEGMENTS);
   const trackColor = active ? '#ECF2FE' : '#E5E7EB';
+
+  const segmentRotations = useMemo(
+    () => Array.from({ length: activeSegments }, (_, index) => index * (360 / RING_SEGMENTS)),
+    [activeSegments],
+  );
 
   return (
     <View
@@ -447,14 +515,14 @@ function CompatibilityRing({ progress, active }: { progress: number; active: boo
         }}
       />
       {active
-        ? Array.from({ length: activeSegments }).map((_, index) => (
+        ? segmentRotations.map((degree, index) => (
             <View
               key={index}
               className="absolute items-center"
               style={{
                 width: RING_SIZE,
                 height: RING_SIZE,
-                transform: [{ rotate: `${index * (360 / RING_SEGMENTS)}deg` }],
+                transform: [{ rotate: `${degree}deg` }],
               }}
             >
               <View
@@ -470,7 +538,7 @@ function CompatibilityRing({ progress, active }: { progress: number; active: boo
         : null}
     </View>
   );
-}
+});
 
 function PreferredRoommateBlock({ data }: { data: RoommateMatchDetailModel }) {
   const priorities = data.conditionChips;
@@ -586,6 +654,7 @@ function BottomBar({
           name={liked ? 'heart' : 'heart-outline'}
           size={23}
           color={liked ? '#256EF4' : '#AAAABA'}
+          style={ICON_GLYPH_STYLE}
         />
       </Pressable>
       <Pressable

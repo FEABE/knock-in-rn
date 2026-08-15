@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 import type { Gender } from '@/lib/onboarding';
 
 /**
@@ -49,13 +50,19 @@ export function GenderAgeChip({ age, gender }: GenderAgeChipProps) {
       <Ionicons name={tokens.icon} size={12} color={tokens.iconColor} />
       {showAge ? (
         <>
-          <Text className={`text-[12px] font-semibold leading-[18px] ${tokens.foreground}`}>
+          <Text
+            style={ICON_GLYPH_STYLE}
+            className={`text-[12px] font-semibold leading-[18px] ${tokens.foreground}`}
+          >
             {age}세
           </Text>
           <View className={`h-0.5 w-0.5 rounded-full ${tokens.dot}`} />
         </>
       ) : null}
-      <Text className={`text-[12px] font-semibold leading-[18px] ${tokens.foreground}`}>
+      <Text
+        style={ICON_GLYPH_STYLE}
+        className={`text-[12px] font-semibold leading-[18px] ${tokens.foreground}`}
+      >
         {tokens.label}
       </Text>
     </View>

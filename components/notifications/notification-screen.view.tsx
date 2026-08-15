@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginPromptCard } from '@/components/auth/login-prompt-card';
 import { formatKstDateLabel, parseServerDate, type AlarmItem } from '@/lib/api';
 import { ErrorState } from '@/components/ui/error-state';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import { ReadyEmptyState } from '@/components/ui/ready-to-dev-feedback';
 
 import type { UseNotificationScreenReturn } from './use-notification-screen';
@@ -41,14 +42,7 @@ export function NotificationScreenView({
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="h-14 flex-row items-center px-3">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="뒤로 가기"
-          className="h-10 w-10 items-center justify-center"
-        >
-          <Ionicons name="chevron-back" size={24} color="#17171B" />
-        </Pressable>
+        <HeaderBackButton onPress={onBack} color="#17171B" />
         <Text className="pointer-events-none absolute left-0 right-0 text-center text-[17px] font-semibold text-[#17171B]">
           알림
         </Text>

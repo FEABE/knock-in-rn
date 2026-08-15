@@ -15,7 +15,7 @@ import type { RoomPost, UserSummary } from './types';
 export type MyProfileAuthor = {
   /** 해당 작성자가 로그인한 나인지. */
   isMe: (author: Pick<UserSummary, 'id' | 'name'>) => boolean;
-  /** 내가 쓴 글이면 세션 프로필 이미지를 채워 넣는다. */
+  /** 내가 쓴 글이면 세션 프로필 이미지로 덮어쓴다(서버 캐시 값보다 세션이 최신). */
   applyToPost: <T extends RoomPost>(post: T) => T;
   /** applyToPost 의 리스트 버전. 바뀐 항목이 없으면 원본 배열을 그대로 돌려준다. */
   applyToPosts: <T extends RoomPost>(posts: T[]) => T[];
@@ -37,7 +37,10 @@ export function useMyProfileAuthor(): MyProfileAuthor {
 
   const applyToPost = useCallback(
     <T extends RoomPost>(post: T): T => {
-      if (!currentUserAvatar || post.author.avatarUrl?.trim() || !isMe(post.author)) return post;
+      if (!currentUserAvatar || !isMe(post.author)) return post;
+      // 서버가 내려준 값이 있어도 세션 아바타로 덮는다. (프로필을 새로 등록하면 목록/상세
+      // 응답은 한동안 옛 이미지를 캐시해 내려주기 때문에, 내 글은 항상 세션 기준으로 그린다.)
+      if (post.author.avatarUrl === currentUserAvatar) return post;
       return { ...post, author: { ...post.author, avatarUrl: currentUserAvatar } };
     },
     [currentUserAvatar, isMe],

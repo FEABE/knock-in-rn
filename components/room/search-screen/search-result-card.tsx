@@ -9,11 +9,9 @@ import {
   useRoomCard,
   type UseRoomCardProps,
 } from '@/components/domain';
+import { ICON_GLYPH_STYLE } from '@/components/ui/icon-glyph-style';
 
 const BRAND = '#256EF4';
-
-/** 하트 글리프를 원형 배경 정중앙에 맞추기 위한 폰트 패딩 제거. */
-const ICON_GLYPH_STYLE = { includeFontPadding: false, textAlignVertical: 'center' } as const;
 
 export type SearchResultCardProps = UseRoomCardProps & {
   /** 제목에서 파란색으로 강조할 검색 키워드. */
