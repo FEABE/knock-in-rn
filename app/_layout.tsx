@@ -2,7 +2,7 @@ import '../global.css';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
@@ -12,12 +12,18 @@ import { PushNotificationBridge } from '@/components/notifications/push-notifica
 import { AgreementProvider, ModerationProvider, SessionProvider } from '@/lib/domain';
 import { AppVersionGate } from '@/components/app-version/app-version-gate';
 import { LoginRequiredModalProvider } from '@/components/auth/login-required-modal-provider';
+import { ErrorFallback } from '@/components/error/error-fallback';
 
 const queryClient = new QueryClient();
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
+
+// expo-router 관례: 라우트 파일의 named export ErrorBoundary가 해당 하위 트리의 폴백이 된다.
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <ErrorFallback {...props} />;
+}
 
 // 다크모드 미지원 — 시스템 설정과 무관하게 라이트 테마로 고정한다.
 export default function RootLayout() {
