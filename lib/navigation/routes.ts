@@ -7,6 +7,12 @@ type RouterLike = {
 };
 
 type NavigationMode = 'navigate' | 'replace';
+type ListNavigationMode = NavigationMode | 'reset';
+
+export type ListReturnTarget = {
+  screen: 'explore' | 'interests';
+  tab: 'rooms' | 'roommates';
+};
 
 function navigate(router: RouterLike, href: string) {
   // 같은 화면을 여러 번 눌러도 Stack에 중복으로 쌓이지 않도록 navigate로 이동한다.
@@ -28,12 +34,44 @@ export function goBack(router: RouterLike) {
 
 export function goExplore(
   router: RouterLike,
-  mode: NavigationMode = 'navigate',
+  mode: ListNavigationMode = 'navigate',
   tab?: 'rooms' | 'roommates',
 ) {
   const href = tab ? `/explore?tab=${tab}` : '/explore';
-  if (mode === 'replace') replace(router, href);
+  if (mode === 'reset') reset(router, href);
+  else if (mode === 'replace') replace(router, href);
   else navigate(router, href);
+}
+
+export function goInterests(
+  router: RouterLike,
+  mode: ListNavigationMode = 'navigate',
+  tab?: ListReturnTarget['tab'],
+) {
+  const href = tab ? `/interests?tab=${tab}` : '/interests';
+  if (mode === 'reset') reset(router, href);
+  else if (mode === 'replace') replace(router, href);
+  else navigate(router, href);
+}
+
+export function goListReturnTarget(
+  router: RouterLike,
+  target: ListReturnTarget,
+  mode: ListNavigationMode = 'navigate',
+) {
+  if (target.screen === 'interests') goInterests(router, mode, target.tab);
+  else goExplore(router, mode, target.tab);
+}
+
+export function resolveListReturnTarget(
+  from: string | undefined,
+  tab: string | undefined,
+  fallbackTab: ListReturnTarget['tab'],
+): ListReturnTarget {
+  return {
+    screen: from === 'interests' ? 'interests' : 'explore',
+    tab: tab === 'rooms' || tab === 'roommates' ? tab : fallbackTab,
+  };
 }
 
 export function resetToExplore(router: RouterLike) {
@@ -70,16 +108,26 @@ export function goNewRoom(router: RouterLike) {
   navigate(router, '/room/new');
 }
 
-export function goRoomDetail(router: RouterLike, roomId: string | number) {
-  navigate(router, `/room/${roomId}`);
+export function goRoomDetail(
+  router: RouterLike,
+  roomId: string | number,
+  returnTarget?: ListReturnTarget,
+) {
+  const suffix = returnTarget ? `?from=${returnTarget.screen}&tab=${returnTarget.tab}` : '';
+  navigate(router, `/room/${roomId}${suffix}`);
 }
 
 export function goRoomEdit(router: RouterLike, roomId: string | number) {
   navigate(router, `/room/${roomId}/edit`);
 }
 
-export function goRoommateDetail(router: RouterLike, userId: string | number) {
-  navigate(router, `/roommate/${userId}`);
+export function goRoommateDetail(
+  router: RouterLike,
+  userId: string | number,
+  returnTarget?: ListReturnTarget,
+) {
+  const suffix = returnTarget ? `?from=${returnTarget.screen}&tab=${returnTarget.tab}` : '';
+  navigate(router, `/roommate/${userId}${suffix}`);
 }
 
 export function goChatRoom(router: RouterLike, chatRoomId: string | number) {

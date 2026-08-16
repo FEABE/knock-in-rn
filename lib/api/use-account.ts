@@ -409,10 +409,14 @@ export function useAccountActions() {
   });
   const blockMutation = useMutation({
     mutationFn: (userId: number) => blockUserRequest({ userId }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['profile', 'blocks'] });
-      await queryClient.invalidateQueries({ queryKey: ['roommate', 'matches'] });
-      await queryClient.invalidateQueries({ queryKey: ['roommate', 'boards'] });
+    onSuccess: (response) => {
+      if (response.status !== 200 || response.error) return;
+      // 차단 성공 직후 화면 이동을 막지 않고, 관련 목록은 백그라운드에서 최신화한다.
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['profile', 'blocks'] }),
+        queryClient.invalidateQueries({ queryKey: ['roommate', 'matches'] }),
+        queryClient.invalidateQueries({ queryKey: ['roommate', 'boards'] }),
+      ]);
     },
   });
 

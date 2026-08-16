@@ -1,9 +1,8 @@
-import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { consumeReportSuccessToast } from '@/components/moderation/report-form/report-success-toast';
+import { setModerationSuccessToast } from '@/components/moderation/moderation-success-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
@@ -19,7 +18,7 @@ import {
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { useModeration } from '@/lib/domain';
-import { goChatRoom } from '@/lib/navigation/routes';
+import { goChatRoom, goListReturnTarget, resolveListReturnTarget } from '@/lib/navigation/routes';
 
 export type UseRoommateDetailScreenReturn = {
   data: RoommateMatchDetailModel | null;
@@ -33,7 +32,6 @@ export type UseRoommateDetailScreenReturn = {
   chatLimitOpen: boolean;
   closeChatLimit: () => void;
   blocking: boolean;
-  toast: string | null;
   bottomPadding: number;
   setReportOpen: (next: boolean) => void;
   onBack: () => void;
@@ -48,17 +46,16 @@ export type UseRoommateDetailScreenReturn = {
   onReport: () => void;
 };
 
-const TOAST_DURATION_MS = 2000;
-
 export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, from, tab } = useLocalSearchParams<{ id: string; from?: string; tab?: string }>();
   const { requireLogin } = useRequireLogin();
   const bottomPadding = useSafeBottomPadding(12, 12);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const compatY = useRef(0);
   const firedCompat = useRef(false);
   const matchId = id ?? '';
+  const returnTarget = resolveListReturnTarget(from, tab, 'roommates');
   const { data: rawData, loading, error } = useRoommateMatchDetail(matchId);
   const { data: matchList } = useRoommateMatchList();
   const setMatchLiked = useRoommateMatchLikeActions();
@@ -69,8 +66,6 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [chatLimitOpen, setChatLimitOpen] = useState(false);
   const [blocking, setBlocking] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rawListItem = useMemo(
     () =>
@@ -87,26 +82,6 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
     if (id) logEvent(AnalyticsEvent.ROOMMATE_DETAIL_VIEW, { target_user_id: id });
   }, [id]);
 
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    [],
-  );
-
-  const showToast = useCallback((message: string) => {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), TOAST_DURATION_MS);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      const message = consumeReportSuccessToast('match', matchId);
-      if (message) showToast(message);
-    }, [matchId, showToast]),
-  );
-
   return {
     data,
     loading,
@@ -119,7 +94,6 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
     chatLimitOpen,
     closeChatLimit: () => setChatLimitOpen(false),
     blocking,
-    toast,
     bottomPadding,
     setReportOpen,
     onBack: () => router.back(),
@@ -193,8 +167,8 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
           await requestBlock(userId);
           blockUser(String(userId));
           setBlockConfirmOpen(false);
-          // 디자인 기준: 차단 후에도 화면을 유지하고 토스트만 보여준다.
-          showToast('차단되었어요');
+          setModerationSuccessToast(returnTarget, '차단되었어요');
+          goListReturnTarget(router, returnTarget, 'reset');
         } catch (blockError) {
           Alert.alert(
             '차단 실패',
@@ -211,7 +185,12 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
         setReportOpen(false);
         router.push({
           pathname: '/moderation/report',
-          params: { target: 'match', id: matchId },
+          params: {
+            target: 'match',
+            id: matchId,
+            from: returnTarget.screen,
+            tab: returnTarget.tab,
+          },
         } as never);
       }),
   };

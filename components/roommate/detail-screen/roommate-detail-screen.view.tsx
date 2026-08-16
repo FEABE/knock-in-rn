@@ -20,11 +20,7 @@ import {
   ReadyScreenHeader,
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
-import {
-  ReadyConfirmDialog,
-  ReadyInfoDialog,
-  ReadyToast,
-} from '@/components/ui/ready-to-dev-feedback';
+import { ReadyConfirmDialog, ReadyInfoDialog } from '@/components/ui/ready-to-dev-feedback';
 import { GenderAgeChip } from '@/components/ui/gender-age-chip';
 import {
   RoommateConditionChip,
@@ -64,7 +60,6 @@ export function RoommateDetailScreenView({
   chatLimitOpen,
   closeChatLimit,
   blocking,
-  toast,
   bottomPadding,
   setReportOpen,
   onBack,
@@ -267,7 +262,6 @@ export function RoommateDetailScreenView({
         description="채팅방은 최대 5개까지 생성 가능해요"
         onConfirm={closeChatLimit}
       />
-      <ReadyToast visible={toast !== null} message={toast ?? ''} tone="success" />
     </SafeAreaView>
   );
 }

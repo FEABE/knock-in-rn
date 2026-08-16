@@ -1,9 +1,7 @@
-import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Share } from 'react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { consumeReportSuccessToast } from '@/components/moderation/report-form/report-success-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
@@ -20,7 +18,13 @@ import {
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { useModeration, useMyProfileAuthor, useSession, type RoomPost } from '@/lib/domain';
-import { goChatRoom, goExplore, goRoomEdit, goRoommateDetail } from '@/lib/navigation/routes';
+import {
+  goChatRoom,
+  goExplore,
+  goRoomEdit,
+  goRoommateDetail,
+  resolveListReturnTarget,
+} from '@/lib/navigation/routes';
 
 export type LifestyleTile = { label: string; value: string };
 
@@ -44,7 +48,6 @@ export type UseRoomDetailScreenReturn = {
   deleteDialogOpen: boolean;
   chatLimitOpen: boolean;
   closeChatLimit: () => void;
-  toast: string | null;
   setMenuOpen: (next: boolean) => void;
   setPhotoIndex: (next: number) => void;
   toggleDescription: () => void;
@@ -64,8 +67,9 @@ export type UseRoomDetailScreenReturn = {
 
 export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, from, tab } = useLocalSearchParams<{ id: string; from?: string; tab?: string }>();
   const boardId = typeof id === 'string' ? id : '';
+  const returnTarget = resolveListReturnTarget(from, tab, 'rooms');
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
   const { data: fetchedPost, loading, error } = useRoommateBoardDetail(boardId);
@@ -104,8 +108,6 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chatLimitOpen, setChatLimitOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const photos = post?.photoUrls?.length
     ? post.photoUrls
@@ -121,24 +123,6 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   useEffect(() => {
     if (post?.id) logEvent(AnalyticsEvent.ROOM_DETAIL_VIEW, { room_id: post.id });
   }, [post?.id]);
-
-  useFocusEffect(
-    useCallback(() => {
-      const message = consumeReportSuccessToast('board', boardId);
-      if (!message) return;
-
-      setToast(message);
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-      toastTimer.current = setTimeout(() => setToast(null), 2000);
-    }, [boardId]),
-  );
-
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    [],
-  );
 
   return {
     post,
@@ -160,7 +144,6 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     deleteDialogOpen,
     chatLimitOpen,
     closeChatLimit: () => setChatLimitOpen(false),
-    toast,
     setMenuOpen,
     setPhotoIndex,
     toggleDescription: () => setDescExpanded((prev) => !prev),
@@ -194,7 +177,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
     },
     onAuthorPress: () => {
       if (!post) return;
-      goRoommateDetail(router, post.author.id);
+      goRoommateDetail(router, post.author.id, returnTarget);
     },
     onShare: () => {
       if (!post) return;
@@ -248,7 +231,12 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
         setMenuOpen(false);
         router.push({
           pathname: '/moderation/report',
-          params: { target: 'board', id: post.id },
+          params: {
+            target: 'board',
+            id: post.id,
+            from: returnTarget.screen,
+            tab: returnTarget.tab,
+          },
         } as never);
       });
     },

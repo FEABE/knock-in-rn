@@ -355,6 +355,22 @@ export function useRoommateBoardWriteActions() {
   const reportMutation = useMutation({
     mutationFn: ({ boardId, contents }: { boardId: string; contents: string }) =>
       reportRoommateBoard(boardId, { contents }),
+    onSuccess: (response, { boardId }) => {
+      if (response.status !== 200 || response.error) return;
+      // 신고 직후 목록으로 돌아갔을 때 서버 재조회 전에도 대상 글이 다시 보이지 않게 한다.
+      queryClient.setQueriesData({ queryKey: ['roommate', 'boards'] }, (old: unknown) =>
+        mapCachedPages(old, (page: BoardListData) => {
+          if (!page?.boards) return page;
+          return {
+            ...page,
+            boards: page.boards.filter(
+              (board) => String(board.boardId ?? board.id ?? '') !== String(boardId),
+            ),
+          };
+        }),
+      );
+      void invalidateBoards();
+    },
   });
 
   return {

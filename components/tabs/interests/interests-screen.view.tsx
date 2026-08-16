@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +10,7 @@ import {
   ReadyErrorState,
   ReadyListFooterLoading,
   ReadyLoadingState,
+  ReadyToast,
 } from '@/components/ui/ready-to-dev-feedback';
 import type { RoommateMatchCardModel } from '@/lib/api';
 import type { RoomPost } from '@/lib/domain';
@@ -46,6 +46,8 @@ export function InterestsScreenView({
   rooms,
   likedMatches,
   isLoggedIn,
+  activeTab,
+  toastMessage,
   roomsLoading,
   roomsRefreshing,
   roomsError,
@@ -58,6 +60,7 @@ export function InterestsScreenView({
   loadMoreMatches,
   reloadRooms,
   reloadMatches,
+  setActiveTab,
   onLoginPress,
   onExplorePress,
   onRoomPress,
@@ -65,8 +68,6 @@ export function InterestsScreenView({
   onRoommatePress,
   onRoommateLikeChange,
 }: InterestsScreenViewProps) {
-  const [activeTab, setActiveTab] = useState<'rooms' | 'roommates'>('rooms');
-
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <ReadyPageTitle title="관심" />
@@ -208,6 +209,7 @@ export function InterestsScreenView({
           </Tabs.Content>
         </Tabs.Root>
       )}
+      <ReadyToast visible={toastMessage !== null} message={toastMessage ?? ''} tone="success" />
     </SafeAreaView>
   );
 }

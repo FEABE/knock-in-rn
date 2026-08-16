@@ -18,6 +18,7 @@ import {
   ReadyErrorState,
   ReadyListFooterLoading,
   ReadyLoadingState,
+  ReadyToast,
 } from '@/components/ui/ready-to-dev-feedback';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import type { RoommateMatchCardModel } from '@/lib/api';
@@ -78,6 +79,7 @@ export function ExploreScreenView({
   hasUnreadAlarms,
   preferenceNudgeOpen,
   preferenceNudgeSnooze,
+  toastMessage,
   reloadRooms,
   reloadMatches,
   setSort,
@@ -296,6 +298,7 @@ export function ExploreScreenView({
         onClose={onPreferenceNudgeClose}
         onSetup={onPreferenceSetupPress}
       />
+      <ReadyToast visible={toastMessage !== null} message={toastMessage ?? ''} tone="success" />
     </SafeAreaView>
   );
 }

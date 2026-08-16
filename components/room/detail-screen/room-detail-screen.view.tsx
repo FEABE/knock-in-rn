@@ -26,11 +26,7 @@ import {
   ReadyScreenHeader,
   ReadySection,
 } from '@/components/ui/ready-to-dev-components';
-import {
-  ReadyConfirmDialog,
-  ReadyInfoDialog,
-  ReadyToast,
-} from '@/components/ui/ready-to-dev-feedback';
+import { ReadyConfirmDialog, ReadyInfoDialog } from '@/components/ui/ready-to-dev-feedback';
 import {
   RoommateConditionChip,
   RoommatePriorityChip,
@@ -350,8 +346,6 @@ export function RoomDetailScreenView(props: RoomDetailScreenViewProps) {
         description="채팅방은 최대 5개까지 생성 가능해요"
         onConfirm={props.closeChatLimit}
       />
-      <ReadyToast visible={props.toast !== null} message={props.toast ?? ''} tone="success" />
-
       <ChatImageViewer
         visible={imageViewerOpen}
         imageUrls={props.photos}

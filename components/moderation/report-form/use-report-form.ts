@@ -2,10 +2,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Keyboard } from 'react-native';
 
+import { setModerationSuccessToast } from '@/components/moderation/moderation-success-toast';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useRoommateBoardWriteActions, useRoommateMatchReportActions } from '@/lib/api';
-
-import { setReportSuccessToast } from './report-success-toast';
+import { goListReturnTarget, resolveListReturnTarget } from '@/lib/navigation/routes';
 
 /** 신고 대상 종류. board=방 게시글, match=룸메이트(사용자). */
 export type ReportTargetKind = 'board' | 'match';
@@ -23,7 +23,12 @@ export type UseReportFormReturn = {
 
 export function useReportForm(): UseReportFormReturn {
   const router = useRouter();
-  const params = useLocalSearchParams<{ target?: string; id?: string }>();
+  const params = useLocalSearchParams<{
+    target?: string;
+    id?: string;
+    from?: string;
+    tab?: string;
+  }>();
   const target: ReportTargetKind = params.target === 'match' ? 'match' : 'board';
   const targetId = typeof params.id === 'string' ? params.id : '';
   const bottomPadding = useSafeBottomPadding(12, 12);
@@ -52,9 +57,14 @@ export function useReportForm(): UseReportFormReturn {
           } else {
             await reportBoard(targetId, contents);
           }
-          setReportSuccessToast(target, targetId);
+          const returnTarget = resolveListReturnTarget(
+            params.from,
+            params.tab,
+            target === 'match' ? 'roommates' : 'rooms',
+          );
+          setModerationSuccessToast(returnTarget, '신고가 완료되었어요');
           Keyboard.dismiss();
-          router.back();
+          goListReturnTarget(router, returnTarget, 'reset');
         } catch (reportError) {
           Alert.alert(
             '신고 실패',
