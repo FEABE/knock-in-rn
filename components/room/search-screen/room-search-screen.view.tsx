@@ -7,6 +7,7 @@ import {
   ReadyEmptyState,
   ReadyErrorState,
   ReadyLoadingState,
+  ReadyToast,
 } from '@/components/ui/ready-to-dev-feedback';
 
 import { SearchLoadingDots } from './search-loading-dots';
@@ -26,6 +27,7 @@ export function RoomSearchScreenView({
   popular,
   popularLoading,
   popularError,
+  toastMessage,
   retryPopular,
   setQuery,
   clearQuery,
@@ -162,6 +164,7 @@ export function RoomSearchScreenView({
           {popularSection}
         </ScrollView>
       )}
+      <ReadyToast visible={toastMessage !== null} message={toastMessage ?? ''} tone="success" />
     </SafeAreaView>
   );
 }

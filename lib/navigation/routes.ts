@@ -7,12 +7,15 @@ type RouterLike = {
 };
 
 type NavigationMode = 'navigate' | 'replace';
-type ListNavigationMode = NavigationMode | 'reset';
 
 export type ListReturnTarget = {
   screen: 'explore' | 'interests';
   tab: 'rooms' | 'roommates';
 };
+
+export type ModerationReturnTarget =
+  | (ListReturnTarget & { href: string })
+  | { screen: 'room-search' | 'chat'; href: string; tab?: never };
 
 function navigate(router: RouterLike, href: string) {
   // 같은 화면을 여러 번 눌러도 Stack에 중복으로 쌓이지 않도록 navigate로 이동한다.
@@ -34,44 +37,69 @@ export function goBack(router: RouterLike) {
 
 export function goExplore(
   router: RouterLike,
-  mode: ListNavigationMode = 'navigate',
+  mode: NavigationMode = 'navigate',
   tab?: 'rooms' | 'roommates',
 ) {
   const href = tab ? `/explore?tab=${tab}` : '/explore';
-  if (mode === 'reset') reset(router, href);
-  else if (mode === 'replace') replace(router, href);
+  if (mode === 'replace') replace(router, href);
   else navigate(router, href);
 }
 
 export function goInterests(
   router: RouterLike,
-  mode: ListNavigationMode = 'navigate',
+  mode: NavigationMode = 'navigate',
   tab?: ListReturnTarget['tab'],
 ) {
   const href = tab ? `/interests?tab=${tab}` : '/interests';
-  if (mode === 'reset') reset(router, href);
-  else if (mode === 'replace') replace(router, href);
+  if (mode === 'replace') replace(router, href);
   else navigate(router, href);
 }
 
 export function goListReturnTarget(
   router: RouterLike,
   target: ListReturnTarget,
-  mode: ListNavigationMode = 'navigate',
+  mode: NavigationMode = 'navigate',
 ) {
   if (target.screen === 'interests') goInterests(router, mode, target.tab);
   else goExplore(router, mode, target.tab);
 }
 
-export function resolveListReturnTarget(
+export function resolveModerationReturnTarget(
   from: string | undefined,
+  returnTo: string | undefined,
   tab: string | undefined,
   fallbackTab: ListReturnTarget['tab'],
-): ListReturnTarget {
+): ModerationReturnTarget {
+  const resolvedTab = tab === 'rooms' || tab === 'roommates' ? tab : fallbackTab;
+  if (from === 'interests' && isPathFor(returnTo, '/interests')) {
+    return { screen: 'interests', href: returnTo, tab: resolvedTab };
+  }
+  if (from === 'explore' && isPathFor(returnTo, '/explore')) {
+    return { screen: 'explore', href: returnTo, tab: resolvedTab };
+  }
+  if (from === 'room-search' && isPathFor(returnTo, '/room/search')) {
+    return { screen: 'room-search', href: returnTo };
+  }
+  if (from === 'chat' && returnTo && /^\/chat\/[^/?]+$/.test(returnTo)) {
+    return { screen: 'chat', href: returnTo };
+  }
+  return { screen: 'explore', href: '/explore', tab: fallbackTab };
+}
+
+function isPathFor(href: string | undefined, pathname: string): href is string {
+  return href === pathname || href?.startsWith(`${pathname}?`) === true;
+}
+
+export function moderationReturnParams(target: ModerationReturnTarget) {
   return {
-    screen: from === 'interests' ? 'interests' : 'explore',
-    tab: tab === 'rooms' || tab === 'roommates' ? tab : fallbackTab,
+    from: target.screen,
+    returnTo: target.href,
+    ...(target.tab ? { tab: target.tab } : {}),
   };
+}
+
+export function goModerationReturnTarget(router: RouterLike, target: ModerationReturnTarget) {
+  navigate(router, target.href);
 }
 
 export function resetToExplore(router: RouterLike) {
@@ -111,9 +139,9 @@ export function goNewRoom(router: RouterLike) {
 export function goRoomDetail(
   router: RouterLike,
   roomId: string | number,
-  returnTarget?: ListReturnTarget,
+  returnTarget?: ModerationReturnTarget,
 ) {
-  const suffix = returnTarget ? `?from=${returnTarget.screen}&tab=${returnTarget.tab}` : '';
+  const suffix = returnTarget ? moderationReturnQuery(returnTarget) : '';
   navigate(router, `/room/${roomId}${suffix}`);
 }
 
@@ -124,10 +152,15 @@ export function goRoomEdit(router: RouterLike, roomId: string | number) {
 export function goRoommateDetail(
   router: RouterLike,
   userId: string | number,
-  returnTarget?: ListReturnTarget,
+  returnTarget?: ModerationReturnTarget,
 ) {
-  const suffix = returnTarget ? `?from=${returnTarget.screen}&tab=${returnTarget.tab}` : '';
+  const suffix = returnTarget ? moderationReturnQuery(returnTarget) : '';
   navigate(router, `/roommate/${userId}${suffix}`);
+}
+
+function moderationReturnQuery(target: ModerationReturnTarget): string {
+  const params = new URLSearchParams(moderationReturnParams(target));
+  return `?${params.toString()}`;
 }
 
 export function goChatRoom(router: RouterLike, chatRoomId: string | number) {

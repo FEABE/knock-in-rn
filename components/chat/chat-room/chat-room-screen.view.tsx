@@ -75,6 +75,7 @@ export function ChatRoomScreenView({
   confirmReject,
   cancelReject,
   limitToastVisible,
+  moderationToastMessage,
   imageViewer,
   openImageViewer,
   closeImageViewer,
@@ -162,10 +163,11 @@ export function ChatRoomScreenView({
         {/* 키보드 패딩이 적용된 컨테이너 안이라, 키보드가 올라오면 그만큼 같이 밀려 올라간다.
             높이는 다른 화면 토스트와 동일(TOAST_BOTTOM_OFFSET)하게 둔다. */}
         <ReadyToast
-          visible={limitToastVisible}
-          message="최대 500자까지 보낼 수 있어요"
-          icon="alert-circle"
-          iconColor="#FFB020"
+          visible={moderationToastMessage !== null || limitToastVisible}
+          message={moderationToastMessage ?? '최대 500자까지 보낼 수 있어요'}
+          tone={moderationToastMessage ? 'success' : 'neutral'}
+          icon={moderationToastMessage ? 'checkmark-circle' : 'alert-circle'}
+          iconColor={moderationToastMessage ? undefined : '#FFB020'}
         />
       </Animated.View>
 

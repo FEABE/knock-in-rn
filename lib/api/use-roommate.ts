@@ -445,9 +445,25 @@ export function useRoommateMatchLikeActions() {
 }
 
 export function useRoommateMatchReportActions() {
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: ({ memberId, contents }: { memberId: string; contents: string }) =>
       reportRoommateMatch(memberId, { contents }),
+    onSuccess: (response, { memberId }) => {
+      if (response.status !== 200 || response.error) return;
+      queryClient.setQueriesData({ queryKey: ['roommate', 'matches'] }, (old: unknown) =>
+        mapCachedPages(old, (page: MatchListData) => {
+          if (!page?.matches) return page;
+          return {
+            ...page,
+            matches: page.matches.filter(
+              (match) => String(match.userId ?? match.memberId ?? '') !== String(memberId),
+            ),
+          };
+        }),
+      );
+      void queryClient.invalidateQueries({ queryKey: ['roommate', 'matches'] });
+    },
   });
 
   return {

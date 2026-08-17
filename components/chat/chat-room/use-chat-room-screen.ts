@@ -3,7 +3,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Alert, Linking, type ScrollView } from 'react-native';
 
+import { useModerationSuccessToast } from '@/components/moderation/use-moderation-success-toast';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
+import { moderationReturnParams } from '@/lib/navigation/routes';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   apiErrorCode,
@@ -102,6 +104,7 @@ export type UseChatRoomScreenReturn = {
   cancelReject: () => void;
   /** 입력이 500자를 넘겨 잘렸을 때 띄우는 안내 토스트. */
   limitToastVisible: boolean;
+  moderationToastMessage: string | null;
   onLeave: () => void;
 };
 
@@ -148,6 +151,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [limitToastVisible, setLimitToastVisible] = useState(false);
+  const moderationToast = useModerationSuccessToast('chat');
   const limitToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // TextInput의 maxLength는 초과 입력을 조용히 무시해 안내할 방법이 없다.
@@ -521,10 +525,17 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     closeMenuSheetThen(() => {
       router.push({
         pathname: '/moderation/report',
-        params: { target: 'match', id: room.peer.id },
+        params: {
+          target: 'match',
+          id: room.peer.id,
+          ...moderationReturnParams({
+            screen: 'chat',
+            href: `/chat/${chatRoomId}`,
+          }),
+        },
       } as never);
     });
-  }, [closeMenuSheetThen, room, router]);
+  }, [chatRoomId, closeMenuSheetThen, room, router]);
 
   const confirmLeave = useCallback(() => {
     if (!room) return;
@@ -560,6 +571,7 @@ export function useChatRoomScreen(): UseChatRoomScreenReturn {
     draft,
     setDraft: setDraftClamped,
     limitToastVisible,
+    moderationToastMessage: moderationToast?.message ?? null,
     canSend:
       !opponentLeft && draft.trim().length > 0 && (USE_MOCK || socket.status === 'connected'),
     opponentLeft,

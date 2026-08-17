@@ -1,8 +1,8 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { consumeModerationSuccessToast } from '@/components/moderation/moderation-success-toast';
+import { useModerationSuccessToast } from '@/components/moderation/use-moderation-success-toast';
 import {
   type BoardListQuery,
   type MatchListQuery,
@@ -74,29 +74,20 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
   const [sort, setSort] = useState<ExploreSort>('latest');
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
   const [activeTab, setActiveTab] = useState<'rooms' | 'roommates'>('rooms');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moderationToast = useModerationSuccessToast('interests');
 
   useFocusEffect(
     useCallback(() => {
-      if (tab === 'rooms' || tab === 'roommates') setActiveTab(tab);
-
-      const pendingToast = consumeModerationSuccessToast('interests');
-      if (pendingToast) {
-        setActiveTab(pendingToast.tab);
-        setToastMessage(pendingToast.message);
-        if (toastTimer.current) clearTimeout(toastTimer.current);
-        toastTimer.current = setTimeout(() => setToastMessage(null), 2000);
+      if (tab === 'rooms' || tab === 'roommates') {
+        setActiveTab(tab);
+        router.setParams({ tab: undefined });
       }
-    }, [tab]),
+    }, [router, tab]),
   );
 
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    [],
-  );
+  useEffect(() => {
+    if (moderationToast?.tab) setActiveTab(moderationToast.tab);
+  }, [moderationToast]);
   // 관심 목록은 서버의 likedOnly 필터로 받는다. 예전처럼 전체 목록 1페이지를 받아
   // 클라이언트에서 liked 만 걸러내면, 최신 20건 밖의 관심 글은 아예 보이지 않는다.
   const boardQuery = useMemo(() => toBoardQuery(filter, sort), [filter, sort]);
@@ -141,7 +132,7 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
     sort,
     openSheet,
     activeTab,
-    toastMessage,
+    toastMessage: moderationToast?.message ?? null,
     roomsLoading,
     roomsRefreshing,
     roomsError,
@@ -162,10 +153,19 @@ export function useInterestsScreen(): UseInterestsScreenReturn {
     onSearchPress: () => goRoomSearch(router),
     onLoginPress: () => requireLogin(() => undefined),
     onExplorePress: (tab) => goExplore(router, 'navigate', tab),
-    onRoomPress: (post) => goRoomDetail(router, post.id, { screen: 'interests', tab: 'rooms' }),
+    onRoomPress: (post) =>
+      goRoomDetail(router, post.id, {
+        screen: 'interests',
+        href: '/interests',
+        tab: 'rooms',
+      }),
     onRoomLikeChange: (post, liked) => requireLogin(() => setBoardLiked(post.id, liked)),
     onRoommatePress: (match) =>
-      goRoommateDetail(router, match.id, { screen: 'interests', tab: 'roommates' }),
+      goRoommateDetail(router, match.id, {
+        screen: 'interests',
+        href: '/interests',
+        tab: 'roommates',
+      }),
     onRoommateLikeChange: (match, liked) => requireLogin(() => setMatchLiked(match.id, liked)),
   };
 }

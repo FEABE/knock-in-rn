@@ -2,7 +2,7 @@
  * API 호출용 범용 데이터 패칭 훅.
  * `{ data, loading, error, reload }` 를 반환한다.
  */
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   useInfiniteQuery,
   useQuery,
@@ -65,7 +65,9 @@ export function useApi<T>(
     data: query.data ?? null,
     loading: enabled && query.isLoading,
     refreshing: enabled && query.isFetching && !query.isLoading,
-    error: enabled && query.error instanceof Error ? query.error.message : null,
+    // 캐시 데이터가 있으면 백그라운드 재조회 실패로 전체 화면을 에러 상태로 바꾸지 않는다.
+    error:
+      enabled && query.data == null && query.error instanceof Error ? query.error.message : null,
     reload,
   };
 }
@@ -121,6 +123,7 @@ export function useInfiniteApi<TPage, TPageParam = number>(
 ): InfiniteAsyncState<TPage> {
   const enabled = options.enabled ?? true;
   const queryClient = useQueryClient();
+  const [manualRefreshing, setManualRefreshing] = useState(false);
   // queryKey 는 매 렌더 새 배열이라 useCallback deps 로 쓸 수 없다(포커스 effect 무한 루프).
   const queryKeyRef = useRef(queryKey);
   queryKeyRef.current = queryKey;
@@ -148,14 +151,19 @@ export function useInfiniteApi<TPage, TPageParam = number>(
     return refetch().then(() => undefined);
   }, [enabled, refetch]);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async () => {
     if (!enabled) return Promise.resolve();
     queryClient.setQueryData<InfiniteData<TPage, TPageParam>>(queryKeyRef.current, (old) =>
       old && old.pages.length > 1
         ? { pages: old.pages.slice(0, 1), pageParams: old.pageParams.slice(0, 1) }
         : old,
     );
-    return refetch().then(() => undefined);
+    setManualRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setManualRefreshing(false);
+    }
   }, [enabled, queryClient, refetch]);
 
   const loadMore = useCallback(() => {
@@ -166,8 +174,9 @@ export function useInfiniteApi<TPage, TPageParam = number>(
   return {
     pages: query.data?.pages ?? null,
     loading: enabled && query.isLoading,
-    refreshing: enabled && query.isFetching && !query.isLoading && !isFetchingNextPage,
-    error: enabled && query.error instanceof Error ? query.error.message : null,
+    refreshing: enabled && manualRefreshing,
+    error:
+      enabled && query.data == null && query.error instanceof Error ? query.error.message : null,
     reload,
     refresh,
     loadMore,

@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Keyboard } from 'react-native';
 
+import { useModerationSuccessToast } from '@/components/moderation/use-moderation-success-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
   type BoardListQuery,
@@ -28,6 +29,7 @@ export type UseRoomSearchScreenReturn = {
   popular: string[];
   popularLoading: boolean;
   popularError: string | null;
+  toastMessage: string | null;
   retryPopular: () => void;
   setQuery: (next: string) => void;
   clearQuery: () => void;
@@ -55,6 +57,7 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
   const { requireLogin } = useRequireLogin();
   const { isPostBlocked, isUserBlocked } = useModeration();
   const setBoardLiked = useRoommateBoardLikeActions();
+  const moderationToast = useModerationSuccessToast('room-search');
 
   const {
     data: popularData,
@@ -134,6 +137,7 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
     popular,
     popularLoading,
     popularError,
+    toastMessage: moderationToast?.message ?? null,
     retryPopular,
     setQuery: (next) => setState((current) => ({ ...current, query: next })),
     clearQuery: () => setState((current) => ({ ...current, query: '', submitted: null })),
@@ -151,7 +155,10 @@ export function useRoomSearchScreen(): UseRoomSearchScreenReturn {
     onCancel: () => router.back(),
     onResultPress: (post) => {
       logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
-      goRoomDetail(router, post.id);
+      goRoomDetail(router, post.id, {
+        screen: 'room-search',
+        href: submitted ? `/room/search?q=${encodeURIComponent(submitted)}` : '/room/search',
+      });
     },
     onResultLikeChange: (post, liked) =>
       requireLogin(() => {

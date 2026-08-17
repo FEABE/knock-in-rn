@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
+import { useModerationSuccessToast } from '@/components/moderation/use-moderation-success-toast';
 import type { GenderFilterValue } from '@/components/room/filters';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import {
@@ -31,7 +32,6 @@ import {
   isPreferenceNudgeSnoozed,
   snoozePreferenceNudgeForWeek,
 } from '@/lib/preferences/nudge-storage';
-import { consumeModerationSuccessToast } from '@/components/moderation/moderation-success-toast';
 
 export type ExploreSort = 'latest' | 'views';
 export type ExploreFilterKey = 'sort' | 'region' | 'gender' | 'budget' | 'roomType';
@@ -120,35 +120,23 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const [openSheet, setOpenSheet] = useState<ExploreFilterKey | null>(null);
   const [preferenceNudgeOpen, setPreferenceNudgeOpen] = useState(false);
   const [preferenceNudgeSnooze, setPreferenceNudgeSnooze] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moderationToast = useModerationSuccessToast('explore');
   const { data: alarms } = useAlarms(Boolean(session));
 
-  // 탐색 탭바가 화면 스택에 남아있는 상태에서 다시 진입해도(관심 등 다른 화면에서 특정
-  // 탭을 지정해 들어온 경우) 이전에 보던 탭이 아니라 요청받은 탭으로 강제 전환한다.
-  // 하단 탭 전환은 화면을 언마운트하지 않으므로 `tab` 쿼리값이 지난번과 같으면(예: 관심
-  // 화면에서 매번 rooms로 지정) 일반 useEffect는 재실행되지 않아 전환이 씹힌다.
-  // 포커스를 받을 때마다 다시 적용하도록 useFocusEffect로 처리한다.
+  // 다른 화면이 지정한 탭은 한 번만 적용한다. 쿼리를 남겨두면 상세에서 뒤로 올 때마다
+  // 과거 탭이 다시 강제 선택되므로 적용 직후 제거한다.
   useFocusEffect(
     useCallback(() => {
-      if (tab === 'rooms' || tab === 'roommates') setActiveTab(tab);
-
-      const pendingToast = consumeModerationSuccessToast('explore');
-      if (pendingToast) {
-        setActiveTab(pendingToast.tab);
-        setToastMessage(pendingToast.message);
-        if (toastTimer.current) clearTimeout(toastTimer.current);
-        toastTimer.current = setTimeout(() => setToastMessage(null), 2000);
+      if (tab === 'rooms' || tab === 'roommates') {
+        setActiveTab(tab);
+        router.setParams({ tab: undefined });
       }
-    }, [tab]),
+    }, [router, tab]),
   );
 
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    [],
-  );
+  useEffect(() => {
+    if (moderationToast?.tab) setActiveTab(moderationToast.tab);
+  }, [moderationToast]);
 
   // 검색어는 서버 keyword 파라미터로 넘긴다(페이지 단위 클라이언트 필터링은
   // 무한 스크롤에서 페이지마다 구멍이 생기고, 검색 기록도 남지 않는다).
@@ -159,24 +147,12 @@ export function useExploreScreen(): UseExploreScreenReturn {
   const {
     data: posts,
     loading: roomsLoading,
+    refreshing: roomsRefreshing,
     error: roomsError,
-    reload: reloadRooms,
-    refresh: refreshRoomsPages,
+    refresh: reloadRooms,
     loadMore: loadMoreRooms,
     loadingMore: roomsLoadingMore,
   } = useRoommateBoardsInfinite(boardQuery);
-  const [roomsPullRefreshing, setRoomsPullRefreshing] = useState(false);
-
-  const refreshRooms = useCallback(() => {
-    setRoomsPullRefreshing(true);
-    void Promise.resolve(refreshRoomsPages()).finally(() => setRoomsPullRefreshing(false));
-  }, [refreshRoomsPages]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void reloadRooms();
-    }, [reloadRooms]),
-  );
 
   const visiblePosts = useMemo(() => {
     const safe = applyMyProfile(posts ?? []).filter(
@@ -244,7 +220,7 @@ export function useExploreScreen(): UseExploreScreenReturn {
     visiblePosts,
     visibleMatches,
     roomsLoading,
-    roomsRefreshing: roomsPullRefreshing,
+    roomsRefreshing,
     roomsError,
     roomsLoadingMore,
     loadMoreRooms,
@@ -256,8 +232,8 @@ export function useExploreScreen(): UseExploreScreenReturn {
     hasUnreadAlarms: (alarms ?? []).some((alarm) => !alarm.isRead),
     preferenceNudgeOpen,
     preferenceNudgeSnooze,
-    toastMessage,
-    reloadRooms: refreshRooms,
+    toastMessage: moderationToast?.message ?? null,
+    reloadRooms,
     reloadMatches,
     setSort,
     setOpenSheet,
@@ -275,7 +251,11 @@ export function useExploreScreen(): UseExploreScreenReturn {
     onRoomPress: (post) => {
       requireLogin(() => {
         logEvent(AnalyticsEvent.ROOM_CARD_TAP, { room_id: post.id });
-        goRoomDetail(router, post.id, { screen: 'explore', tab: 'rooms' });
+        goRoomDetail(router, post.id, {
+          screen: 'explore',
+          href: searchQuery ? `/explore?q=${encodeURIComponent(searchQuery)}` : '/explore',
+          tab: 'rooms',
+        });
       });
     },
     onRoomLikeChange: (post, liked) =>
@@ -288,7 +268,11 @@ export function useExploreScreen(): UseExploreScreenReturn {
     onRoommatePress: (match) => {
       requireLogin(() => {
         logEvent(AnalyticsEvent.ROOMMATE_CARD_TAP, { target_user_id: match.id });
-        goRoommateDetail(router, match.id, { screen: 'explore', tab: 'roommates' });
+        goRoommateDetail(router, match.id, {
+          screen: 'explore',
+          href: '/explore',
+          tab: 'roommates',
+        });
       });
     },
     onRoommateLikeChange: (match, liked) =>

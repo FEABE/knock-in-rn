@@ -5,7 +5,7 @@ import { Alert, Keyboard } from 'react-native';
 import { setModerationSuccessToast } from '@/components/moderation/moderation-success-toast';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import { useRoommateBoardWriteActions, useRoommateMatchReportActions } from '@/lib/api';
-import { goListReturnTarget, resolveListReturnTarget } from '@/lib/navigation/routes';
+import { goModerationReturnTarget, resolveModerationReturnTarget } from '@/lib/navigation/routes';
 
 /** 신고 대상 종류. board=방 게시글, match=룸메이트(사용자). */
 export type ReportTargetKind = 'board' | 'match';
@@ -28,6 +28,7 @@ export function useReportForm(): UseReportFormReturn {
     id?: string;
     from?: string;
     tab?: string;
+    returnTo?: string;
   }>();
   const target: ReportTargetKind = params.target === 'match' ? 'match' : 'board';
   const targetId = typeof params.id === 'string' ? params.id : '';
@@ -57,14 +58,15 @@ export function useReportForm(): UseReportFormReturn {
           } else {
             await reportBoard(targetId, contents);
           }
-          const returnTarget = resolveListReturnTarget(
+          const returnTarget = resolveModerationReturnTarget(
             params.from,
+            params.returnTo,
             params.tab,
             target === 'match' ? 'roommates' : 'rooms',
           );
           setModerationSuccessToast(returnTarget, '신고가 완료되었어요');
           Keyboard.dismiss();
-          goListReturnTarget(router, returnTarget, 'reset');
+          goModerationReturnTarget(router, returnTarget);
         } catch (reportError) {
           Alert.alert(
             '신고 실패',

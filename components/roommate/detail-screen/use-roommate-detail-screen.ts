@@ -18,7 +18,12 @@ import {
 } from '@/lib/api';
 import { useRequireLogin } from '@/lib/auth';
 import { useModeration } from '@/lib/domain';
-import { goChatRoom, goListReturnTarget, resolveListReturnTarget } from '@/lib/navigation/routes';
+import {
+  goChatRoom,
+  goModerationReturnTarget,
+  moderationReturnParams,
+  resolveModerationReturnTarget,
+} from '@/lib/navigation/routes';
 
 export type UseRoommateDetailScreenReturn = {
   data: RoommateMatchDetailModel | null;
@@ -48,14 +53,19 @@ export type UseRoommateDetailScreenReturn = {
 
 export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
   const router = useRouter();
-  const { id, from, tab } = useLocalSearchParams<{ id: string; from?: string; tab?: string }>();
+  const { id, from, tab, returnTo } = useLocalSearchParams<{
+    id: string;
+    from?: string;
+    tab?: string;
+    returnTo?: string;
+  }>();
   const { requireLogin } = useRequireLogin();
   const bottomPadding = useSafeBottomPadding(12, 12);
   const [lifestyleExpanded, setLifestyleExpanded] = useState(false);
   const compatY = useRef(0);
   const firedCompat = useRef(false);
   const matchId = id ?? '';
-  const returnTarget = resolveListReturnTarget(from, tab, 'roommates');
+  const returnTarget = resolveModerationReturnTarget(from, returnTo, tab, 'roommates');
   const { data: rawData, loading, error } = useRoommateMatchDetail(matchId);
   const { data: matchList } = useRoommateMatchList();
   const setMatchLiked = useRoommateMatchLikeActions();
@@ -168,7 +178,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
           blockUser(String(userId));
           setBlockConfirmOpen(false);
           setModerationSuccessToast(returnTarget, '차단되었어요');
-          goListReturnTarget(router, returnTarget, 'reset');
+          goModerationReturnTarget(router, returnTarget);
         } catch (blockError) {
           Alert.alert(
             '차단 실패',
@@ -188,8 +198,7 @@ export function useRoommateDetailScreen(): UseRoommateDetailScreenReturn {
           params: {
             target: 'match',
             id: matchId,
-            from: returnTarget.screen,
-            tab: returnTarget.tab,
+            ...moderationReturnParams(returnTarget),
           },
         } as never);
       }),

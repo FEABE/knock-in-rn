@@ -2,15 +2,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Share } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
 
+import { setModerationSuccessToast } from '@/components/moderation/moderation-success-toast';
 import { AnalyticsEvent, logEvent } from '@/lib/analytics';
 import { useSafeBottomPadding } from '@/hooks/use-safe-bottom-padding';
 import {
   apiErrorCode,
-  blockUser as blockUserRequest,
   DEFAULT_CHAT_MESSAGE,
   getAccessTokenMemberId,
   getRoommateBoardDetail,
   useApi,
+  useAccountActions,
   useCreateChatRoom,
   useRoommateBoardDetail,
   useRoommateBoardLikeActions,
@@ -20,10 +21,11 @@ import { useRequireLogin } from '@/lib/auth';
 import { useModeration, useMyProfileAuthor, useSession, type RoomPost } from '@/lib/domain';
 import {
   goChatRoom,
-  goExplore,
+  goModerationReturnTarget,
   goRoomEdit,
   goRoommateDetail,
-  resolveListReturnTarget,
+  moderationReturnParams,
+  resolveModerationReturnTarget,
 } from '@/lib/navigation/routes';
 
 export type LifestyleTile = { label: string; value: string };
@@ -67,9 +69,14 @@ export type UseRoomDetailScreenReturn = {
 
 export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const router = useRouter();
-  const { id, from, tab } = useLocalSearchParams<{ id: string; from?: string; tab?: string }>();
+  const { id, from, tab, returnTo } = useLocalSearchParams<{
+    id: string;
+    from?: string;
+    tab?: string;
+    returnTo?: string;
+  }>();
   const boardId = typeof id === 'string' ? id : '';
-  const returnTarget = resolveListReturnTarget(from, tab, 'rooms');
+  const returnTarget = resolveModerationReturnTarget(from, returnTo, tab, 'rooms');
   const { session } = useSession();
   const { requireLogin } = useRequireLogin();
   const { data: fetchedPost, loading, error } = useRoommateBoardDetail(boardId);
@@ -99,6 +106,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
   const { createRoom, creatingRoom } = useCreateChatRoom();
   const setBoardLiked = useRoommateBoardLikeActions();
   const { deleteBoard, deleting } = useRoommateBoardWriteActions();
+  const { requestBlock } = useAccountActions();
   const { blockUser, isPostBlocked, blockPost } = useModeration();
   const bottomPadding = useSafeBottomPadding(12, 12);
 
@@ -173,7 +181,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
         return;
       }
       setDeleteDialogOpen(false);
-      goExplore(router, 'replace', 'rooms');
+      goModerationReturnTarget(router, { screen: 'explore', href: '/explore', tab: 'rooms' });
     },
     onAuthorPress: () => {
       if (!post) return;
@@ -234,8 +242,7 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
           params: {
             target: 'board',
             id: post.id,
-            from: returnTarget.screen,
-            tab: returnTarget.tab,
+            ...moderationReturnParams(returnTarget),
           },
         } as never);
       });
@@ -254,13 +261,11 @@ export function useRoomDetailScreen(): UseRoomDetailScreenReturn {
               return;
             }
             try {
-              const res = await blockUserRequest({ userId: authorId });
-              if (res.status !== 200 || res.error) {
-                throw new Error(res.error?.message ?? '차단에 실패했습니다.');
-              }
+              await requestBlock(authorId);
               blockUser(post.author.id);
               blockPost(post.id);
-              router.back();
+              setModerationSuccessToast(returnTarget, '차단되었어요');
+              goModerationReturnTarget(router, returnTarget);
             } catch (blockError) {
               Alert.alert(
                 '차단 실패',
