@@ -25,13 +25,9 @@ export type UseBasicProfileEditScreenReturn = {
   loading: boolean;
   saving: boolean;
   error: string | null;
-  nameError: string | null;
-  emailError: string | null;
   birthError: string | null;
   canSave: boolean;
   onBack: () => void;
-  setName: (value: string) => void;
-  setEmail: (value: string) => void;
   setBirth: (value: string) => void;
   pickProfileImage: () => Promise<void>;
   save: () => Promise<void>;
@@ -90,10 +86,8 @@ export function useBasicProfileEditScreen(): UseBasicProfileEditScreenReturn {
     };
   }, []);
 
-  const nameError = useMemo(() => validateName(state.name), [state.name]);
-  const emailError = useMemo(() => validateEmail(state.email), [state.email]);
   const birthError = useMemo(() => validateBirth(state.birth), [state.birth]);
-  const canSave = !loading && !saving && !nameError && !emailError && !birthError;
+  const canSave = !loading && !saving && !birthError;
 
   const pickProfileImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -131,8 +125,6 @@ export function useBasicProfileEditScreen(): UseBasicProfileEditScreenReturn {
     setSaving(true);
     const response = await updateProfileBasic(
       {
-        name: state.name.trim(),
-        email: state.email.trim(),
         birth: toApiBirth(state.birth),
         gender: state.gender,
         terms,
@@ -157,27 +149,13 @@ export function useBasicProfileEditScreen(): UseBasicProfileEditScreenReturn {
     loading,
     saving,
     error,
-    nameError,
-    emailError,
     birthError,
     canSave,
     onBack: () => router.back(),
-    setName: (name) => setState((current) => ({ ...current, name })),
-    setEmail: (email) => setState((current) => ({ ...current, email })),
     setBirth: (birth) => setState((current) => ({ ...current, birth: normalizeBirthInput(birth) })),
     pickProfileImage,
     save,
   };
-}
-
-function validateName(value: string): string | null {
-  if (/^[가-힣]{2,10}$/.test(value.trim())) return null;
-  return '한글로 최소 2자~10자까지 입력 가능해요';
-}
-
-function validateEmail(value: string): string | null {
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return null;
-  return '이메일 형식을 확인해주세요';
 }
 
 function validateBirth(value: string): string | null {

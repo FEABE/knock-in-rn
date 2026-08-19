@@ -6,7 +6,7 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-re
 import { BottomSheet, Modal, TermsAgreement, TextField } from '@/components/ui/headless';
 import { IdentityVerificationArtwork } from '@/components/ui/ready-to-dev-assets';
 import { ReadyToast, useSheetToastInset } from '@/components/ui/ready-to-dev-feedback';
-import { PROFILE_NAME_MAX_LENGTH, type Gender, type Term } from '@/lib/onboarding';
+import { type Gender, type Term } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import {
@@ -35,10 +35,8 @@ export function ProfileBasicStepView({
   canProceed,
   onBack,
   onContinue,
-  onNameChange,
   onBirthChange,
   onGenderChange,
-  onEmailChange,
   onDialogClose,
   onExit,
   onTermsOpenChange,
@@ -88,21 +86,6 @@ export function ProfileBasicStepView({
         </Text>
 
         <View className="mt-9">
-          {stage === 'name' ? (
-            <TextField
-              key="name"
-              autoFocus
-              value={profile.name}
-              onChangeValue={onNameChange}
-              placeholder="이름"
-              maxLength={PROFILE_NAME_MAX_LENGTH}
-              invalid={Boolean(fieldError)}
-              returnKeyType="next"
-              onSubmitEditing={onContinue}
-              className={inputClassName(Boolean(fieldError))}
-            />
-          ) : null}
-
           {stage === 'birth' ? (
             <TextField
               key="birth"
@@ -132,23 +115,6 @@ export function ProfileBasicStepView({
             </Pressable>
           ) : null}
 
-          {stage === 'email' ? (
-            <TextField
-              key="email"
-              autoFocus
-              value={profile.email}
-              onChangeValue={onEmailChange}
-              placeholder="이메일"
-              keyboardType="email-address"
-              invalid={Boolean(fieldError)}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="done"
-              onSubmitEditing={onContinue}
-              className={inputClassName(Boolean(fieldError))}
-            />
-          ) : null}
-
           {fieldError ? (
             <Text className="mt-1.5 text-xs font-medium leading-[18px] text-[#D63D4A]">
               {fieldError}
@@ -156,12 +122,7 @@ export function ProfileBasicStepView({
           ) : null}
         </View>
 
-        <CompletedBasicFields
-          stage={stage}
-          name={profile.name}
-          birth={birthText}
-          gender={profile.gender}
-        />
+        <CompletedBasicFields stage={stage} birth={birthText} />
       </ScrollView>
 
       {submitError ? (
@@ -235,10 +196,8 @@ export function ProfileBasicStepView({
 }
 
 const STAGE_PROMPTS: Record<Exclude<ProfileBasicStage, 'intro'>, string> = {
-  name: '이름을 알려주세요',
   birth: '생년월일을 알려주세요',
   gender: '성별을 알려주세요',
-  email: '이메일을 알려주세요',
 };
 
 function BasicInfoHeader({ onBack }: { onBack: () => void }) {
@@ -267,30 +226,12 @@ function inputClassName(invalid: boolean): string {
 
 function CompletedBasicFields({
   stage,
-  name,
   birth,
-  gender,
 }: {
   stage: Exclude<ProfileBasicStage, 'intro'>;
-  name: string;
   birth: string;
-  gender: Gender | null;
 }) {
-  const fields =
-    stage === 'birth'
-      ? [{ label: '이름', value: name }]
-      : stage === 'gender'
-        ? [
-            { label: '생년월일', value: birth },
-            { label: '이름', value: name },
-          ]
-        : stage === 'email'
-          ? [
-              { label: '성별', value: genderLabel(gender) ?? '' },
-              { label: '생년월일', value: birth },
-              { label: '이름', value: name },
-            ]
-          : [];
+  const fields = stage === 'gender' ? [{ label: '생년월일', value: birth }] : [];
 
   if (!fields.length) return null;
 

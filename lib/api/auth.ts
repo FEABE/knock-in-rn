@@ -26,6 +26,8 @@ export type KakaoAuthObj = {
 export type AppleAuthObj = {
   /** Apple identityToken JWT. */
   access_token: string;
+  name?: string;
+  email?: string;
   refresh_token?: string;
 };
 

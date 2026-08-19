@@ -16,10 +16,14 @@ import type { OpenApiSchema } from './openapi-types';
 // ─── Request Types ────────────────────────────────────────────────────────────
 
 /** 기본정보1 (온보딩 1단계). */
-export type ProfileBasicRequest =
-  OpenApiSchema<'org.example.knockin.dto.SaveProfileBasicDto$Request'>;
-export type ProfileBasicUpdateRequest =
-  OpenApiSchema<'org.example.knockin.dto.ModifyProfileBasicDto$Request'>;
+export type ProfileBasicRequest = Omit<
+  OpenApiSchema<'org.example.knockin.dto.SaveProfileBasicDto$Request'>,
+  'name' | 'email'
+>;
+export type ProfileBasicUpdateRequest = Omit<
+  OpenApiSchema<'org.example.knockin.dto.ModifyProfileBasicDto$Request'>,
+  'name' | 'email'
+>;
 
 export type ProfileBasicImageInput = {
   uri: string;
@@ -40,9 +44,14 @@ export type ProfileRoomInfoUpdateRequest =
   OpenApiSchema<'org.example.knockin.dto.ModifyProfileRoomInfoDto$Request'>;
 
 /** 기본정보 1,2,3 일괄. */
-export type ProfileAllRequest = OpenApiSchema<'org.example.knockin.dto.SaveProfileAllDto$Request'>;
-export type ProfileAllUpdateRequest =
-  OpenApiSchema<'org.example.knockin.dto.ModifyProfileAllDto$Request'>;
+export type ProfileAllRequest = Omit<
+  OpenApiSchema<'org.example.knockin.dto.SaveProfileAllDto$Request'>,
+  'name' | 'email'
+>;
+export type ProfileAllUpdateRequest = Omit<
+  OpenApiSchema<'org.example.knockin.dto.ModifyProfileAllDto$Request'>,
+  'name' | 'email'
+>;
 
 type ComeableAtNegotiableRequest = {
   comeableAtNegotiable?: boolean;

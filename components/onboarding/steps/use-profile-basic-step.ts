@@ -7,9 +7,6 @@ import { AnalyticsEvent, logEvent, onboardingTiming } from '@/lib/analytics';
 import { getTerms, useApi } from '@/lib/api';
 import { goKakaoLogin } from '@/lib/navigation/routes';
 import {
-  PROFILE_NAME_MAX_LENGTH,
-  isValidProfileEmail,
-  isValidProfileName,
   useOnboarding,
   useOnboardingProfile,
   useOnboardingTerms,
@@ -22,7 +19,7 @@ export const GENDER_OPTIONS = [
   { value: 'female', label: '여성' },
 ] as const;
 
-export type ProfileBasicStage = 'intro' | 'name' | 'birth' | 'gender' | 'email';
+export type ProfileBasicStage = 'intro' | 'birth' | 'gender';
 export type ProfileBasicDialog = 'cancel' | 'underage' | null;
 type ProfileBasicPreview =
   | 'cancel'
@@ -30,12 +27,10 @@ type ProfileBasicPreview =
   | 'terms'
   | 'terms-selected'
   | 'terms-toast'
-  | 'name-error'
   | 'birth-future'
-  | 'birth-format'
-  | 'email-error';
+  | 'birth-format';
 
-const PROFILE_BASIC_STAGES: ProfileBasicStage[] = ['intro', 'name', 'birth', 'gender', 'email'];
+const PROFILE_BASIC_STAGES: ProfileBasicStage[] = ['intro', 'birth', 'gender'];
 const UNDERAGE_ERROR = '만 14세 미만은 가입할 수 없어요';
 
 export type UseProfileBasicStepReturn = {
@@ -56,10 +51,8 @@ export type UseProfileBasicStepReturn = {
   canProceed: boolean;
   onBack: () => void;
   onContinue: () => void;
-  onNameChange: (value: string) => void;
   onBirthChange: (text: string) => void;
   onGenderChange: (value: Gender) => void;
-  onEmailChange: (value: string) => void;
   onDialogClose: () => void;
   onExit: () => void;
   onTermsOpenChange: (open: boolean) => void;
@@ -121,10 +114,8 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
     if (!__DEV__ || !isProfileBasicPreview(basicPreview)) return;
 
     const sampleProfile = {
-      name: '최동준',
       birthDate: new Date(1993, 3, 17),
       gender: 'male' as const,
-      email: 'knockin@example.com',
     };
     patch(sampleProfile);
     setBirthText('1993.04.17');
@@ -134,7 +125,7 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
     setTermsToastVisible(false);
 
     if (basicPreview === 'cancel') {
-      setStage('name');
+      setStage('birth');
       setDialog('cancel');
       return;
     }
@@ -144,12 +135,6 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
       setBirthText(formatBirth(underageBirth));
       patch({ ...sampleProfile, birthDate: underageBirth });
       setDialog('underage');
-      return;
-    }
-    if (basicPreview === 'name-error') {
-      setStage('name');
-      patch({ ...sampleProfile, name: 'Choi' });
-      setFieldError('한글로 최소 2자~10자까지 입력 가능해요');
       return;
     }
     if (basicPreview === 'birth-future') {
@@ -166,14 +151,7 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
       setFieldError('YYYY.MM.DD 형식으로 입력해주세요');
       return;
     }
-    if (basicPreview === 'email-error') {
-      setStage('email');
-      patch({ ...sampleProfile, email: 'knockin.example.com' });
-      setFieldError('올바르지 않은 이메일 형식이에요');
-      return;
-    }
-
-    setStage('email');
+    setStage('gender');
     setTermsOpen(true);
     setTerms(
       basicPreview === 'terms-selected'
@@ -210,19 +188,15 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
   const canProceed =
     stage === 'intro'
       ? true
-      : stage === 'name'
-        ? profile.name.trim().length > 0
-        : stage === 'birth'
-          ? birthText.replace(/\D/g, '').length === 8
-          : stage === 'gender'
-            ? profile.gender !== null
-            : profile.email.trim().length > 0;
+      : stage === 'birth'
+        ? birthText.replace(/\D/g, '').length === 8
+        : profile.gender !== null;
   const requiredTerms = termOptions.filter((term) => term.required);
   const canAcceptTerms =
     requiredTerms.length > 0 && requiredTerms.every((term) => terms[term.key] === true);
 
   const onContinue = () => {
-    const error = validateStage(stage, profile.name, birthText, profile.gender, profile.email);
+    const error = validateStage(stage, birthText, profile.gender);
     if (error) {
       if (error === UNDERAGE_ERROR) {
         setFieldError(null);
@@ -284,7 +258,7 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
       goKakaoLogin(router, 'replace');
       return;
     }
-    if (stage === 'name') {
+    if (stage === 'birth') {
       setDialog('cancel');
       return;
     }
@@ -312,17 +286,9 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
     canProceed,
     onBack,
     onContinue,
-    onNameChange: (value) => {
-      patch({ name: value.slice(0, PROFILE_NAME_MAX_LENGTH) });
-      setFieldError(null);
-    },
     onBirthChange,
     onGenderChange: (value) => {
       patch({ gender: value });
-      setFieldError(null);
-    },
-    onEmailChange: (value) => {
-      patch({ email: value });
       setFieldError(null);
     },
     onDialogClose: () => setDialog(null),
@@ -379,19 +345,11 @@ function formatBirthInput(text: string): string {
 
 function validateStage(
   stage: ProfileBasicStage,
-  name: string,
   birthText: string,
   gender: Gender | null,
-  email: string,
 ): string | null {
-  if (stage === 'name') {
-    if (!isValidProfileName(name)) return '한글로 최소 2자~10자까지 입력 가능해요';
-  }
   if (stage === 'birth') return validateBirth(birthText);
   if (stage === 'gender' && !gender) return '성별을 선택해주세요.';
-  if (stage === 'email' && !isValidProfileEmail(email)) {
-    return '올바르지 않은 이메일 형식이에요';
-  }
   return null;
 }
 
@@ -418,10 +376,8 @@ function isProfileBasicPreview(value: string | undefined): value is ProfileBasic
     'terms',
     'terms-selected',
     'terms-toast',
-    'name-error',
     'birth-future',
     'birth-format',
-    'email-error',
   ].includes(value as ProfileBasicPreview);
 }
 

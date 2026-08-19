@@ -81,10 +81,7 @@ export function BasicProfileEditScreenView(props: UseBasicProfileEditScreenRetur
             <ProfileField
               label="이름"
               value={props.state.name}
-              onChangeText={props.setName}
-              error={props.nameError}
-              success={!props.nameError ? '사용 가능한 이름이에요' : undefined}
-              maxLength={10}
+              editable={false}
             />
             <ProfileField
               label="성별"
@@ -94,11 +91,7 @@ export function BasicProfileEditScreenView(props: UseBasicProfileEditScreenRetur
             <ProfileField
               label="이메일"
               value={props.state.email}
-              onChangeText={props.setEmail}
-              error={props.emailError}
-              success={!props.emailError ? '사용가능한 이메일이에요' : undefined}
-              keyboardType="email-address"
-              autoCapitalize="none"
+              editable={false}
             />
             <ProfileField
               label="생년월일"

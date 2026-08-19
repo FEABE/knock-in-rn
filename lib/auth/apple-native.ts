@@ -14,7 +14,12 @@ export async function signInWithAppleSdk() {
     );
   }
 
-  const credential = await AppleAuthentication.signInAsync();
+  const credential = await AppleAuthentication.signInAsync({
+    requestedScopes: [
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+    ],
+  });
   if (!credential.identityToken) {
     throw new AppleSignInError(
       'APPLE_IDENTITY_TOKEN_MISSING',
@@ -22,10 +27,16 @@ export async function signInWithAppleSdk() {
     );
   }
 
+  const name = credential.fullName
+    ? AppleAuthentication.formatFullName(credential.fullName).trim()
+    : undefined;
+
   // 백엔드는 authObj.access_token 자리에 identityToken JWT를 받아 서버에서 디코드한다.
   // (identity_token 같은 다른 필드명으로 보내면 "액세스 토큰은 필수입니다." 400이 난다.)
   return socialLoginSdk('apple', {
     access_token: credential.identityToken,
+    ...(name ? { name } : {}),
+    ...(credential.email ? { email: credential.email } : {}),
   });
 }
 

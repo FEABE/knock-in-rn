@@ -1,23 +1,5 @@
 export type Gender = 'male' | 'female' | 'other';
 
-export const PROFILE_NAME_MIN_LENGTH = 2;
-export const PROFILE_NAME_MAX_LENGTH = 10;
-export const PROFILE_EMAIL_PATTERN =
-  /^[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*@[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*(?:\.[A-Za-z]{2,})+$/;
-
-export function isValidProfileName(value: string): boolean {
-  const name = value.trim();
-  return (
-    name.length >= PROFILE_NAME_MIN_LENGTH &&
-    name.length <= PROFILE_NAME_MAX_LENGTH &&
-    /^[가-힣]+$/.test(name)
-  );
-}
-
-export function isValidProfileEmail(value: string): boolean {
-  return PROFILE_EMAIL_PATTERN.test(value.trim());
-}
-
 export type PreferredGender = 'same' | 'any';
 
 export type CleanlinessLevel = 1 | 2 | 3 | 4 | 5;
@@ -63,10 +45,8 @@ export type LifestyleScaleKey = string;
 export type LifestyleScales = Partial<Record<LifestyleScaleKey, number>>;
 
 export type BasicProfile = {
-  name: string;
   birthDate: Date | null;
   gender: Gender | null;
-  email: string;
   preferredGender: PreferredGender | null;
   regions: Region[];
   bio: string;
@@ -137,10 +117,8 @@ export type OnboardingValues = {
 
 export function emptyBasicProfile(): BasicProfile {
   return {
-    name: '',
     birthDate: null,
     gender: null,
-    email: '',
     preferredGender: null,
     regions: [],
     bio: '',
@@ -180,8 +158,6 @@ export function emptyPreferenceConditions(): PreferenceConditions {
 
 export function isBasicProfileComplete(profile: BasicProfile): boolean {
   return (
-    isValidProfileName(profile.name) &&
-    isValidProfileEmail(profile.email) &&
     profile.birthDate !== null &&
     profile.gender !== null &&
     profile.regions.length > 0 &&
