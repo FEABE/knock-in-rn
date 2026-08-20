@@ -8,7 +8,7 @@ import { getTerms, useApi } from '@/lib/api';
 import { goKakaoLogin } from '@/lib/navigation/routes';
 import {
   PROFILE_NAME_MAX_LENGTH,
-  isValidProfileEmail,
+  // isValidProfileEmail, // 온보딩 이메일 입력 복구 시 사용
   isValidProfileName,
   useOnboarding,
   useOnboardingProfile,
@@ -22,7 +22,8 @@ export const GENDER_OPTIONS = [
   { value: 'female', label: '여성' },
 ] as const;
 
-export type ProfileBasicStage = 'intro' | 'name' | 'birth' | 'gender' | 'email';
+export type ProfileBasicStage = 'intro' | 'name' | 'birth' | 'gender';
+// 이메일 입력 복구 시 ProfileBasicStage에 'email'을 추가한다.
 export type ProfileBasicDialog = 'cancel' | 'underage' | null;
 type ProfileBasicPreview =
   | 'cancel'
@@ -32,10 +33,11 @@ type ProfileBasicPreview =
   | 'terms-toast'
   | 'name-error'
   | 'birth-future'
-  | 'birth-format'
-  | 'email-error';
+  | 'birth-format';
+// 이메일 입력 복구 시 ProfileBasicPreview에 'email-error'를 추가한다.
 
-const PROFILE_BASIC_STAGES: ProfileBasicStage[] = ['intro', 'name', 'birth', 'gender', 'email'];
+const PROFILE_BASIC_STAGES: ProfileBasicStage[] = ['intro', 'name', 'birth', 'gender'];
+// const PROFILE_BASIC_STAGES: ProfileBasicStage[] = ['intro', 'name', 'birth', 'gender', 'email'];
 const UNDERAGE_ERROR = '만 14세 미만은 가입할 수 없어요';
 
 export type UseProfileBasicStepReturn = {
@@ -59,7 +61,7 @@ export type UseProfileBasicStepReturn = {
   onNameChange: (value: string) => void;
   onBirthChange: (text: string) => void;
   onGenderChange: (value: Gender) => void;
-  onEmailChange: (value: string) => void;
+  // onEmailChange: (value: string) => void;
   onDialogClose: () => void;
   onExit: () => void;
   onTermsOpenChange: (open: boolean) => void;
@@ -124,7 +126,7 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
       name: '최동준',
       birthDate: new Date(1993, 3, 17),
       gender: 'male' as const,
-      email: 'knockin@example.com',
+      // email: 'knockin@example.com',
     };
     patch(sampleProfile);
     setBirthText('1993.04.17');
@@ -166,14 +168,15 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
       setFieldError('YYYY.MM.DD 형식으로 입력해주세요');
       return;
     }
-    if (basicPreview === 'email-error') {
-      setStage('email');
-      patch({ ...sampleProfile, email: 'knockin.example.com' });
-      setFieldError('올바르지 않은 이메일 형식이에요');
-      return;
-    }
+    // if (basicPreview === 'email-error') {
+    //   setStage('email');
+    //   patch({ ...sampleProfile, email: 'knockin.example.com' });
+    //   setFieldError('올바르지 않은 이메일 형식이에요');
+    //   return;
+    // }
 
-    setStage('email');
+    // 이메일 단계가 복구되면 약관 시트를 여는 stage도 'email'로 되돌린다.
+    setStage('gender');
     setTermsOpen(true);
     setTerms(
       basicPreview === 'terms-selected'
@@ -214,15 +217,14 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
         ? profile.name.trim().length > 0
         : stage === 'birth'
           ? birthText.replace(/\D/g, '').length === 8
-          : stage === 'gender'
-            ? profile.gender !== null
-            : profile.email.trim().length > 0;
+          : profile.gender !== null;
+  // 이메일 단계 복구 시 마지막 조건은 profile.email.trim().length > 0으로 확장한다.
   const requiredTerms = termOptions.filter((term) => term.required);
   const canAcceptTerms =
     requiredTerms.length > 0 && requiredTerms.every((term) => terms[term.key] === true);
 
   const onContinue = () => {
-    const error = validateStage(stage, profile.name, birthText, profile.gender, profile.email);
+    const error = validateStage(stage, profile.name, birthText, profile.gender);
     if (error) {
       if (error === UNDERAGE_ERROR) {
         setFieldError(null);
@@ -321,10 +323,10 @@ export function useProfileBasicStep(): UseProfileBasicStepReturn {
       patch({ gender: value });
       setFieldError(null);
     },
-    onEmailChange: (value) => {
-      patch({ email: value });
-      setFieldError(null);
-    },
+    // onEmailChange: (value) => {
+    //   patch({ email: value });
+    //   setFieldError(null);
+    // },
     onDialogClose: () => setDialog(null),
     onExit: () => {
       setDialog(null);
@@ -382,16 +384,15 @@ function validateStage(
   name: string,
   birthText: string,
   gender: Gender | null,
-  email: string,
 ): string | null {
   if (stage === 'name') {
-    if (!isValidProfileName(name)) return '한글로 최소 2자~10자까지 입력 가능해요';
+    if (!isValidProfileName(name)) return '한글 닉네임은 2자~10자까지 입력 가능해요';
   }
   if (stage === 'birth') return validateBirth(birthText);
   if (stage === 'gender' && !gender) return '성별을 선택해주세요.';
-  if (stage === 'email' && !isValidProfileEmail(email)) {
-    return '올바르지 않은 이메일 형식이에요';
-  }
+  // if (stage === 'email' && !isValidProfileEmail(email)) {
+  //   return '올바르지 않은 이메일 형식이에요';
+  // }
   return null;
 }
 
@@ -421,7 +422,7 @@ function isProfileBasicPreview(value: string | undefined): value is ProfileBasic
     'name-error',
     'birth-future',
     'birth-format',
-    'email-error',
+    // 'email-error',
   ].includes(value as ProfileBasicPreview);
 }
 

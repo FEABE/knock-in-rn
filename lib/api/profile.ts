@@ -52,7 +52,13 @@ type ComeableAtNegotiableRequest = {
 export type ProfileRoomInfoRuntimeRequest = ProfileRoomInfoRequest &
   Required<ComeableAtNegotiableRequest>;
 
-export type ProfileAllRuntimeRequest = ProfileAllRequest & Required<ComeableAtNegotiableRequest>;
+/**
+ * 현재 온보딩은 이메일을 수집하지 않으며 생성 API에는 명시적으로 null을 전송한다.
+ * OpenAPI 스냅샷에는 email이 아직 string으로 남아 있어 최신 nullable 계약을 여기서 보정한다.
+ */
+export type ProfileAllRuntimeRequest = Omit<ProfileAllRequest, 'email'> & {
+  email: null;
+} & Required<ComeableAtNegotiableRequest>;
 
 /** 선호조건1 (Phase 2 Step A). */
 export type PreferenceLifestyleRequest =
@@ -198,7 +204,7 @@ export function saveProfileRoomInfo(body: ProfileRoomInfoRequest): Promise<ApiRe
 }
 
 /** POST /users/me/profile/all */
-export function saveProfileAll(body: ProfileAllRequest): Promise<ApiResponse<UpdatedAt>> {
+export function saveProfileAll(body: ProfileAllRuntimeRequest): Promise<ApiResponse<UpdatedAt>> {
   if (USE_MOCK) return mockUpdatedAt();
   return request('POST', '/users/me/profile/all', { body });
 }

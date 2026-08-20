@@ -38,7 +38,7 @@ export function ProfileBasicStepView({
   onNameChange,
   onBirthChange,
   onGenderChange,
-  onEmailChange,
+  // onEmailChange, // 온보딩 이메일 입력 복구 시 사용
   onDialogClose,
   onExit,
   onTermsOpenChange,
@@ -94,7 +94,7 @@ export function ProfileBasicStepView({
               autoFocus
               value={profile.name}
               onChangeValue={onNameChange}
-              placeholder="이름"
+              placeholder="닉네임"
               maxLength={PROFILE_NAME_MAX_LENGTH}
               invalid={Boolean(fieldError)}
               returnKeyType="next"
@@ -132,6 +132,7 @@ export function ProfileBasicStepView({
             </Pressable>
           ) : null}
 
+          {/* 이메일 수집 정책으로 임시 비활성화
           {stage === 'email' ? (
             <TextField
               key="email"
@@ -148,6 +149,7 @@ export function ProfileBasicStepView({
               className={inputClassName(Boolean(fieldError))}
             />
           ) : null}
+          */}
 
           {fieldError ? (
             <Text className="mt-1.5 text-xs font-medium leading-[18px] text-[#D63D4A]">
@@ -235,10 +237,10 @@ export function ProfileBasicStepView({
 }
 
 const STAGE_PROMPTS: Record<Exclude<ProfileBasicStage, 'intro'>, string> = {
-  name: '이름을 알려주세요',
+  name: '닉네임을 알려주세요',
   birth: '생년월일을 알려주세요',
   gender: '성별을 알려주세요',
-  email: '이메일을 알려주세요',
+  // email: '이메일을 알려주세요',
 };
 
 function BasicInfoHeader({ onBack }: { onBack: () => void }) {
@@ -278,19 +280,20 @@ function CompletedBasicFields({
 }) {
   const fields =
     stage === 'birth'
-      ? [{ label: '이름', value: name }]
+      ? [{ label: '닉네임', value: name }]
       : stage === 'gender'
         ? [
             { label: '생년월일', value: birth },
-            { label: '이름', value: name },
+            { label: '닉네임', value: name },
           ]
-        : stage === 'email'
-          ? [
-              { label: '성별', value: genderLabel(gender) ?? '' },
-              { label: '생년월일', value: birth },
-              { label: '이름', value: name },
-            ]
-          : [];
+        : // 이메일 단계 복구 시 성별·생년월일·닉네임 완료 필드를 함께 노출한다.
+          // : stage === 'email'
+          //   ? [
+          //       { label: '성별', value: genderLabel(gender) ?? '' },
+          //       { label: '생년월일', value: birth },
+          //       { label: '닉네임', value: name },
+          //     ]
+          [];
 
   if (!fields.length) return null;
 

@@ -25,7 +25,7 @@ import {
   ONBOARDING_STEPS,
   OnboardingProvider,
   agreedTermBackendIds,
-  isValidProfileEmail,
+  // isValidProfileEmail, // 온보딩 이메일 입력 복구 시 사용
   isValidProfileName,
   type OnboardingValues,
   type OnboardingStep,
@@ -56,7 +56,8 @@ function toRequest(
     name: profile.name.trim(),
     birth,
     gender: profile.gender === 'female' ? 'FEMALE' : 'MALE',
-    email: profile.email.trim(),
+    // email: profile.email.trim(), // 이메일 입력을 다시 받을 경우 복구
+    email: null,
     terms: agreedTermBackendIds(terms),
     lifestyles: lifestyleIdsFromPatternOptions(
       lifestyleOptions,
@@ -100,14 +101,14 @@ function validateOnboarding(
     .map((group) => group.label);
 
   if (!agreedTerms.length) missing.push('약관 동의: 필수 약관');
-  if (!isValidProfileName(profile.name)) missing.push('기본 정보: 한글 이름 2~10자');
+  if (!isValidProfileName(profile.name)) missing.push('기본 정보: 한글 닉네임 2~10자');
   if (!profile.birthDate) missing.push('기본 정보: 생년월일');
   if (profile.gender !== 'male' && profile.gender !== 'female') missing.push('기본 정보: 성별');
-  if (!profile.email.trim()) {
-    missing.push('기본 정보: 이메일');
-  } else if (!isValidProfileEmail(profile.email)) {
-    missing.push('기본 정보: 올바른 이메일 형식');
-  }
+  // if (!profile.email.trim()) {
+  //   missing.push('기본 정보: 이메일');
+  // } else if (!isValidProfileEmail(profile.email)) {
+  //   missing.push('기본 정보: 올바른 이메일 형식');
+  // }
   if (lifestyleOptions.scaleOptions.length + lifestyleOptions.choiceGroups.length === 0) {
     missing.push('생활 패턴: 서버 기준값');
   }
@@ -304,7 +305,7 @@ function hasSavedProfile(
 ): boolean {
   if (!profile?.type || !profile.comeEnableAt) return false;
   if (!profile.userInfo?.name || !profile.userInfo.birth || !profile.userInfo.gender) return false;
-  if (!profile.userInfo.email) return false;
+  // if (!profile.userInfo.email) return false;
   if (!profile.region?.length || !profile.roomProfile?.length) return false;
 
   const expectedLifestyleCount =
