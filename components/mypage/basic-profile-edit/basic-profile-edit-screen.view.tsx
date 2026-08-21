@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DefaultProfileArtwork } from '@/components/ui/ready-to-dev-assets';
 import { HeaderBackButton } from '@/components/ui/header-back-button';
+import { DefaultProfileArtwork } from '@/components/ui/ready-to-dev-assets';
 
 import type { UseBasicProfileEditScreenReturn } from './use-basic-profile-edit-screen';
 
@@ -21,7 +21,7 @@ export function BasicProfileEditScreenView(props: UseBasicProfileEditScreenRetur
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <View className="h-12 flex-row items-center justify-between px-4">
+      <View className="h-12 flex-row items-center justify-between px-2">
         <HeaderBackButton onPress={props.onBack} />
         <Text className="text-lg font-semibold text-[#17171B]">프로필 편집</Text>
         <Pressable
@@ -96,7 +96,11 @@ export function BasicProfileEditScreenView(props: UseBasicProfileEditScreenRetur
               value={props.state.email}
               onChangeText={props.setEmail}
               error={props.emailError}
-              success={!props.emailError ? '사용가능한 이메일이에요' : undefined}
+              success={
+                props.state.email.trim() && !props.emailError
+                  ? '사용가능한 이메일이에요'
+                  : undefined
+              }
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -141,6 +145,12 @@ function ProfileField({
         className={`h-10 border-b px-0 text-base ${
           editable ? 'border-[#DADAE8] text-[#17171B]' : 'border-[#ECECF3] text-[#DADAE8]'
         }`}
+        style={[
+          inputProps.style,
+          Platform.OS === 'android'
+            ? { includeFontPadding: false, paddingVertical: 0, textAlignVertical: 'center' }
+            : undefined,
+        ]}
       />
       {error ? <Text className="mt-1.5 text-xs text-[#E5484D]">{error}</Text> : null}
       {!error && success ? <Text className="mt-1.5 text-xs text-[#2E9B4F]">{success}</Text> : null}

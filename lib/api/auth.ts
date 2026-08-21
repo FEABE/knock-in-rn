@@ -31,6 +31,11 @@ export type AppleAuthObj = {
 
 export type AuthObj = KakaoAuthObj | AppleAuthObj;
 
+/** Apple SDK가 최초 동의 시에만 내려주는 사용자 정보. */
+export type AppleSdkProfile = {
+  name: string | null;
+};
+
 /** 로그인/회원가입 공통 응답 data. */
 export type LoginIdentity = {
   name?: string;
@@ -103,11 +108,12 @@ export function socialLoginWeb(provider: SocialProvider): Promise<ApiResponse<Lo
 export function socialLoginSdk(
   provider: SocialProvider,
   authObj: AuthObj,
+  profile?: AppleSdkProfile,
 ): Promise<ApiResponse<LoginData>> {
   if (USE_MOCK) return mockOk(MOCK_LOGIN);
   return request<LoginDataResponse>('POST', `/sdk/oauth2/authorization/${provider}`, {
     auth: false,
-    body: { authObj },
+    body: { authObj, ...profile },
   }).then(normalizeLoginResponse);
 }
 

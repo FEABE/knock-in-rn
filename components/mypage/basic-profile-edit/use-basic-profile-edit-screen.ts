@@ -171,12 +171,17 @@ export function useBasicProfileEditScreen(): UseBasicProfileEditScreenReturn {
 }
 
 function validateName(value: string): string | null {
-  if (/^[가-힣]{2,10}$/.test(value.trim())) return null;
+  const name = value.trim();
+  const lettersOnly = name.replace(/\s/g, '');
+  if (name.length <= 10 && lettersOnly.length >= 2 && /^[가-힣]+(?:\s+[가-힣]+)*$/.test(name)) {
+    return null;
+  }
   return '한글로 최소 2자~10자까지 입력 가능해요';
 }
 
 function validateEmail(value: string): string | null {
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return null;
+  const email = value.trim();
+  if (!email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
   return '이메일 형식을 확인해주세요';
 }
 

@@ -53,10 +53,11 @@ export type ProfileRoomInfoRuntimeRequest = ProfileRoomInfoRequest &
   Required<ComeableAtNegotiableRequest>;
 
 /**
- * 현재 온보딩은 이메일을 수집하지 않으며 생성 API에는 명시적으로 null을 전송한다.
- * OpenAPI 스냅샷에는 email이 아직 string으로 남아 있어 최신 nullable 계약을 여기서 보정한다.
+ * 현재 온보딩은 이름과 이메일을 수집하지 않으며 생성 API에는 명시적으로 null을 전송한다.
+ * OpenAPI 스냅샷에는 두 필드가 아직 string으로 남아 있어 최신 nullable 계약을 여기서 보정한다.
  */
-export type ProfileAllRuntimeRequest = Omit<ProfileAllRequest, 'email'> & {
+export type ProfileAllRuntimeRequest = Omit<ProfileAllRequest, 'name' | 'email'> & {
+  name: null;
   email: null;
 } & Required<ComeableAtNegotiableRequest>;
 

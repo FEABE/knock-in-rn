@@ -6,7 +6,7 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-re
 import { BottomSheet, Modal, TermsAgreement, TextField } from '@/components/ui/headless';
 import { IdentityVerificationArtwork } from '@/components/ui/ready-to-dev-assets';
 import { ReadyToast, useSheetToastInset } from '@/components/ui/ready-to-dev-feedback';
-import { PROFILE_NAME_MAX_LENGTH, type Gender, type Term } from '@/lib/onboarding';
+import { type Gender, type Term } from '@/lib/onboarding';
 
 import { OnboardingFooter } from '../onboarding-footer';
 import {
@@ -35,7 +35,6 @@ export function ProfileBasicStepView({
   canProceed,
   onBack,
   onContinue,
-  onNameChange,
   onBirthChange,
   onGenderChange,
   // onEmailChange, // 온보딩 이메일 입력 복구 시 사용
@@ -88,21 +87,6 @@ export function ProfileBasicStepView({
         </Text>
 
         <View className="mt-9">
-          {stage === 'name' ? (
-            <TextField
-              key="name"
-              autoFocus
-              value={profile.name}
-              onChangeValue={onNameChange}
-              placeholder="닉네임"
-              maxLength={PROFILE_NAME_MAX_LENGTH}
-              invalid={Boolean(fieldError)}
-              returnKeyType="next"
-              onSubmitEditing={onContinue}
-              className={inputClassName(Boolean(fieldError))}
-            />
-          ) : null}
-
           {stage === 'birth' ? (
             <TextField
               key="birth"
@@ -158,12 +142,7 @@ export function ProfileBasicStepView({
           ) : null}
         </View>
 
-        <CompletedBasicFields
-          stage={stage}
-          name={profile.name}
-          birth={birthText}
-          gender={profile.gender}
-        />
+        <CompletedBasicFields stage={stage} birth={birthText} />
       </ScrollView>
 
       {submitError ? (
@@ -237,7 +216,6 @@ export function ProfileBasicStepView({
 }
 
 const STAGE_PROMPTS: Record<Exclude<ProfileBasicStage, 'intro'>, string> = {
-  name: '닉네임을 알려주세요',
   birth: '생년월일을 알려주세요',
   gender: '성별을 알려주세요',
   // email: '이메일을 알려주세요',
@@ -269,31 +247,12 @@ function inputClassName(invalid: boolean): string {
 
 function CompletedBasicFields({
   stage,
-  name,
   birth,
-  gender,
 }: {
   stage: Exclude<ProfileBasicStage, 'intro'>;
-  name: string;
   birth: string;
-  gender: Gender | null;
 }) {
-  const fields =
-    stage === 'birth'
-      ? [{ label: '닉네임', value: name }]
-      : stage === 'gender'
-        ? [
-            { label: '생년월일', value: birth },
-            { label: '닉네임', value: name },
-          ]
-        : // 이메일 단계 복구 시 성별·생년월일·닉네임 완료 필드를 함께 노출한다.
-          // : stage === 'email'
-          //   ? [
-          //       { label: '성별', value: genderLabel(gender) ?? '' },
-          //       { label: '생년월일', value: birth },
-          //       { label: '닉네임', value: name },
-          //     ]
-          [];
+  const fields = stage === 'gender' ? [{ label: '생년월일', value: birth }] : [];
 
   if (!fields.length) return null;
 

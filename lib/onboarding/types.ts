@@ -1,19 +1,8 @@
 export type Gender = 'male' | 'female' | 'other';
 
-export const PROFILE_NAME_MIN_LENGTH = 2;
-export const PROFILE_NAME_MAX_LENGTH = 10;
 // 이메일 입력을 다시 도입할 때 함께 복구한다.
 // export const PROFILE_EMAIL_PATTERN =
 //   /^[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*@[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*(?:\.[A-Za-z]{2,})+$/;
-
-export function isValidProfileName(value: string): boolean {
-  const name = value.trim();
-  return (
-    name.length >= PROFILE_NAME_MIN_LENGTH &&
-    name.length <= PROFILE_NAME_MAX_LENGTH &&
-    /^[가-힣]+$/.test(name)
-  );
-}
 
 // export function isValidProfileEmail(value: string): boolean {
 //   return PROFILE_EMAIL_PATTERN.test(value.trim());
@@ -64,7 +53,6 @@ export type LifestyleScaleKey = string;
 export type LifestyleScales = Partial<Record<LifestyleScaleKey, number>>;
 
 export type BasicProfile = {
-  name: string;
   birthDate: Date | null;
   gender: Gender | null;
   // email: string; // 온보딩 이메일 수집 정책으로 임시 비활성화
@@ -138,7 +126,6 @@ export type OnboardingValues = {
 
 export function emptyBasicProfile(): BasicProfile {
   return {
-    name: '',
     birthDate: null,
     gender: null,
     // email: '',
@@ -181,7 +168,6 @@ export function emptyPreferenceConditions(): PreferenceConditions {
 
 export function isBasicProfileComplete(profile: BasicProfile): boolean {
   return (
-    isValidProfileName(profile.name) &&
     // isValidProfileEmail(profile.email) &&
     profile.birthDate !== null &&
     profile.gender !== null &&

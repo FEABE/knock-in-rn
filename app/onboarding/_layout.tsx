@@ -26,7 +26,6 @@ import {
   OnboardingProvider,
   agreedTermBackendIds,
   // isValidProfileEmail, // 온보딩 이메일 입력 복구 시 사용
-  isValidProfileName,
   type OnboardingValues,
   type OnboardingStep,
 } from '@/lib/onboarding';
@@ -53,7 +52,7 @@ function toRequest(
     isHas ? [roomTypeBackendId(room.roomType)] : seekerRoomTypes.map(roomTypeBackendId),
   );
   return withComeableAtNegotiable({
-    name: profile.name.trim(),
+    name: null,
     birth,
     gender: profile.gender === 'female' ? 'FEMALE' : 'MALE',
     // email: profile.email.trim(), // 이메일 입력을 다시 받을 경우 복구
@@ -101,7 +100,6 @@ function validateOnboarding(
     .map((group) => group.label);
 
   if (!agreedTerms.length) missing.push('약관 동의: 필수 약관');
-  if (!isValidProfileName(profile.name)) missing.push('기본 정보: 한글 닉네임 2~10자');
   if (!profile.birthDate) missing.push('기본 정보: 생년월일');
   if (profile.gender !== 'male' && profile.gender !== 'female') missing.push('기본 정보: 성별');
   // if (!profile.email.trim()) {
@@ -260,7 +258,6 @@ export default function OnboardingLayout() {
         return;
       }
       await markProfileComplete({
-        name: request.name,
         birth: request.birth,
         gender: request.gender,
         preferredGender: values.profile.preferredGender ?? 'any',
